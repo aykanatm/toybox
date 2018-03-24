@@ -23,6 +23,6 @@ hs_err_pid*
 *.iml
 .idea/
 .mvn/
-toybox-server/toybox-eureka-server/mvnw
-toybox-server/toybox-eureka-server/mvnw.cmd
 target/
+mvnw
+mvnw.cmd
