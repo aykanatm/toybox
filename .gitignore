@@ -25,3 +25,4 @@ hs_err_pid*
 .mvn/
 toybox-server/toybox-eureka-server/mvnw
 toybox-server/toybox-eureka-server/mvnw.cmd
+target/
