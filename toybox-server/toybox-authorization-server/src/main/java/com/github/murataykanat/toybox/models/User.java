@@ -13,17 +13,32 @@ public class User {
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "user_id")
     private int id;
+
     @Column(name = "username")
     private String username;
+
     @JsonIgnore
     @Column(name = "password")
     private String password;
+
+    @Column(name = "name")
+    private String name;
+
+    @Column(name = "lastname")
+    private String lastname;
+
+    @Column(name = "email")
+    private String email;
+
     @Column(name = "enabled")
     private boolean enabled;
+
     @Column(name = "account_non_expired")
     private boolean isAccountNonExpired;
+
     @Column(name = "account_non_locked")
     private boolean isAccountNonLocked;
+
     @Column(name = "credentials_non_expired")
     private boolean isCredentialsNonExpired;
 
@@ -42,6 +57,9 @@ public class User {
         this.isAccountNonExpired = user.isAccountNonExpired;
         this.isAccountNonLocked = user.isAccountNonLocked;
         this.isCredentialsNonExpired = user.isCredentialsNonExpired;
+        this.email = user.email;
+        this.name = user.name;
+        this.lastname = user.lastname;
     }
 
     public int getId() {
@@ -56,7 +74,7 @@ public class User {
         return username;
     }
 
-    public void setName(String username) {
+    public void setUsername(String username) {
         this.username = username;
     }
 
@@ -66,6 +84,30 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getLastname() {
+        return lastname;
+    }
+
+    public void setLastname(String lastname) {
+        this.lastname = lastname;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public boolean isEnabled(){

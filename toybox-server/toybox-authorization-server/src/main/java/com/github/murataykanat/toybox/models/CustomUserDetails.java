@@ -31,6 +31,21 @@ public class CustomUserDetails extends User implements UserDetails {
     }
 
     @Override
+    public String getLastname() {
+        return super.getLastname();
+    }
+
+    @Override
+    public String getName() {
+        return super.getName();
+    }
+
+    @Override
+    public String getEmail() {
+        return super.getEmail();
+    }
+
+    @Override
     public boolean isEnabled() {
         return super.isEnabled();
     }
