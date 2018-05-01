@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+    <head>    
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
+        <link rel="stylesheet" type="text/css" href="../semantic/dist/semantic.min.css">
+        <link rel="stylesheet" type="text/css" href="style/toybox.css">
+        <script
+        src="https://code.jquery.com/jquery-3.1.1.min.js"
+        integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+        crossorigin="anonymous"></script>
+        <script src="../semantic/dist/semantic.min.js"></script>        
+        <script async defer src="https://buttons.github.io/buttons.js"></script>        
+    </head>
+    <body>
+        <div class="toybox-background">
+            <div class="ui masthead vertical segment">
+                <div class="ui middle aligned three column centered grid toybox-login-top-bar">
+                    <div class="right floated one wide column">                    
+                        <a class="github-button" href="https://github.com/aykanatm/toybox" data-show-count="true" aria-label="Star aykanatm/toybox on GitHub">Star</a>                                                                                
+                    </div> 
+                    <div class="one wide column">
+                        <a class="github-button" href="https://github.com/aykanatm/toybox/issues" data-show-count="true" aria-label="Issue aykanatm/toybox on GitHub">Issue</a>
+                    </div>
+                    <div class="one wide column">
+                        <a class="github-button" href="https://github.com/aykanatm/toybox/fork" data-show-count="true" aria-label="Fork aykanatm/toybox on GitHub">Fork</a>
+                    </div>                                                          
+                </div>            
+            </div>
+            <div class="ui middle aligned one column centered grid" style="height:100%;">
+                <div class="ui container segment column" style="width:400px; height: 460px;">
+                    <div class="ui middle aligned one column centered grid">
+                        <div class="toybox-login-logo">                        
+                        </div>
+                    </div>                    
+                    <div style="margin-top:25px;">
+                        <form class="ui form">                            
+                            <div class="field">                            
+                                <input name="username" placeholder="Username" type="text">
+                            </div>
+                            <div class="field">                            
+                                <input name="password" placeholder="Password" type="password">
+                            </div>
+                            <div class="ui middle aligned one column centered grid" style="margin-top: 5px; margin-bottom: 5px;">
+                                <button class="ui button" type="submit" onclick="fixValidationMessageSpacing()">Sign In</button> 
+                            </div>                                                                                   
+                            <div class="ui error message"></div>
+                        </form>
+                        <div style="margin-top: 93px;" class="toybox-login-buttons">
+                            <button class="ui button">Forgot Password</button>
+                            <button class="ui button">Register</button>
+                        </div>                        
+                    </div>                
+                </div>
+            </div>            
+        </div>              
+    </body>
+    <script>
+        function fixValidationMessageSpacing()
+        {
+            $('.toybox-login-buttons').attr('style','padding-top:9px;');
+        }
+    </script>
+    <script src="js/toybox-login-validation.js"></script>
+</html>
