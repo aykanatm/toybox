@@ -42,14 +42,20 @@
                             <div class="field">                            
                                 <input name="password" placeholder="Password" type="password">
                             </div>
-                            <div class="ui middle aligned one column centered grid" style="margin-top: 5px; margin-bottom: 5px;">
-                                <button class="ui button" type="submit" onclick="fixValidationMessageSpacing()">Sign In</button> 
+                            <div class="ui middle aligned one column centered grid">
+                                <div class="middle aligned column">
+                                    <button class="fluid ui button" type="submit" onclick="fixValidationMessageSpacing()">Sign In</button>
+                                </div>                                 
                             </div>                                                                                   
                             <div class="ui error message"></div>
                         </form>
-                        <div style="margin-top: 93px;" class="toybox-login-buttons">
-                            <button class="ui button">Forgot Password</button>
-                            <button class="ui button">Register</button>
+                        <div style="margin-top: 77px;" class="ui middle aligned two column centered grid toybox-login-buttons">
+                            <div class="column">                                
+                                <button class="fluid ui button">Forgot Password</button>                                
+                            </div>
+                            <div class="column">
+                                <button class="fluid ui button">Register</button>
+                            </div>
                         </div>                        
                     </div>                
                 </div>
@@ -59,7 +65,7 @@
     <script>
         function fixValidationMessageSpacing()
         {
-            $('.toybox-login-buttons').attr('style','padding-top:9px;');
+            $('.toybox-login-buttons').attr('style','padding-top:7px;');
         }
     </script>
     <script src="js/toybox-login-validation.js"></script>
