@@ -27,7 +27,6 @@ $(document).ready(function () {
             }
             // If the menu name is not signoff then we un-hide the content
             if(menuName !== 'signoff'){
-                console.log(menuName);
                 $('#toybox-' + menuName + '-container').removeClass('hidden');
             }
         }
