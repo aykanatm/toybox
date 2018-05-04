@@ -14,9 +14,9 @@
         <script async defer src="https://buttons.github.io/buttons.js"></script>        
     </head>
     <body>
-        <div class="toybox-background">
+        <div style="height:100%; width: 100%; overflow: hidden;">
             <div class="ui masthead vertical segment">
-                <div class="ui middle aligned three column centered grid toybox-login-top-bar">
+                <div class="ui middle aligned three column centered grid">
                     <div class="right floated one wide column">                    
                         <a class="github-button" href="https://github.com/aykanatm/toybox" data-show-count="true" aria-label="Star aykanatm/toybox on GitHub">Star</a>                                                                                
                     </div> 
@@ -28,45 +28,47 @@
                     </div>                                                          
                 </div>            
             </div>
-            <div class="ui middle aligned one column centered grid" style="height:100%;">
-                <div class="ui container segment column" style="width:400px; height: 460px;">
-                    <div class="ui middle aligned one column centered grid">
-                        <div class="toybox-login-logo">                        
-                        </div>
-                    </div>                    
-                    <div style="margin-top:25px;">
-                        <form class="ui form">                            
-                            <div class="field">
-                                <div class="ui left icon input">
-                                    <i class="user icon"></i>                           
-                                    <input name="username" placeholder="Username" type="text">
-                                </div>                                
+            <div class="toybox-background">            
+                <div class="ui middle aligned one column centered grid" style="height:100%;">
+                    <div class="ui container segment column" style="width:400px; height: 460px;">
+                        <div class="ui middle aligned one column centered grid">
+                            <div class="toybox-login-logo">                        
                             </div>
-                            <div class="field">
-                                <div class="ui left icon input">
-                                    <i class="lock icon"></i>                            
-                                    <input name="password" placeholder="Password" type="password">
-                                </div>                                
-                            </div>
-                            <div class="ui middle aligned one column centered grid">
-                                <div class="middle aligned column">
-                                    <button class="fluid ui button" type="submit" onclick="fixValidationMessageSpacing()">Sign In</button>
-                                </div>                                 
-                            </div>                                                                                   
-                            <div class="ui error message"></div>
-                        </form>
-                        <div style="margin-top: 77px;" class="ui middle aligned two column centered grid toybox-login-buttons">
-                            <div class="column">                                
-                                <button class="fluid ui button">Forgot Password</button>                                
-                            </div>
-                            <div class="column">
-                                <button class="fluid ui button">Register</button>
-                            </div>
-                        </div>                        
-                    </div>                
-                </div>
-            </div>            
-        </div>              
+                        </div>                    
+                        <div style="margin-top:25px;">
+                            <form class="ui form">                            
+                                <div class="field">
+                                    <div class="ui left icon input">
+                                        <i class="user icon"></i>                           
+                                        <input name="username" placeholder="Username" type="text">
+                                    </div>                                
+                                </div>
+                                <div class="field">
+                                    <div class="ui left icon input">
+                                        <i class="lock icon"></i>                            
+                                        <input name="password" placeholder="Password" type="password">
+                                    </div>                                
+                                </div>
+                                <div class="ui middle aligned one column centered grid">
+                                    <div class="middle aligned column">
+                                        <button class="fluid ui button" type="submit" onclick="fixValidationMessageSpacing()">Sign In</button>
+                                    </div>                                 
+                                </div>                                                                                   
+                                <div class="ui error message"></div>
+                            </form>
+                            <div style="margin-top: 77px;" class="ui middle aligned two column centered grid toybox-login-buttons">
+                                <div class="column">                                
+                                    <button class="fluid ui button">Forgot Password</button>                                
+                                </div>
+                                <div class="column">
+                                    <button class="fluid ui button">Register</button>
+                                </div>
+                            </div>                        
+                        </div>                
+                    </div>
+                </div>            
+            </div> 
+        </div>                     
     </body>
     <script>
         function fixValidationMessageSpacing()

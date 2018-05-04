@@ -1,6 +1,3 @@
-.toybox-login-top-bar{
-    background-color:gainsboro;
-}
 .toybox-login-logo{
     width: 350px;
     height: 150px;
@@ -16,4 +13,12 @@
     background-repeat: no-repeat;
     background-position: center;
     overflow: hidden;
+}
+
+.toybox-home-brand-logo{
+    width: 50px;
+    height: 50px;
+    background-image: url('http://via.placeholder.com/50x50');
+    background-repeat: no-repeat;
+    background-position: center;
 }
