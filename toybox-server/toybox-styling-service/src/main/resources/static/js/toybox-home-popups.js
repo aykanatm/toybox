@@ -1,0 +1,26 @@
+$(document).ready(function () {
+
+    $('#toybox-home-menu').popup({
+        content: 'Home'
+    });
+
+    $('#toybox-files-menu').popup({
+        content: 'Files'
+    });
+
+    $('#toybox-folders-menu').popup({
+        content: 'Folders'
+    });
+
+    $('#toybox-profile-menu').popup({
+        content: 'Profile'
+    });
+
+    $('#toybox-help-menu').popup({
+        content: 'Help'
+    });
+
+    $('#toybox-signoff-menu').popup({
+        content: 'Sign Off'
+    });
+});

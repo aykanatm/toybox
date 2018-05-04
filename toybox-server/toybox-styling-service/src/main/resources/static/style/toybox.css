@@ -22,3 +22,11 @@
     background-repeat: no-repeat;
     background-position: center;
 }
+
+.hidden{
+    display: none;
+}
+
+.toybox-container{
+    margin: 10px;
+}
