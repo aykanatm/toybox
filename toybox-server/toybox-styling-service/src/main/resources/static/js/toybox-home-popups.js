@@ -12,6 +12,10 @@ $(document).ready(function () {
         content: 'Folders'
     });
 
+    $('#toybox-advsearch-menu').popup({
+        content: 'Advanced Search'
+    });
+
     $('#toybox-profile-menu').popup({
         content: 'Profile'
     });
