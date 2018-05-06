@@ -31,3 +31,20 @@
     margin: 10px;
     height: 100%;
 }
+
+.toybox-card{
+    width: 300px;
+    height: 420px;
+    min-width: 300px;
+    min-height: 420px;
+    max-width: 300px;
+    max-height: 420px;
+}
+
+.toybox-card-img{
+    height: 250px;
+    max-height: 250px;
+    min-height: 250px;
+    display: flex;
+    align-items: center
+}
