@@ -48,3 +48,7 @@
     display: flex;
     align-items: center
 }
+
+#gallery-top-menu{
+    margin-bottom: 25px;
+}
