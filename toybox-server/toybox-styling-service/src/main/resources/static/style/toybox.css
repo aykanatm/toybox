@@ -24,7 +24,7 @@
 }
 
 .hidden{
-    display: none;
+    display: none !important;
 }
 
 .toybox-container{
@@ -51,4 +51,8 @@
 
 #gallery-top-menu{
     margin-bottom: 25px;
+}
+
+.toybox-card-selected{
+    box-shadow: 0 1px 3px 0 #3a7dc8, 0 0 0 1px #3a7dc8 !important;
 }
