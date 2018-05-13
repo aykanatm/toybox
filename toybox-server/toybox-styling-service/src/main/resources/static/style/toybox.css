@@ -33,11 +33,11 @@
 }
 
 .toybox-card{
-    width: 300px;
+    width: 300px !important;
     height: 420px;
-    min-width: 300px;
+    min-width: 300px !important;
     min-height: 420px;
-    max-width: 300px;
+    max-width: 300px !important;
     max-height: 420px;
 }
 
@@ -46,7 +46,7 @@
     max-height: 250px;
     min-height: 250px;
     display: flex;
-    align-items: center
+    align-items: center;
 }
 
 #gallery-top-menu{
