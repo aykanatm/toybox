@@ -1,2 +1,3 @@
 language: java
 before_script: cd toybox-server
+script: mvn install
