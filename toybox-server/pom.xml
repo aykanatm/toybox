@@ -16,5 +16,6 @@
         <module>toybox-authorization-server</module>
         <module>toybox-configuration-server</module>
         <module>toybox-styling-service</module>
+        <module>toybox-ui</module>
     </modules>
 </project>
