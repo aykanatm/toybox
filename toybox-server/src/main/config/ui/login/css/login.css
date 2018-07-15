@@ -1,7 +1,7 @@
 .toybox-login-logo{
     width: 350px;
     height: 150px;
-    background-image: url('http://via.placeholder.com/350x150');
+    background-image: url('../images/logo.png');
     background-repeat: no-repeat;
     background-position: center;
 }
@@ -9,7 +9,7 @@
 .toybox-background{
     width: 100%;
     height: 100%;
-    background-image: url('http://via.placeholder.com/1920x1080');
+    background-image: url('../images/background.jpeg');
     background-repeat: no-repeat;
     background-position: center;
     overflow: hidden;
