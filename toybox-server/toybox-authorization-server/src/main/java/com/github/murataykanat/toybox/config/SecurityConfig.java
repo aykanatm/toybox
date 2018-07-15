@@ -17,13 +17,15 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         auth.userDetailsService(customUserDetailsService);
     }
 
+    @Override
     protected void configure(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
                 .requestMatchers()
                     .antMatchers("/login", "/oauth/authorize")
                     .and()
                 .authorizeRequests()
-                    .anyRequest().authenticated()
+                    .anyRequest()
+                        .authenticated()
                     .and()
                 .formLogin()
                     .loginPage("/login")
