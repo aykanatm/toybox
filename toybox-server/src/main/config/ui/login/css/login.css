@@ -14,3 +14,10 @@
     background-position: center;
     overflow: hidden;
 }
+
+.toybox-message{
+    position: absolute !important;
+    width: 50%;
+    left: 25%;
+    z-index: 100;
+}

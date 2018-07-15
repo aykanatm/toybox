@@ -13,8 +13,24 @@
         <script src="css/semantic/semantic.min.js"></script>
         <script async="" defer="" src="https://buttons.github.io/buttons.js"></script>
     </head>
-    <body>
-        <div style="height:100%; width: 100%; overflow: hidden;">
+    <body>        
+        <div th:if="${param.error}">            
+            <div class="ui negative message toybox-message">
+                <i class="close icon"></i>
+                <div class="header">
+                    Invalid username and/or password.                          
+                </div>
+            </div>                                 
+        </div>
+        <div th:if="${param.logout}">
+            <div class="ui info message toybox-message">
+                <i class="close icon"></i>
+                <div class="header">
+                    You have been logged out.
+                </div>                
+            </div>                    
+        </div>        
+        <div style="height:100%; width: 100%; overflow: hidden;">            
             <div class="ui masthead vertical segment">
                 <div class="ui middle aligned three column centered grid">
                     <div class="right floated one wide column">                    
@@ -28,9 +44,9 @@
                     </div>                                                          
                 </div>            
             </div>
-            <div class="toybox-background">            
-                <div class="ui middle aligned one column centered grid" style="height:100%;">
-                    <div class="ui container segment column" style="width:400px; height: 460px;">
+            <div class="toybox-background">                
+                <div class="ui middle aligned one column centered grid" style="height:100%;">                                        
+                    <div class="ui container segment column" style="width:400px; height: 470px;">
                         <div class="ui middle aligned one column centered grid">
                             <div class="toybox-login-logo">                        
                             </div>
@@ -54,9 +70,9 @@
                                         <button class="fluid ui button" type="submit" onclick="fixValidationMessageSpacing()">Sign In</button>
                                     </div>                                 
                                 </div>                                                                                   
-                                <div class="ui error message"></div>
+                                <div class="ui error message"></div>                                
                             </form>
-                            <div style="margin-top: 77px;" class="ui middle aligned two column centered grid toybox-login-buttons">
+                            <div style="margin-top: 84px;" class="ui middle aligned two column centered grid toybox-login-buttons">
                                 <div class="column">                                
                                     <button class="fluid ui button">Forgot Password</button>                                
                                 </div>
@@ -73,8 +89,9 @@
     <script>
         function fixValidationMessageSpacing()
         {
-            $('.toybox-login-buttons').attr('style','padding-top:7px;');
+            $('.toybox-login-buttons').attr('style','padding-top:0px;');
         }
     </script>
     <script src="js/toybox-login-validation.js"></script>
+    <script src="js/toybox-login.js"></script>
 </html>
