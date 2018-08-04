@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-    <head>    
+    <head>
         <meta charset="utf-8" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
         <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1"/>
@@ -10,74 +10,70 @@
         src="https://code.jquery.com/jquery-3.1.1.min.js"
         integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
         crossorigin="anonymous"></script>
-        <script src="css/semantic/semantic.min.js"></script>        
+        <script src="css/semantic/semantic.min.js"></script>
     </head>
-    <body>        
-        <div th:if="${param.error}">            
+    <body>
+        <div th:if="${param.error}">
             <div class="ui negative message toybox-message">
                 <i class="close icon"></i>
                 <div class="header">
-                    Invalid username and/or password.                          
+                    Invalid username and/or password.
                 </div>
-            </div>                                 
+            </div>
         </div>
         <div th:if="${param.logout}">
             <div class="ui info message toybox-message">
                 <i class="close icon"></i>
                 <div class="header">
                     You have been logged out.
-                </div>                
-            </div>                    
-        </div>        
-        <div style="height:100%; width: 100%; overflow: hidden;">                        
-            <div class="toybox-background">                
-                <div class="ui middle aligned one column centered grid" style="height:100%;">                                        
+                </div>
+            </div>
+        </div>
+        <div style="height:100%; width: 100%; overflow: hidden;">
+            <div class="toybox-background">
+                <div class="ui middle aligned one column centered grid" style="height:100%;">
                     <div class="ui container segment column" style="width:400px; height: 470px;">
                         <div class="ui middle aligned one column centered grid">
-                            <div class="toybox-login-logo">                        
+                            <div class="toybox-login-logo">
                             </div>
-                        </div>                    
+                        </div>
                         <div style="margin-top:25px;">
-                            <form class="ui form" th:action="@{/login}" method="post">
-                                <div class="field">
-                                    <div class="ui left icon input">
-                                        <i class="user icon"></i>                           
-                                        <input id="username" name="username" placeholder="Username" type="text"/>
-                                    </div>                                
-                                </div>
-                                <div class="field">
-                                    <div class="ui left icon input">
-                                        <i class="lock icon"></i>                            
-                                        <input id="password" name="password" placeholder="Password" type="password"/>
-                                    </div>                                
-                                </div>
-                                <div class="ui middle aligned one column centered grid">
-                                    <div class="middle aligned column">
-                                        <button class="fluid ui button" type="submit" onclick="fixValidationMessageSpacing()">Sign In</button>
-                                    </div>                                 
-                                </div>                                                                                   
-                                <div class="ui error message"></div>                                
-                            </form>
-                            <div style="margin-top: 84px;" class="ui middle aligned two column centered grid toybox-login-buttons">
-                                <div class="column">                                
-                                    <button class="fluid ui button">Forgot Password</button>                                
+                            <div style="height: 240px;">
+                                <form class="ui form" th:action="@{/login}" method="post">
+                                    <div class="field">
+                                        <div class="ui left icon input">
+                                            <i class="user icon"></i>
+                                            <input id="username" name="username" placeholder="Username" type="text"/>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <div class="ui left icon input">
+                                            <i class="lock icon"></i>
+                                            <input id="password" name="password" placeholder="Password" type="password"/>
+                                        </div>
+                                    </div>
+                                    <div class="ui middle aligned one column centered grid">
+                                        <div class="middle aligned column">
+                                            <button class="fluid ui button" type="submit">Sign In</button>
+                                        </div>
+                                    </div>
+                                    <div class="ui error message"></div>
+                                </form>
+                            </div>
+                            <div class="ui middle aligned two column centered grid toybox-login-buttons">
+                                <div class="column">
+                                    <button class="fluid ui button">Forgot Password</button>
                                 </div>
                                 <div class="column">
                                     <button class="fluid ui button">Register</button>
                                 </div>
-                            </div>                        
-                        </div>                
+                            </div>
+                        </div>
                     </div>
-                </div>            
-            </div> 
-        </div>                     
+                </div>
+            </div>
+        </div>
     </body>
-    <script>
-        function fixValidationMessageSpacing()
-        {
-            $('.toybox-login-buttons').attr('style','padding-top:0px;');
-        }
-    </script>
     <script src="js/toybox-login-validation.js"></script>
     <script src="js/toybox-login.js"></script>
 </html>
