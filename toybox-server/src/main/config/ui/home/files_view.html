@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1"/>
+        <link rel="stylesheet" type="text/css" href="../css/semantic/semantic.min.css"/>
+        <link rel="stylesheet" type="text/css" href="../css/toybox.css"/>
+        <script
+        src="https://code.jquery.com/jquery-3.1.1.min.js"
+        integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+        crossorigin="anonymous"></script>
+        <script type="text/javascript" src="../css/semantic/semantic.min.js"></script>
+        <script type="text/javascript" src="https://unpkg.com/vue"></script>
+        <script type="text/javascript" src="../js/httpVueLoader.js"></script>
+    </head>
+    <body>
+        <div style="height: calc(100% - 52px); width: 100%;" id="toybox-files">
+            <navbar/>
+            <div class="toybox-background">
+                <div id="toybox-files-container" class="toybox-container">
+                    <div class="ui grid" style="height: 100%;">
+                        <div class="three wide stretched column">
+                            <div class="ui segment">
+                                <!-- Facets here-->
+                            </div>
+                        </div>
+                        <div class="thirteen wide stretched column">
+                            <div class="ui segment">
+                                <div id="gallery-top-menu">
+                                    <div class="ui basic buttons">
+                                        <!-- Top menu buttons -->
+                                    </div>
+                                    <div class="ui right floated small basic icon buttons">
+                                        <button class="ui icon toggle button" id="grid-list-toggle-button">
+                                            <i class="grid layout icon"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="ui four doubling stackable cards">
+                                    <asset v-for="asset in assets" v-bind:asset-id="asset.assetId" v-bind:asset-name="asset.assetName" v-bind:imported-by="asset.importedBy"
+                                    v-bind:user-avatar-url="asset.userAvatarUrl" v-bind:thumbnail-url="asset.thumbnailUrl" v-bind:extension="asset.extension"
+                                    v-bind:key="asset.assetId"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script src="../js/files.js"></script>
+    </body>
+</html>
