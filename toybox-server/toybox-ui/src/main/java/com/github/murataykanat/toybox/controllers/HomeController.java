@@ -9,4 +9,10 @@ public class HomeController {
     public String loadHome(){
         return "home_view";
     }
+
+    @RequestMapping("/toybox/files")
+    public String loadFiles(){ return "files_view"; }
+
+    @RequestMapping("/toybox/folders")
+    public String loadFolders(){ return "folders_view"; }
 }
