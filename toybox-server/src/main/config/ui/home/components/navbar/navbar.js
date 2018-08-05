@@ -1,36 +1,14 @@
 module.exports = {
     data: function() {
         return  {
-          componentName: 'Navigation Bar'
+          componentName: 'Navigation Bar',
+          // Dummy user
+          user:{
+              username: 'test',
+              name: 'test_name',
+              lastname: 'test_lastname',
+              avatarUrl: 'http://via.placeholder.com/250x250'
+          }
         }
-    },
-    mounted: function(){
-        $('#toybox-home-menu').popup({
-            content: 'Home'
-        });
-
-        $('#toybox-files-menu').popup({
-            content: 'Files'
-        });
-
-        $('#toybox-folders-menu').popup({
-            content: 'Folders'
-        });
-
-        $('#toybox-advsearch-menu').popup({
-            content: 'Advanced Search'
-        });
-
-        $('#toybox-profile-menu').popup({
-            content: 'Profile'
-        });
-
-        $('#toybox-help-menu').popup({
-            content: 'Help'
-        });
-
-        $('#toybox-signoff-menu').popup({
-            content: 'Sign Off'
-        });
-    },
+    }
 }
