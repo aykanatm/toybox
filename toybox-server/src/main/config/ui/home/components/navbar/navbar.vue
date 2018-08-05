@@ -1,6 +1,6 @@
 <template>
     <div class="ui icon menu" style="margin-bottom: 0">
-        <div class="toybox-home-brand-logo">
+        <div class="toybox-brand-logo">
         </div>
         <a class="item" id="toybox-home-menu" href="/toybox">
             <i class="home icon"></i>
