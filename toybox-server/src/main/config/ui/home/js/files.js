@@ -31,7 +31,20 @@ const files = new Vue({
                 extension: 'EXT',
                 isSelected: false
             }
-        ]
+        ],
+        selectedAssets:[]
+    },
+    methods:{
+        onAssetSelectionChanged:function(asset){
+            if(asset.isSelected){
+                this.selectedAssets.push(asset);
+            }
+            else{
+                this.selectedAssets.splice(asset, 1);
+            }
+
+            console.log(this.selectedAssets);
+        }
     },
     components:{
         'navbar' : httpVueLoader('../components/navbar/navbar.vue'),
