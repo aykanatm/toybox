@@ -6,9 +6,9 @@
     background-position: center;
     overflow: hidden;
 }
-.hidden{
+/* .hidden{
     display: none !important;
-}
+} */
 
 .toybox-container{
     margin: 10px;
