@@ -30,6 +30,27 @@
                                 <div id="gallery-top-menu">
                                     <div class="ui basic buttons">
                                         <!-- Top menu buttons -->
+                                        <button class="ui button" v-on:click.stop="share" v-bind:disabled="selectedAssets.length == 0">
+                                            <i class="share alternate icon"></i> Share
+                                        </button>
+                                        <button class="ui button" v-on:click.stop="download" v-bind:disabled="selectedAssets.length == 0">
+                                            <i class="download icon"></i> Download
+                                        </button>
+                                        <!-- <button class="ui button" v-on:click.stop="rename" v-bind:disabled="selectedAssets.length == 0">
+                                            <i class="i cursor icon"></i> Rename
+                                        </button> -->
+                                        <button class="ui button" v-on:click.stop="copy" v-bind:disabled="selectedAssets.length == 0">
+                                            <i class="copy icon"></i> Copy
+                                        </button>
+                                        <button class="ui button" v-on:click.stop="move" v-bind:disabled="selectedAssets.length == 0">
+                                            <i class="external alternate icon"></i> Move
+                                        </button>
+                                        <button class="ui button" v-on:click.stop="subscribe" v-bind:disabled="selectedAssets.length == 0">
+                                            <i class="rss icon"></i> Subscribe
+                                        </button>
+                                        <!-- <button class="ui button" v-on:click.stop="showVersionHistory" v-bind:disabled="selectedAssets.length == 0">
+                                            <i class="list alternate outline icon"></i> Show Version History
+                                        </button> -->
                                     </div>
                                     <div class="ui right floated small basic icon buttons">
                                         <button class="ui icon toggle button" id="grid-list-toggle-button">

@@ -44,7 +44,55 @@ const files = new Vue({
             }
 
             console.log(this.selectedAssets);
-        }
+        },
+        share:function(){
+            console.log('Sharing the following assets:');
+            for(var i = 0; i < this.selectedAssets.length; i++)
+            {
+                var asset = this.selectedAssets[i];
+                console.log(asset.assetName + '/ ' +  asset.assetId);
+            }
+        },
+        download:function(){
+            console.log('Downloading the following assets:');
+            for(var i = 0; i < this.selectedAssets.length; i++)
+            {
+                var asset = this.selectedAssets[i];
+                console.log(asset.assetName + '/ ' +  asset.assetId);
+            }
+        },
+        copy:function(){
+            console.log('Copying the following assets:');
+            for(var i = 0; i < this.selectedAssets.length; i++)
+            {
+                var asset = this.selectedAssets[i];
+                console.log(asset.assetName + '/ ' +  asset.assetId);
+            }
+        },
+        move:function(){
+            console.log('Moving the following assets:');
+            for(var i = 0; i < this.selectedAssets.length; i++)
+            {
+                var asset = this.selectedAssets[i];
+                console.log(asset.assetName + '/ ' +  asset.assetId);
+            }
+        },
+        subscribe:function(){
+            console.log('Subscribing to the following assets:');
+            for(var i = 0; i < this.selectedAssets.length; i++)
+            {
+                var asset = this.selectedAssets[i];
+                console.log(asset.assetName + '/ ' +  asset.assetId);
+            }
+        },
+        delete:function(){
+            console.log('Deleting the following assets:');
+            for(var i = 0; i < this.selectedAssets.length; i++)
+            {
+                var asset = this.selectedAssets[i];
+                console.log(asset.assetName + '/ ' +  asset.assetId);
+            }
+        },
     },
     components:{
         'navbar' : httpVueLoader('../components/navbar/navbar.vue'),
