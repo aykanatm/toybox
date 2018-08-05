@@ -15,8 +15,7 @@ module.exports = {
     },
     watch:{
         isSelected:function(){
-            // this.$emit('asset-selection-changed', this);
-            this.$parent.onAssetSelectionChanged(this);
+            this.$parent.$emit('asset-selection-changed', this);
         }
     },
     methods:{

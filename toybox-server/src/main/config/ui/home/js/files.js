@@ -34,6 +34,9 @@ const files = new Vue({
         ],
         selectedAssets:[]
     },
+    mounted:function(){
+        this.$on('asset-selection-changed', this.onAssetSelectionChanged)
+    },
     methods:{
         onAssetSelectionChanged:function(asset){
             if(asset.isSelected){
