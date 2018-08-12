@@ -30,7 +30,7 @@
                 <i class="bell icon"></i>
                 <div class="floating ui red circular mini label toybox-notification-label">{{ notifications.length }}</div>
                 <div class="left menu">
-                    <div class="ui feed" style="padding: 10px;">
+                    <div class="ui feed toybox-notification-feed">
                         <notification v-for="notification in notifications" v-bind:avatar-url="notification.avatarUrl" v-bind:message="notification.message"
                         v-bind:date="notification.date" v-bind:key="notification.id"/>
                     </div>

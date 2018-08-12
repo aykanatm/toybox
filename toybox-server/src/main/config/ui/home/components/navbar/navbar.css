@@ -20,3 +20,9 @@
     left: 90% !important;
     top: 5% !important;
 }
+
+.toybox-notification-feed{
+    padding: 10px;
+    height: 300px;
+    overflow-x: auto;
+}

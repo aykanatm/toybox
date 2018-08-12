@@ -27,6 +27,18 @@ module.exports = {
                   message: 'Eu sale officiis per. Ad laoreet civibus eum, partem docendi tincidunt ad mei. Cu maiorum oportere salutandi nam. Qui ne harum labitur nostrud, scripta salutatus per ut. Detracto signiferumque vis eu.',
                   id:'3',
                   date: '2 minutes ago'
+              },
+              {
+                  avatarUrl: 'http://via.placeholder.com/250x250',
+                  message: 'Eu sale officiis per. Ad laoreet civibus eum, partem docendi tincidunt ad mei. Cu maiorum oportere salutandi nam. Qui ne harum labitur nostrud, scripta salutatus per ut. Detracto signiferumque vis eu.',
+                  id:'4',
+                  date: '2 minutes ago'
+              },
+              {
+                  avatarUrl: 'http://via.placeholder.com/250x250',
+                  message: 'Eu sale officiis per. Ad laoreet civibus eum, partem docendi tincidunt ad mei. Cu maiorum oportere salutandi nam. Qui ne harum labitur nostrud, scripta salutatus per ut. Detracto signiferumque vis eu.',
+                  id:'5',
+                  date: '2 minutes ago'
               }
           ]
         }
