@@ -14,6 +14,11 @@
 
 .toybox-search-box{
     width: 600px;
+    padding: 10px;
+}
+
+.toybox-search-box > i{
+    margin-right: 10px !important;
 }
 
 .toybox-notification-label{

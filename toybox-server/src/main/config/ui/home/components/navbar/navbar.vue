@@ -14,11 +14,9 @@
         </a>
 
         <div class="ui icon right menu">
-            <div class="ui category search item toybox-search-box">
-                <div class="ui transparent icon input">
-                    <input class="prompt" placeholder="Search..." type="text"/>
-                    <i class="search link icon"></i>
-                </div>
+            <div class="ui transparent icon input toybox-search-box">
+                <input class="prompt" placeholder="Search..." type="text"/>
+                <i class="search link icon"></i>
             </div>
             <a class="item toybox-navbar-item" id="toybox-advsearch-menu">
                 <i class="search plus icon"></i>
