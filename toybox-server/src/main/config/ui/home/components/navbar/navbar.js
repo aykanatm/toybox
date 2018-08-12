@@ -50,7 +50,13 @@ module.exports = {
           ]
         }
     },
+    methods:{
+        showUploadModalWindow:function(){
+            $('#toybox-import-modal-window').modal('show');
+        }
+    },
     components:{
-        'notification' : httpVueLoader('../notification/notification.vue')
+        'notification' : httpVueLoader('../notification/notification.vue'),
+        'import-modal-window' : httpVueLoader('../import-modal-window/import-modal-window.vue'),
     }
 }
