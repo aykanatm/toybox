@@ -23,6 +23,19 @@
             <a class="item toybox-navbar-item" id="toybox-advsearch-menu">
                 <i class="search plus icon"></i>
             </a>
+            <a class="item toybox-navbar-item" id="toybox-upload-menu">
+                <i class="upload icon"></i>
+            </a>
+            <div class="ui simple dropdown item toybox-navbar-item" id="toybox-notifications-menu">
+                <i class="bell icon"></i>
+                <div class="floating ui red circular mini label toybox-notification-label">{{ notifications.length }}</div>
+                <div class="left menu">
+                    <div class="ui feed" style="padding: 10px;">
+                        <notification v-for="notification in notifications" v-bind:avatar-url="notification.avatarUrl" v-bind:message="notification.message"
+                        v-bind:date="notification.date" v-bind:key="notification.id"/>
+                    </div>
+                </div>
+            </div>
             <div class="ui simple dropdown item" id="toybox-profile-menu">
                 <img class="ui avatar image" v-bind:src="user.avatarUrl"/>
                 <div class="menu">

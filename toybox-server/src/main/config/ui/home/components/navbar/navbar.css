@@ -15,3 +15,8 @@
 .toybox-search-box{
     width: 600px;
 }
+
+.toybox-notification-label{
+    left: 90% !important;
+    top: 5% !important;
+}
