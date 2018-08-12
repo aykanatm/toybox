@@ -28,9 +28,13 @@
             </a>
             <div class="ui simple dropdown item toybox-navbar-item" id="toybox-notifications-menu">
                 <i class="bell icon"></i>
-                <div class="floating ui red circular mini label toybox-notification-label">{{ notifications.length }}</div>
+                <div class="floating ui red circular mini label toybox-notification-label" v-show="notifications.length != 0">{{ notifications.length }}</div>
                 <div class="left menu">
-                    <div class="ui feed toybox-notification-feed">
+                    <div class="ui feed toybox-notification-feed" v-if="notifications.length == 0">
+                        <notification v-bind:avatar-url="defaultNotification.avatarUrl" v-bind:message="defaultNotification.message"
+                        v-bind:date="defaultNotification.date" v-bind:key="defaultNotification.id"/>
+                    </div>
+                    <div class="ui feed toybox-notification-feed" v-else>
                         <notification v-for="notification in notifications" v-bind:avatar-url="notification.avatarUrl" v-bind:message="notification.message"
                         v-bind:date="notification.date" v-bind:key="notification.id"/>
                     </div>
