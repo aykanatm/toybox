@@ -22,7 +22,7 @@
                 <i class="search plus icon"></i>
             </a>
             <a class="item toybox-navbar-item" v-on:click="showUploadModalWindow">
-                <i class="upload icon"></i>
+                <i class="cloud upload icon"></i>
             </a>
             <div class="ui simple dropdown item toybox-navbar-item" id="toybox-notifications-menu">
                 <i class="bell icon"></i>

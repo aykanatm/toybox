@@ -1,0 +1,24 @@
+#toybox-import-modal-window{
+    height: 40%;
+    width: 40%;
+}
+
+.toybox-fit-parent{
+    height: 100%;
+    width: 100%;
+}
+
+.toybox-upload-modal-content{
+    background-color:dimgray !important;
+}
+.toybox-upload-modal-icon{
+    font-size: 100pt !important;
+    color:lightgrey;
+    margin-bottom: -100px !important;
+    margin-right: 30px !important;
+ }
+
+ .toybox-upload-modal-text{
+    font-size: large;
+    font-weight: bolder;
+ }
