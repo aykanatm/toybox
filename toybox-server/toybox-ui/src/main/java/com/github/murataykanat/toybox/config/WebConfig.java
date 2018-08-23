@@ -10,6 +10,7 @@ import java.io.File;
 public class WebConfig extends WebMvcConfigurerAdapter {
     @Override
     public void addResourceHandlers(final ResourceHandlerRegistry registry) {
+        // This code maps the resources to an external source (a folder on disk)
         registry.addResourceHandler("/css/**")
                 .addResourceLocations("/resources/", "file:" + System.getenv("TOYBOX_HOME")
                         + File.separator + "ui" + File.separator
