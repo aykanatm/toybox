@@ -7,14 +7,15 @@ module.exports = {
           uploadedFiles: [],
           currentStatus: null,
           uploadError: null,
-          uploadFieldName: 'upload'
+          uploadFieldName: 'upload',
+          numberOfFiles: 0
         }
     },
     mounted:function(){
         this.reset();
     },
     computed:{
-        isIntial(){
+        isInitial(){
             return this.currentStatus === STATUS_INITIAL;
         },
         isSaving() {
@@ -35,16 +36,27 @@ module.exports = {
         },
         save(formData){
             this.currentStatus = STATUS_SAVING;
-            console.log(formData);
 
             this.upload(formData)
                 .then(x => {
                     this.uploadedFiles = [].concat(x);
                     this.currentStatus = STATUS_SUCCESS;
+                    this.$refs.fileInputRef.value = '';
+                    // TODO:
+                    // Close the modal window
+                    // Display success message up top
+
+                    // $('#toybox-import-modal-window').modal('hide');
                 })
                 .catch(err => {
                     this.uploadError = err.response;
                     this.currentStatus = STATUS_FAILED;
+                    this.$refs.fileInputRef.value = '';
+                    // TODO:
+                    // Close the modal window
+                    // Display failure message up top
+
+                    // $('#toybox-import-modal-window').modal('hide');
                 });
         },
         filesChange(fieldName, fileList){
@@ -53,6 +65,8 @@ module.exports = {
             if(!fileList.length){
                 return;
             }
+
+            this.numberOfFiles = fileList.length;
 
             Array
                 .from(Array(fileList.length).keys())
