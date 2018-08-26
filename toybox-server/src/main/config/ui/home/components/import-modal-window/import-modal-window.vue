@@ -6,7 +6,7 @@
             <form class="toybox-fit-parent" enctype="multipart/form-data" novalidate>
                 <div class="ui middle aligned grid toybox-fit-parent" style="margin-left:0px">
                     <input type="file" multiple style="height:  100%; width: 100%; z-index: 100; opacity:0" v-bind:name="uploadFieldName"
-                    v-bind:disabled="isSaving" v-on:change="filesChange($event.target.name, $event.target.files);">
+                    v-bind:disabled="isSaving" v-on:change="filesChange($event.target.name, $event.target.files);" ref="fileInputRef">
                     <div class="row" style="margin-top: -500px;">
                         <div class="column">
                             <div class="ui middle aligned ten column centered grid">
@@ -17,7 +17,10 @@
                     <div class="row" style="margin-top: -100px;">
                         <div class="column">
                             <div class="ui middle aligned four column centered grid">
-                                <p class="toybox-upload-modal-text">Drag your files here or click to browse</p>
+                                <p v-if="isInitial" class="toybox-upload-modal-text">Drag your files here or click to browse</p>
+                                <p v-if="isSaving" class="toybox-upload-modal-text">Uploading {{ numberOfFiles }} file(s)...</p>
+                                <p v-if="isSuccess" class="toybox-upload-modal-text">{{ numberOfFiles }} file(s) successfully uploaded!</p>
+                                <p v-if="isFailed" class="toybox-upload-modal-text">An error occured while uploading files. {{ uploadError }}</p>
                             </div>
                         </div>
                     </div>
