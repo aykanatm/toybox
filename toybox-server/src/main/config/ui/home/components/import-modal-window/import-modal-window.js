@@ -64,20 +64,6 @@ module.exports = {
         },
         upload(formData){
             var uploadUrl = 'http://localhost:8101/upload';
-
-            // axios.get(tokenUrl)
-            //     .then((response) => {
-            //         console.log(response);
-            //         console.log('Token: ' + response.data.response);
-            //         var authorization = 'Bearer ' + response.data.response
-            //         console.log(authorization);
-            //         axios.post(uploadUrl, formData, {
-            //             headers:{
-            //                 'Authorization': authorization
-            //             }
-            //         })
-            //     });
-
             return axios.post(uploadUrl, formData).then(x => x.data);
         }
     }
