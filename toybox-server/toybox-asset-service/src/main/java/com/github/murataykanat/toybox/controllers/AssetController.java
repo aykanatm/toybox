@@ -13,7 +13,7 @@ import java.io.File;
 @RestController
 public class AssetController {
     private static final Log _logger = LogFactory.getLog(AssetController.class);
-    
+
     @Value("${importStagingPath}")
     private String importStagingPath;
 
@@ -25,6 +25,9 @@ public class AssetController {
 
         try{
             for(MultipartFile file: files){
+                // Simulate file upload with 2 seconds of delay per file
+                Thread.sleep(2000);
+                
                 file.transferTo(new File(importStagingPath + File.separator + file.getOriginalFilename()));
             }
             // TODO:
