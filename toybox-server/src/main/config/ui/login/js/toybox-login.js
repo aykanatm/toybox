@@ -3,6 +3,6 @@ $(document).ready(function () {
         .on('click', function() {
             $(this)
                 .closest('.message')
-                .transition('fade');            
-    });  
+                .transition('fade');
+    });
 });
