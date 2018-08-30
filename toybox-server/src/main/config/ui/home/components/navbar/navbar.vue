@@ -49,7 +49,7 @@
                         <i class="question circle icon"></i>
                         Help
                     </a>
-                    <a class="item">
+                    <a class="item" v-on:click="logout">
                         <i class="power off icon"></i>
                         Sign Off
                     </a>

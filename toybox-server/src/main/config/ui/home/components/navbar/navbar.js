@@ -53,6 +53,9 @@ module.exports = {
     methods:{
         showUploadModalWindow:function(){
             $('#toybox-import-modal-window').modal('show');
+        },
+        logout:function(){
+            window.location = "/logout";
         }
     },
     components:{
