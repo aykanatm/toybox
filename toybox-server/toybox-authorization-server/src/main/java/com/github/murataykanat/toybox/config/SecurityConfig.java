@@ -1,5 +1,6 @@
 package com.github.murataykanat.toybox.config;
 
+import com.github.murataykanat.toybox.handlers.AuthenticationSuccessHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,6 +13,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
+    @Autowired
+    private AuthenticationSuccessHandler authenticationSuccessHandler;
+
     @Autowired
     private UserDetailsService customUserDetailsService;
 
@@ -36,6 +40,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                         .authenticated()
                     .and()
                 .formLogin()
+                    .successHandler(authenticationSuccessHandler)
                     .loginPage("/login")
                     .permitAll();
     }
