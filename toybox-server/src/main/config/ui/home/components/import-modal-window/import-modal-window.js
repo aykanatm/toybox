@@ -77,6 +77,8 @@ module.exports = {
             this.save(formData);
         },
         upload(formData){
+            // TODO:
+            // Take the URL from somewhere configurable
             var uploadUrl = 'http://localhost:8101/upload';
             return axios.post(uploadUrl, formData).then(x => x.data);
         }
