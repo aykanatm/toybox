@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1"/>
+        <!-- CSRF Config -->
+        <meta th:name="_csrf" th:content="${_csrf.token}"/>
+        <meta th:name="_csrf_header" th:content="${_csrf.headerName}"/>
+        <!-- -->
+        <link rel="stylesheet" type="text/css" href="../css/semantic/semantic.min.css"/>
+        <link rel="stylesheet" type="text/css" href="../css/toybox.css"/>
+        <script
+        src="https://code.jquery.com/jquery-3.1.1.min.js"
+        integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+        crossorigin="anonymous"></script>
+        <script type="text/javascript" src="../css/semantic/semantic.min.js"></script>
+        <script type="text/javascript" src="https://unpkg.com/vue"></script>
+        <script type="text/javascript" src="https://unpkg.com/axios/dist/axios.min.js"></script>
+        <script type="text/javascript" src="../js/httpVueLoader.js"></script>
+    </head>
+    <body>
+        <div style="height: 100%; width: 100%;" id="toybox-home">
+            <div class="toybox-background">
+                <div id="toybox-home-container" class="toybox-container">
+                    <div class="ui middle aligned one column centered grid" style="height:100%;">
+                        <div class="ui container segment column" style="width:400px; height: 470px;">
+                            <p>You have been logged out.</p>
+                            <p>Completely close your web browser to ensure the privacy of recently-viewed data</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
