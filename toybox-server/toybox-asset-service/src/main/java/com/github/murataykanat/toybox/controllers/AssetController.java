@@ -25,9 +25,6 @@ public class AssetController {
 
         try{
             for(MultipartFile file: files){
-                // Simulate file upload with 2 seconds of delay per file
-                Thread.sleep(2000);
-
                 file.transferTo(new File(importStagingPath + File.separator + file.getOriginalFilename()));
             }
             // TODO:
