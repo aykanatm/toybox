@@ -13,6 +13,7 @@ module.exports = {
     },
     mounted:function(){
         this.reset();
+        $('#import-modal-window-upload-progress-bar').progress();
     },
     computed:{
         isInitial(){
@@ -34,10 +35,10 @@ module.exports = {
             this.uploadedFiles = [];
             this.uploadError = null;
         },
-        save(formData){
+        save(formData, onProgress){
             this.currentStatus = STATUS_SAVING;
 
-            this.upload(formData)
+            this.upload(formData, onProgress)
                 .then(x => {
                     this.uploadedFiles = [].concat(x);
                     this.currentStatus = STATUS_SUCCESS;
@@ -74,12 +75,26 @@ module.exports = {
                     formData.append(fieldName, fileList[x], fileList[x].name);
                 });
 
-            this.save(formData);
+            this.save(formData, this.onProgress);
         },
-        upload(formData){
+        onProgress(percentCompleted){
+            $('#import-modal-window-upload-progress-bar').progress({
+                percent: percentCompleted
+            });
+        },
+        upload(formData, onProgress){
+            var config = {
+                onUploadProgress(progressEvent) {
+                    var percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                    onProgress(percentCompleted);
+
+                    return percentCompleted;
+                }
+            }
+
             return axios.get("/configuration?field=assetServiceUrl")
                 .then(response => {
-                    axios.post(response.data.value + "/upload", formData).then(x => x.data);
+                    return axios.post(response.data.value + "/upload", formData, config);
                 });
         }
     }

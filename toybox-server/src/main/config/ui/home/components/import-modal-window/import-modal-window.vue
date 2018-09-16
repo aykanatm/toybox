@@ -17,10 +17,17 @@
                     <div class="row" style="margin-top: -100px;">
                         <div class="column">
                             <div class="ui middle aligned four column centered grid">
-                                <p v-if="isInitial" class="toybox-upload-modal-text">Drag your files here or click to browse</p>
-                                <p v-if="isSaving" class="toybox-upload-modal-text">Uploading {{ numberOfFiles }} file(s)...</p>
-                                <p v-if="isSuccess" class="toybox-upload-modal-text">{{ numberOfFiles }} file(s) successfully uploaded!</p>
-                                <p v-if="isFailed" class="toybox-upload-modal-text">An error occured while uploading files. {{ uploadError }}</p>
+                                <div v-if="isInitial">
+                                    <p class="toybox-upload-modal-text">Drag your files here or click to browse</p>
+                                </div>
+                                <div v-if="!isInitial" v-bind:class="{ui:true, progress:true, active:isSaving, success: isSuccess, error: isFailed}" style="width: 100%;" id="import-modal-window-upload-progress-bar">
+                                    <div class="bar">
+                                        <div class="progress"></div>
+                                    </div>
+                                    <div v-if="isSaving" class="label">Uploading {{ numberOfFiles }} file(s)...</div>
+                                    <div v-if="isSuccess" class="label">{{ numberOfFiles }} file(s) successfully uploaded!</div>
+                                    <div v-if="isFailed" class="label">An error occured while uploading files. {{ uploadError }}</div>
+                                </div>
                             </div>
                         </div>
                     </div>
