@@ -15,7 +15,7 @@
         <module>toybox-hystrix-turbine</module>
         <module>toybox-authorization-server</module>
         <module>toybox-configuration-server</module>
-        <module>toybox-styling-service</module>
         <module>toybox-ui</module>
+        <module>toybox-asset-service</module>
     </modules>
 </project>
