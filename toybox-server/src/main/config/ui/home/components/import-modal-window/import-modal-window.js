@@ -77,10 +77,10 @@ module.exports = {
             this.save(formData);
         },
         upload(formData){
-            // TODO:
-            // Take the URL from somewhere configurable
-            var uploadUrl = 'http://localhost:8101/upload';
-            return axios.post(uploadUrl, formData).then(x => x.data);
+            return axios.get("/configuration?field=assetServiceUrl")
+                .then(response => {
+                    axios.post(response.data.value + "/upload", formData).then(x => x.data);
+                });
         }
     }
 }
