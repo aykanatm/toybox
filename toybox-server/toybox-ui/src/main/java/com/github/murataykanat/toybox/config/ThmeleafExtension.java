@@ -1,6 +1,8 @@
 package com.github.murataykanat.toybox.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.context.annotation.Configuration;
 import org.thymeleaf.spring4.SpringTemplateEngine;
 import org.thymeleaf.templateresolver.FileTemplateResolver;
@@ -8,8 +10,12 @@ import org.thymeleaf.templateresolver.FileTemplateResolver;
 import javax.annotation.PostConstruct;
 import java.io.File;
 
+@RefreshScope
 @Configuration
 public class ThmeleafExtension {
+    @Value("${toyboxHome}")
+    private String toyboxHome;
+
     @Autowired
     private SpringTemplateEngine templateEngine;
 
@@ -17,7 +23,7 @@ public class ThmeleafExtension {
     public void extension(){
         // This code makes spring boot to load the UI from an external source (disk) rather than the resources
         FileTemplateResolver resolver = new FileTemplateResolver();
-        resolver.setPrefix(System.getenv("TOYBOX_HOME") + File.separator + "ui" + File.separator + "home" + File.separator);
+        resolver.setPrefix(toyboxHome + File.separator + "ui" + File.separator + "home" + File.separator);
         resolver.setSuffix(".html");
         resolver.setTemplateMode("HTML5");
         resolver.setOrder(templateEngine.getTemplateResolvers().size());
