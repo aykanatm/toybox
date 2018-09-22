@@ -1,6 +1,6 @@
 <template>
     <div class="ui modal" id="toybox-import-modal-window">
-        <i class="close icon"></i>
+        <i class="close icon" v-on:click="reset"></i>
         <div class="header">Upload Files</div>
         <div class="content toybox-fit-parent toybox-upload-modal-content">
             <form class="toybox-fit-parent" enctype="multipart/form-data" novalidate>
