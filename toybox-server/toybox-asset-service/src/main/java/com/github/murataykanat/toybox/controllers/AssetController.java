@@ -1,5 +1,6 @@
 package com.github.murataykanat.toybox.controllers;
 
+import com.github.murataykanat.toybox.models.UploadFile;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -8,6 +9,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 @RefreshScope
 @RestController
@@ -17,23 +21,36 @@ public class AssetController {
     @Value("${importStagingPath}")
     private String importStagingPath;
 
+    private List<UploadFile> uploadFiles;
+
     // The name "upload" must match the "name" attribute of the input in UI (
     @RequestMapping(value = "/upload", method = RequestMethod.POST)
-    public void uploadAssets(@RequestParam("upload") MultipartFile[] files){
+    public List<UploadFile> uploadAssets(@RequestParam("upload") MultipartFile[] files) throws IOException {
         _logger.debug("uploadAssets() >>");
         _logger.debug("Import staging path: " + importStagingPath);
+        this.uploadFiles = new ArrayList<>();
 
         try{
             for(MultipartFile file: files){
-                file.transferTo(new File(importStagingPath + File.separator + file.getOriginalFilename()));
+                String path = importStagingPath + File.separator + file.getOriginalFilename();
+                file.transferTo(new File(path));
+
+                UploadFile uploadFile = new UploadFile();
+                uploadFile.setPath(path);
+                // TODO:
+                // Take this value from the session
+                uploadFile.setUsername("test");
+
+                this.uploadFiles.add(uploadFile);
             }
-            // TODO:
-            // Start the import job
+
+            _logger.debug("<< uploadAssets()");
+            return uploadFiles;
         }
         catch (Exception e){
             String errorMessage = "An error occured while uploading files. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
+            throw e;
         }
-        _logger.debug("<< uploadAssets()");
     }
 }
