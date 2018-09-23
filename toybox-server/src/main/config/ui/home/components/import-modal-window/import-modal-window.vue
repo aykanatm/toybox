@@ -26,7 +26,8 @@
                                     </div>
                                     <div v-if="isSaving" class="label">Uploading {{ numberOfFiles }} file(s)...</div>
                                     <div v-if="isSuccess" class="label">{{ numberOfFiles }} file(s) successfully uploaded!</div>
-                                    <div v-if="isFailed" class="label">An error occured while uploading files. {{ uploadError }}</div>
+                                    <div v-if="isFailed" class="label">An error occured while uploading files.</div>
+                                    <div v-if="isFailed" class="label" style="padding-top: 25px; font-size: xx-small;">{{ uploadError }}</div>
                                 </div>
                             </div>
                         </div>

@@ -50,7 +50,9 @@ module.exports = {
                     // $('#toybox-import-modal-window').modal('hide');
                 })
                 .catch(err => {
-                    this.uploadError = err.response;
+                    var errorMessage = "HTTP " + err.response.data.status + " " + err.response.data.error + ": " + err.response.data.message;
+                    console.error(errorMessage);
+                    this.uploadError = errorMessage;
                     this.currentStatus = STATUS_FAILED;
                     this.$refs.fileInputRef.value = '';
                     // TODO:
