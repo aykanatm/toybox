@@ -24,7 +24,7 @@ public class ConfigController {
 
     @RequestMapping(value = "/configuration", method = RequestMethod.GET)
     public @ResponseBody ConfigurationFieldValue getConfiguration(@RequestParam("field") String fieldName){
-        _logger.debug("getConfiguration() >>");
+        _logger.debug("getConfiguration() >> [" + fieldName + "]");
         _logger.debug("Configuration Server Field Request URL: " + configServerFieldRequestUrl);
 
         String fieldValue = null;
