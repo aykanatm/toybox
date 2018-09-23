@@ -79,6 +79,9 @@ module.exports = {
 
             this.save(formData, this.onProgress);
         },
+        getConfiguration(fieldName){
+            return axios.get("/configuration?field=" + fieldName);
+        },
         onProgress(percentCompleted){
             $('#import-modal-window-upload-progress-bar').progress({
                 percent: percentCompleted
@@ -94,9 +97,18 @@ module.exports = {
                 }
             }
 
-            return axios.get("/configuration?field=assetServiceUrl")
+            return this.getConfiguration("assetServiceUrl")
                 .then(response => {
-                    return axios.post(response.data.value + "/upload", formData, config);
+                    return axios.post(response.data.value + "/upload", formData, config)
+                    .then(response => {
+                        return this.import(response.data);
+                    });
+                });
+        },
+        import(uploadedAssets){
+            return this.getConfiguration("jobServiceUrl")
+                .then(response => {
+                    return axios.post(response.data.value + "/job/import", uploadedAssets);
                 });
         }
     }
