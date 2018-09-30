@@ -1,7 +1,10 @@
 package com.github.murataykanat.toybox.toyboxjobservice.batch.config;
 
 public final class Constants {
-    public static final String JOB_NAME = "toybox-import";
-    public static final String STEP_NAME = "toybox-import-step";
+    public static final String JOB_IMPORT_NAME = "toybox-import";
+    public static final String STEP_IMPORT_START = "toybox-import-step";
     public static final String JOB_PARAM_UPLOADED_FILES = "toybox-import-param-uploaded-files";
+    public static final String JOB_PARAM_SYSTEM_MILLIS = "toybox-job-param-systm-millis";
+    public static final int ASSET_ID_LENGTH = 40;
+    public static final int IMAGEMAGICK_TIMEOUT = 60000;
 }

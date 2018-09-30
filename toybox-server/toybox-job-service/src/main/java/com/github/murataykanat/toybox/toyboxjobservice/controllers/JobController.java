@@ -17,10 +17,10 @@ public class JobController {
     @Autowired
     private JobLauncher jobLauncher;
     @Autowired
-    private Job job;
+    private Job importJob;
 
     @RequestMapping(value = "/job/import", method = RequestMethod.POST)
-    public String importAsset(@RequestBody String uploadedFiles) throws JobParametersInvalidException, JobExecutionAlreadyRunningException, JobRestartException, JobInstanceAlreadyCompleteException {
+    public Long importAsset(@RequestBody String uploadedFiles) throws JobParametersInvalidException, JobExecutionAlreadyRunningException, JobRestartException, JobInstanceAlreadyCompleteException {
         _logger.debug("importAsset() >>");
         try{
             _logger.debug("Uploaded files: ");
@@ -29,12 +29,13 @@ public class JobController {
             _logger.debug("Putting values into the parameter map...");
             JobParametersBuilder builder = new JobParametersBuilder();
             builder.addString(Constants.JOB_PARAM_UPLOADED_FILES, uploadedFiles);
+            builder.addString(Constants.JOB_PARAM_SYSTEM_MILLIS, String.valueOf(System.currentTimeMillis()));
 
-            _logger.debug("Launching job [" + job.getName() + "]...");
-            JobExecution jobExecution = jobLauncher.run(job, builder.toJobParameters());
+            _logger.debug("Launching job [" + importJob.getName() + "]...");
+            JobExecution jobExecution = jobLauncher.run(importJob, builder.toJobParameters());
 
             _logger.debug("<< importAsset()");
-            return job.getName();
+            return jobExecution.getJobId();
         }
         catch (Exception e){
             String errorMessage = "An error occured while importing a batch. " + e.getLocalizedMessage();
