@@ -66,8 +66,10 @@ public class BatchConfig {
                                     createAssetFolders(assetFolderPath, assetThumbnailPath);
 
                                     // TODO:
-                                    // Add exception handling
+                                    // Add exception handling. If an exception is thrown, delete created folders and the temp files in staging
                                     // Implement saving asset to database
+                                    // If import succeeds, delete temp files
+                                    // Consider moving the logic to another class ImportJob
 
                                     // Copy file to repository
                                     File source = new File(uploadFile.getPath());
