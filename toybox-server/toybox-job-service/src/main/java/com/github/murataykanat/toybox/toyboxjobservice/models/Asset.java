@@ -25,6 +25,8 @@ public class Asset {
     private String thumbnailPath;
     @Column(name = "asset_imported_by_username")
     private String importedByUsername;
+    @Column(name = "asset_import_date")
+    private String importDate;
 
     public String getId() {
         return id;
@@ -88,5 +90,13 @@ public class Asset {
 
     public void setImportedByUsername(String importedByUsername) {
         this.importedByUsername = importedByUsername;
+    }
+
+    public String getImportDate() {
+        return importDate;
+    }
+
+    public void setImportDate(String importDate) {
+        this.importDate = importDate;
     }
 }

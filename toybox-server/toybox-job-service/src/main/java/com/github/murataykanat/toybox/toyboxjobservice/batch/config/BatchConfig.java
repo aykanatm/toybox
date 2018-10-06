@@ -1,9 +1,12 @@
 package com.github.murataykanat.toybox.toyboxjobservice.batch.config;
 
+import com.github.murataykanat.toybox.toyboxjobservice.models.Asset;
 import com.github.murataykanat.toybox.toyboxjobservice.models.UploadFile;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.commons.exec.*;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -16,14 +19,17 @@ import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.repeat.RepeatStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.FileSystemUtils;
 
 import java.io.File;
 import java.lang.reflect.Type;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,22 +40,33 @@ import java.util.Map;
 public class BatchConfig {
     private static final Log _logger = LogFactory.getLog(BatchConfig.class);
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Value("${importStagingThumbnailsPath}")
+    private String importStagingThumbnailsPath;
+
     @Value("${thumbnailFormat}")
     private String thumbnailFormat;
     @Value("${imagemagickExecutable}")
     private String imagemagickExecutable;
     @Value("${imagemagickThumbnailSettings}")
     private String imagemagickThumbnailSettings;
+
     @Value("${repositoryPath}")
     private String repositoryPath;
 
+    private Map<String, UploadFile> thumbnailsToUploadedFilesMap;
+
     @Bean
     public Job importJob(JobBuilderFactory jobBuilderFactory, StepBuilderFactory stepBuilderFactory){
-        Step step = stepBuilderFactory.get(Constants.STEP_IMPORT_START)
+        Step stepGenerateThumbnails = stepBuilderFactory.get(Constants.STEP_IMPORT_GENERATE_THUMBNAILS)
                 .tasklet(new Tasklet() {
                     @Override
                     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
-                        _logger.debug("execute() >> [" + Constants.STEP_IMPORT_START + "]");
+                        _logger.debug("execute() >> [" + Constants.STEP_IMPORT_GENERATE_THUMBNAILS + "]");
+                        thumbnailsToUploadedFilesMap = new HashMap<>();
+
                         Map<String, Object> jobParameters = chunkContext.getStepContext().getJobParameters();
                         for(Map.Entry<String, Object> entry: jobParameters.entrySet()){
                             if(entry.getKey().equalsIgnoreCase(Constants.JOB_PARAM_UPLOADED_FILES)){
@@ -60,21 +77,9 @@ public class BatchConfig {
                                 ArrayList<UploadFile> uploadedFiles = gson.fromJson(filePathsJsonStr, listType);
 
                                 for(UploadFile uploadFile: uploadedFiles){
-                                    String assetId = RandomStringUtils.randomAlphanumeric(Constants.ASSET_ID_LENGTH);
-                                    String assetFolderPath = repositoryPath + File.separator + assetId;
-                                    String assetThumbnailPath = repositoryPath + File.separator + assetId + File.separator + "thumbnail";
-                                    createAssetFolders(assetFolderPath, assetThumbnailPath);
-
-                                    // TODO:
-                                    // Add exception handling. If an exception is thrown, delete created folders and the temp files in staging
-                                    // Implement saving asset to database
-                                    // If import succeeds, delete temp files
-                                    // Consider moving the logic to another class ImportJob
-
-                                    // Copy file to repository
-                                    File source = new File(uploadFile.getPath());
-                                    File destination = new File(assetFolderPath + File.separator + source.getName());
-                                    FileSystemUtils.copyRecursively(source, destination);
+                                    File inputFile = new File(uploadFile.getPath());
+                                    String thumbnailName = "thumb_" + FilenameUtils.removeExtension(inputFile.getName()) + "." + thumbnailFormat;
+                                    File outputFile = new File(importStagingThumbnailsPath + File.separator + thumbnailName);
 
                                     // Generate thumbnail
                                     CommandLine cmdLine = new CommandLine(imagemagickExecutable);
@@ -85,9 +90,8 @@ public class BatchConfig {
                                     }
                                     cmdLine.addArgument("${outputFile}");
                                     HashMap map = new HashMap();
-                                    map.put("inputFile", new File(uploadFile.getPath()));
-                                    map.put("outputFile", new File(assetThumbnailPath
-                                            + File.separator + assetId + "." + thumbnailFormat));
+                                    map.put("inputFile", inputFile);
+                                    map.put("outputFile", outputFile);
                                     cmdLine.setSubstitutionMap(map);
 
                                     DefaultExecuteResultHandler resultHandler = new DefaultExecuteResultHandler();
@@ -100,12 +104,83 @@ public class BatchConfig {
                                     executor.execute(cmdLine, resultHandler);
 
                                     resultHandler.waitFor();
-                                    _logger.debug("Exception: " + resultHandler.getException().getLocalizedMessage());
-                                    _logger.debug("Exit value: " + resultHandler.getExitValue());
+
+                                    int exitValue = resultHandler.getExitValue();
+                                    if(exitValue != 0){
+                                        _logger.error("ImageMagick failed to generate thumbnail of the file '" + inputFile.getAbsolutePath()
+                                                + "'. " + resultHandler.getException().getLocalizedMessage(), resultHandler.getException());
+                                    }
+                                    else{
+                                        _logger.debug("ImageMagick successfully generated the thumbnail '" + outputFile.getAbsolutePath());
+                                        thumbnailsToUploadedFilesMap.put(outputFile.getAbsolutePath(), uploadFile);
+                                    }
                                 }
                             }
                         }
-                        _logger.debug("<< execute()");
+                        _logger.debug("<< execute() " + Constants.STEP_IMPORT_GENERATE_THUMBNAILS + "]");
+                        return RepeatStatus.FINISHED;
+                    }
+                })
+                .build();
+
+        Step stepGenerateAssets = stepBuilderFactory.get(Constants.STEP_IMPORT_GENERATE_ASSET)
+                .tasklet(new Tasklet() {
+                    @Override
+                    public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
+                        _logger.debug("execute() >> [" + Constants.STEP_IMPORT_GENERATE_ASSET + "]");
+                        for(Map.Entry<String, UploadFile> entry: thumbnailsToUploadedFilesMap.entrySet()){
+                            String assetId = RandomStringUtils.randomAlphanumeric(Constants.ASSET_ID_LENGTH);
+                            String assetFolderPath = repositoryPath + File.separator + assetId;
+                            String assetThumbnailPath = repositoryPath + File.separator + assetId + File.separator + "thumbnail";
+
+                            // Create asset folders
+                            createAssetFolders(assetFolderPath, assetThumbnailPath);
+
+                            // Copy the thumbnail to repository
+                            File thumbnailSource = new File(entry.getKey());
+                            File thumbnailDestination = new File(assetThumbnailPath + File.separator + assetId + "." + thumbnailFormat);
+                            FileSystemUtils.copyRecursively(thumbnailSource, thumbnailDestination);
+
+                            // Copy asset file to repository
+                            File assetSource = new File(entry.getValue().getPath());
+                            File assetDestination = new File(assetFolderPath + File.separator + assetSource.getName());
+                            FileSystemUtils.copyRecursively(assetSource, assetDestination);
+
+                            // Generate database entry
+                            Asset asset = new Asset();
+                            asset.setId(assetId);
+                            asset.setExtension(FilenameUtils.getExtension(assetDestination.getName()));
+                            asset.setImportDate(LocalDateTime.now().toString());
+                            asset.setImportedByUsername(entry.getValue().getUsername());
+                            asset.setName(assetDestination.getName());
+                            asset.setPath(assetDestination.getAbsolutePath());
+                            asset.setPreviewPath("");
+                            asset.setThumbnailPath(thumbnailDestination.getAbsolutePath());
+                            asset.setType("IMAGE");
+
+                            insertAsset(asset);
+                        }
+
+                        _logger.debug("<< execute() [" + Constants.STEP_IMPORT_GENERATE_ASSET + "]");
+                        return RepeatStatus.FINISHED;
+                    }
+                })
+                .build();
+
+        Step deleteTempFiles = stepBuilderFactory.get(Constants.STEP_IMPORT_DELETE_TEMP_FILES)
+                .tasklet(new Tasklet() {
+                    @Override
+                    public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
+                        _logger.debug("execute() >> [" + Constants.STEP_IMPORT_DELETE_TEMP_FILES + "]");
+                        for(Map.Entry<String, UploadFile> entry: thumbnailsToUploadedFilesMap.entrySet()){
+                            // Delete generated thumbnail
+                            _logger.debug("Deleting temp file '" + entry.getKey() + "'...");
+                            FileUtils.forceDelete(new File(entry.getKey()));
+                            // Delete uploaded file
+                            _logger.debug("Deleting temp file '" + entry.getValue().getPath() + "'...");
+                            FileUtils.forceDelete(new File(entry.getValue().getPath()));
+                        }
+                        _logger.debug("<< execute() [" + Constants.STEP_IMPORT_DELETE_TEMP_FILES + "]");
                         return RepeatStatus.FINISHED;
                     }
                 })
@@ -114,11 +189,14 @@ public class BatchConfig {
         return jobBuilderFactory.get(Constants.JOB_IMPORT_NAME)
                 .incrementer(new RunIdIncrementer())
                 .validator(importValidator())
-                .start(step)
+                .flow(stepGenerateThumbnails)
+                .next(stepGenerateAssets)
+                .next(deleteTempFiles)
+                .end()
                 .build();
     }
 
-    public JobParametersValidator importValidator(){
+    private JobParametersValidator importValidator(){
         return new JobParametersValidator(){
             @Override
             public void validate(JobParameters parameters) throws JobParametersInvalidException {
@@ -146,13 +224,40 @@ public class BatchConfig {
         };
     }
 
-    public void createAssetFolders(String assetFolderPath, String assetThumbnailPath){
+    private void createAssetFolders(String assetFolderPath, String assetThumbnailPath){
+        _logger.debug("createAssetFolders() >>");
         String[] paths = new String[]{assetFolderPath, assetThumbnailPath};
         for(String path: paths){
             File directory = new File(path);
             if(!directory.exists()){
+                _logger.debug("Creating folder '" + directory.getAbsolutePath() + "'...");
                 directory.mkdir();
             }
         }
+
+        _logger.debug("<< createAssetFolders()");
+    }
+
+    private void insertAsset(Asset asset){
+        _logger.debug("insertAsset() >>");
+
+        _logger.debug("Asset:");
+        _logger.debug("Asset ID: " + asset.getId());
+        _logger.debug("Asset Extension: " + asset.getExtension());
+        _logger.debug("Asset Imported By Username: " + asset.getImportedByUsername());
+        _logger.debug("Asset Name: " + asset.getName());
+        _logger.debug("Asset Path: " + asset.getPath());
+        _logger.debug("Asset Preview Path: " + asset.getPreviewPath());
+        _logger.debug("Asset Thumbnail Path: " + asset.getThumbnailPath());
+        _logger.debug("Asset Type: " + asset.getType());
+        _logger.debug("Asset Import Date: " + asset.getImportDate());
+
+        _logger.debug("Inserting asset into the database...");
+
+        jdbcTemplate.update("INSERT INTO assets(asset_id, asset_extension, asset_imported_by_username, " +
+                        "asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, asset_import_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                asset.getId(), asset.getName(), asset.getImportedByUsername(), asset.getName(), asset.getPath(),
+                asset.getPreviewPath(), asset.getThumbnailPath(), asset.getType(), asset.getImportDate());
+        _logger.debug("<< insertAsset()");
     }
 }
