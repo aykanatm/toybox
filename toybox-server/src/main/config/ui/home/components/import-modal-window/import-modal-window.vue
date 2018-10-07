@@ -25,7 +25,8 @@
                                         <div class="progress"></div>
                                     </div>
                                     <div v-if="isSaving" class="label">Uploading {{ numberOfFiles }} file(s)...</div>
-                                    <div v-if="isSuccess" class="label">{{ numberOfFiles }} file(s) successfully uploaded!</div>
+                                    <div v-if="isSuccess" class="label">{{ numberOfFiles }} file(s) successfully uploaded. Import job started.</div>
+                                    <div v-if="isSuccess" class="label" style="padding-top: 25px;">You can see the status of the import job in 'Jobs' tab</div>
                                     <div v-if="isFailed" class="label">An error occured while uploading files.</div>
                                     <div v-if="isFailed" class="label" style="padding-top: 25px; font-size: xx-small;">{{ uploadError }}</div>
                                 </div>
