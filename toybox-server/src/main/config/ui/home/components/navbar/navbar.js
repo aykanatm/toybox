@@ -7,7 +7,7 @@ module.exports = {
               username: 'test',
               name: 'test_name',
               lastname: 'test_lastname',
-              avatarUrl: 'http://via.placeholder.com/250x250'
+              avatarUrl: '../../images/users/test.png'
           },
           defaultNotification:{
               avatarUrl: '../../images/users/system.png',
@@ -18,31 +18,31 @@ module.exports = {
           // Dummy notifications
           notifications:[
               {
-                  avatarUrl: 'http://via.placeholder.com/250x250',
+                  avatarUrl: '../../images/users/test.png',
                   message: 'Eu sale officiis per. Ad laoreet civibus eum, partem docendi tincidunt ad mei. Cu maiorum oportere salutandi nam. Qui ne harum labitur nostrud, scripta salutatus per ut. Detracto signiferumque vis eu.',
                   id:'1',
                   date: '1 hour ago',
               },
               {
-                  avatarUrl: 'http://via.placeholder.com/250x250',
+                  avatarUrl: '../../images/users/test.png',
                   message: 'Eu sale officiis per. Ad laoreet civibus eum, partem docendi tincidunt ad mei. Cu maiorum oportere salutandi nam. Qui ne harum labitur nostrud, scripta salutatus per ut. Detracto signiferumque vis eu.',
                   id:'2',
                   date: '2 hours ago',
               },
               {
-                  avatarUrl: 'http://via.placeholder.com/250x250',
+                  avatarUrl: '../../images/users/test.png',
                   message: 'Eu sale officiis per. Ad laoreet civibus eum, partem docendi tincidunt ad mei. Cu maiorum oportere salutandi nam. Qui ne harum labitur nostrud, scripta salutatus per ut. Detracto signiferumque vis eu.',
                   id:'3',
                   date: '2 minutes ago',
               },
               {
-                  avatarUrl: 'http://via.placeholder.com/250x250',
+                  avatarUrl: '../../images/users/test.png',
                   message: 'Eu sale officiis per. Ad laoreet civibus eum, partem docendi tincidunt ad mei. Cu maiorum oportere salutandi nam. Qui ne harum labitur nostrud, scripta salutatus per ut. Detracto signiferumque vis eu.',
                   id:'4',
                   date: '2 minutes ago',
               },
               {
-                  avatarUrl: 'http://via.placeholder.com/250x250',
+                  avatarUrl: '../../images/users/test.png',
                   message: 'Eu sale officiis per. Ad laoreet civibus eum, partem docendi tincidunt ad mei. Cu maiorum oportere salutandi nam. Qui ne harum labitur nostrud, scripta salutatus per ut. Detracto signiferumque vis eu.',
                   id:'5',
                   date: '2 minutes ago',
