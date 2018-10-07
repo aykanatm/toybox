@@ -1,6 +1,6 @@
-package com.github.murataykanat.toybox.toyboxjobservice.controllers;
+package com.github.murataykanat.toybox.controllers;
 
-import com.github.murataykanat.toybox.toyboxjobservice.batch.utils.Constants;
+import com.github.murataykanat.toybox.batch.utils.Constants;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.batch.core.*;

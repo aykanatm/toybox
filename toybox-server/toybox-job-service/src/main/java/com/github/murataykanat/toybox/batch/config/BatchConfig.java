@@ -1,4 +1,4 @@
-package com.github.murataykanat.toybox.toyboxjobservice.batch.config;
+package com.github.murataykanat.toybox.batch.config;
 
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.launch.JobLauncher;

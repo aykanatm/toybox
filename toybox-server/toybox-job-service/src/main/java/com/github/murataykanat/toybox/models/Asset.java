@@ -1,4 +1,4 @@
-package com.github.murataykanat.toybox.toyboxjobservice.models;
+package com.github.murataykanat.toybox.models;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;

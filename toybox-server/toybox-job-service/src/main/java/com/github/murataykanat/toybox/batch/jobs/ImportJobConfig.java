@@ -1,8 +1,8 @@
-package com.github.murataykanat.toybox.toyboxjobservice.batch.jobs;
+package com.github.murataykanat.toybox.batch.jobs;
 
-import com.github.murataykanat.toybox.toyboxjobservice.batch.utils.Constants;
-import com.github.murataykanat.toybox.toyboxjobservice.models.Asset;
-import com.github.murataykanat.toybox.toyboxjobservice.models.UploadFile;
+import com.github.murataykanat.toybox.batch.utils.Constants;
+import com.github.murataykanat.toybox.models.Asset;
+import com.github.murataykanat.toybox.models.UploadFile;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.commons.exec.*;

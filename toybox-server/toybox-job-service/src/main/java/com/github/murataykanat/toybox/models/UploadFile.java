@@ -1,4 +1,4 @@
-package com.github.murataykanat.toybox.toyboxjobservice.models;
+package com.github.murataykanat.toybox.models;
 
 import org.codehaus.jackson.annotate.JsonProperty;
 
