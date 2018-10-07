@@ -12,6 +12,9 @@
         <a class="item toybox-navbar-item" id="toybox-folders-menu" href="/toybox/folders">
             <i class="folder icon"></i>
         </a>
+        <a class="item toybox-navbar-item" id="toybox-folders-menu" href="/toybox/jobs">
+            <i class="cogs icon"></i>
+        </a>
 
         <div class="ui icon right menu">
             <div class="ui transparent icon input toybox-search-box">
