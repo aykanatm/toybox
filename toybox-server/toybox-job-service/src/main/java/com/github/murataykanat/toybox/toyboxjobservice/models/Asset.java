@@ -28,6 +28,12 @@ public class Asset {
     @Column(name = "asset_import_date")
     private String importDate;
 
+    public Asset(){}
+
+    public Asset(String assetId){
+        this.id = assetId;
+    }
+
     public String getId() {
         return id;
     }

@@ -36,6 +36,7 @@ import java.lang.reflect.Type;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RefreshScope
@@ -142,9 +143,8 @@ public class BatchConfig {
                     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
                         _logger.debug("execute() >> [" + Constants.STEP_IMPORT_GENERATE_ASSET + "]");
                         for(Map.Entry<String, UploadFile> entry: thumbnailsToUploadedFilesMap.entrySet()){
-                            // TODO:
-                            // Check if this ID is already in the database
-                            String assetId = RandomStringUtils.randomAlphanumeric(Constants.ASSET_ID_LENGTH);
+                            String assetId = generateAssetId();
+
                             String assetFolderPath = repositoryPath + File.separator + assetId;
                             String assetThumbnailPath = repositoryPath + File.separator + assetId + File.separator + "thumbnail";
 
@@ -274,5 +274,32 @@ public class BatchConfig {
                 asset.getId(), asset.getName(), asset.getImportedByUsername(), asset.getName(), asset.getPath(),
                 asset.getPreviewPath(), asset.getThumbnailPath(), asset.getType(), asset.getImportDate());
         _logger.debug("<< insertAsset()");
+    }
+
+    private String generateAssetId(){
+        _logger.debug("generateAssetId() >>");
+        String assetId = RandomStringUtils.randomAlphanumeric(Constants.ASSET_ID_LENGTH);
+        if(isAssetIdValid(assetId)){
+            _logger.debug("<< generateAssetId() [" + assetId + "]");
+            return assetId;
+        }
+        return generateAssetId();
+    }
+
+    private boolean isAssetIdValid(String assetId){
+        _logger.debug("isAssetIdValid() >> [" + assetId + "]");
+        List<Asset> result = jdbcTemplate.query("SELECT asset_id FROM assets WHERE asset_id=?", new Object[]{assetId}, (rs, rowNum) -> new Asset(rs.getString("asset_id")));
+        if(result != null){
+            if(result.size() > 0){
+                _logger.debug("<< isAssetIdValid() [" + false + "]");
+                return false;
+            }
+            else{
+                _logger.debug("<< isAssetIdValid() [" + true + "]");
+                return true;
+            }
+        }
+        _logger.debug("<< isAssetIdValid() [" + true + "]");
+        return true;
     }
 }
