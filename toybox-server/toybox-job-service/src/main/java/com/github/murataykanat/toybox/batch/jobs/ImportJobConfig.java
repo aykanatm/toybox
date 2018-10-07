@@ -125,6 +125,9 @@ public class ImportJobConfig {
                 })
                 .build();
 
+        // TODO:
+        // Add generate previews step
+
         Step stepGenerateAssets = stepBuilderFactory.get(Constants.STEP_IMPORT_GENERATE_ASSET)
                 .tasklet(new Tasklet() {
                     @Override
