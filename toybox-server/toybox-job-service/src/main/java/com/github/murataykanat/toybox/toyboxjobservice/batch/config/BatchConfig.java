@@ -15,7 +15,10 @@ import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.batch.core.launch.support.SimpleJobLauncher;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.repeat.RepeatStatus;
@@ -24,6 +27,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.FileSystemUtils;
 
@@ -57,6 +61,15 @@ public class BatchConfig {
     private String repositoryPath;
 
     private Map<String, UploadFile> thumbnailsToUploadedFilesMap;
+
+    // Makes the job execution asynchronous so that we get the job id immediatly after we start the job
+    @Bean
+    public JobLauncher jobLauncher(JobRepository jobRepository){
+        SimpleJobLauncher jobLauncher = new SimpleJobLauncher();
+        jobLauncher.setJobRepository(jobRepository);
+        jobLauncher.setTaskExecutor(new SimpleAsyncTaskExecutor());
+        return jobLauncher;
+    }
 
     @Bean
     public Job importJob(JobBuilderFactory jobBuilderFactory, StepBuilderFactory stepBuilderFactory){
@@ -129,6 +142,8 @@ public class BatchConfig {
                     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
                         _logger.debug("execute() >> [" + Constants.STEP_IMPORT_GENERATE_ASSET + "]");
                         for(Map.Entry<String, UploadFile> entry: thumbnailsToUploadedFilesMap.entrySet()){
+                            // TODO:
+                            // Check if this ID is already in the database
                             String assetId = RandomStringUtils.randomAlphanumeric(Constants.ASSET_ID_LENGTH);
                             String assetFolderPath = repositoryPath + File.separator + assetId;
                             String assetThumbnailPath = repositoryPath + File.separator + assetId + File.separator + "thumbnail";
