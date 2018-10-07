@@ -1,4 +1,4 @@
-package com.github.murataykanat.toybox.toyboxjobservice.batch.config;
+package com.github.murataykanat.toybox.toyboxjobservice.batch.utils;
 
 public final class Constants {
     public static final String JOB_IMPORT_NAME = "toybox-import";
