@@ -6,9 +6,6 @@
     background-position: center;
     overflow: hidden;
 }
-/* .hidden{
-    display: none !important;
-} */
 
 .toybox-container{
     margin: 10px;
@@ -17,4 +14,32 @@
 
 #gallery-top-menu{
     margin-bottom: 25px;
+}
+
+/* Jobs Tab */
+.toybox-jobs-container{
+    height: calc(100% - 20px);
+    background-color: white;
+    border-radius: 5px;
+}
+
+.toybox-jobs-header-grid{
+    margin-top: 10px !important;
+    width: 100%;
+    margin-left: 0px !important;
+    font-weight: bold;
+}
+
+.toybox-jobs-header-row{
+    padding-left: 10px !important;
+    height: 50px;
+    background-color: #F9FAFB;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+}
+
+.toybox-jobs-pagination{
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
 }

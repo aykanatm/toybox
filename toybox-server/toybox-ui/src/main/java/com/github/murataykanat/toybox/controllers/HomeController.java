@@ -16,6 +16,9 @@ public class HomeController {
     @RequestMapping("/toybox/folders")
     public String loadFolders(){ return "folders_view"; }
 
+    @RequestMapping("/toybox/jobs")
+    public String loadJobs(){ return "jobs_view"; }
+
     @RequestMapping("/exit")
     public String loadExit(){ return "logout_view"; }
 }

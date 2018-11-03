@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1"/>
+        <link rel="stylesheet" type="text/css" href="../css/semantic/semantic.min.css"/>
+        <link rel="stylesheet" type="text/css" href="../css/toybox.css"/>
+        <script
+        src="https://code.jquery.com/jquery-3.1.1.min.js"
+        integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+        crossorigin="anonymous"></script>
+        <script type="text/javascript" src="https://unpkg.com/axios/dist/axios.min.js"></script>
+        <script type="text/javascript" src="../css/semantic/semantic.min.js"></script>
+        <script type="text/javascript" src="https://unpkg.com/vue"></script>
+        <script type="text/javascript" src="../js/httpVueLoader.js"></script>
+    </head>
+    <body>
+        <div style="height: calc(100% - 68px); width: 100%;" id="toybox-jobs">
+            <navbar/>
+            <div class="toybox-background">
+                <div class="toybox-container">
+                    <div class="toybox-jobs-container">
+                        <div class="ui grid toybox-jobs-header-grid">
+                            <div class="six column row toybox-jobs-header-row">
+                                <div class="column">Job Name</div>
+                                <div class="column">Job Type</div>
+                                <div class="column">Start Time</div>
+                                <div class="column">End Time</div>
+                                <div class="column">Status</div>
+                                <div class="column">Actions</div>
+                            </div>
+                        </div>
+                        <div class="ui grid">
+                            <!-- TODO: Implement a loader while the jobs are being fetched -->
+                            <job v-for="job in jobs" v-bind:job-id="job.jobId" v-bind:job-name="job.jobName" v-bind:job-type="job.jobType" v-bind:start-time="job.startTime"
+                            v-bind:end-time="job.endTime" v-bind:status="job.status" v-bind:key="job.jobId"/>
+                        </div>
+                        <div class="ui right floated pagination menu toybox-jobs-pagination">
+                            <a v-bind:class="{icon:true, disabled:previousPageButtonDisabled, item:true}" v-on:click="previousPage">
+                                <i class="left chevron icon"></i>
+                            </a>
+                            <div class="item">
+                                {{ startIndex }} - {{ endIndex }} of {{ totalRecords }} Results
+                            </div>
+                            <div class="item">
+                                <span>{{ currentPage }} of {{ totalPages }} Pages</span>
+                            </div>
+                            <a v-bind:class="{icon:true, disabled:nextPageButtonDisabled, item:true}" v-on:click="nextPage">
+                                <i class="right chevron icon"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+    <script src="../js/jobs.js"></script>
+</html>
