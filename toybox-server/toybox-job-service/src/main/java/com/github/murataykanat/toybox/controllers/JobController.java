@@ -62,7 +62,7 @@ public class JobController {
         int startIndex = offset;
         int endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
 
-        List<ToyboxJob> jobsOnPage = allJobs.subList(offset, endIndex);
+        List<ToyboxJob> jobsOnPage = allJobs.subList(startIndex, endIndex);
 
         RetrieveToyboxJobsResult retrieveToyboxJobsResult = new RetrieveToyboxJobsResult();
         retrieveToyboxJobsResult.setTotalRecords(totalRecords);
