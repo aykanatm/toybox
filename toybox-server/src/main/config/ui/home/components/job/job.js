@@ -7,4 +7,15 @@ module.exports = {
         endTime: String,
         status: String
     },
+    computed:{
+        isCompleted(){
+            return this.status === 'COMPLETED';
+        },
+        isImport(){
+            return this.jobType === 'IMPORT';
+        },
+        isExport(){
+            return this.jobType === 'EXPORT';
+        }
+    }
 }
