@@ -27,7 +27,7 @@ public class JobController {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @RequestMapping(value = "/job/import", method = RequestMethod.POST)
+    @RequestMapping(value = "/jobs/import", method = RequestMethod.POST)
     public Long importAsset(@RequestBody String uploadedFiles) throws JobParametersInvalidException, JobExecutionAlreadyRunningException, JobRestartException, JobInstanceAlreadyCompleteException {
         _logger.debug("importAsset() >>");
         try{

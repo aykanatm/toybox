@@ -108,7 +108,7 @@ module.exports = {
         import(uploadedAssets){
             return this.getConfiguration("jobServiceUrl")
                 .then(response => {
-                    return axios.post(response.data.value + "/job/import", uploadedAssets);
+                    return axios.post(response.data.value + "/jobs/import", uploadedAssets);
                 });
         }
     }
