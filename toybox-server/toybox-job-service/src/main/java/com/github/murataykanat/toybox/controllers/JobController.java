@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Comparator;
 import java.util.List;
 
 @RestController
@@ -53,10 +54,29 @@ public class JobController {
     }
 
     @RequestMapping(value = "/jobs", method = RequestMethod.GET)
-    public RetrieveToyboxJobsResult retrieveJobs(@RequestParam("limit") int limit, @RequestParam("offset") int offset)
+    public RetrieveToyboxJobsResult retrieveJobs(@RequestParam("limit") int limit, @RequestParam("offset") int offset,
+                                                 @RequestParam(required = false, value = "sort_type") String sortType, @RequestParam(required = false, value = "sort_column") String sortColumn)
     {
         _logger.debug("retrieveJobs() >>");
         List<ToyboxJob> allJobs = jdbcTemplate.query("SELECT JOB_INSTANCE_ID, JOB_NAME, START_TIME, END_TIME, STATUS  FROM TOYBOX_JOBS_VW", new ToyboxJobRowMapper());
+        if(sortColumn.equalsIgnoreCase("JOB_NAME")){
+            sortJobs(sortType, allJobs, Comparator.comparing(ToyboxJob::getJobName, Comparator.nullsLast(Comparator.naturalOrder())));
+        }
+        else if(sortColumn.equalsIgnoreCase("JOB_TYPE")){
+            sortJobs(sortType, allJobs, Comparator.comparing(ToyboxJob::getJobType, Comparator.nullsLast(Comparator.naturalOrder())));
+        }
+        else if(sortColumn.equalsIgnoreCase("START_TIME")){
+            sortJobs(sortType, allJobs, Comparator.comparing(ToyboxJob::getStartTime, Comparator.nullsLast(Comparator.naturalOrder())));
+        }
+        else if(sortColumn.equalsIgnoreCase("END_TIME")){
+            sortJobs(sortType, allJobs, Comparator.comparing(ToyboxJob::getEndTime, Comparator.nullsLast(Comparator.naturalOrder())));
+        }
+        else if(sortColumn.equalsIgnoreCase("STATUS")){
+            sortJobs(sortType, allJobs, Comparator.comparing(ToyboxJob::getStatus, Comparator.nullsLast(Comparator.naturalOrder())));
+        }
+        else{
+            sortJobs(sortType, allJobs, Comparator.comparing(ToyboxJob::getEndTime, Comparator.nullsLast(Comparator.naturalOrder())));
+        }
 
         int totalRecords = allJobs.size();
         int startIndex = offset;
@@ -70,5 +90,17 @@ public class JobController {
 
         _logger.debug("<< retrieveJobs()");
         return retrieveToyboxJobsResult;
+    }
+
+    private void sortJobs(String sortType, List<ToyboxJob> allJobs, Comparator<ToyboxJob> comparing) {
+        if(sortType.equalsIgnoreCase("des")){
+            allJobs.sort(comparing.reversed());
+        }
+        else if(sortType.equalsIgnoreCase("asc")){
+            allJobs.sort(comparing);
+        }
+        else{
+            allJobs.sort(comparing.reversed());
+        }
     }
 }

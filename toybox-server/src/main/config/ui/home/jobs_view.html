@@ -23,12 +23,69 @@
                     <div class="toybox-jobs-container">
                         <div class="ui grid toybox-jobs-header-grid">
                             <div class="six column row toybox-jobs-header-row">
-                                <div class="column">Job Name</div>
-                                <div class="column">Job Type</div>
-                                <div class="column">Start Time</div>
-                                <div class="column">End Time</div>
-                                <div class="column">Status</div>
-                                <div class="column">Actions</div>
+                                <div class="column">
+                                    <span>Job Name</span>
+                                    <span class="toybox-pagination-icons" v-if="isJobNameSortedDes" v-on:click="sort('asc','JOB_NAME')">
+                                        <i class="sort down icon"></i>
+                                    </span>
+                                    <span class="toybox-pagination-icons" v-if="isJobNameSortedAsc" v-on:click="sort('des','JOB_NAME')">
+                                        <i class="sort up icon"></i>
+                                    </span>
+                                    <span class="toybox-pagination-icons" v-if="!isJobNameSorted" v-on:click="sort('des','JOB_NAME')">
+                                        <i class="sort icon"></i>
+                                    </span>
+                                </div>
+                                <div class="column">
+                                    <span>Job Type</span>
+                                    <span class="toybox-pagination-icons" v-if="isJobTypeSortedDes" v-on:click="sort('asc','JOB_TYPE')">
+                                        <i class="sort down icon"></i>
+                                    </span>
+                                    <span class="toybox-pagination-icons" v-if="isJobTypeSortedAsc" v-on:click="sort('des','JOB_TYPE')">
+                                        <i class="sort up icon"></i>
+                                    </span>
+                                    <span class="toybox-pagination-icons" v-if="!isJobTypeSorted" v-on:click="sort('des','JOB_TYPE')">
+                                        <i class="sort icon"></i>
+                                    </span>
+                                </div>
+                                <div class="column">
+                                    <span>Start Time</span>
+                                    <span class="toybox-pagination-icons" v-if="isStartTimeSortedDes" v-on:click="sort('asc','START_TIME')">
+                                        <i class="sort down icon"></i>
+                                    </span>
+                                    <span class="toybox-pagination-icons" v-else-if="isStartTimeSortedAsc" v-on:click="sort('des','START_TIME')">
+                                        <i class="sort up icon"></i>
+                                    </span>
+                                    <span class="toybox-pagination-icons" v-else-if="!isStartTimeSorted" v-on:click="sort('des','START_TIME')">
+                                        <i class="sort icon"></i>
+                                    </span>
+                                </div>
+                                <div class="column">
+                                    <span>End Time</span>
+                                    <span class="toybox-pagination-icons" v-if="isEndTimeSortedDes" v-on:click="sort('asc','END_TIME')">
+                                        <i class="sort down icon"></i>
+                                    </span>
+                                    <span class="toybox-pagination-icons" v-else-if="isEndTimeSortedAsc" v-on:click="sort('des','END_TIME')">
+                                        <i class="sort up icon"></i>
+                                    </span>
+                                    <span class="toybox-pagination-icons" v-else-if="!isEndTimeSorted" v-on:click="sort('des','END_TIME')">
+                                        <i class="sort icon"></i>
+                                    </span>
+                                </div>
+                                <div class="column">
+                                    <span>Status</span>
+                                    <span class="toybox-pagination-icons" v-if="isStatusSortedDes" v-on:click="sort('asc','STATUS')">
+                                        <i class="sort down icon"></i>
+                                    </span>
+                                    <span class="toybox-pagination-icons" v-else-if="isStatusSortedAsc" v-on:click="sort('des','STATUS')">
+                                        <i class="sort up icon"></i>
+                                    </span>
+                                    <span class="toybox-pagination-icons" v-else-if="!isStatusSorted" v-on:click="sort('des','STATUS')">
+                                        <i class="sort icon"></i>
+                                    </span>
+                                </div>
+                                <div class="column">
+                                    <span>Actions</span>
+                                </div>
                             </div>
                         </div>
                         <div class="ui grid">

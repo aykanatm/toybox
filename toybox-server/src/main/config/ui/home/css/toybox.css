@@ -43,3 +43,7 @@
     right: 20px;
     bottom: 20px;
 }
+
+.toybox-pagination-icons{
+    cursor: pointer;
+}
