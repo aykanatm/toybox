@@ -4,6 +4,7 @@ import com.github.murataykanat.toybox.batch.utils.Constants;
 import com.github.murataykanat.toybox.models.RetrieveToyboxJobsResult;
 import com.github.murataykanat.toybox.models.ToyboxJob;
 import com.github.murataykanat.toybox.models.ToyboxJobRowMapper;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.batch.core.*;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 public class JobController {
@@ -55,34 +57,41 @@ public class JobController {
 
     @RequestMapping(value = "/jobs", method = RequestMethod.GET)
     public RetrieveToyboxJobsResult retrieveJobs(@RequestParam("limit") int limit, @RequestParam("offset") int offset,
-                                                 @RequestParam(required = false, value = "sort_type") String sortType, @RequestParam(required = false, value = "sort_column") String sortColumn)
+                                                 @RequestParam(required = false, value = "sort_type") String sortType,
+                                                 @RequestParam(required = false, value = "sort_column") String sortColumn,
+                                                 @RequestParam("username") String username)
     {
         _logger.debug("retrieveJobs() >>");
-        List<ToyboxJob> allJobs = jdbcTemplate.query("SELECT JOB_INSTANCE_ID, JOB_NAME, START_TIME, END_TIME, STATUS  FROM TOYBOX_JOBS_VW", new ToyboxJobRowMapper());
-        if(sortColumn.equalsIgnoreCase("JOB_NAME")){
+        List<ToyboxJob> allJobs = jdbcTemplate.query("SELECT JOB_INSTANCE_ID, JOB_NAME, START_TIME, END_TIME, STATUS, PARAMETERS  FROM TOYBOX_JOBS_VW", new ToyboxJobRowMapper());
+        if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("JOB_NAME")){
             sortJobs(sortType, allJobs, Comparator.comparing(ToyboxJob::getJobName, Comparator.nullsLast(Comparator.naturalOrder())));
         }
-        else if(sortColumn.equalsIgnoreCase("JOB_TYPE")){
+        else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("JOB_TYPE")){
             sortJobs(sortType, allJobs, Comparator.comparing(ToyboxJob::getJobType, Comparator.nullsLast(Comparator.naturalOrder())));
         }
-        else if(sortColumn.equalsIgnoreCase("START_TIME")){
+        else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("START_TIME")){
             sortJobs(sortType, allJobs, Comparator.comparing(ToyboxJob::getStartTime, Comparator.nullsLast(Comparator.naturalOrder())));
         }
-        else if(sortColumn.equalsIgnoreCase("END_TIME")){
+        else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("END_TIME")){
             sortJobs(sortType, allJobs, Comparator.comparing(ToyboxJob::getEndTime, Comparator.nullsLast(Comparator.naturalOrder())));
         }
-        else if(sortColumn.equalsIgnoreCase("STATUS")){
+        else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("STATUS")){
             sortJobs(sortType, allJobs, Comparator.comparing(ToyboxJob::getStatus, Comparator.nullsLast(Comparator.naturalOrder())));
         }
         else{
             sortJobs(sortType, allJobs, Comparator.comparing(ToyboxJob::getEndTime, Comparator.nullsLast(Comparator.naturalOrder())));
         }
 
-        int totalRecords = allJobs.size();
+        // TODO:
+        // If an admin users gets the jobs, display all jobs regardless of the username
+
+        List<ToyboxJob> jobsByCurrentUser = allJobs.stream().filter(j -> j.getUsername().equalsIgnoreCase(username)).collect(Collectors.toList());
+
+        int totalRecords = jobsByCurrentUser.size();
         int startIndex = offset;
         int endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
 
-        List<ToyboxJob> jobsOnPage = allJobs.subList(startIndex, endIndex);
+        List<ToyboxJob> jobsOnPage = jobsByCurrentUser.subList(startIndex, endIndex);
 
         RetrieveToyboxJobsResult retrieveToyboxJobsResult = new RetrieveToyboxJobsResult();
         retrieveToyboxJobsResult.setTotalRecords(totalRecords);

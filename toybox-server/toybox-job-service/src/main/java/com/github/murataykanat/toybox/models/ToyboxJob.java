@@ -9,6 +9,7 @@ public class ToyboxJob {
     private Date startTime;
     private Date endTime;
     private String status;
+    private String username;
 
     public String getJobInstanceId() {
         return jobInstanceId;
@@ -67,5 +68,13 @@ public class ToyboxJob {
         {
             this.jobType = "CUSTOM";
         }
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 }

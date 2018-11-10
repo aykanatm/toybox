@@ -1,8 +1,11 @@
-const folders = new Vue({
+const jobs = new Vue({
     el: '#toybox-jobs',
     data:{
         view: 'jobs',
         jobs:[],
+        // TODO:
+        // Make username dynamic
+        username: 'test',
         // Pagination
         currentPage: 1,
         defaultLimit: 10,
@@ -35,11 +38,11 @@ const folders = new Vue({
         getConfiguration(fieldName){
             return axios.get("/configuration?field=" + fieldName);
         },
-        getJobs(offset, limit, sortType, sortColumn)
+        getJobs(offset, limit, sortType, sortColumn, username)
         {
             this.getConfiguration("jobServiceUrl")
             .then(response => {
-                return axios.get(response.data.value + "/jobs?offset=" + offset + "&limit=" + limit + "&sort_type=" + sortType + "&sort_column=" + sortColumn);
+                return axios.get(response.data.value + "/jobs?offset=" + offset + "&limit=" + limit + "&sort_type=" + sortType + "&sort_column=" + sortColumn + "&username=" + username);
             })
             .then(response => {
                 console.log(response);
@@ -75,13 +78,13 @@ const folders = new Vue({
         previousPage(){
             if(this.currentPage != 1){
                 this.offset -= this.limit;
-                this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn);
+                this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username);
             }
         },
         nextPage(){
             if(this.currentPage != this.totalPages){
                 this.offset += this.limit;
-                this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn);
+                this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username);
             }
         },
         // Sorting
@@ -154,7 +157,7 @@ const folders = new Vue({
             this.sortType = sortType;
             this.sortColumn = sortColumn;
 
-            this.getJobs(this.defaultOffset, this.defaultLimit, this.sortType, this.sortColumn);
+            this.getJobs(this.defaultOffset, this.defaultLimit, this.sortType, this.sortColumn, this.username);
         }
     },
     computed:{
@@ -225,7 +228,7 @@ const folders = new Vue({
         this.sortType = this.defaultSortType;
         this.sortColumn = this.defaultSortColumn;
 
-        this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn);
+        this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username);
     },
     components:{
         'navbar' : httpVueLoader('../components/navbar/navbar.vue'),
