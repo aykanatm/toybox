@@ -1,11 +1,13 @@
 package com.github.murataykanat.toybox.models;
 
+import java.util.Date;
+
 public class ToyboxJob {
     private String jobInstanceId;
     private String jobName;
     private String jobType;
-    private String startTime;
-    private String endTime;
+    private Date startTime;
+    private Date endTime;
     private String status;
 
     public String getJobInstanceId() {
@@ -24,19 +26,19 @@ public class ToyboxJob {
         this.jobName = jobName;
     }
 
-    public String getStartTime() {
+    public Date getStartTime() {
         return startTime;
     }
 
-    public void setStartTime(String startTime) {
+    public void setStartTime(Date startTime) {
         this.startTime = startTime;
     }
 
-    public String getEndTime() {
+    public Date getEndTime() {
         return endTime;
     }
 
-    public void setEndTime(String endTime) {
+    public void setEndTime(Date endTime) {
         this.endTime = endTime;
     }
 
