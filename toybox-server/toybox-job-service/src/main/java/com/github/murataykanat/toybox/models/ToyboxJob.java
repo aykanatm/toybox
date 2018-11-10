@@ -4,6 +4,7 @@ import java.util.Date;
 
 public class ToyboxJob {
     private String jobInstanceId;
+    private String jobExecutionId;
     private String jobName;
     private String jobType;
     private Date startTime;
@@ -76,5 +77,13 @@ public class ToyboxJob {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getJobExecutionId() {
+        return jobExecutionId;
+    }
+
+    public void setJobExecutionId(String jobExecutionId) {
+        this.jobExecutionId = jobExecutionId;
     }
 }

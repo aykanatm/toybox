@@ -21,6 +21,7 @@ public class ToyboxJobRowMapper implements RowMapper<ToyboxJob> {
     public ToyboxJob mapRow(ResultSet resultSet, int i) throws SQLException {
         ToyboxJob toyboxJob = new ToyboxJob();
         toyboxJob.setJobInstanceId(resultSet.getString("JOB_INSTANCE_ID"));
+        toyboxJob.setJobExecutionId(resultSet.getString("JOB_EXECUTION_ID"));
         toyboxJob.setJobName(resultSet.getString("JOB_NAME"));
         toyboxJob.setJobType(resultSet.getString("JOB_NAME"));
         try {

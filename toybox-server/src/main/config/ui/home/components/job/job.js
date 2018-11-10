@@ -1,11 +1,13 @@
 module.exports = {
     props:{
-        jobInstanceId: Number,
+        jobInstanceId: String,
+        jobExecutionId: String,
         jobName: String,
         jobType: String,
         startTime: Number,
         endTime: Number,
-        status: String
+        status: String,
+        username: String
     },
     computed:{
         isCompleted(){
