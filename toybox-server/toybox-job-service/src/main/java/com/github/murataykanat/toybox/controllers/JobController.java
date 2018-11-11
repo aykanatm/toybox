@@ -129,4 +129,18 @@ public class JobController {
         _logger.debug("<< retrieveJob()");
         return retrieveToyboxJobResult;
     }
+
+    @RequestMapping(value = "/jobs/{jobExecutionId}/steps", method = RequestMethod.GET)
+    public RetrieveJobStepsResult retrieveJobSteps(@PathVariable String jobExecutionId){
+        _logger.debug("retrieveJobSteps() >>");
+        RetrieveJobStepsResult retrieveJobStepsResult = new RetrieveJobStepsResult();
+
+        List<ToyboxJobStep> jobSteps = jdbcTemplate.query("SELECT JOB_EXECUTION_ID, STEP_EXECUTION_ID, STEP_NAME, START_TIME, END_TIME, STATUS  FROM BATCH_STEP_EXECUTION WHERE JOB_EXECUTION_ID=?",
+                new Object[]{jobExecutionId},new ToyboxJobStepRowMapper());
+
+        retrieveJobStepsResult.setToyboxJobSteps(jobSteps);
+
+        _logger.debug("<< retrieveJobSteps()");
+        return retrieveJobStepsResult;
+    }
 }
