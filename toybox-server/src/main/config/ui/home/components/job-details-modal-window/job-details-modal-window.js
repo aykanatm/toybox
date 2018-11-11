@@ -10,15 +10,6 @@ module.exports = {
         username: String
     },
     computed:{
-        isCompleted(){
-            return this.status === 'COMPLETED';
-        },
-        isImport(){
-            return this.jobType === 'IMPORT';
-        },
-        isExport(){
-            return this.jobType === 'EXPORT';
-        },
         formattedStartTime(){
             if(this.startTime !== null){
                 return this.convertToDateString(this.startTime);
@@ -32,9 +23,34 @@ module.exports = {
             return '';
         }
     },
+    data:function(){
+        return{
+            componentName: 'Job Details Modal Window',
+            steps:[]
+        }
+    },
+    mounted:function(){
+        this.$root.$on('eventOpenJobDetailsModalWindow', (jobExecutionId) => {
+            if(jobExecutionId === this.jobExecutionId)
+            {
+                $(this.$el).modal('show');
+                this.loadJobDetails();
+            }
+        });
+    },
     methods:{
-        showJobDetailsModalWindow:function(){
-            this.$root.$emit('eventOpenJobDetailsModalWindow', this.jobExecutionId);
+        getConfiguration(fieldName){
+            return axios.get("/configuration?field=" + fieldName);
+        },
+        loadJobDetails:function(){
+            this.getConfiguration("jobServiceUrl")
+            .then(response => {
+                return axios.get(response.data.value + "/jobs/" + this.jobExecutionId + "/steps" );
+            })
+            .then(response => {
+                console.log(response);
+                this.steps = response.data.toyboxJobSteps;
+            });
         },
         convertToDateString(milliseconds){
             if(milliseconds && milliseconds !== ''){
@@ -52,6 +68,6 @@ module.exports = {
         }
     },
     components:{
-        'job-details-modal-window' : httpVueLoader('../job-details-modal-window/job-details-modal-window.vue')
+        'job-step' : httpVueLoader('../job-step/job-step.vue')
     }
 }

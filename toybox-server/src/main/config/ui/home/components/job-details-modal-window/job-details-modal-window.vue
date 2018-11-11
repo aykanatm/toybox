@@ -1,0 +1,73 @@
+<template>
+    <div class="ui modal" id="toybox-job-details-modal-window">
+        <i class="close icon"></i>
+        <div class="header">Job Details</div>
+        <div class="content">
+            <div style="float: left; font-weight: bold;">
+                <div>
+                    <span>Job Name: </span>
+                </div>
+                <div>
+                    <span>Job Type: </span>
+                </div>
+                <div>
+                    <span>Start Time: </span>
+                </div>
+                <div>
+                    <span>End Time: </span>
+                </div>
+                <div>
+                    <span>Status: </span>
+                </div>
+                <div>
+                    <span>Triggered by: </span>
+                </div>
+            </div>
+            <div style="float: left; margin-left: 20px;">
+                <div>
+                    <span>{{ jobName }}</span>
+                </div>
+                <div>
+                    <span>{{ jobType }}</span>
+                </div>
+                <div>
+                    <span>{{ formattedStartTime }} </span>
+                </div>
+                <div>
+                    <span>{{ formattedEndTime }}</span>
+                </div>
+                <div>
+                    <span>{{ status }}</span>
+                </div>
+                <div>
+                    <span>{{ username }}</span>
+                </div>
+            </div>
+            <div style="clear: both; padding-top: 10px;">
+                <div class="ui grid toybox-jobs-header-grid">
+                    <div class="four column row toybox-jobs-header-row">
+                        <div class="column">
+                            <span>Step Name</span>
+                        </div>
+                        <div class="column">
+                            <span>Start Time</span>
+                        </div>
+                        <div class="column">
+                            <span>End Time</span>
+                        </div>
+                        <div class="column">
+                            <span>Status</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="ui grid">
+                    <job-step v-for="step in steps" v-bind:step-execution-id="step.stepExecutionId" v-bind:step-name="step.stepName"
+                     v-bind:start-time="step.startTime" v-bind:end-time="step.endTime" v-bind:status="step.status" v-bind:key="step.stepExecutionId"/>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script src="../../components/job-details-modal-window/job-details-modal-window.js"></script>
+<style src="../../components/job-details-modal-window/job-details-modal-window.css"></style>

@@ -7,9 +7,12 @@
         <div class="column">{{ status }}</div>
         <div class="column">
             <button v-if="!isCompleted" class="ui button">Cancel</button>
-            <button class="ui button">View</button>
+            <button class="ui button" v-on:click="showJobDetailsModalWindow">View</button>
             <button v-if="isCompleted && isExport" class="ui button">Download</button>
         </div>
+        <job-details-modal-window  v-bind:job-instance-id="jobInstanceId" v-bind:job-execution-id="jobExecutionId"
+        v-bind:job-name="jobName" v-bind:job-type="jobType" v-bind:start-time="startTime" v-bind:end-time="endTime"
+         v-bind:status="status" v-bind:username="username" v-bind:key="jobInstanceId"/>
     </div>
 </template>
 <script src="../../components/job/job.js"></script>

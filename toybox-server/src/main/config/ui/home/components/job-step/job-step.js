@@ -1,24 +1,12 @@
 module.exports = {
     props:{
-        jobInstanceId: String,
-        jobExecutionId: String,
-        jobName: String,
-        jobType: String,
+        stepExecutionId: String,
+        stepName: String,
         startTime: Number,
         endTime: Number,
-        status: String,
-        username: String
+        status: String
     },
     computed:{
-        isCompleted(){
-            return this.status === 'COMPLETED';
-        },
-        isImport(){
-            return this.jobType === 'IMPORT';
-        },
-        isExport(){
-            return this.jobType === 'EXPORT';
-        },
         formattedStartTime(){
             if(this.startTime !== null){
                 return this.convertToDateString(this.startTime);
@@ -33,9 +21,6 @@ module.exports = {
         }
     },
     methods:{
-        showJobDetailsModalWindow:function(){
-            this.$root.$emit('eventOpenJobDetailsModalWindow', this.jobExecutionId);
-        },
         convertToDateString(milliseconds){
             if(milliseconds && milliseconds !== ''){
                 var date = new Date(milliseconds);
@@ -50,8 +35,5 @@ module.exports = {
             }
             return '';
         }
-    },
-    components:{
-        'job-details-modal-window' : httpVueLoader('../job-details-modal-window/job-details-modal-window.vue')
     }
 }
