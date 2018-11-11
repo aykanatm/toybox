@@ -1,9 +1,7 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.batch.utils.Constants;
-import com.github.murataykanat.toybox.models.RetrieveToyboxJobsResult;
-import com.github.murataykanat.toybox.models.ToyboxJob;
-import com.github.murataykanat.toybox.models.ToyboxJobRowMapper;
+import com.github.murataykanat.toybox.models.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -111,5 +109,24 @@ public class JobController {
         else{
             allJobs.sort(comparing.reversed());
         }
+    }
+
+    @RequestMapping(value = "/jobs/{jobInstanceId}", method = RequestMethod.GET)
+    public RetrieveToyboxJobResult retrieveJob(@PathVariable String jobInstanceId){
+        _logger.debug("retrieveJob() >>");
+        RetrieveToyboxJobResult retrieveToyboxJobResult = new RetrieveToyboxJobResult();
+        List<ToyboxJob> jobs = jdbcTemplate.query("SELECT JOB_INSTANCE_ID, JOB_EXECUTION_ID, JOB_NAME, START_TIME, END_TIME, STATUS, PARAMETERS  FROM TOYBOX_JOBS_VW WHERE JOB_INSTANCE_ID=?",
+                new Object[]{jobInstanceId},new ToyboxJobRowMapper());
+        if(jobs.size() == 1){
+            ToyboxJob toyboxJob = jobs.get(0);
+            retrieveToyboxJobResult.setToyboxJob(toyboxJob);
+
+            List<ToyboxJobStep> jobSteps = jdbcTemplate.query("SELECT JOB_EXECUTION_ID, STEP_EXECUTION_ID, STEP_NAME, START_TIME, END_TIME, STATUS  FROM BATCH_STEP_EXECUTION WHERE JOB_EXECUTION_ID=?",
+                    new Object[]{toyboxJob.getJobExecutionId()},new ToyboxJobStepRowMapper());
+            retrieveToyboxJobResult.setToyboxJobSteps(jobSteps);
+        }
+
+        _logger.debug("<< retrieveJob()");
+        return retrieveToyboxJobResult;
     }
 }
