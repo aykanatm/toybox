@@ -20,92 +20,97 @@
             <navbar/>
             <div class="toybox-background">
                 <div class="toybox-container">
-                    <div class="toybox-jobs-container">
-                        <div class="ui grid toybox-jobs-header-grid">
-                            <div class="six column row toybox-jobs-header-row">
-                                <div class="column">
-                                    <span>Job Name</span>
-                                    <span class="toybox-pagination-icons" v-if="isJobNameSortedDes" v-on:click="sort('asc','JOB_NAME')">
-                                        <i class="sort down icon"></i>
-                                    </span>
-                                    <span class="toybox-pagination-icons" v-if="isJobNameSortedAsc" v-on:click="sort('des','JOB_NAME')">
-                                        <i class="sort up icon"></i>
-                                    </span>
-                                    <span class="toybox-pagination-icons" v-if="!isJobNameSorted" v-on:click="sort('des','JOB_NAME')">
-                                        <i class="sort icon"></i>
-                                    </span>
-                                </div>
-                                <div class="column">
-                                    <span>Job Type</span>
-                                    <span class="toybox-pagination-icons" v-if="isJobTypeSortedDes" v-on:click="sort('asc','JOB_TYPE')">
-                                        <i class="sort down icon"></i>
-                                    </span>
-                                    <span class="toybox-pagination-icons" v-if="isJobTypeSortedAsc" v-on:click="sort('des','JOB_TYPE')">
-                                        <i class="sort up icon"></i>
-                                    </span>
-                                    <span class="toybox-pagination-icons" v-if="!isJobTypeSorted" v-on:click="sort('des','JOB_TYPE')">
-                                        <i class="sort icon"></i>
-                                    </span>
-                                </div>
-                                <div class="column">
-                                    <span>Start Time</span>
-                                    <span class="toybox-pagination-icons" v-if="isStartTimeSortedDes" v-on:click="sort('asc','START_TIME')">
-                                        <i class="sort down icon"></i>
-                                    </span>
-                                    <span class="toybox-pagination-icons" v-else-if="isStartTimeSortedAsc" v-on:click="sort('des','START_TIME')">
-                                        <i class="sort up icon"></i>
-                                    </span>
-                                    <span class="toybox-pagination-icons" v-else-if="!isStartTimeSorted" v-on:click="sort('des','START_TIME')">
-                                        <i class="sort icon"></i>
-                                    </span>
-                                </div>
-                                <div class="column">
-                                    <span>End Time</span>
-                                    <span class="toybox-pagination-icons" v-if="isEndTimeSortedDes" v-on:click="sort('asc','END_TIME')">
-                                        <i class="sort down icon"></i>
-                                    </span>
-                                    <span class="toybox-pagination-icons" v-else-if="isEndTimeSortedAsc" v-on:click="sort('des','END_TIME')">
-                                        <i class="sort up icon"></i>
-                                    </span>
-                                    <span class="toybox-pagination-icons" v-else-if="!isEndTimeSorted" v-on:click="sort('des','END_TIME')">
-                                        <i class="sort icon"></i>
-                                    </span>
-                                </div>
-                                <div class="column">
-                                    <span>Status</span>
-                                    <span class="toybox-pagination-icons" v-if="isStatusSortedDes" v-on:click="sort('asc','STATUS')">
-                                        <i class="sort down icon"></i>
-                                    </span>
-                                    <span class="toybox-pagination-icons" v-else-if="isStatusSortedAsc" v-on:click="sort('des','STATUS')">
-                                        <i class="sort up icon"></i>
-                                    </span>
-                                    <span class="toybox-pagination-icons" v-else-if="!isStatusSorted" v-on:click="sort('des','STATUS')">
-                                        <i class="sort icon"></i>
-                                    </span>
-                                </div>
-                                <div class="column">
-                                    <span>Actions</span>
-                                </div>
-                            </div>
+                    <div class="ui grid toybox-jobs-container">
+                        <div class="three wide column">
+                            <!-- Filters here-->
                         </div>
-                        <div class="ui grid">
-                            <!-- TODO: Implement a loader while the jobs are being fetched -->
-                            <job v-for="job in jobs" v-bind:job-instance-id="job.jobInstanceId" v-bind:job-execution-id="job.jobExecutionId" v-bind:job-name="job.jobName" v-bind:job-type="job.jobType" v-bind:start-time="job.startTime"
-                            v-bind:end-time="job.endTime" v-bind:status="job.status" v-bind:username="job.username" v-bind:key="job.jobInstanceId"/>
-                        </div>
-                        <div class="ui right floated pagination menu toybox-jobs-pagination">
-                            <a v-bind:class="{icon:true, disabled:previousPageButtonDisabled, item:true}" v-on:click="previousPage">
-                                <i class="left chevron icon"></i>
-                            </a>
-                            <div class="item">
-                                {{ startIndex }} - {{ endIndex }} of {{ totalRecords }} Results
+                        <div class="thirteen wide column">
+                            <div class="ui grid toybox-jobs-header-grid">
+                                <div class="six column row toybox-jobs-header-row">
+                                    <div class="column">
+                                        <span>Job Name</span>
+                                        <span class="toybox-pagination-icons" v-if="isJobNameSortedDes" v-on:click="sort('asc','JOB_NAME')">
+                                            <i class="sort down icon"></i>
+                                        </span>
+                                        <span class="toybox-pagination-icons" v-if="isJobNameSortedAsc" v-on:click="sort('des','JOB_NAME')">
+                                            <i class="sort up icon"></i>
+                                        </span>
+                                        <span class="toybox-pagination-icons" v-if="!isJobNameSorted" v-on:click="sort('des','JOB_NAME')">
+                                            <i class="sort icon"></i>
+                                        </span>
+                                    </div>
+                                    <div class="column">
+                                        <span>Job Type</span>
+                                        <span class="toybox-pagination-icons" v-if="isJobTypeSortedDes" v-on:click="sort('asc','JOB_TYPE')">
+                                            <i class="sort down icon"></i>
+                                        </span>
+                                        <span class="toybox-pagination-icons" v-if="isJobTypeSortedAsc" v-on:click="sort('des','JOB_TYPE')">
+                                            <i class="sort up icon"></i>
+                                        </span>
+                                        <span class="toybox-pagination-icons" v-if="!isJobTypeSorted" v-on:click="sort('des','JOB_TYPE')">
+                                            <i class="sort icon"></i>
+                                        </span>
+                                    </div>
+                                    <div class="column">
+                                        <span>Start Time</span>
+                                        <span class="toybox-pagination-icons" v-if="isStartTimeSortedDes" v-on:click="sort('asc','START_TIME')">
+                                            <i class="sort down icon"></i>
+                                        </span>
+                                        <span class="toybox-pagination-icons" v-else-if="isStartTimeSortedAsc" v-on:click="sort('des','START_TIME')">
+                                            <i class="sort up icon"></i>
+                                        </span>
+                                        <span class="toybox-pagination-icons" v-else-if="!isStartTimeSorted" v-on:click="sort('des','START_TIME')">
+                                            <i class="sort icon"></i>
+                                        </span>
+                                    </div>
+                                    <div class="column">
+                                        <span>End Time</span>
+                                        <span class="toybox-pagination-icons" v-if="isEndTimeSortedDes" v-on:click="sort('asc','END_TIME')">
+                                            <i class="sort down icon"></i>
+                                        </span>
+                                        <span class="toybox-pagination-icons" v-else-if="isEndTimeSortedAsc" v-on:click="sort('des','END_TIME')">
+                                            <i class="sort up icon"></i>
+                                        </span>
+                                        <span class="toybox-pagination-icons" v-else-if="!isEndTimeSorted" v-on:click="sort('des','END_TIME')">
+                                            <i class="sort icon"></i>
+                                        </span>
+                                    </div>
+                                    <div class="column">
+                                        <span>Status</span>
+                                        <span class="toybox-pagination-icons" v-if="isStatusSortedDes" v-on:click="sort('asc','STATUS')">
+                                            <i class="sort down icon"></i>
+                                        </span>
+                                        <span class="toybox-pagination-icons" v-else-if="isStatusSortedAsc" v-on:click="sort('des','STATUS')">
+                                            <i class="sort up icon"></i>
+                                        </span>
+                                        <span class="toybox-pagination-icons" v-else-if="!isStatusSorted" v-on:click="sort('des','STATUS')">
+                                            <i class="sort icon"></i>
+                                        </span>
+                                    </div>
+                                    <div class="column">
+                                        <span>Actions</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="item">
-                                <span>{{ currentPage }} of {{ totalPages }} Pages</span>
+                            <div class="ui grid">
+                                <!-- TODO: Implement a loader while the jobs are being fetched -->
+                                <job v-for="job in jobs" v-bind:job-instance-id="job.jobInstanceId" v-bind:job-execution-id="job.jobExecutionId" v-bind:job-name="job.jobName" v-bind:job-type="job.jobType" v-bind:start-time="job.startTime"
+                                v-bind:end-time="job.endTime" v-bind:status="job.status" v-bind:username="job.username" v-bind:key="job.jobInstanceId"/>
                             </div>
-                            <a v-bind:class="{icon:true, disabled:nextPageButtonDisabled, item:true}" v-on:click="nextPage">
-                                <i class="right chevron icon"></i>
-                            </a>
+                            <div class="ui right floated pagination menu toybox-jobs-pagination">
+                                <a v-bind:class="{icon:true, disabled:previousPageButtonDisabled, item:true}" v-on:click="previousPage">
+                                    <i class="left chevron icon"></i>
+                                </a>
+                                <div class="item">
+                                    {{ startIndex }} - {{ endIndex }} of {{ totalRecords }} Results
+                                </div>
+                                <div class="item">
+                                    <span>{{ currentPage }} of {{ totalPages }} Pages</span>
+                                </div>
+                                <a v-bind:class="{icon:true, disabled:nextPageButtonDisabled, item:true}" v-on:click="nextPage">
+                                    <i class="right chevron icon"></i>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>

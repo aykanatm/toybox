@@ -6,9 +6,9 @@
         <div class="column">{{ formattedEndTime }}</div>
         <div class="column">{{ status }}</div>
         <div class="column">
-            <button v-if="!isCompleted" class="ui button">Cancel</button>
-            <button class="ui button" v-on:click="showJobDetailsModalWindow">View</button>
-            <button v-if="isCompleted && isExport" class="ui button">Download</button>
+            <button v-if="!isCompleted" class="mini ui button">Cancel</button>
+            <button class="mini ui button" v-on:click="showJobDetailsModalWindow">View</button>
+            <button v-if="isCompleted && isExport" class="mini ui button">Download</button>
         </div>
         <job-details-modal-window  v-bind:job-instance-id="jobInstanceId" v-bind:job-execution-id="jobExecutionId"
         v-bind:job-name="jobName" v-bind:job-type="jobType" v-bind:start-time="startTime" v-bind:end-time="endTime"

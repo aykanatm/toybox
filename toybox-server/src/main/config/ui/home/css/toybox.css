@@ -18,9 +18,12 @@
 
 /* Jobs Tab */
 .toybox-jobs-container{
-    height: calc(100% - 20px);
+    height: calc(100% - 40px);
     background-color: white;
     border-radius: 5px;
+    margin-top: 20px !important;
+    margin-left: 10px !important;
+    margin-right: 10px !important;
 }
 
 .toybox-jobs-header-grid{
