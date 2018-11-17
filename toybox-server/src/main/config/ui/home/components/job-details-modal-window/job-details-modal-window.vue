@@ -2,7 +2,7 @@
     <div class="ui modal" id="toybox-job-details-modal-window">
         <i class="close icon"></i>
         <div class="header">Job Details</div>
-        <div class="content">
+        <div class="content" style="height: 100%;">
             <div style="float: left; font-weight: bold;">
                 <div>
                     <span>Job Name: </span>
@@ -43,8 +43,8 @@
                     <span>{{ username }}</span>
                 </div>
             </div>
-            <div style="clear: both; padding-top: 10px;">
-                <div class="ui grid toybox-jobs-header-grid">
+            <div style="clear: both; padding-top: 10px; height: calc(100% - 110px);">
+                <div class="ui grid toybox-jobs-header-grid" style="padding-bottom: 14px;">
                     <div class="four column row toybox-jobs-header-row">
                         <div class="column">
                             <span>Step Name</span>
@@ -60,9 +60,11 @@
                         </div>
                     </div>
                 </div>
-                <div class="ui grid">
-                    <job-step v-for="step in steps" v-bind:step-execution-id="step.stepExecutionId" v-bind:step-name="step.stepName"
-                     v-bind:start-time="step.startTime" v-bind:end-time="step.endTime" v-bind:status="step.status" v-bind:key="step.stepExecutionId"/>
+                <div style="height: calc(100% - 50px); overflow-y: auto; overflow-x: hidden">
+                    <div class="ui grid" style="margin-left: 0px; margin-right: 0px;">
+                        <job-step v-for="step in steps" v-bind:step-execution-id="step.stepExecutionId" v-bind:step-name="step.stepName"
+                        v-bind:start-time="step.startTime" v-bind:end-time="step.endTime" v-bind:status="step.status" v-bind:key="step.stepExecutionId"/>
+                    </div>
                 </div>
             </div>
         </div>
