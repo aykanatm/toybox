@@ -25,22 +25,22 @@
             </div>
             <div style="float: left; margin-left: 20px;">
                 <div>
-                    <span>{{ jobName }}</span>
+                    <span class="toybox-keep-spaces">{{ jobName || ' '}}</span>
                 </div>
                 <div>
-                    <span>{{ jobType }}</span>
+                    <span class="toybox-keep-spaces">{{ jobType || ' '}}</span>
                 </div>
                 <div>
-                    <span>{{ formattedStartTime }} </span>
+                    <span class="toybox-keep-spaces">{{ formattedStartTime || ' '}} </span>
                 </div>
                 <div>
-                    <span>{{ formattedEndTime }}</span>
+                    <span class="toybox-keep-spaces">{{ formattedEndTime || ' '}}</span>
                 </div>
                 <div>
-                    <span>{{ status }}</span>
+                    <span class="toybox-keep-spaces">{{ status || ' '}}</span>
                 </div>
                 <div>
-                    <span>{{ username }}</span>
+                    <span class="toybox-keep-spaces">{{ username || ' '}}</span>
                 </div>
             </div>
             <div style="clear: both; padding-top: 10px; height: calc(100% - 110px);">

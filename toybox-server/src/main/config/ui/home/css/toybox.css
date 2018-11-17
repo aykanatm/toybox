@@ -50,3 +50,7 @@
 .toybox-pagination-icons{
     cursor: pointer;
 }
+
+.toybox-keep-spaces{
+    white-space: pre;
+}
