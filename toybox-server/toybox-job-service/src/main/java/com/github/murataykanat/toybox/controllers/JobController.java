@@ -2,6 +2,11 @@ package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.batch.utils.Constants;
 import com.github.murataykanat.toybox.models.*;
+import com.github.murataykanat.toybox.models.dbo.Facet;
+import com.github.murataykanat.toybox.models.dbo.mappers.FacetRowMapper;
+import com.github.murataykanat.toybox.models.dbo.mappers.LookupValueRowMapper;
+import com.github.murataykanat.toybox.models.dbo.mappers.ToyboxJobRowMapper;
+import com.github.murataykanat.toybox.models.dbo.mappers.ToyboxJobStepRowMapper;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -14,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -142,5 +148,32 @@ public class JobController {
 
         _logger.debug("<< retrieveJobSteps()");
         return retrieveJobStepsResult;
+    }
+
+    @RequestMapping(value = "/jobs/facets", method = RequestMethod.GET)
+    public RetrieveFacetsResult retrieveFacets(){
+        _logger.debug("retrieveFacets() >>");
+        RetrieveFacetsResult retrieveFacetsResult = new RetrieveFacetsResult();
+
+        List<JobFacet> jobFacets = new ArrayList<>();
+
+        List<Facet> facets = jdbcTemplate.query("SELECT FACET_ID, FACET_NAME, FACET_LOOKUP_TABLE_NAME FROM FACETS", new FacetRowMapper());
+
+        for(Facet facet: facets){
+            // TODO:
+            // Find a better way to get lookup values other than the dynamic table name
+            List<String> lookupValues = jdbcTemplate.query("SELECT LOOKUP_VALUE FROM " + facet.getLookupTableName(), new LookupValueRowMapper());
+
+            JobFacet jobFacet = new JobFacet();
+            jobFacet.setId(facet.getId());
+            jobFacet.setName(facet.getName());
+            jobFacet.setLookups(lookupValues);
+
+            jobFacets.add(jobFacet);
+        }
+
+        retrieveFacetsResult.setFacets(jobFacets);
+        _logger.debug("<< retrieveFacets()");
+        return retrieveFacetsResult;
     }
 }
