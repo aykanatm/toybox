@@ -1,5 +1,7 @@
-package com.github.murataykanat.toybox.models;
+package com.github.murataykanat.toybox.models.dbo.mappers;
 
+import com.github.murataykanat.toybox.models.ToyboxJob;
+import com.github.murataykanat.toybox.models.UploadFile;
 import com.github.murataykanat.toybox.utilities.DateTimeUtils;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;

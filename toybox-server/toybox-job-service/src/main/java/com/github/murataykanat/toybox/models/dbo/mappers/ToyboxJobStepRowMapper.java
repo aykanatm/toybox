@@ -1,5 +1,6 @@
-package com.github.murataykanat.toybox.models;
+package com.github.murataykanat.toybox.models.dbo.mappers;
 
+import com.github.murataykanat.toybox.models.ToyboxJobStep;
 import com.github.murataykanat.toybox.utilities.DateTimeUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
