@@ -56,20 +56,7 @@ public class ToyboxJob {
         return jobType;
     }
 
-    public void setJobType(String jobType) {
-        if(jobType.equalsIgnoreCase("toybox-import"))
-        {
-            this.jobType = "IMPORT";
-        }
-        else if(jobType.equalsIgnoreCase("toybox-export"))
-        {
-            this.jobType = "EXPORT";
-        }
-        else
-        {
-            this.jobType = "CUSTOM";
-        }
-    }
+    public void setJobType(String jobType) { this.jobType = jobType; }
 
     public String getUsername() {
         return username;

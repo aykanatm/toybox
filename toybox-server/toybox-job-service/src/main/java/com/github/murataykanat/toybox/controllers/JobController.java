@@ -60,7 +60,7 @@ public class JobController {
                                                  @RequestParam("username") String username)
     {
         _logger.debug("retrieveJobs() >>");
-        List<ToyboxJob> allJobs = jdbcTemplate.query("SELECT JOB_INSTANCE_ID, JOB_EXECUTION_ID, JOB_NAME, START_TIME, END_TIME, STATUS, PARAMETERS  FROM TOYBOX_JOBS_VW", new ToyboxJobRowMapper());
+        List<ToyboxJob> allJobs = jdbcTemplate.query("SELECT JOB_INSTANCE_ID, JOB_EXECUTION_ID, JOB_NAME, JOB_TYPE, START_TIME, END_TIME, STATUS, PARAMETERS  FROM TOYBOX_JOBS_VW", new ToyboxJobRowMapper());
         if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("JOB_NAME")){
             sortJobs(sortType, allJobs, Comparator.comparing(ToyboxJob::getJobName, Comparator.nullsLast(Comparator.naturalOrder())));
         }
@@ -115,7 +115,7 @@ public class JobController {
     public RetrieveToyboxJobResult retrieveJob(@PathVariable String jobInstanceId){
         _logger.debug("retrieveJob() >>");
         RetrieveToyboxJobResult retrieveToyboxJobResult = new RetrieveToyboxJobResult();
-        List<ToyboxJob> jobs = jdbcTemplate.query("SELECT JOB_INSTANCE_ID, JOB_EXECUTION_ID, JOB_NAME, START_TIME, END_TIME, STATUS, PARAMETERS  FROM TOYBOX_JOBS_VW WHERE JOB_INSTANCE_ID=?",
+        List<ToyboxJob> jobs = jdbcTemplate.query("SELECT JOB_INSTANCE_ID, JOB_EXECUTION_ID, JOB_NAME, JOB_TYPE, START_TIME, END_TIME, STATUS, PARAMETERS  FROM TOYBOX_JOBS_VW WHERE JOB_INSTANCE_ID=?",
                 new Object[]{jobInstanceId},new ToyboxJobRowMapper());
         if(jobs.size() == 1){
             ToyboxJob toyboxJob = jobs.get(0);

@@ -23,7 +23,7 @@ public class ToyboxJobRowMapper implements RowMapper<ToyboxJob> {
         toyboxJob.setJobInstanceId(resultSet.getString("JOB_INSTANCE_ID"));
         toyboxJob.setJobExecutionId(resultSet.getString("JOB_EXECUTION_ID"));
         toyboxJob.setJobName(resultSet.getString("JOB_NAME"));
-        toyboxJob.setJobType(resultSet.getString("JOB_NAME"));
+        toyboxJob.setJobType(resultSet.getString("JOB_TYPE"));
         try {
             if(StringUtils.isBlank(resultSet.getString("START_TIME"))) {
                 toyboxJob.setStartTime(null);
