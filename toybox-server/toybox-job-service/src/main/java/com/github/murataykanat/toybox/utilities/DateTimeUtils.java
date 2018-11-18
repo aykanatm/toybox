@@ -15,7 +15,7 @@ public class DateTimeUtils {
 
         try{
             if(StringUtils.isNotBlank(dateString)){
-                return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").parse(dateString);
+                result = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").parse(dateString);
             }
         }
         catch (Exception e){
