@@ -1,7 +1,7 @@
 package com.github.murataykanat.toybox.batch.jobs;
 
 import com.github.murataykanat.toybox.batch.utils.Constants;
-import com.github.murataykanat.toybox.models.Asset;
+import com.github.murataykanat.toybox.models.dbo.Asset;
 import com.github.murataykanat.toybox.models.UploadFile;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -59,6 +59,9 @@ public class ImportJobConfig {
     private String repositoryPath;
 
     private Map<String, UploadFile> thumbnailsToUploadedFilesMap;
+
+    // TODO:
+    // Implement exception handling
 
     @Bean
     public Job importJob(JobBuilderFactory jobBuilderFactory, StepBuilderFactory stepBuilderFactory){
