@@ -2,3 +2,45 @@
     height: 50%;
     width: 60%;
 }
+
+.toybox-job-details-field-headers{
+    float: left;
+    font-weight: bold;
+}
+
+.toybox-job-details-field-values{
+    float: left; margin-left: 20px;
+}
+
+.toybox-steps-header-grid{
+    margin-top: 10px !important;
+    width: 100%;
+    margin-left: 0px !important;
+    font-weight: bold;
+    padding-bottom: 14px !important;
+}
+
+.toybox-steps-header-row{
+    padding-left: 10px !important;
+    height: 50px;
+    background-color: #F9FAFB;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+}
+
+.toybox-job-steps-table{
+    clear: both;
+    padding-top: 10px;
+    height: calc(100% - 110px);
+}
+
+.toybox-job-steps-rows{
+    height: calc(100% - 50px);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.toybox-job-steps-rows > div{
+    margin-left: 0px;
+    margin-right: 0px;
+}
