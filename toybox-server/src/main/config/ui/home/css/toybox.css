@@ -54,3 +54,11 @@
 .toybox-keep-spaces{
     white-space: pre;
 }
+
+.toybox-filters-header-row{
+    height: 50px;
+    background-color: #F9FAFB;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    font-weight: bold;
+}

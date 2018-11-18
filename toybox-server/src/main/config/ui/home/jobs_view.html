@@ -22,7 +22,19 @@
                 <div class="toybox-container">
                     <div class="ui grid toybox-jobs-container">
                         <div class="three wide column">
-                            <!-- Filters here-->
+                            <div class="ui grid" style="margin-top: 10px;">
+                                <div class="one column row toybox-filters-header-row">
+                                    <div class="column">
+                                        <i class="filter icon"></i>
+                                        <span>Filters</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="ui grid">
+                                <div class="ui styled accordion">
+                                    <facet v-for="facet in facets" v-bind:name="facet.name" v-bind:id="facet.id" v-bind:lookups="facet.lookups" v-bind:key="facet.id"/>
+                                </div>
+                            </div>
                         </div>
                         <div class="thirteen wide column">
                             <div class="ui grid toybox-jobs-header-grid">

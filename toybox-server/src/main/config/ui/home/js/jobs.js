@@ -32,7 +32,9 @@ const jobs = new Vue({
         sortedAscByEndTime: false,
         sortedDesByEndTime: false,
         sortedAscByStatus: false,
-        sortedDesByStatus: false
+        sortedDesByStatus: false,
+        // Filtering
+        facets: []
     },
     methods:{
         getConfiguration(fieldName){
@@ -158,6 +160,17 @@ const jobs = new Vue({
             this.sortColumn = sortColumn;
 
             this.getJobs(this.defaultOffset, this.defaultLimit, this.sortType, this.sortColumn, this.username);
+        },
+        // Filtering
+        getFilters(){
+            this.getConfiguration("jobServiceUrl")
+            .then(response => {
+                return axios.get(response.data.value + "/jobs/facets");
+            })
+            .then(response => {
+                console.log(response);
+                this.facets = response.data.facets;
+            });
         }
     },
     computed:{
@@ -223,15 +236,19 @@ const jobs = new Vue({
         }
         axios.defaults.withCredentials = true;
 
+        $('.ui.accordion').accordion();
+
         this.limit = this.defaultLimit;
         this.offset = this.defaultOffset;
         this.sortType = this.defaultSortType;
         this.sortColumn = this.defaultSortColumn;
 
         this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username);
+        this.getFilters();
     },
     components:{
         'navbar' : httpVueLoader('../components/navbar/navbar.vue'),
-        'job' : httpVueLoader('../components/job/job.vue')
+        'job' : httpVueLoader('../components/job/job.vue'),
+        'facet' : httpVueLoader('../components/facet/facet.vue')
     }
 });
