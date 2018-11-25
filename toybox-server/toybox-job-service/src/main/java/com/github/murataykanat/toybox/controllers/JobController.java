@@ -60,13 +60,16 @@ public class JobController {
         }
     }
 
-    @RequestMapping(value = "/jobs", method = RequestMethod.GET)
-    public RetrieveToyboxJobsResult retrieveJobs(@RequestParam("limit") int limit, @RequestParam("offset") int offset,
-                                                 @RequestParam(required = false, value = "sort_type") String sortType,
-                                                 @RequestParam(required = false, value = "sort_column") String sortColumn,
-                                                 @RequestParam("username") String username) throws InvocationTargetException, IllegalAccessException {
+    @RequestMapping(value = "/jobs/search", method = RequestMethod.POST)
+    public RetrieveToyboxJobsResult retrieveJobs(@RequestBody JobSearchRequest jobSearchRequest) throws InvocationTargetException, IllegalAccessException {
         _logger.debug("retrieveJobs() >>");
         RetrieveToyboxJobsResult retrieveToyboxJobsResult = new RetrieveToyboxJobsResult();
+
+        String sortColumn = jobSearchRequest.getSortColumn();
+        String sortType = jobSearchRequest.getSortType();
+        String username = jobSearchRequest.getUsername();
+        int offset = jobSearchRequest.getOffset();
+        int limit = jobSearchRequest.getLimit();
 
         try{
             List<ToyboxJob> allJobs = jdbcTemplate.query("SELECT JOB_INSTANCE_ID, JOB_EXECUTION_ID, JOB_NAME, JOB_TYPE, START_TIME, END_TIME, STATUS, PARAMETERS  FROM TOYBOX_JOBS_VW", new ToyboxJobRowMapper());

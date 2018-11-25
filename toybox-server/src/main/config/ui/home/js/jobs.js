@@ -44,7 +44,13 @@ const jobs = new Vue({
         {
             this.getConfiguration("jobServiceUrl")
             .then(response => {
-                return axios.get(response.data.value + "/jobs?offset=" + offset + "&limit=" + limit + "&sort_type=" + sortType + "&sort_column=" + sortColumn + "&username=" + username);
+                var searchRequest = {};
+                searchRequest.limit = limit;
+                searchRequest.offset = offset;
+                searchRequest.sortType = sortType;
+                searchRequest.sortColumn = sortColumn;
+                searchRequest.username = username;
+                return axios.post(response.data.value + "/jobs/search", searchRequest);
             })
             .then(response => {
                 console.log(response);
