@@ -10,6 +10,8 @@ public class RetrieveToyboxJobsResult implements Serializable {
     private List<ToyboxJob> jobs;
     @JsonProperty("totalRecords")
     private int totalRecords;
+    @JsonProperty("facets")
+    private List<ToyboxJobFacet> facets;
 
     public List<ToyboxJob> getJobs() {
         return jobs;
@@ -25,5 +27,13 @@ public class RetrieveToyboxJobsResult implements Serializable {
 
     public void setTotalRecords(int totalRecords) {
         this.totalRecords = totalRecords;
+    }
+
+    public List<ToyboxJobFacet> getFacets() {
+        return facets;
+    }
+
+    public void setFacets(List<ToyboxJobFacet> facets) {
+        this.facets = facets;
     }
 }

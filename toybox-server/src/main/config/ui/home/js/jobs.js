@@ -50,6 +50,7 @@ const jobs = new Vue({
                 console.log(response);
 
                 this.jobs = response.data.jobs;
+                this.facets = response.data.facets;
                 this.totalRecords = response.data.totalRecords;
                 this.totalPages = Math.ceil(this.totalRecords / this.limit);
                 this.currentPage = Math.ceil((offset / limit) + 1);
@@ -160,17 +161,6 @@ const jobs = new Vue({
             this.sortColumn = sortColumn;
 
             this.getJobs(this.defaultOffset, this.defaultLimit, this.sortType, this.sortColumn, this.username);
-        },
-        // Filtering
-        getFilters(){
-            this.getConfiguration("jobServiceUrl")
-            .then(response => {
-                return axios.get(response.data.value + "/jobs/facets");
-            })
-            .then(response => {
-                console.log(response);
-                this.facets = response.data.facets;
-            });
         }
     },
     computed:{
@@ -244,7 +234,6 @@ const jobs = new Vue({
         this.sortColumn = this.defaultSortColumn;
 
         this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username);
-        this.getFilters();
     },
     components:{
         'navbar' : httpVueLoader('../components/navbar/navbar.vue'),

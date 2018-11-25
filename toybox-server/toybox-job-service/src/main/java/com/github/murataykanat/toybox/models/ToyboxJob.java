@@ -1,15 +1,25 @@
 package com.github.murataykanat.toybox.models;
 
+import com.github.murataykanat.toybox.models.annotations.FacetColumnName;
+import com.github.murataykanat.toybox.models.annotations.FacetDefaultLookup;
+
 import java.util.Date;
 
 public class ToyboxJob {
     private String jobInstanceId;
     private String jobExecutionId;
+    @FacetColumnName(value = "Job Name")
     private String jobName;
+    @FacetColumnName(value = "Job Type")
     private String jobType;
+    @FacetColumnName(value = "Start Time")
     private Date startTime;
+    @FacetColumnName(value = "End Time")
     private Date endTime;
+    @FacetColumnName(value = "Status")
     private String status;
+    // TODO:
+    // Allow faceting based on username
     private String username;
 
     public String getJobInstanceId() {
@@ -20,6 +30,7 @@ public class ToyboxJob {
         this.jobInstanceId = jobInstanceId;
     }
 
+    @FacetColumnName(value = "Job Name")
     public String getJobName() {
         return jobName;
     }
@@ -28,6 +39,8 @@ public class ToyboxJob {
         this.jobName = jobName;
     }
 
+    @FacetColumnName(value = "Start Time")
+    @FacetDefaultLookup(values = "Today,Past 7 days,Past 30 days")
     public Date getStartTime() {
         return startTime;
     }
@@ -36,6 +49,8 @@ public class ToyboxJob {
         this.startTime = startTime;
     }
 
+    @FacetColumnName(value = "End Time")
+    @FacetDefaultLookup(values = "Today,Past 7 days,Past 30 days")
     public Date getEndTime() {
         return endTime;
     }
@@ -44,6 +59,7 @@ public class ToyboxJob {
         this.endTime = endTime;
     }
 
+    @FacetColumnName(value = "Status")
     public String getStatus() {
         return status;
     }
@@ -52,6 +68,7 @@ public class ToyboxJob {
         this.status = status;
     }
 
+    @FacetColumnName(value = "Job Type")
     public String getJobType() {
         return jobType;
     }

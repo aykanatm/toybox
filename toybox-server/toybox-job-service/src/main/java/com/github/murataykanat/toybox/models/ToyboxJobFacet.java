@@ -4,9 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;
 import java.util.List;
 
-public class JobFacet implements Serializable {
-    @JsonProperty("id")
-    private int id;
+public class ToyboxJobFacet implements Serializable {
     @JsonProperty("name")
     private String name;
     @JsonProperty("lookups")
@@ -26,13 +24,5 @@ public class JobFacet implements Serializable {
 
     public void setLookups(List<String> lookups) {
         this.lookups = lookups;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
     }
 }
