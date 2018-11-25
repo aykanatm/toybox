@@ -2,6 +2,8 @@ package com.github.murataykanat.toybox.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.List;
+
 public class JobSearchRequest {
     @JsonProperty("limit")
     private int limit;
@@ -13,6 +15,8 @@ public class JobSearchRequest {
     private String sortColumn;
     @JsonProperty("username")
     private String username;
+    @JsonProperty("jobSearchRequestFacetList")
+    private List<JobSearchRequestFacet> jobSearchRequestFacetList;
 
     public int getLimit() {
         return limit;
@@ -52,5 +56,13 @@ public class JobSearchRequest {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public List<JobSearchRequestFacet> getJobSearchRequestFacetList() {
+        return jobSearchRequestFacetList;
+    }
+
+    public void setJobSearchRequestFacetList(List<JobSearchRequestFacet> jobSearchRequestFacetList) {
+        this.jobSearchRequestFacetList = jobSearchRequestFacetList;
     }
 }

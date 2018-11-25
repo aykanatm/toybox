@@ -70,9 +70,18 @@ public class JobController {
         String username = jobSearchRequest.getUsername();
         int offset = jobSearchRequest.getOffset();
         int limit = jobSearchRequest.getLimit();
+        List<JobSearchRequestFacet> jobSearchRequestFacetList = jobSearchRequest.getJobSearchRequestFacetList();
 
         try{
             List<ToyboxJob> allJobs = jdbcTemplate.query("SELECT JOB_INSTANCE_ID, JOB_EXECUTION_ID, JOB_NAME, JOB_TYPE, START_TIME, END_TIME, STATUS, PARAMETERS  FROM TOYBOX_JOBS_VW", new ToyboxJobRowMapper());
+            List<ToyboxJob> jobs;
+
+            if(jobSearchRequestFacetList != null && jobSearchRequestFacetList.size() > 0){
+                jobs = allJobs.stream().filter(j -> j.hasFacetValue(jobSearchRequestFacetList)).collect(Collectors.toList());
+            }
+            else{
+                jobs = allJobs;
+            }
 
             List<String> facets = Arrays.asList(ToyboxJob.class.getDeclaredFields())
                     .stream()
@@ -88,7 +97,7 @@ public class JobController {
 
                 List<String> lookups = new ArrayList<>();
 
-                for(ToyboxJob toyboxJob: allJobs ){
+                for(ToyboxJob toyboxJob: jobs ){
                     for(Method method: toyboxJob.getClass().getDeclaredMethods()){
                         if(method.getAnnotation(FacetColumnName.class) != null)
                         {
@@ -122,28 +131,28 @@ public class JobController {
             retrieveToyboxJobsResult.setFacets(toyboxJobFacets);
 
             if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("JOB_NAME")){
-                sortJobs(sortType, allJobs, Comparator.comparing(ToyboxJob::getJobName, Comparator.nullsLast(Comparator.naturalOrder())));
+                sortJobs(sortType, jobs, Comparator.comparing(ToyboxJob::getJobName, Comparator.nullsLast(Comparator.naturalOrder())));
             }
             else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("JOB_TYPE")){
-                sortJobs(sortType, allJobs, Comparator.comparing(ToyboxJob::getJobType, Comparator.nullsLast(Comparator.naturalOrder())));
+                sortJobs(sortType, jobs, Comparator.comparing(ToyboxJob::getJobType, Comparator.nullsLast(Comparator.naturalOrder())));
             }
             else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("START_TIME")){
-                sortJobs(sortType, allJobs, Comparator.comparing(ToyboxJob::getStartTime, Comparator.nullsLast(Comparator.naturalOrder())));
+                sortJobs(sortType, jobs, Comparator.comparing(ToyboxJob::getStartTime, Comparator.nullsLast(Comparator.naturalOrder())));
             }
             else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("END_TIME")){
-                sortJobs(sortType, allJobs, Comparator.comparing(ToyboxJob::getEndTime, Comparator.nullsLast(Comparator.naturalOrder())));
+                sortJobs(sortType, jobs, Comparator.comparing(ToyboxJob::getEndTime, Comparator.nullsLast(Comparator.naturalOrder())));
             }
             else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("STATUS")){
-                sortJobs(sortType, allJobs, Comparator.comparing(ToyboxJob::getStatus, Comparator.nullsLast(Comparator.naturalOrder())));
+                sortJobs(sortType, jobs, Comparator.comparing(ToyboxJob::getStatus, Comparator.nullsLast(Comparator.naturalOrder())));
             }
             else{
-                sortJobs(sortType, allJobs, Comparator.comparing(ToyboxJob::getEndTime, Comparator.nullsLast(Comparator.naturalOrder())));
+                sortJobs(sortType, jobs, Comparator.comparing(ToyboxJob::getEndTime, Comparator.nullsLast(Comparator.naturalOrder())));
             }
 
             // TODO:
             // If an admin users gets the jobs, display all jobs regardless of the username
 
-            List<ToyboxJob> jobsByCurrentUser = allJobs.stream().filter(j -> j.getUsername().equalsIgnoreCase(username)).collect(Collectors.toList());
+            List<ToyboxJob> jobsByCurrentUser = jobs.stream().filter(j -> j.getUsername().equalsIgnoreCase(username)).collect(Collectors.toList());
 
             int totalRecords = jobsByCurrentUser.size();
             int startIndex = offset;

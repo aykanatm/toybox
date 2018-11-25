@@ -34,13 +34,14 @@ const jobs = new Vue({
         sortedAscByStatus: false,
         sortedDesByStatus: false,
         // Filtering
-        facets: []
+        facets: [],
+        jobSearchRequestFacetList: []
     },
     methods:{
         getConfiguration(fieldName){
             return axios.get("/configuration?field=" + fieldName);
         },
-        getJobs(offset, limit, sortType, sortColumn, username)
+        getJobs(offset, limit, sortType, sortColumn, username, jobSearchRequestFacetList)
         {
             this.getConfiguration("jobServiceUrl")
             .then(response => {
@@ -50,6 +51,7 @@ const jobs = new Vue({
                 searchRequest.sortType = sortType;
                 searchRequest.sortColumn = sortColumn;
                 searchRequest.username = username;
+                searchRequest.jobSearchRequestFacetList = jobSearchRequestFacetList;
                 return axios.post(response.data.value + "/jobs/search", searchRequest);
             })
             .then(response => {
@@ -87,13 +89,13 @@ const jobs = new Vue({
         previousPage(){
             if(this.currentPage != 1){
                 this.offset -= this.limit;
-                this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username);
+                this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.jobSearchRequestFacetList);
             }
         },
         nextPage(){
             if(this.currentPage != this.totalPages){
                 this.offset += this.limit;
-                this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username);
+                this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.jobSearchRequestFacetList);
             }
         },
         // Sorting
@@ -166,7 +168,7 @@ const jobs = new Vue({
             this.sortType = sortType;
             this.sortColumn = sortColumn;
 
-            this.getJobs(this.defaultOffset, this.defaultLimit, this.sortType, this.sortColumn, this.username);
+            this.getJobs(this.defaultOffset, this.defaultLimit, this.sortType, this.sortColumn, this.username, this.jobSearchRequestFacetList);
         }
     },
     computed:{
@@ -239,7 +241,28 @@ const jobs = new Vue({
         this.sortType = this.defaultSortType;
         this.sortColumn = this.defaultSortColumn;
 
-        this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username);
+        this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.jobSearchRequestFacetList);
+
+        this.$root.$on('eventPerformFacetedSearch', (facet, isAdd) => {
+            if(isAdd){
+                console.log('Adding facet ' + facet.fieldName + ' and its value ' + facet.fieldValue + ' to search');
+                this.jobSearchRequestFacetList.push(facet);
+            }
+            else{
+                console.log('Removing facet ' + facet.fieldName + ' and its value ' + facet.fieldValue + ' from search');
+                var index;
+                for(var i = 0; i < this.jobSearchRequestFacetList.length; i++){
+                    var jobRequestFacet = this.jobSearchRequestFacetList[i];
+                    if(jobRequestFacet.fieldName === facet.fieldName && jobRequestFacet.fieldValue === facet.fieldValue){
+                        index = i;
+                        break;
+                    }
+                }
+                this.jobSearchRequestFacetList.splice(index, 1);
+            }
+
+            this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.jobSearchRequestFacetList);
+        });
     },
     components:{
         'navbar' : httpVueLoader('../components/navbar/navbar.vue'),

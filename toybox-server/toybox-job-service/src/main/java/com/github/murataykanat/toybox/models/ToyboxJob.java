@@ -2,10 +2,16 @@ package com.github.murataykanat.toybox.models;
 
 import com.github.murataykanat.toybox.models.annotations.FacetColumnName;
 import com.github.murataykanat.toybox.models.annotations.FacetDefaultLookup;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
+import java.lang.reflect.Field;
 import java.util.Date;
+import java.util.List;
 
 public class ToyboxJob {
+    private static final Log _logger = LogFactory.getLog(ToyboxJob.class);
+
     private String jobInstanceId;
     private String jobExecutionId;
     @FacetColumnName(value = "Job Name")
@@ -89,5 +95,34 @@ public class ToyboxJob {
 
     public void setJobExecutionId(String jobExecutionId) {
         this.jobExecutionId = jobExecutionId;
+    }
+
+    public boolean hasFacetValue(List<JobSearchRequestFacet> jobSearchRequestFacetList){
+        boolean result = true;
+
+        // TODO:
+        // Add time related facets
+        try{
+            for(JobSearchRequestFacet jobSearchRequestFacet: jobSearchRequestFacetList){
+                boolean hasFacet = false;
+                for(Field field: this.getClass().getDeclaredFields()){
+                    if(field.isAnnotationPresent(FacetColumnName.class)){
+                        String fieldName = field.getAnnotation(FacetColumnName.class).value();
+                        if(jobSearchRequestFacet.getFieldName().equalsIgnoreCase(fieldName)){
+                            if(jobSearchRequestFacet.getFieldValue().equalsIgnoreCase((String) field.get(this)))
+                                hasFacet = true;
+                            break;
+                        }
+                    }
+                }
+
+                result = result && hasFacet;
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occured while determining if the job has the facet value. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+        }
+        return result;
     }
 }

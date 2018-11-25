@@ -1,7 +1,7 @@
 <template>
     <div class="field">
         <div class="ui checkbox">
-            <input type="checkbox"/>
+            <input type="checkbox" v-on:click="click"/>
             <label>{{ value }}</label>
         </div>
     </div>
