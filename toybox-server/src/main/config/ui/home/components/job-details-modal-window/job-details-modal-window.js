@@ -40,7 +40,11 @@ module.exports = {
     },
     methods:{
         getConfiguration(fieldName){
-            return axios.get("/configuration?field=" + fieldName);
+            return axios.get("/configuration?field=" + fieldName)
+                .catch(error => {
+                    // TODO: Error popup here
+                    console.error(error.response.data.message);
+                });
         },
         loadJobDetails:function(){
             this.getConfiguration("jobServiceUrl")
@@ -56,7 +60,7 @@ module.exports = {
             .then(response => {
                 console.log(response);
                 if(response){
-                    this.steps = response.data.entity.toyboxJobSteps;
+                    this.steps = response.data.toyboxJobSteps;
                 }
             });
         },

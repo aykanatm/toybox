@@ -39,7 +39,11 @@ const jobs = new Vue({
     },
     methods:{
         getConfiguration(fieldName){
-            return axios.get("/configuration?field=" + fieldName);
+            return axios.get("/configuration?field=" + fieldName)
+                .catch(error => {
+                    // TODO: Error popup here
+                    console.error(error.response.data.message);
+                });
         },
         getJobs(offset, limit, sortType, sortColumn, username, jobSearchRequestFacetList)
         {

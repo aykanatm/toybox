@@ -2,6 +2,7 @@ package com.github.murataykanat.toybox.models.dbo.mappers;
 
 import com.github.murataykanat.toybox.models.ToyboxJob;
 import com.github.murataykanat.toybox.models.UploadFile;
+import com.github.murataykanat.toybox.models.UploadFileLst;
 import com.github.murataykanat.toybox.utilities.DateTimeUtils;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -29,11 +30,15 @@ public class ToyboxJobRowMapper implements RowMapper<ToyboxJob> {
         toyboxJob.setStatus(resultSet.getString("STATUS"));
 
         Gson gson = new Gson();
-        Type listType = new TypeToken<ArrayList<UploadFile>>(){}.getType();
-        ArrayList<UploadFile> uploadedFiles = gson.fromJson(resultSet.getString("PARAMETERS"), listType);
-        String username = uploadedFiles.get(0).getUsername();
-        toyboxJob.setUsername(username);
+        UploadFileLst uploadFileLst = gson.fromJson(resultSet.getString("PARAMETERS"), UploadFileLst.class);
+        if(uploadFileLst != null){
+            String username = uploadFileLst.getUploadFiles().get(0).getUsername();
+            toyboxJob.setUsername(username);
 
-        return toyboxJob;
+            return toyboxJob;
+        }
+        else{
+            throw new SQLException("Upload file list is null!");
+        }
     }
 }
