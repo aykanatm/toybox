@@ -45,11 +45,19 @@ module.exports = {
         loadJobDetails:function(){
             this.getConfiguration("jobServiceUrl")
             .then(response => {
-                return axios.get(response.data.value + "/jobs/" + this.jobExecutionId + "/steps" );
+                if(response){
+                    return axios.get(response.data.value + "/jobs/" + this.jobExecutionId + "/steps" )
+                    .catch(error => {
+                        // TODO: Error popup here
+                        console.error(error.response.data.message);
+                    });
+                }
             })
             .then(response => {
                 console.log(response);
-                this.steps = response.data.toyboxJobSteps;
+                if(response){
+                    this.steps = response.data.entity.toyboxJobSteps;
+                }
             });
         },
         convertToDateString(milliseconds){

@@ -45,25 +45,33 @@ const jobs = new Vue({
         {
             this.getConfiguration("jobServiceUrl")
             .then(response => {
-                var searchRequest = {};
-                searchRequest.limit = limit;
-                searchRequest.offset = offset;
-                searchRequest.sortType = sortType;
-                searchRequest.sortColumn = sortColumn;
-                searchRequest.username = username;
-                searchRequest.jobSearchRequestFacetList = jobSearchRequestFacetList;
-                return axios.post(response.data.value + "/jobs/search", searchRequest);
+                if(response){
+                    var searchRequest = {};
+                    searchRequest.limit = limit;
+                    searchRequest.offset = offset;
+                    searchRequest.sortType = sortType;
+                    searchRequest.sortColumn = sortColumn;
+                    searchRequest.username = username;
+                    searchRequest.jobSearchRequestFacetList = jobSearchRequestFacetList;
+                    return axios.post(response.data.value + "/jobs/search", searchRequest)
+                        .catch(error => {
+                                // TODO: Error popup here
+                                console.error(error.response.data.message);
+                            });
+                }
             })
             .then(response => {
                 console.log(response);
-
-                this.jobs = response.data.jobs;
-                this.facets = response.data.facets;
-                this.totalRecords = response.data.totalRecords;
-                this.totalPages = Math.ceil(this.totalRecords / this.limit);
-                this.currentPage = Math.ceil((offset / limit) + 1);
+                if(response){
+                    this.jobs = response.data.jobs;
+                    this.facets = response.data.facets;
+                    this.totalRecords = response.data.totalRecords;
+                    this.totalPages = Math.ceil(this.totalRecords / this.limit);
+                    this.currentPage = Math.ceil((offset / limit) + 1);
+                }
             })
             .then(response => {
+                console.log(response);
                 this.updatePagination(this.currentPage, this.totalPages, offset, limit, this.totalRecords);
                 this.updateSortStatus(this.sortType, this.sortColumn)
             });

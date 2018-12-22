@@ -8,6 +8,8 @@ import java.util.List;
 public class RetrieveJobStepsResult implements Serializable {
     @JsonProperty("toyboxJobSteps")
     private List<ToyboxJobStep> toyboxJobSteps;
+    @JsonProperty("message")
+    private String message;
 
     public List<ToyboxJobStep> getToyboxJobSteps() {
         return toyboxJobSteps;
@@ -15,5 +17,13 @@ public class RetrieveJobStepsResult implements Serializable {
 
     public void setToyboxJobSteps(List<ToyboxJobStep> toyboxJobSteps) {
         this.toyboxJobSteps = toyboxJobSteps;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
     }
 }

@@ -1,6 +1,7 @@
 package com.github.murataykanat.toybox.batch.jobs;
 
 import com.github.murataykanat.toybox.batch.utils.Constants;
+import com.github.murataykanat.toybox.models.UploadFileLst;
 import com.github.murataykanat.toybox.models.dbo.Asset;
 import com.github.murataykanat.toybox.models.UploadFile;
 import com.google.gson.Gson;
@@ -60,8 +61,7 @@ public class ImportJobConfig {
 
     private Map<String, UploadFile> thumbnailsToUploadedFilesMap;
 
-    // TODO:
-    // Implement exception handling
+    // TODO: Implement exception handling
 
     @Bean
     public Job importJob(JobBuilderFactory jobBuilderFactory, StepBuilderFactory stepBuilderFactory){
@@ -78,47 +78,54 @@ public class ImportJobConfig {
                                 String filePathsJsonStr = (String) entry.getValue();
 
                                 Gson gson = new Gson();
-                                Type listType = new TypeToken<ArrayList<UploadFile>>(){}.getType();
-                                ArrayList<UploadFile> uploadedFiles = gson.fromJson(filePathsJsonStr, listType);
+                                // Type listType = new TypeToken<ArrayList<UploadFile>>(){}.getType();
+                                UploadFileLst uploadFileLst = gson.fromJson(filePathsJsonStr, UploadFileLst.class);
 
-                                for(UploadFile uploadFile: uploadedFiles){
-                                    File inputFile = new File(uploadFile.getPath());
-                                    String thumbnailName = "thumb_" + FilenameUtils.removeExtension(inputFile.getName()) + "." + thumbnailFormat;
-                                    File outputFile = new File(importStagingThumbnailsPath + File.separator + thumbnailName);
+                                if(uploadFileLst != null){
+                                    List<UploadFile> uploadFiles = uploadFileLst.getUploadFiles();
+                                    for(UploadFile uploadFile: uploadFiles){
+                                        File inputFile = new File(uploadFile.getPath());
+                                        String thumbnailName = "thumb_" + FilenameUtils.removeExtension(inputFile.getName()) + "." + thumbnailFormat;
+                                        File outputFile = new File(importStagingThumbnailsPath + File.separator + thumbnailName);
 
-                                    // Generate thumbnail
-                                    CommandLine cmdLine = new CommandLine(imagemagickExecutable);
-                                    cmdLine.addArgument("${inputFile}");
-                                    String[] arguments = imagemagickThumbnailSettings.split("\\s+");
-                                    for(String argument: arguments){
-                                        cmdLine.addArgument(argument);
+                                        // Generate thumbnail
+                                        CommandLine cmdLine = new CommandLine(imagemagickExecutable);
+                                        cmdLine.addArgument("${inputFile}");
+                                        String[] arguments = imagemagickThumbnailSettings.split("\\s+");
+                                        for(String argument: arguments){
+                                            cmdLine.addArgument(argument);
+                                        }
+                                        cmdLine.addArgument("${outputFile}");
+                                        HashMap map = new HashMap();
+                                        map.put("inputFile", inputFile);
+                                        map.put("outputFile", outputFile);
+                                        cmdLine.setSubstitutionMap(map);
+
+                                        DefaultExecuteResultHandler resultHandler = new DefaultExecuteResultHandler();
+
+                                        ExecuteWatchdog watchdog = new ExecuteWatchdog(Constants.IMAGEMAGICK_TIMEOUT);
+                                        Executor executor = new DefaultExecutor();
+                                        executor.setExitValue(1);
+                                        executor.setWatchdog(watchdog);
+                                        _logger.debug("Executing command: " + cmdLine.toString());
+                                        executor.execute(cmdLine, resultHandler);
+
+                                        resultHandler.waitFor();
+
+                                        int exitValue = resultHandler.getExitValue();
+                                        if(exitValue != 0){
+                                            String errorMessage = "ImageMagick failed to generate thumbnail of the file '" + inputFile.getAbsolutePath()
+                                                    + "'. " + resultHandler.getException().getLocalizedMessage();
+                                            throw new Exception(errorMessage);
+                                        }
+                                        else{
+                                            _logger.debug("ImageMagick successfully generated the thumbnail '" + outputFile.getAbsolutePath());
+                                            thumbnailsToUploadedFilesMap.put(outputFile.getAbsolutePath(), uploadFile);
+                                        }
                                     }
-                                    cmdLine.addArgument("${outputFile}");
-                                    HashMap map = new HashMap();
-                                    map.put("inputFile", inputFile);
-                                    map.put("outputFile", outputFile);
-                                    cmdLine.setSubstitutionMap(map);
-
-                                    DefaultExecuteResultHandler resultHandler = new DefaultExecuteResultHandler();
-
-                                    ExecuteWatchdog watchdog = new ExecuteWatchdog(Constants.IMAGEMAGICK_TIMEOUT);
-                                    Executor executor = new DefaultExecutor();
-                                    executor.setExitValue(1);
-                                    executor.setWatchdog(watchdog);
-                                    _logger.debug("Executing command: " + cmdLine.toString());
-                                    executor.execute(cmdLine, resultHandler);
-
-                                    resultHandler.waitFor();
-
-                                    int exitValue = resultHandler.getExitValue();
-                                    if(exitValue != 0){
-                                        _logger.error("ImageMagick failed to generate thumbnail of the file '" + inputFile.getAbsolutePath()
-                                                + "'. " + resultHandler.getException().getLocalizedMessage(), resultHandler.getException());
-                                    }
-                                    else{
-                                        _logger.debug("ImageMagick successfully generated the thumbnail '" + outputFile.getAbsolutePath());
-                                        thumbnailsToUploadedFilesMap.put(outputFile.getAbsolutePath(), uploadFile);
-                                    }
+                                }
+                                else{
+                                    throw new Exception("Upload file list is null!");
                                 }
                             }
                         }
@@ -128,8 +135,7 @@ public class ImportJobConfig {
                 })
                 .build();
 
-        // TODO:
-        // Add generate previews step
+        // TODO: Add generate previews step
 
         Step stepGenerateAssets = stepBuilderFactory.get(Constants.STEP_IMPORT_GENERATE_ASSET)
                 .tasklet(new Tasklet() {
@@ -218,14 +224,18 @@ public class ImportJobConfig {
                 }
 
                 Gson gson = new Gson();
-                Type listType = new TypeToken<ArrayList<UploadFile>>(){}.getType();
-                ArrayList<UploadFile> uploadedFiles = gson.fromJson(filePathsJsonStr, listType);
-
-                for(UploadFile uploadFile: uploadedFiles){
-                    File file = new File(uploadFile.getPath());
-                    if(!file.exists()){
-                        throw new JobParametersInvalidException("File '" + uploadFile.getPath() + "' did not exist or was not readable.");
+                UploadFileLst uploadedFileList = gson.fromJson(filePathsJsonStr, UploadFileLst.class);
+                if(uploadedFileList != null){
+                    List<UploadFile> uploadFiles = uploadedFileList.getUploadFiles();
+                    for(UploadFile uploadFile: uploadFiles){
+                        File file = new File(uploadFile.getPath());
+                        if(!file.exists()){
+                            throw new JobParametersInvalidException("File '" + uploadFile.getPath() + "' did not exist or was not readable.");
+                        }
                     }
+                }
+                else{
+                    throw new JobParametersInvalidException("Uploaded file list is null!");
                 }
 
                 _logger.debug("<< validate()");

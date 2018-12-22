@@ -10,6 +10,8 @@ public class RetrieveToyboxJobResult implements Serializable {
     private ToyboxJob toyboxJob;
     @JsonProperty("toyboxJobSteps")
     private List<ToyboxJobStep> toyboxJobSteps;
+    @JsonProperty("message")
+    private String message;
 
     public ToyboxJob getToyboxJob() {
         return toyboxJob;
@@ -25,5 +27,13 @@ public class RetrieveToyboxJobResult implements Serializable {
 
     public void setToyboxJobSteps(List<ToyboxJobStep> toyboxJobSteps) {
         this.toyboxJobSteps = toyboxJobSteps;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
     }
 }
