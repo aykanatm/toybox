@@ -100,8 +100,7 @@ public class ToyboxJob {
     public boolean hasFacetValue(List<JobSearchRequestFacet> jobSearchRequestFacetList){
         boolean result = true;
 
-        // TODO:
-        // Add time related facets
+        // TODO: Add time related facets
         try{
             for(JobSearchRequestFacet jobSearchRequestFacet: jobSearchRequestFacetList){
                 boolean hasFacet = false;
