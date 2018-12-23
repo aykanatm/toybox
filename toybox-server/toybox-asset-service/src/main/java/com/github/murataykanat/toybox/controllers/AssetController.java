@@ -61,6 +61,7 @@ public class AssetController {
             UploadFileLst uploadFileLst = new UploadFileLst();
             uploadFileLst.setMessage(errorMessage);
 
+            _logger.debug("<< uploadAssets()");
             return new ResponseEntity<>(uploadFileLst, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

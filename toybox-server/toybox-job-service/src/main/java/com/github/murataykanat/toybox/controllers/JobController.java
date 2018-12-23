@@ -62,6 +62,7 @@ public class JobController {
                 ImportAssetResponse importAssetResponse = new ImportAssetResponse();
                 importAssetResponse.setMessage(errorMessage);
 
+                _logger.debug("<< importAsset()");
                 return new ResponseEntity<>(importAssetResponse, HttpStatus.BAD_REQUEST);
             }
         }
@@ -71,6 +72,7 @@ public class JobController {
             ImportAssetResponse importAssetResponse = new ImportAssetResponse();
             importAssetResponse.setMessage(errorMessage);
 
+            _logger.debug("<< importAsset()");
             return new ResponseEntity<>(importAssetResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -193,6 +195,7 @@ public class JobController {
                     retrieveToyboxJobsResult = new RetrieveToyboxJobsResult();
                     retrieveToyboxJobsResult.setMessage(message);
 
+                    _logger.debug("<< retrieveJobs()");
                     return new ResponseEntity<>(retrieveToyboxJobsResult, HttpStatus.NO_CONTENT);
                 }
             }
@@ -203,6 +206,7 @@ public class JobController {
                 RetrieveToyboxJobsResult retrieveToyboxJobsResult = new RetrieveToyboxJobsResult();
                 retrieveToyboxJobsResult.setMessage(errorMessage);
 
+                _logger.debug("<< retrieveJobs()");
                 return new ResponseEntity<>(retrieveToyboxJobsResult, HttpStatus.BAD_REQUEST);
             }
         }
@@ -213,6 +217,7 @@ public class JobController {
             RetrieveToyboxJobsResult retrieveToyboxJobsResult = new RetrieveToyboxJobsResult();
             retrieveToyboxJobsResult.setMessage(errorMessage);
 
+            _logger.debug("<< retrieveJobs()");
             return new ResponseEntity<>(retrieveToyboxJobsResult, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -247,8 +252,8 @@ public class JobController {
                                 new Object[]{toyboxJob.getJobExecutionId()},new ToyboxJobStepRowMapper());
                         retrieveToyboxJobResult.setToyboxJobSteps(jobSteps);
                         retrieveToyboxJobResult.setMessage("Job retrieved successfully!");
-                        _logger.debug("<< retrieveJob()");
 
+                        _logger.debug("<< retrieveJob()");
                         return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.OK);
                     }
                     else{
@@ -258,6 +263,7 @@ public class JobController {
                         RetrieveToyboxJobResult retrieveToyboxJobResult = new RetrieveToyboxJobResult();
 
                         retrieveToyboxJobResult.setMessage(errorMessage);
+
                         _logger.debug("<< retrieveJob()");
                         return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.INTERNAL_SERVER_ERROR);
                     }
@@ -269,6 +275,7 @@ public class JobController {
                     RetrieveToyboxJobResult retrieveToyboxJobResult = new RetrieveToyboxJobResult();
                     retrieveToyboxJobResult.setMessage(message);
 
+                    _logger.debug("<< retrieveJob()");
                     return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.NO_CONTENT);
                 }
             }
@@ -290,8 +297,8 @@ public class JobController {
             RetrieveToyboxJobResult retrieveToyboxJobResult = new RetrieveToyboxJobResult();
 
             retrieveToyboxJobResult.setMessage(errorMessage);
-            _logger.debug("<< retrieveJob()");
 
+            _logger.debug("<< retrieveJob()");
             return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -320,6 +327,7 @@ public class JobController {
                     retrieveJobStepsResult = new RetrieveJobStepsResult();
                     retrieveJobStepsResult.setMessage(message);
 
+                    _logger.debug("<< retrieveJobSteps()");
                     return new ResponseEntity<>(retrieveJobStepsResult, HttpStatus.NO_CONTENT);
                 }
             }
