@@ -35,14 +35,17 @@ const jobs = new Vue({
         sortedDesByStatus: false,
         // Filtering
         facets: [],
-        jobSearchRequestFacetList: []
+        jobSearchRequestFacetList: [],
+        // Messages
+        messages: [],
     },
     methods:{
         getConfiguration(fieldName){
             return axios.get("/configuration?field=" + fieldName)
                 .catch(error => {
-                    // TODO: Error popup here
-                    console.error(error.response.data.message);
+                    var errorMessage = error.response.data.message
+                    console.error(errorMessage);
+                    this.displayMessage('Error', errorMessage);
                 });
         },
         getJobs(offset, limit, sortType, sortColumn, username, jobSearchRequestFacetList)
@@ -59,19 +62,25 @@ const jobs = new Vue({
                     searchRequest.jobSearchRequestFacetList = jobSearchRequestFacetList;
                     return axios.post(response.data.value + "/jobs/search", searchRequest)
                         .catch(error => {
-                                // TODO: Error popup here
-                                console.error(error.response.data.message);
+                                var errorMessage = error.response.data.message
+                                console.error(errorMessage);
+                                this.displayMessage('Error', errorMessage);
                             });
                 }
             })
             .then(response => {
                 console.log(response);
                 if(response){
-                    this.jobs = response.data.jobs;
-                    this.facets = response.data.facets;
-                    this.totalRecords = response.data.totalRecords;
-                    this.totalPages = Math.ceil(this.totalRecords / this.limit);
-                    this.currentPage = Math.ceil((offset / limit) + 1);
+                    if(response.status != 204){
+                        this.jobs = response.data.jobs;
+                        this.facets = response.data.facets;
+                        this.totalRecords = response.data.totalRecords;
+                        this.totalPages = Math.ceil(this.totalRecords / this.limit);
+                        this.currentPage = Math.ceil((offset / limit) + 1);
+                    }
+                    else{
+                        this.displayMessage('Information','There is no job in the system');
+                    }
                 }
             })
             .then(response => {
@@ -181,6 +190,47 @@ const jobs = new Vue({
             this.sortColumn = sortColumn;
 
             this.getJobs(this.defaultOffset, this.defaultLimit, this.sortType, this.sortColumn, this.username, this.jobSearchRequestFacetList);
+        },
+        displayMessage(type, messageString){
+            var isError = false;
+            var isOk = false;
+            var isWarning = false;
+            var isInfo = false;
+
+            if(type === 'Information'){
+                isInfo = true;
+            }
+            else if(type === 'Error'){
+                isError = true;
+            }
+            else if(type === 'Warning'){
+                isWarning = true;
+            }
+            else if(type === 'Success'){
+                isOk = true;
+            }
+            else{
+                isInfo = true;
+            }
+
+            var message = {id:this.messages.length, isError:isError, isOk:isOk, isWarning:isWarning, isInfo:isInfo, header:type, message:messageString}
+            this.messages.push(message);
+            // Initialize events on the message
+            setTimeout(() => {
+                $('.message .close')
+                    .on('click', function() {
+                        $(this)
+                        .closest('.message')
+                        .remove();
+                    });
+
+                var messageSelector = '#' + message.id + '.message';
+                $(messageSelector)
+                    .delay(2000)
+                    .queue(function(){
+                        $(this).remove().dequeue();
+                    });
+            }, 100);
         }
     },
     computed:{
@@ -240,12 +290,15 @@ const jobs = new Vue({
         var csrfToken = $("meta[name='_csrf']").attr("content");
         console.log('CSRF header: ' + csrfHeader);
         console.log('CSRF token: ' + csrfToken);
+
+        // Set axios configuration
         axios.defaults.headers = {
             // 'X-CSRF-TOKEN': csrfToken,
             'XSRF-TOKEN': csrfToken
         }
         axios.defaults.withCredentials = true;
 
+        // Initialize accordions
         $('.ui.accordion').accordion();
 
         this.limit = this.defaultLimit;
@@ -255,7 +308,8 @@ const jobs = new Vue({
 
         this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.jobSearchRequestFacetList);
 
-        this.$root.$on('eventPerformFacetedSearch', (facet, isAdd) => {
+        // Initialize event listeners
+        this.$root.$on('perform-faceted-search', (facet, isAdd) => {
             if(isAdd){
                 console.log('Adding facet ' + facet.fieldName + ' and its value ' + facet.fieldValue + ' to search');
                 this.jobSearchRequestFacetList.push(facet);
@@ -275,10 +329,13 @@ const jobs = new Vue({
 
             this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.jobSearchRequestFacetList);
         });
+
+        this.$root.$on('message-sent', this.displayMessage);
     },
     components:{
         'navbar' : httpVueLoader('../components/navbar/navbar.vue'),
         'job' : httpVueLoader('../components/job/job.vue'),
-        'facet' : httpVueLoader('../components/facet/facet.vue')
+        'facet' : httpVueLoader('../components/facet/facet.vue'),
+        'message' : httpVueLoader('../components/message/message.vue')
     }
 });

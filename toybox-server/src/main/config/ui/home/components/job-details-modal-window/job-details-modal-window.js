@@ -30,7 +30,7 @@ module.exports = {
         }
     },
     mounted:function(){
-        this.$root.$on('eventOpenJobDetailsModalWindow', (jobExecutionId) => {
+        this.$root.$on('open-job-details-modal-window', (jobExecutionId) => {
             if(jobExecutionId === this.jobExecutionId)
             {
                 $(this.$el).modal('show');
@@ -42,8 +42,9 @@ module.exports = {
         getConfiguration(fieldName){
             return axios.get("/configuration?field=" + fieldName)
                 .catch(error => {
-                    // TODO: Error popup here
-                    console.error(error.response.data.message);
+                    var errorMessage = error.response.data.message
+                    console.error(errorMessage);
+                    this.$root.$emit('message-sent', 'Error', errorMessage);
                 });
         },
         loadJobDetails:function(){
@@ -52,8 +53,9 @@ module.exports = {
                 if(response){
                     return axios.get(response.data.value + "/jobs/" + this.jobExecutionId + "/steps" )
                     .catch(error => {
-                        // TODO: Error popup here
-                        console.error(error.response.data.message);
+                        var errorMessage = error.response.data.message
+                        console.error(errorMessage);
+                        this.$root.$emit('message-sent', 'Error', errorMessage);
                     });
                 }
             })
