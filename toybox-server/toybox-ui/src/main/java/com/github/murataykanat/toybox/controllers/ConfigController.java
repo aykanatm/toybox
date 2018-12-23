@@ -3,6 +3,7 @@ package com.github.murataykanat.toybox.controllers;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.murataykanat.toybox.models.ConfigurationFieldValue;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,11 +38,16 @@ public class ConfigController {
             JsonNode root = mapper.readTree(response.getBody());
             String fieldValue = root.get("propertySources").get(0).get("source").get(fieldName).textValue();
 
-            configurationFieldValue.setValue(fieldValue);
-            configurationFieldValue.setMessage("Field value retrieved successfully!");
+            if(StringUtils.isNotBlank(fieldValue)){
+                configurationFieldValue.setValue(fieldValue);
+                configurationFieldValue.setMessage("Field value retrieved successfully!");
 
-            _logger.debug("<< getConfiguration() [" + configurationFieldValue.getValue() + "]");
-            return new ResponseEntity<>(configurationFieldValue, HttpStatus.OK);
+                _logger.debug("<< getConfiguration() [" + configurationFieldValue.getValue() + "]");
+                return new ResponseEntity<>(configurationFieldValue, HttpStatus.OK);
+            }
+            else{
+                throw new Exception("Field value is blank!");
+            }
         }
         catch (Exception e){
             String errorMessage = "An error occurred while getting the configuration. " + e.getLocalizedMessage();
