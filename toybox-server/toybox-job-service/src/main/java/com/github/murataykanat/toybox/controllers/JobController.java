@@ -127,8 +127,7 @@ public class JobController {
                                     if(facetColumnName != null && facetColumnName.equalsIgnoreCase(facetName)){
                                         if(method.getAnnotation(FacetDefaultLookup.class) != null)
                                         {
-                                            String defaultlookupString = method.getAnnotation(FacetDefaultLookup.class).values();
-                                            String[] defaultLookups = defaultlookupString.split(",");
+                                            String[] defaultLookups = method.getAnnotation(FacetDefaultLookup.class).values();
                                             for(String defaultLookup: defaultLookups){
                                                 lookups.add(defaultLookup);
                                             }
