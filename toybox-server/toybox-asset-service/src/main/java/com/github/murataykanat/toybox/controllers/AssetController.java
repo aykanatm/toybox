@@ -50,7 +50,7 @@ public class AssetController {
             uploadFileLst.setMessage("Files uploaded successfully!");
 
             _logger.debug("<< uploadAssets()");
-            return new ResponseEntity<>(uploadFileLst, HttpStatus.OK);
+            return new ResponseEntity<>(uploadFileLst, HttpStatus.CREATED);
         }
         catch (Exception e){
             String errorMessage = "An error occurred while uploading files. " + e.getLocalizedMessage();

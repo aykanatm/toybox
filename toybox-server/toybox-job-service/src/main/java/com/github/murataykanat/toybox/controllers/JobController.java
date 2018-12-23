@@ -54,7 +54,7 @@ public class JobController {
                 importAssetResponse.setMessage("Import job started.");
 
                 _logger.debug("<< importAsset()");
-                return new ResponseEntity<>(importAssetResponse, HttpStatus.OK);
+                return new ResponseEntity<>(importAssetResponse, HttpStatus.CREATED);
             }
             else{
                 String errorMessage = "Uploaded files request is blank!";
@@ -91,98 +91,110 @@ public class JobController {
                 List<JobSearchRequestFacet> jobSearchRequestFacetList = jobSearchRequest.getJobSearchRequestFacetList();
 
                 List<ToyboxJob> allJobs = jdbcTemplate.query("SELECT JOB_INSTANCE_ID, JOB_EXECUTION_ID, JOB_NAME, JOB_TYPE, START_TIME, END_TIME, STATUS, PARAMETERS  FROM TOYBOX_JOBS_VW", new ToyboxJobRowMapper());
-                List<ToyboxJob> jobs;
 
-                if(jobSearchRequestFacetList != null && jobSearchRequestFacetList.size() > 0){
-                    jobs = allJobs.stream().filter(j -> j.hasFacetValue(jobSearchRequestFacetList)).collect(Collectors.toList());
-                }
-                else{
-                    jobs = allJobs;
-                }
+                if(allJobs.size() > 0){
+                    List<ToyboxJob> jobs;
 
-                List<String> facets = Arrays.asList(ToyboxJob.class.getDeclaredFields())
-                        .stream()
-                        .filter(f -> nonNull(f.getAnnotation(FacetColumnName.class)))
-                        .map(f -> f.getAnnotation(FacetColumnName.class).value())
-                        .collect(Collectors.toList());
+                    if(jobSearchRequestFacetList != null && jobSearchRequestFacetList.size() > 0){
+                        jobs = allJobs.stream().filter(j -> j.hasFacetValue(jobSearchRequestFacetList)).collect(Collectors.toList());
+                    }
+                    else{
+                        jobs = allJobs;
+                    }
 
-                List<ToyboxJobFacet> toyboxJobFacets = new ArrayList<>();
+                    List<String> facets = Arrays.asList(ToyboxJob.class.getDeclaredFields())
+                            .stream()
+                            .filter(f -> nonNull(f.getAnnotation(FacetColumnName.class)))
+                            .map(f -> f.getAnnotation(FacetColumnName.class).value())
+                            .collect(Collectors.toList());
 
-                // TODO: Convert this to stream implementation
-                for(String facetName: facets){
-                    ToyboxJobFacet toyboxJobFacet = new ToyboxJobFacet();
-                    toyboxJobFacet.setName(facetName);
+                    List<ToyboxJobFacet> toyboxJobFacets = new ArrayList<>();
 
-                    List<String> lookups = new ArrayList<>();
+                    // TODO: Convert this to stream implementation
+                    for(String facetName: facets){
+                        ToyboxJobFacet toyboxJobFacet = new ToyboxJobFacet();
+                        toyboxJobFacet.setName(facetName);
 
-                    for(ToyboxJob toyboxJob: jobs ){
-                        for(Method method: toyboxJob.getClass().getDeclaredMethods()){
-                            if(method.getAnnotation(FacetColumnName.class) != null)
-                            {
-                                String facetColumnName = method.getAnnotation(FacetColumnName.class).value();
-                                if(facetColumnName != null && facetColumnName.equalsIgnoreCase(facetName)){
-                                    if(method.getAnnotation(FacetDefaultLookup.class) != null)
-                                    {
-                                        String defaultlookupString = method.getAnnotation(FacetDefaultLookup.class).values();
-                                        String[] defaultLookups = defaultlookupString.split(",");
-                                        for(String defaultLookup: defaultLookups){
-                                            lookups.add(defaultLookup);
+                        List<String> lookups = new ArrayList<>();
+
+                        for(ToyboxJob toyboxJob: jobs ){
+                            for(Method method: toyboxJob.getClass().getDeclaredMethods()){
+                                if(method.getAnnotation(FacetColumnName.class) != null)
+                                {
+                                    String facetColumnName = method.getAnnotation(FacetColumnName.class).value();
+                                    if(facetColumnName != null && facetColumnName.equalsIgnoreCase(facetName)){
+                                        if(method.getAnnotation(FacetDefaultLookup.class) != null)
+                                        {
+                                            String defaultlookupString = method.getAnnotation(FacetDefaultLookup.class).values();
+                                            String[] defaultLookups = defaultlookupString.split(",");
+                                            for(String defaultLookup: defaultLookups){
+                                                lookups.add(defaultLookup);
+                                            }
+                                            break;
                                         }
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        String lookup = (String) method.invoke(toyboxJob);
-                                        lookups.add(lookup);
-                                        break;
+                                        else
+                                        {
+                                            String lookup = (String) method.invoke(toyboxJob);
+                                            lookups.add(lookup);
+                                            break;
+                                        }
                                     }
                                 }
                             }
                         }
+
+                        Set<String> uniqueLookupValues = new HashSet<>(lookups);
+                        toyboxJobFacet.setLookups(new ArrayList<>(uniqueLookupValues));
+                        toyboxJobFacets.add(toyboxJobFacet);
                     }
 
-                    Set<String> uniqueLookupValues = new HashSet<>(lookups);
-                    toyboxJobFacet.setLookups(new ArrayList<>(uniqueLookupValues));
-                    toyboxJobFacets.add(toyboxJobFacet);
-                }
+                    retrieveToyboxJobsResult.setFacets(toyboxJobFacets);
 
-                retrieveToyboxJobsResult.setFacets(toyboxJobFacets);
+                    if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("JOB_NAME")){
+                        sortJobs(sortType, jobs, Comparator.comparing(ToyboxJob::getJobName, Comparator.nullsLast(Comparator.naturalOrder())));
+                    }
+                    else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("JOB_TYPE")){
+                        sortJobs(sortType, jobs, Comparator.comparing(ToyboxJob::getJobType, Comparator.nullsLast(Comparator.naturalOrder())));
+                    }
+                    else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("START_TIME")){
+                        sortJobs(sortType, jobs, Comparator.comparing(ToyboxJob::getStartTime, Comparator.nullsLast(Comparator.naturalOrder())));
+                    }
+                    else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("END_TIME")){
+                        sortJobs(sortType, jobs, Comparator.comparing(ToyboxJob::getEndTime, Comparator.nullsLast(Comparator.naturalOrder())));
+                    }
+                    else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("STATUS")){
+                        sortJobs(sortType, jobs, Comparator.comparing(ToyboxJob::getStatus, Comparator.nullsLast(Comparator.naturalOrder())));
+                    }
+                    else{
+                        sortJobs(sortType, jobs, Comparator.comparing(ToyboxJob::getEndTime, Comparator.nullsLast(Comparator.naturalOrder())));
+                    }
 
-                if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("JOB_NAME")){
-                    sortJobs(sortType, jobs, Comparator.comparing(ToyboxJob::getJobName, Comparator.nullsLast(Comparator.naturalOrder())));
-                }
-                else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("JOB_TYPE")){
-                    sortJobs(sortType, jobs, Comparator.comparing(ToyboxJob::getJobType, Comparator.nullsLast(Comparator.naturalOrder())));
-                }
-                else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("START_TIME")){
-                    sortJobs(sortType, jobs, Comparator.comparing(ToyboxJob::getStartTime, Comparator.nullsLast(Comparator.naturalOrder())));
-                }
-                else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("END_TIME")){
-                    sortJobs(sortType, jobs, Comparator.comparing(ToyboxJob::getEndTime, Comparator.nullsLast(Comparator.naturalOrder())));
-                }
-                else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("STATUS")){
-                    sortJobs(sortType, jobs, Comparator.comparing(ToyboxJob::getStatus, Comparator.nullsLast(Comparator.naturalOrder())));
+                    // TODO: If an admin users gets the jobs, display all jobs regardless of the username
+                    List<ToyboxJob> jobsByCurrentUser = jobs.stream().filter(j -> j.getUsername().equalsIgnoreCase(username)).collect(Collectors.toList());
+
+                    int totalRecords = jobsByCurrentUser.size();
+                    int startIndex = offset;
+                    int endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
+
+                    List<ToyboxJob> jobsOnPage = jobsByCurrentUser.subList(startIndex, endIndex);
+
+
+                    retrieveToyboxJobsResult.setTotalRecords(totalRecords);
+                    retrieveToyboxJobsResult.setJobs(jobsOnPage);
+
+                    _logger.debug("<< retrieveJobs()");
+                    retrieveToyboxJobsResult.setMessage("Jobs retrieved successfully!");
+                    return new ResponseEntity<>(retrieveToyboxJobsResult, HttpStatus.OK);
                 }
                 else{
-                    sortJobs(sortType, jobs, Comparator.comparing(ToyboxJob::getEndTime, Comparator.nullsLast(Comparator.naturalOrder())));
+                    String message = "There is no jobs to return.";
+                    _logger.debug(message);
+
+                    retrieveToyboxJobsResult = new RetrieveToyboxJobsResult();
+                    retrieveToyboxJobsResult.setMessage(message);
+
+                    return new ResponseEntity<>(retrieveToyboxJobsResult, HttpStatus.NO_CONTENT);
                 }
-
-                // TODO: If an admin users gets the jobs, display all jobs regardless of the username
-                List<ToyboxJob> jobsByCurrentUser = jobs.stream().filter(j -> j.getUsername().equalsIgnoreCase(username)).collect(Collectors.toList());
-
-                int totalRecords = jobsByCurrentUser.size();
-                int startIndex = offset;
-                int endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
-
-                List<ToyboxJob> jobsOnPage = jobsByCurrentUser.subList(startIndex, endIndex);
-
-
-                retrieveToyboxJobsResult.setTotalRecords(totalRecords);
-                retrieveToyboxJobsResult.setJobs(jobsOnPage);
-
-                _logger.debug("<< retrieveJobs()");
-                retrieveToyboxJobsResult.setMessage("Jobs retrieved successfully!");
-                return new ResponseEntity<>(retrieveToyboxJobsResult, HttpStatus.OK);
             }
             else{
                 String errorMessage = "Job search request is null!";
@@ -224,29 +236,40 @@ public class JobController {
             if(StringUtils.isNotBlank(jobInstanceId)){
                 List<ToyboxJob> jobs = jdbcTemplate.query("SELECT JOB_INSTANCE_ID, JOB_EXECUTION_ID, JOB_NAME, JOB_TYPE, START_TIME, END_TIME, STATUS, PARAMETERS  FROM TOYBOX_JOBS_VW WHERE JOB_INSTANCE_ID=?",
                         new Object[]{jobInstanceId},new ToyboxJobRowMapper());
-                if(jobs.size() == 1){
-                    RetrieveToyboxJobResult retrieveToyboxJobResult = new RetrieveToyboxJobResult();
+                if(jobs.size() > 0){
+                    if(jobs.size() == 1){
+                        RetrieveToyboxJobResult retrieveToyboxJobResult = new RetrieveToyboxJobResult();
 
-                    ToyboxJob toyboxJob = jobs.get(0);
-                    retrieveToyboxJobResult.setToyboxJob(toyboxJob);
+                        ToyboxJob toyboxJob = jobs.get(0);
+                        retrieveToyboxJobResult.setToyboxJob(toyboxJob);
 
-                    List<ToyboxJobStep> jobSteps = jdbcTemplate.query("SELECT JOB_EXECUTION_ID, STEP_EXECUTION_ID, STEP_NAME, START_TIME, END_TIME, STATUS  FROM BATCH_STEP_EXECUTION WHERE JOB_EXECUTION_ID=?",
-                            new Object[]{toyboxJob.getJobExecutionId()},new ToyboxJobStepRowMapper());
-                    retrieveToyboxJobResult.setToyboxJobSteps(jobSteps);
-                    retrieveToyboxJobResult.setMessage("Job retrieved successfully!");
-                    _logger.debug("<< retrieveJob()");
+                        List<ToyboxJobStep> jobSteps = jdbcTemplate.query("SELECT JOB_EXECUTION_ID, STEP_EXECUTION_ID, STEP_NAME, START_TIME, END_TIME, STATUS  FROM BATCH_STEP_EXECUTION WHERE JOB_EXECUTION_ID=?",
+                                new Object[]{toyboxJob.getJobExecutionId()},new ToyboxJobStepRowMapper());
+                        retrieveToyboxJobResult.setToyboxJobSteps(jobSteps);
+                        retrieveToyboxJobResult.setMessage("Job retrieved successfully!");
+                        _logger.debug("<< retrieveJob()");
 
-                    return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.OK);
+                        return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.OK);
+                    }
+                    else{
+                        String errorMessage = "There are more than one job with the same ID!";
+                        _logger.error(errorMessage);
+
+                        RetrieveToyboxJobResult retrieveToyboxJobResult = new RetrieveToyboxJobResult();
+
+                        retrieveToyboxJobResult.setMessage(errorMessage);
+                        _logger.debug("<< retrieveJob()");
+                        return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.INTERNAL_SERVER_ERROR);
+                    }
                 }
                 else{
-                    String errorMessage = "There are more than one job with the same ID!";
-                    _logger.error(errorMessage);
+                    String message = "There is no job to return.";
+                    _logger.debug(message);
 
                     RetrieveToyboxJobResult retrieveToyboxJobResult = new RetrieveToyboxJobResult();
+                    retrieveToyboxJobResult.setMessage(message);
 
-                    retrieveToyboxJobResult.setMessage(errorMessage);
-                    _logger.debug("<< retrieveJob()");
-                    return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.INTERNAL_SERVER_ERROR);
+                    return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.NO_CONTENT);
                 }
             }
             else{
@@ -283,11 +306,22 @@ public class JobController {
                 List<ToyboxJobStep> jobSteps = jdbcTemplate.query("SELECT JOB_EXECUTION_ID, STEP_EXECUTION_ID, STEP_NAME, START_TIME, END_TIME, STATUS  FROM BATCH_STEP_EXECUTION WHERE JOB_EXECUTION_ID=?",
                         new Object[]{jobExecutionId},new ToyboxJobStepRowMapper());
 
-                retrieveJobStepsResult.setToyboxJobSteps(jobSteps);
-                retrieveJobStepsResult.setMessage("Job steps retrieved successfully!");
+                if(jobSteps.size() > 0){
+                    retrieveJobStepsResult.setToyboxJobSteps(jobSteps);
+                    retrieveJobStepsResult.setMessage("Job steps retrieved successfully!");
 
-                _logger.debug("<< retrieveJobSteps()");
-                return new ResponseEntity<>(retrieveJobStepsResult, HttpStatus.OK);
+                    _logger.debug("<< retrieveJobSteps()");
+                    return new ResponseEntity<>(retrieveJobStepsResult, HttpStatus.OK);
+                }
+                else{
+                    String message = "There is no job to return.";
+                    _logger.debug(message);
+
+                    retrieveJobStepsResult = new RetrieveJobStepsResult();
+                    retrieveJobStepsResult.setMessage(message);
+
+                    return new ResponseEntity<>(retrieveJobStepsResult, HttpStatus.NO_CONTENT);
+                }
             }
             else{
                 String errorMessage = "Job Execution ID is blank!";
