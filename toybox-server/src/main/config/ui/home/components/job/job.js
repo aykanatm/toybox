@@ -34,7 +34,7 @@ module.exports = {
     },
     methods:{
         showJobDetailsModalWindow:function(){
-            this.$root.$emit('eventOpenJobDetailsModalWindow', this.jobExecutionId);
+            this.$root.$emit('open-job-details-modal-window', this.jobExecutionId);
         },
         convertToDateString(milliseconds){
             if(milliseconds && milliseconds !== ''){

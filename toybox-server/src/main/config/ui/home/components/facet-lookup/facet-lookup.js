@@ -10,7 +10,7 @@ module.exports = {
             var fieldName = event.path[4].firstChild.innerText.trim();
             var isAdd = input.checked;
             var facet = {fieldName: fieldName, fieldValue: fieldValue};
-            this.$root.$emit('eventPerformFacetedSearch', facet, isAdd);
+            this.$root.$emit('perform-faceted-search', facet, isAdd);
         }
     }
 }
