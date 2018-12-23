@@ -2,6 +2,7 @@ const jobs = new Vue({
     el: '#toybox-jobs',
     data:{
         view: 'jobs',
+        isLoading: true,
         jobs:[],
         // TODO:
         // Make username dynamic
@@ -71,6 +72,7 @@ const jobs = new Vue({
             .then(response => {
                 console.log(response);
                 if(response){
+                    this.isLoading = false;
                     if(response.status != 204){
                         this.jobs = response.data.jobs;
                         this.facets = response.data.facets;
