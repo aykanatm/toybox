@@ -13,9 +13,10 @@
         <module>toybox-eureka-server</module>
         <module>toybox-hystrix-dashboard</module>
         <module>toybox-hystrix-turbine</module>
-        <module>toybox-authorization-server</module>
         <module>toybox-configuration-server</module>
+        <module>toybox-authorization-server</module>
         <module>toybox-ui</module>
         <module>toybox-asset-service</module>
+        <module>toybox-job-service</module>
     </modules>
 </project>
