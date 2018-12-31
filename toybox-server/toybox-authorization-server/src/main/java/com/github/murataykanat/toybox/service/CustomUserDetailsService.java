@@ -17,14 +17,17 @@ public class CustomUserDetailsService implements UserDetailsService {
     private UsersRepository usersRepository;
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    public UserDetails loadUserByUsername(String username) {
         Optional<User> usersOptional = usersRepository.findByUsername(username);
 
-        // If the username is not found
-        usersOptional
-                .orElseThrow(() -> new UsernameNotFoundException("Username '" + username + "' not found!"));
-
-        // Return the user as a CustomUserDetails object
-        return usersOptional.map(user -> new CustomUserDetails(user)).get();
+        // If the username is found
+        if(usersOptional.isPresent()){
+            // Return the user as a CustomUserDetails object
+            User user = usersOptional.get();
+            return new CustomUserDetails(user);
+        }
+        else{
+            throw new UsernameNotFoundException("Username '" + username + "' not found!");
+        }
     }
 }
