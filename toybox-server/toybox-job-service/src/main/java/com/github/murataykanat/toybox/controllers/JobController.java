@@ -245,11 +245,13 @@ public class JobController {
                         RetrieveToyboxJobResult retrieveToyboxJobResult = new RetrieveToyboxJobResult();
 
                         ToyboxJob toyboxJob = jobs.get(0);
-                        retrieveToyboxJobResult.setToyboxJob(toyboxJob);
 
                         List<ToyboxJobStep> jobSteps = jdbcTemplate.query("SELECT JOB_EXECUTION_ID, STEP_EXECUTION_ID, STEP_NAME, START_TIME, END_TIME, STATUS  FROM BATCH_STEP_EXECUTION WHERE JOB_EXECUTION_ID=?",
                                 new Object[]{toyboxJob.getJobExecutionId()},new ToyboxJobStepRowMapper());
-                        retrieveToyboxJobResult.setToyboxJobSteps(jobSteps);
+                        toyboxJob.setSteps(jobSteps);
+
+                        retrieveToyboxJobResult.setToyboxJob(toyboxJob);
+
                         retrieveToyboxJobResult.setMessage("Job retrieved successfully!");
 
                         _logger.debug("<< retrieveJob()");
@@ -299,57 +301,6 @@ public class JobController {
 
             _logger.debug("<< retrieveJob()");
             return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @RequestMapping(value = "/jobs/{jobExecutionId}/steps", method = RequestMethod.GET)
-    public ResponseEntity<RetrieveJobStepsResult> retrieveJobSteps(@PathVariable String jobExecutionId){
-        _logger.debug("retrieveJobSteps() >>");
-        try{
-            if(StringUtils.isNotBlank(jobExecutionId)){
-                RetrieveJobStepsResult retrieveJobStepsResult = new RetrieveJobStepsResult();
-
-                List<ToyboxJobStep> jobSteps = jdbcTemplate.query("SELECT JOB_EXECUTION_ID, STEP_EXECUTION_ID, STEP_NAME, START_TIME, END_TIME, STATUS  FROM BATCH_STEP_EXECUTION WHERE JOB_EXECUTION_ID=?",
-                        new Object[]{jobExecutionId},new ToyboxJobStepRowMapper());
-
-                if(jobSteps.size() > 0){
-                    retrieveJobStepsResult.setToyboxJobSteps(jobSteps);
-                    retrieveJobStepsResult.setMessage("Job steps retrieved successfully!");
-
-                    _logger.debug("<< retrieveJobSteps()");
-                    return new ResponseEntity<>(retrieveJobStepsResult, HttpStatus.OK);
-                }
-                else{
-                    String message = "There is no job to return.";
-                    _logger.debug(message);
-
-                    retrieveJobStepsResult = new RetrieveJobStepsResult();
-                    retrieveJobStepsResult.setMessage(message);
-
-                    _logger.debug("<< retrieveJobSteps()");
-                    return new ResponseEntity<>(retrieveJobStepsResult, HttpStatus.NO_CONTENT);
-                }
-            }
-            else{
-                String errorMessage = "Job Execution ID is blank!";
-                _logger.error(errorMessage);
-
-                RetrieveJobStepsResult retrieveJobStepsResult = new RetrieveJobStepsResult();
-                retrieveJobStepsResult.setMessage(errorMessage);
-
-                _logger.debug("<< retrieveJobSteps()");
-                return new ResponseEntity<>(retrieveJobStepsResult, HttpStatus.BAD_REQUEST);
-            }
-        }
-        catch (Exception e){
-            String errorMessage = "An error occurred while retrieving the job steps. " + e.getLocalizedMessage();
-            _logger.error(errorMessage, e);
-
-            RetrieveJobStepsResult retrieveJobStepsResult = new RetrieveJobStepsResult();
-            retrieveJobStepsResult.setMessage(errorMessage);
-
-            _logger.debug("<< retrieveJobSteps()");
-            return new ResponseEntity<>(retrieveJobStepsResult, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

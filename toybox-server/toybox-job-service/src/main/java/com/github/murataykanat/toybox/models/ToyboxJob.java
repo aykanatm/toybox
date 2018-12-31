@@ -31,6 +31,8 @@ public class ToyboxJob {
     // TODO: Allow faceting based on username
     private String username;
 
+    private List<ToyboxJobStep> steps;
+
     public String getJobInstanceId() {
         return jobInstanceId;
     }
@@ -199,5 +201,13 @@ public class ToyboxJob {
             _logger.error(errorMessage, e);
         }
         return result;
+    }
+
+    public List<ToyboxJobStep> getSteps() {
+        return steps;
+    }
+
+    public void setSteps(List<ToyboxJobStep> steps) {
+        this.steps = steps;
     }
 }

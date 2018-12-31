@@ -7,7 +7,8 @@ module.exports = {
         startTime: Number,
         endTime: Number,
         status: String,
-        username: String
+        username: String,
+        steps: Array
     },
     computed:{
         isCompleted(){
@@ -34,10 +35,10 @@ module.exports = {
     },
     methods:{
         showJobDetailsModalWindow:function(){
-            this.$root.$emit('open-job-details-modal-window', this.jobExecutionId);
+            this.$root.$emit('open-job-details-modal-window', this.jobInstanceId);
         },
         convertToDateString(milliseconds){
-            if(milliseconds && milliseconds !== ''){
+            if(milliseconds){
                 var date = new Date(milliseconds);
                 var year = date.getFullYear();
                 var month = date.getMonth() + 1 < 10 ? '0' + (date.getMonth() + 1) : (date.getMonth() + 1);

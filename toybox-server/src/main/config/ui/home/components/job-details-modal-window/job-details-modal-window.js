@@ -1,13 +1,6 @@
 module.exports = {
     props:{
-        jobInstanceId: String,
-        jobExecutionId: String,
-        jobName: String,
-        jobType: String,
-        startTime: Number,
-        endTime: Number,
-        status: String,
-        username: String
+        jobInstanceId: String
     },
     computed:{
         formattedStartTime(){
@@ -26,12 +19,18 @@ module.exports = {
     data:function(){
         return{
             componentName: 'Job Details Modal Window',
-            steps:[]
+            jobName: null,
+            jobType: null,
+            startTime: null,
+            endTime: null,
+            status: null,
+            username: null,
+            steps: null,
         }
     },
     mounted:function(){
-        this.$root.$on('open-job-details-modal-window', (jobExecutionId) => {
-            if(jobExecutionId === this.jobExecutionId)
+        this.$root.$on('open-job-details-modal-window', (jobInstanceId) => {
+            if(jobInstanceId === this.jobInstanceId)
             {
                 $(this.$el).modal('show');
                 this.loadJobDetails();
@@ -51,7 +50,7 @@ module.exports = {
             this.getConfiguration("jobServiceUrl")
             .then(response => {
                 if(response){
-                    return axios.get(response.data.value + "/jobs/" + this.jobExecutionId + "/steps" )
+                    return axios.get(response.data.value + "/jobs/" + this.jobInstanceId)
                     .catch(error => {
                         var errorMessage = error.response.data.message
                         console.error(errorMessage);
@@ -62,12 +61,18 @@ module.exports = {
             .then(response => {
                 console.log(response);
                 if(response){
-                    this.steps = response.data.toyboxJobSteps;
+                    this.jobName = response.data.toyboxJob.jobName;
+                    this.jobType = response.data.toyboxJob.jobType;
+                    this.startTime = response.data.toyboxJob.startTime;
+                    this.endTime = response.data.toyboxJob.endTime;
+                    this.status = response.data.toyboxJob.status;
+                    this.username = response.data.toyboxJob.username;
+                    this.steps = response.data.toyboxJob.steps;
                 }
             });
         },
         convertToDateString(milliseconds){
-            if(milliseconds && milliseconds !== ''){
+            if(milliseconds){
                 var date = new Date(milliseconds);
                 var year = date.getFullYear();
                 var month = date.getMonth() + 1 < 10 ? '0' + (date.getMonth() + 1) : (date.getMonth() + 1);

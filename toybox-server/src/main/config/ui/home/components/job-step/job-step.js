@@ -22,7 +22,7 @@ module.exports = {
     },
     methods:{
         convertToDateString(milliseconds){
-            if(milliseconds && milliseconds !== ''){
+            if(milliseconds){
                 var date = new Date(milliseconds);
                 var year = date.getFullYear();
                 var month = date.getMonth() + 1 < 10 ? '0' + (date.getMonth() + 1) : (date.getMonth() + 1);
