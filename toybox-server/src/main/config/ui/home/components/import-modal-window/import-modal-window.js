@@ -74,7 +74,7 @@ module.exports = {
             Array
                 .from(Array(fileList.length).keys())
                 .map(x => {
-                    formData.append(fieldName, fileList[x], fileList[x].name);
+                    return formData.append(fieldName, fileList[x], fileList[x].name);
                 });
 
             this.save(formData, this.onProgress);
