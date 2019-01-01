@@ -43,11 +43,11 @@ module.exports = {
                     this.uploadedFiles = [].concat(x);
                     this.currentStatus = STATUS_SUCCESS;
                     this.$refs.fileInputRef.value = '';
-                    // TODO:
+
                     // Close the modal window
                     // Display success message up top
-
-                    // $('#toybox-import-modal-window').modal('hide');
+                    this.$root.$emit('message-sent', 'Success', this.numberOfFiles + 'file(s) successfully uploaded. Import job started.');
+                    $('#toybox-import-modal-window').modal('hide');
                 })
                 .catch(err => {
                     var errorMessage = err.response.data.message;
@@ -55,11 +55,11 @@ module.exports = {
                     this.uploadError = errorMessage;
                     this.currentStatus = STATUS_FAILED;
                     this.$refs.fileInputRef.value = '';
-                    // TODO:
+
                     // Close the modal window
                     // Display failure message up top
-
-                    // $('#toybox-import-modal-window').modal('hide');
+                    this.$root.$emit('message-sent', 'Error', errorMessage);
+                    $('#toybox-import-modal-window').modal('hide');
                 });
         },
         filesChange(fieldName, fileList){
@@ -82,8 +82,9 @@ module.exports = {
         getConfiguration(fieldName){
             return axios.get("/configuration?field=" + fieldName)
                 .catch(error => {
-                    // TODO: Error popup here
-                    console.error(error.response.data.message);
+                    var errorMessage = error.response.data.message;
+                    console.error(errorMessage);
+                    this.$root.$emit('message-sent', 'Error', errorMessage);
                 });
         },
         onProgress(percentCompleted){
@@ -103,16 +104,20 @@ module.exports = {
 
             return this.getConfiguration("assetServiceUrl")
                 .then(response => {
-                    return axios.post(response.data.value + "/upload", formData, config)
-                    .then(response => {
-                        return this.import(response.data);
-                    });
+                    if(response){
+                        return axios.post(response.data.value + "/upload", formData, config)
+                            .then(response => {
+                                return this.import(response.data);
+                        });
+                    }
                 });
         },
         import(uploadedAssets){
             return this.getConfiguration("jobServiceUrl")
                 .then(response => {
-                    return axios.post(response.data.value + "/jobs/import", uploadedAssets);
+                    if(response){
+                        return axios.post(response.data.value + "/jobs/import", uploadedAssets);
+                    }
                 });
         }
     }
