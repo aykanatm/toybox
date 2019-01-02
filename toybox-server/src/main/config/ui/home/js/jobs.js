@@ -44,7 +44,15 @@ const jobs = new Vue({
         getConfiguration(fieldName){
             return axios.get("/configuration?field=" + fieldName)
                 .catch(error => {
-                    var errorMessage = error.response.data.message
+                    var errorMessage;
+
+                    if(error.response){
+                        errorMessage = error.response.data.message
+                    }
+                    else{
+                        errorMessage = error.message;
+                    }
+
                     console.error(errorMessage);
                     this.displayMessage('Error', errorMessage);
                 });
@@ -63,7 +71,15 @@ const jobs = new Vue({
                     searchRequest.jobSearchRequestFacetList = jobSearchRequestFacetList;
                     return axios.post(response.data.value + "/jobs/search", searchRequest)
                         .catch(error => {
-                                var errorMessage = error.response.data.message
+                                var errorMessage;
+
+                                if(error.response){
+                                    errorMessage = error.response.data.message
+                                }
+                                else{
+                                    errorMessage = error.message;
+                                }
+
                                 console.error(errorMessage);
                                 this.displayMessage('Error', errorMessage);
                             });

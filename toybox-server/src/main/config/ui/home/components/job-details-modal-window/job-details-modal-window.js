@@ -41,7 +41,15 @@ module.exports = {
         getConfiguration(fieldName){
             return axios.get("/configuration?field=" + fieldName)
                 .catch(error => {
-                    var errorMessage = error.response.data.message
+                    var errorMessage;
+
+                    if(error.response){
+                        errorMessage = error.response.data.message
+                    }
+                    else{
+                        errorMessage = error.message;
+                    }
+
                     console.error(errorMessage);
                     this.$root.$emit('message-sent', 'Error', errorMessage);
                 });
@@ -52,7 +60,15 @@ module.exports = {
                 if(response){
                     return axios.get(response.data.value + "/jobs/" + this.jobInstanceId)
                     .catch(error => {
-                        var errorMessage = error.response.data.message
+                        var errorMessage;
+
+                        if(error.response){
+                            errorMessage = error.response.data.message
+                        }
+                        else{
+                            errorMessage = error.message;
+                        }
+
                         console.error(errorMessage);
                         this.$root.$emit('message-sent', 'Error', errorMessage);
                     });

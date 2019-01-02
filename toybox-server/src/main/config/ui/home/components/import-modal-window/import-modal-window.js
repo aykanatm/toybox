@@ -46,18 +46,26 @@ module.exports = {
 
                     // Close the modal window
                     // Display success message up top
-                    this.$root.$emit('message-sent', 'Success', this.numberOfFiles + 'file(s) successfully uploaded. Import job started.');
+                    this.$root.$emit('message-sent', 'Success', this.numberOfFiles + ' file(s) successfully uploaded. Starting the import job...');
                     $('#toybox-import-modal-window').modal('hide');
                 })
-                .catch(err => {
-                    var errorMessage = err.response.data.message;
-                    console.error(errorMessage);
+                .catch(error => {
+                    var errorMessage;
+
+                    if(error.response){
+                        errorMessage = error.response.data.message
+                    }
+                    else{
+                        errorMessage = error.message;
+                    }
+
                     this.uploadError = errorMessage;
                     this.currentStatus = STATUS_FAILED;
                     this.$refs.fileInputRef.value = '';
 
                     // Close the modal window
                     // Display failure message up top
+                    console.error(errorMessage);
                     this.$root.$emit('message-sent', 'Error', errorMessage);
                     $('#toybox-import-modal-window').modal('hide');
                 });
@@ -82,7 +90,15 @@ module.exports = {
         getConfiguration(fieldName){
             return axios.get("/configuration?field=" + fieldName)
                 .catch(error => {
-                    var errorMessage = error.response.data.message;
+                    var errorMessage;
+
+                    if(error.response){
+                        errorMessage = error.response.data.message
+                    }
+                    else{
+                        errorMessage = error.message;
+                    }
+
                     console.error(errorMessage);
                     this.$root.$emit('message-sent', 'Error', errorMessage);
                 });
@@ -106,8 +122,21 @@ module.exports = {
                 .then(response => {
                     if(response){
                         return axios.post(response.data.value + "/upload", formData, config)
-                            .then(response => {
-                                return this.import(response.data);
+                        .then(response =>{
+                            return this.import(response.data);
+                        })
+                        .catch(error => {
+                            var errorMessage;
+
+                            if(error.response){
+                                errorMessage = error.response.data.message
+                            }
+                            else{
+                                errorMessage = error.message;
+                            }
+
+                            console.error(errorMessage);
+                            this.$root.$emit('message-sent', 'Error', errorMessage);
                         });
                     }
                 });
@@ -116,7 +145,20 @@ module.exports = {
             return this.getConfiguration("jobServiceUrl")
                 .then(response => {
                     if(response){
-                        return axios.post(response.data.value + "/jobs/import", uploadedAssets);
+                        return axios.post(response.data.value + "/jobs/import", uploadedAssets)
+                            .catch(error => {
+                                var errorMessage;
+
+                                if(error.response){
+                                    errorMessage = error.response.data.message
+                                }
+                                else{
+                                    errorMessage = error.message;
+                                }
+
+                                console.error(errorMessage);
+                                this.$root.$emit('message-sent', 'Error', errorMessage);
+                            });
                     }
                 });
         }
