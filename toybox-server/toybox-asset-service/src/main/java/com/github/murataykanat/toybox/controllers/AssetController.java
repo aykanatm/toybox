@@ -28,6 +28,7 @@ public class AssetController {
     @RequestMapping(value = "/upload", method = RequestMethod.POST)
     public ResponseEntity<UploadFileLst> uploadAssets(@RequestParam("upload") MultipartFile[] files) throws IOException {
         _logger.debug("uploadAssets() >>");
+        // TODO: Make the temp import path with System.millis so that it is unique enough
         _logger.debug("Import staging path: " + this.importStagingPath);
 
         try{
