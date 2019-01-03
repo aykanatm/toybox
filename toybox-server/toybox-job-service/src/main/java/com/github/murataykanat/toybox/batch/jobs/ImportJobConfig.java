@@ -89,20 +89,17 @@ public class ImportJobConfig {
                     @Override
                     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
                         Tika tika = new Tika();
+                        List<Asset> assets = new ArrayList<>();
 
                         Map<String, Object> jobParameters = chunkContext.getStepContext().getJobParameters();
-                        List<Asset> assets = new ArrayList<>();
-                        String filePathsJsonStr = (String) jobParameters.get(Constants.JOB_PARAM_UPLOADED_FILES);
+                        String username = (String) jobParameters.get(Constants.JOB_PARAM_USERNAME);
 
-                        Gson gson = new Gson();
-                        UploadFileLst uploadFileLst = gson.fromJson(filePathsJsonStr, UploadFileLst.class);
-                        if(uploadFileLst != null) {
-                            List<UploadFile> uploadFiles = uploadFileLst.getUploadFiles();
-
-                            for(UploadFile uploadFile: uploadFiles){
-                                File inputFile = new File(uploadFile.getPath());
-                                if(inputFile.exists()){
-                                    if(inputFile.isFile()){
+                        for(Map.Entry<String, Object> jobparameter: jobParameters.entrySet()){
+                            if(jobparameter.getKey().startsWith(Constants.JOB_PARAM_UPLOADED_FILE)){
+                                String filePath = (String) jobparameter.getValue();
+                                File file = new File(filePath);
+                                if(file.exists()){
+                                    if(file.isFile()){
                                         String assetId = generateAssetId();
                                         String assetFolderPath = repositoryPath + File.separator + assetId;
 
@@ -115,7 +112,7 @@ public class ImportJobConfig {
                                         }
 
                                         // Copy asset file to repository
-                                        File assetSource = inputFile;
+                                        File assetSource = file;
                                         File assetDestination = new File(assetFolderPath + File.separator + assetSource.getName());
                                         FileSystemUtils.copyRecursively(assetSource, assetDestination);
 
@@ -132,7 +129,7 @@ public class ImportJobConfig {
                                         asset.setId(assetId);
                                         asset.setExtension(FilenameUtils.getExtension(assetDestination.getName()));
                                         asset.setImportDate(LocalDateTime.now().toString());
-                                        asset.setImportedByUsername(uploadFile.getUsername());
+                                        asset.setImportedByUsername(username);
                                         asset.setName(assetDestination.getName());
                                         asset.setPath(assetDestination.getAbsolutePath());
                                         asset.setPreviewPath("");
@@ -143,19 +140,16 @@ public class ImportJobConfig {
                                         assets.add(asset);
                                     }
                                     else{
-                                        throw new Exception("File " + uploadFile.getPath() + " is not a file!");
+                                        throw new Exception("File " + filePath + " is not a file!");
                                     }
                                 }
                                 else{
-                                    throw new Exception("File path " + uploadFile.getPath() + " is not valid!");
+                                    throw new Exception("File path " + filePath + " is not valid!");
                                 }
                             }
-                            _logger.debug("Adding assets to job context...");
-                        }
-                        else{
-                            throw new Exception("Upload file list is null!");
                         }
 
+                        _logger.debug("Adding assets to job context...");
                         chunkContext.getStepContext().getStepExecution().getJobExecution().getExecutionContext().put("assets", assets);
                         return RepeatStatus.FINISHED;
                     }
@@ -212,25 +206,15 @@ public class ImportJobConfig {
             public void validate(JobParameters parameters) throws JobParametersInvalidException {
                 _logger.debug("validate() >>");
 
-                String filePathsJsonStr = parameters.getString(Constants.JOB_PARAM_UPLOADED_FILES);
-                if(StringUtils.isBlank(filePathsJsonStr)){
-                    throw new JobParametersInvalidException("'" + Constants.JOB_PARAM_UPLOADED_FILES
-                            + "' parameter is required for job '" + Constants.JOB_IMPORT_NAME + "'.");
-                }
-
-                Gson gson = new Gson();
-                UploadFileLst uploadedFileList = gson.fromJson(filePathsJsonStr, UploadFileLst.class);
-                if(uploadedFileList != null){
-                    List<UploadFile> uploadFiles = uploadedFileList.getUploadFiles();
-                    for(UploadFile uploadFile: uploadFiles){
-                        File file = new File(uploadFile.getPath());
+                Map<String, JobParameter> parameterMap = parameters.getParameters();
+                for(Map.Entry<String, JobParameter> parameterEntry: parameterMap.entrySet()){
+                    if(parameterEntry.getKey().startsWith(Constants.JOB_PARAM_UPLOADED_FILE)){
+                        String filePath = (String) parameterEntry.getValue().getValue();
+                        File file = new File(filePath);
                         if(!file.exists()){
-                            throw new JobParametersInvalidException("File '" + uploadFile.getPath() + "' did not exist or was not readable.");
+                            throw new JobParametersInvalidException("File '" + filePath + "' did not exist or was not readable.");
                         }
                     }
-                }
-                else{
-                    throw new JobParametersInvalidException("Uploaded file list is null!");
                 }
 
                 _logger.debug("<< validate()");

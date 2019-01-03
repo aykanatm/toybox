@@ -34,30 +34,44 @@ public class JobController {
     private JdbcTemplate jdbcTemplate;
 
     @RequestMapping(value = "/jobs/import", method = RequestMethod.POST)
-    public ResponseEntity<ImportAssetResponse> importAsset(@RequestBody String uploadedFiles) {
+    public ResponseEntity<ImportAssetResponse> importAsset(@RequestBody UploadFileLst uploadFileLst) {
         _logger.debug("importAsset() >>");
         try{
-            if(StringUtils.isNotBlank(uploadedFiles)){
-                ImportAssetResponse importAssetResponse = new ImportAssetResponse();
-                _logger.debug("Uploaded files: ");
-                _logger.debug(uploadedFiles);
-
+            if(uploadFileLst != null){
                 _logger.debug("Putting values into the parameter map...");
-                JobParametersBuilder builder = new JobParametersBuilder();
-                builder.addString(Constants.JOB_PARAM_UPLOADED_FILES, uploadedFiles);
-                builder.addString(Constants.JOB_PARAM_SYSTEM_MILLIS, String.valueOf(System.currentTimeMillis()));
+                List<UploadFile> uploadedFiles = uploadFileLst.getUploadFiles();
+                if(uploadedFiles != null && uploadedFiles.size() > 0){
+                    JobParametersBuilder builder = new JobParametersBuilder();
+                    ImportAssetResponse importAssetResponse = new ImportAssetResponse();
 
-                _logger.debug("Launching job [" + importJob.getName() + "]...");
-                JobExecution jobExecution = jobLauncher.run(importJob, builder.toJobParameters());
+                    for(int i = 0; i < uploadedFiles.size(); i++){
+                        UploadFile uploadedFile = uploadedFiles.get(i);
+                        builder.addString(Constants.JOB_PARAM_UPLOADED_FILE+ "_" + i, uploadedFile.getPath());
+                    }
+                    builder.addString(Constants.JOB_PARAM_USERNAME, uploadedFiles.get(0).getUsername());
+                    builder.addString(Constants.JOB_PARAM_SYSTEM_MILLIS, String.valueOf(System.currentTimeMillis()));
 
-                importAssetResponse.setJobId(jobExecution.getJobId());
-                importAssetResponse.setMessage("Import job started.");
+                    _logger.debug("Launching job [" + importJob.getName() + "]...");
+                    JobExecution jobExecution = jobLauncher.run(importJob, builder.toJobParameters());
 
-                _logger.debug("<< importAsset()");
-                return new ResponseEntity<>(importAssetResponse, HttpStatus.CREATED);
+                    importAssetResponse.setJobId(jobExecution.getJobId());
+                    importAssetResponse.setMessage("Import job started.");
+
+                    _logger.debug("<< importAsset()");
+                    return new ResponseEntity<>(importAssetResponse, HttpStatus.CREATED);
+                }
+                else{
+                    String errorMessage = "Uploaded files list is null or empty!";
+                    _logger.error(errorMessage);
+                    ImportAssetResponse importAssetResponse = new ImportAssetResponse();
+                    importAssetResponse.setMessage(errorMessage);
+
+                    _logger.debug("<< importAsset()");
+                    return new ResponseEntity<>(importAssetResponse, HttpStatus.BAD_REQUEST);
+                }
             }
             else{
-                String errorMessage = "Uploaded files request is blank!";
+                String errorMessage = "Uploaded files request is null!";
                 _logger.error(errorMessage);
                 ImportAssetResponse importAssetResponse = new ImportAssetResponse();
                 importAssetResponse.setMessage(errorMessage);
@@ -92,7 +106,7 @@ public class JobController {
                 int limit = jobSearchRequest.getLimit();
                 List<JobSearchRequestFacet> jobSearchRequestFacetList = jobSearchRequest.getJobSearchRequestFacetList();
 
-                List<ToyboxJob> allJobs = jdbcTemplate.query("SELECT JOB_INSTANCE_ID, JOB_EXECUTION_ID, JOB_NAME, JOB_TYPE, START_TIME, END_TIME, STATUS, PARAMETERS  FROM TOYBOX_JOBS_VW", new ToyboxJobRowMapper());
+                List<ToyboxJob> allJobs = jdbcTemplate.query("SELECT JOB_INSTANCE_ID, JOB_EXECUTION_ID, JOB_NAME, JOB_TYPE, START_TIME, END_TIME, STATUS, USERNAME  FROM TOYBOX_JOBS_VW", new ToyboxJobRowMapper());
 
                 if(allJobs.size() > 0){
                     List<ToyboxJob> jobs;
@@ -171,7 +185,7 @@ public class JobController {
                     }
 
                     // TODO: If an admin users gets the jobs, display all jobs regardless of the username
-                    List<ToyboxJob> jobsByCurrentUser = jobs.stream().filter(j -> j.getUsername().equalsIgnoreCase(username)).collect(Collectors.toList());
+                    List<ToyboxJob> jobsByCurrentUser = jobs.stream().filter(j -> j.getUsername() != null && j.getUsername().equalsIgnoreCase(username)).collect(Collectors.toList());
 
                     int totalRecords = jobsByCurrentUser.size();
                     int startIndex = offset;
