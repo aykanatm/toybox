@@ -11,6 +11,7 @@ import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tika.Tika;
 import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
@@ -61,6 +62,14 @@ public class ImportJobConfig {
     @Value("${imagemagickPreviewSettings}")
     private String imagemagickPreviewSettings;
 
+    @Value("${gifsicleExecutable}")
+    private String gifsicleExecutable;
+
+    @Value("${gifsicleThumbnailSettings}")
+    private String gifsicleThumbnailSettings;
+    @Value("${gifsiclePreviewSettings}")
+    private String gifsiclePreviewSettings;
+
     @Value("${repositoryPath}")
     private String repositoryPath;
 
@@ -75,6 +84,8 @@ public class ImportJobConfig {
                 .tasklet(new Tasklet() {
                     @Override
                     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
+                        Tika tika = new Tika();
+
                         Map<String, Object> jobParameters = chunkContext.getStepContext().getJobParameters();
                         List<Asset> assets = new ArrayList<>();
                         String filePathsJsonStr = (String) jobParameters.get(Constants.JOB_PARAM_UPLOADED_FILES);
@@ -104,6 +115,14 @@ public class ImportJobConfig {
                                         File assetDestination = new File(assetFolderPath + File.separator + assetSource.getName());
                                         FileSystemUtils.copyRecursively(assetSource, assetDestination);
 
+                                        String assetMimeType = "UNKNOWN";
+                                        if(assetDestination.exists()){
+                                            if(assetDestination.isFile()){
+                                                assetMimeType = tika.detect(assetDestination);
+                                                _logger.debug("Asset mime type: " + assetMimeType);
+                                            }
+                                        }
+
                                         // Generate database entry
                                         Asset asset = new Asset();
                                         asset.setId(assetId);
@@ -114,7 +133,7 @@ public class ImportJobConfig {
                                         asset.setPath(assetDestination.getAbsolutePath());
                                         asset.setPreviewPath("");
                                         asset.setThumbnailPath("");
-                                        asset.setType("IMAGE");
+                                        asset.setType(assetMimeType);
 
                                         insertAsset(asset);
                                         assets.add(asset);
@@ -148,7 +167,7 @@ public class ImportJobConfig {
                         Object obj = chunkContext.getStepContext().getStepExecution().getJobExecution().getExecutionContext().get("assets");
                         List<Asset> assets = getAssetsFromContext(obj);
 
-                        generateRendition(assets, thumbnailFormat, imagemagickThumbnailSettings, RenditionTypes.Thumbnail);
+                        generateRendition(assets, RenditionTypes.Thumbnail);
 
                         _logger.debug("<< execute() " + Constants.STEP_IMPORT_GENERATE_THUMBNAILS + "]");
                         return RepeatStatus.FINISHED;
@@ -165,7 +184,7 @@ public class ImportJobConfig {
                         Object obj = chunkContext.getStepContext().getStepExecution().getJobExecution().getExecutionContext().get("assets");
                         List<Asset> assets = getAssetsFromContext(obj);
 
-                        generateRendition(assets, previewFormat, imagemagickPreviewSettings, RenditionTypes.Preview);
+                        generateRendition(assets, RenditionTypes.Preview);
 
                         _logger.debug("<< execute() " + Constants.STEP_IMPORT_GENERATE_PREVIEWS + "]");
                         return RepeatStatus.FINISHED;
@@ -325,63 +344,124 @@ public class ImportJobConfig {
         return result;
     }
 
-    private void generateRendition(List<Asset> assets, String format, String imagemagickRenditionSettings, RenditionTypes renditionType) throws Exception {
+    private void generateRendition(List<Asset> assets, RenditionTypes renditionType) throws Exception {
         _logger.debug("generateRendition() >>");
-
         try{
             for(Asset asset: assets){
-                File inputFile = new File(asset.getPath());
+                if(asset.getType().contains("image")){
+                    File inputFile = new File(asset.getPath());
+                    if(inputFile.exists()){
+                        String assetFolderPath = repositoryPath + File.separator + asset.getId();
+                        File outputFile;
+                        String renditionSettings;
 
-                String assetFolderPath = repositoryPath + File.separator + asset.getId();
+                        if(renditionType == RenditionTypes.Preview){
+                            String assetPreviewPath = repositoryPath + File.separator + asset.getId() + File.separator + "preview";
+                            createFolder(assetFolderPath, assetPreviewPath);
 
-                File outputFile;
-                if(renditionType == RenditionTypes.Preview){
-                    String assetPreviewPath = repositoryPath + File.separator + asset.getId() + File.separator + "preview";
-                    createFolder(assetFolderPath, assetPreviewPath);
-                    outputFile = new File(assetPreviewPath + File.separator + asset.getId() + "." + format);
-                }
-                else if(renditionType == RenditionTypes.Thumbnail){
-                    String assetThumbnailPath = repositoryPath + File.separator + asset.getId() + File.separator + "thumbnail";
-                    createFolder(assetFolderPath, assetThumbnailPath);
-                    outputFile = new File(assetThumbnailPath + File.separator + asset.getId() + "." + format);
+                            if(asset.getType().equalsIgnoreCase("image/gif")){
+                                renditionSettings = gifsiclePreviewSettings;
+                                outputFile = new File(assetPreviewPath + File.separator + asset.getId() + ".gif");
+                            }
+                            else{
+                                renditionSettings = imagemagickPreviewSettings;
+                                outputFile = new File(assetPreviewPath + File.separator + asset.getId() + "." + previewFormat);
+                            }
+                        }
+                        else if(renditionType == RenditionTypes.Thumbnail){
+                            String assetThumbnailPath = repositoryPath + File.separator + asset.getId() + File.separator + "thumbnail";
+                            createFolder(assetFolderPath, assetThumbnailPath);
+                            if(asset.getType().equalsIgnoreCase("image/gif")){
+                                renditionSettings = gifsicleThumbnailSettings;
+                                outputFile = new File(assetThumbnailPath + File.separator + asset.getId() + ".gif");
+                            }
+                            else{
+                                renditionSettings = imagemagickThumbnailSettings;
+                                outputFile = new File(assetThumbnailPath + File.separator + asset.getId() + "." + thumbnailFormat);
+                            }
+                        }
+                        else{
+                            throw new Exception("Unknown rendition type!");
+                        }
+
+                        // Generate rendition
+                        if(asset.getType().equalsIgnoreCase("image/gif")){
+                            CommandLine cmdLine = new CommandLine(gifsicleExecutable);
+                            cmdLine.addArgument("${inputFile}");
+                            String[] arguments = renditionSettings.split("\\s+");
+                            for(String argument: arguments){
+                                cmdLine.addArgument(argument);
+                            }
+                            cmdLine.addArgument("${outputFile}");
+                            HashMap map = new HashMap();
+                            map.put("inputFile", inputFile);
+                            map.put("outputFile", outputFile);
+                            cmdLine.setSubstitutionMap(map);
+
+                            DefaultExecuteResultHandler resultHandler = new DefaultExecuteResultHandler();
+
+                            ExecuteWatchdog watchdog = new ExecuteWatchdog(Constants.GIFSICLE_TIMEOUT);
+                            Executor executor = new DefaultExecutor();
+                            executor.setExitValue(1);
+                            executor.setWatchdog(watchdog);
+                            _logger.debug("Executing command: " + cmdLine.toString());
+                            executor.execute(cmdLine, resultHandler);
+
+                            resultHandler.waitFor();
+
+                            int exitValue = resultHandler.getExitValue();
+                            if(exitValue != 0){
+                                String errorMessage = "Gifsicle failed to generate rendition of the file '" + inputFile.getAbsolutePath()
+                                        + "'. " + resultHandler.getException().getLocalizedMessage();
+                                throw new Exception(errorMessage);
+                            }
+                            else{
+                                _logger.debug("Gifsicle successfully generated the rendition '" + outputFile.getAbsolutePath());
+                                updateAssetRendition(asset.getId(), outputFile.getAbsolutePath(), renditionType);
+                            }
+                        }
+                        else{
+                            CommandLine cmdLine = new CommandLine(imagemagickExecutable);
+                            cmdLine.addArgument("${inputFile}");
+                            String[] arguments = renditionSettings.split("\\s+");
+                            for(String argument: arguments){
+                                cmdLine.addArgument(argument);
+                            }
+                            cmdLine.addArgument("${outputFile}");
+                            HashMap map = new HashMap();
+                            map.put("inputFile", inputFile);
+                            map.put("outputFile", outputFile);
+                            cmdLine.setSubstitutionMap(map);
+
+                            DefaultExecuteResultHandler resultHandler = new DefaultExecuteResultHandler();
+
+                            ExecuteWatchdog watchdog = new ExecuteWatchdog(Constants.IMAGEMAGICK_TIMEOUT);
+                            Executor executor = new DefaultExecutor();
+                            executor.setExitValue(1);
+                            executor.setWatchdog(watchdog);
+                            _logger.debug("Executing command: " + cmdLine.toString());
+                            executor.execute(cmdLine, resultHandler);
+
+                            resultHandler.waitFor();
+
+                            int exitValue = resultHandler.getExitValue();
+                            if(exitValue != 0){
+                                String errorMessage = "ImageMagick failed to generate rendition of the file '" + inputFile.getAbsolutePath()
+                                        + "'. " + resultHandler.getException().getLocalizedMessage();
+                                throw new Exception(errorMessage);
+                            }
+                            else{
+                                _logger.debug("ImageMagick successfully generated the rendition '" + outputFile.getAbsolutePath());
+                                updateAssetRendition(asset.getId(), outputFile.getAbsolutePath(), renditionType);
+                            }
+                        }
+                    }
+                    else{
+                        throw new Exception("File " + asset.getPath() + " does not exist!");
+                    }
                 }
                 else{
-                    throw new Exception("Unknown rendition type!");
-                }
-
-                // Generate rendition
-                CommandLine cmdLine = new CommandLine(imagemagickExecutable);
-                cmdLine.addArgument("${inputFile}");
-                String[] arguments = imagemagickRenditionSettings.split("\\s+");
-                for(String argument: arguments){
-                    cmdLine.addArgument(argument);
-                }
-                cmdLine.addArgument("${outputFile}");
-                HashMap map = new HashMap();
-                map.put("inputFile", inputFile);
-                map.put("outputFile", outputFile);
-                cmdLine.setSubstitutionMap(map);
-
-                DefaultExecuteResultHandler resultHandler = new DefaultExecuteResultHandler();
-
-                ExecuteWatchdog watchdog = new ExecuteWatchdog(Constants.IMAGEMAGICK_TIMEOUT);
-                Executor executor = new DefaultExecutor();
-                executor.setExitValue(1);
-                executor.setWatchdog(watchdog);
-                _logger.debug("Executing command: " + cmdLine.toString());
-                executor.execute(cmdLine, resultHandler);
-
-                resultHandler.waitFor();
-
-                int exitValue = resultHandler.getExitValue();
-                if(exitValue != 0){
-                    String errorMessage = "ImageMagick failed to generate rendition of the file '" + inputFile.getAbsolutePath()
-                            + "'. " + resultHandler.getException().getLocalizedMessage();
-                    throw new Exception(errorMessage);
-                }
-                else{
-                    _logger.debug("ImageMagick successfully generated the rendition '" + outputFile.getAbsolutePath());
-                    updateAssetRendition(asset.getId(), outputFile.getAbsolutePath(), renditionType);
+                    _logger.debug("Asset cannot have preview or thumbnail, skipping...");
                 }
             }
         }
