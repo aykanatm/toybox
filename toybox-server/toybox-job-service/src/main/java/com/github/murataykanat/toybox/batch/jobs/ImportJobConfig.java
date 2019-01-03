@@ -61,6 +61,8 @@ public class ImportJobConfig {
     private String imagemagickThumbnailSettings;
     @Value("${imagemagickPreviewSettings}")
     private String imagemagickPreviewSettings;
+    @Value("${imagemagickTimeout}")
+    private String imagemagickTimeout;
 
     @Value("${gifsicleExecutable}")
     private String gifsicleExecutable;
@@ -69,6 +71,8 @@ public class ImportJobConfig {
     private String gifsicleThumbnailSettings;
     @Value("${gifsiclePreviewSettings}")
     private String gifsiclePreviewSettings;
+    @Value("${gifsicleTimeout}")
+    private String gifsicleTimeout;
 
     @Value("${repositoryPath}")
     private String repositoryPath;
@@ -400,7 +404,8 @@ public class ImportJobConfig {
 
                             DefaultExecuteResultHandler resultHandler = new DefaultExecuteResultHandler();
 
-                            ExecuteWatchdog watchdog = new ExecuteWatchdog(Constants.GIFSICLE_TIMEOUT);
+                            long gifsicleTimeoutValue = Long.parseLong(gifsicleTimeout);
+                            ExecuteWatchdog watchdog = new ExecuteWatchdog(gifsicleTimeoutValue);
                             Executor executor = new DefaultExecutor();
                             executor.setExitValue(1);
                             executor.setWatchdog(watchdog);
@@ -435,7 +440,8 @@ public class ImportJobConfig {
 
                             DefaultExecuteResultHandler resultHandler = new DefaultExecuteResultHandler();
 
-                            ExecuteWatchdog watchdog = new ExecuteWatchdog(Constants.IMAGEMAGICK_TIMEOUT);
+                            long imageMagickTimeoutValue = Long.parseLong(imagemagickTimeout);
+                            ExecuteWatchdog watchdog = new ExecuteWatchdog(imageMagickTimeoutValue);
                             Executor executor = new DefaultExecutor();
                             executor.setExitValue(1);
                             executor.setWatchdog(watchdog);
