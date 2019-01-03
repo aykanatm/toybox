@@ -2,6 +2,7 @@ package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.models.UploadFile;
 import com.github.murataykanat.toybox.models.UploadFileLst;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,17 +27,31 @@ public class AssetController {
 
     // The name "upload" must match the "name" attribute of the input in UI (
     @RequestMapping(value = "/upload", method = RequestMethod.POST)
-    public ResponseEntity<UploadFileLst> uploadAssets(@RequestParam("upload") MultipartFile[] files) throws IOException {
+    public ResponseEntity<UploadFileLst> uploadAssets(@RequestParam("upload") MultipartFile[] files) {
         _logger.debug("uploadAssets() >>");
-        // TODO: Make the temp import path with System.millis so that it is unique enough
-        _logger.debug("Import staging path: " + this.importStagingPath);
+
+        String tempFolderName = Long.toString(System.currentTimeMillis());
+        String importStagingPath = this.importStagingPath + File.separator + tempFolderName;
+        _logger.debug("Import staging path: " + importStagingPath);
 
         try{
+            File tempFolder = new File(this.importStagingPath + File.separator + tempFolderName);
+            if(!tempFolder.exists()){
+                tempFolder.mkdir();
+            }
+
             UploadFileLst uploadFileLst = new UploadFileLst();
             List<UploadFile> uploadFiles = new ArrayList<>();
 
             for(MultipartFile file: files){
-                String path = this.importStagingPath + File.separator + file.getOriginalFilename();
+                String path;
+                if(tempFolder.exists()){
+                    path = tempFolder.getAbsolutePath() + File.separator + file.getOriginalFilename();
+                }
+                else{
+                    throw new Exception("The temp folder " + tempFolder.getAbsolutePath() + " does not exist!");
+                }
+
                 file.transferTo(new File(path));
 
                 UploadFile uploadFile = new UploadFile();
@@ -57,7 +72,16 @@ public class AssetController {
             String errorMessage = "An error occurred while uploading files. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
-            // TODO: Rollback if any files are uploaded already
+            File tempFolder = new File(this.importStagingPath + File.separator + tempFolderName);
+            try {
+                if(tempFolder.exists()){
+                    FileUtils.deleteDirectory(tempFolder);
+                }
+            }
+            catch (IOException ioe){
+                String ioErrorMessage = ". An error occurred while deleting the temp files. " + ioe.getLocalizedMessage();
+                errorMessage += ioErrorMessage;
+            }
 
             UploadFileLst uploadFileLst = new UploadFileLst();
             uploadFileLst.setMessage(errorMessage);
