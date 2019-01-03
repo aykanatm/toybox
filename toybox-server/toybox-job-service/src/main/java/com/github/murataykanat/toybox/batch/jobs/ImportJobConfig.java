@@ -5,9 +5,7 @@ import com.github.murataykanat.toybox.models.UploadFileLst;
 import com.github.murataykanat.toybox.models.dbo.Asset;
 import com.github.murataykanat.toybox.models.UploadFile;
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import org.apache.commons.exec.*;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
@@ -30,7 +28,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.FileSystemUtils;
 
 import java.io.File;
-import java.lang.reflect.Type;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -48,154 +45,129 @@ public class ImportJobConfig {
 
     @Value("${importStagingThumbnailsPath}")
     private String importStagingThumbnailsPath;
+    @Value("${importStagingThumbnailsPath}")
+    private String importStagingPreviewsPath;
 
     @Value("${thumbnailFormat}")
     private String thumbnailFormat;
+    @Value("${previewFormat}")
+    private String previewFormat;
+
     @Value("${imagemagickExecutable}")
     private String imagemagickExecutable;
+
     @Value("${imagemagickThumbnailSettings}")
     private String imagemagickThumbnailSettings;
+    @Value("${imagemagickPreviewSettings}")
+    private String imagemagickPreviewSettings;
 
     @Value("${repositoryPath}")
     private String repositoryPath;
 
-    private Map<String, UploadFile> thumbnailsToUploadedFilesMap;
-
-    // TODO: Implement exception handling
+    private enum RenditionTypes{
+        Thumbnail,
+        Preview
+    }
 
     @Bean
     public Job importJob(JobBuilderFactory jobBuilderFactory, StepBuilderFactory stepBuilderFactory){
+        Step stepGenerateAssets = stepBuilderFactory.get(Constants.STEP_IMPORT_GENERATE_ASSETS)
+                .tasklet(new Tasklet() {
+                    @Override
+                    public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
+                        Map<String, Object> jobParameters = chunkContext.getStepContext().getJobParameters();
+                        List<Asset> assets = new ArrayList<>();
+                        String filePathsJsonStr = (String) jobParameters.get(Constants.JOB_PARAM_UPLOADED_FILES);
+
+                        Gson gson = new Gson();
+                        UploadFileLst uploadFileLst = gson.fromJson(filePathsJsonStr, UploadFileLst.class);
+                        if(uploadFileLst != null) {
+                            List<UploadFile> uploadFiles = uploadFileLst.getUploadFiles();
+
+                            for(UploadFile uploadFile: uploadFiles){
+                                File inputFile = new File(uploadFile.getPath());
+                                if(inputFile.exists()){
+                                    if(inputFile.isFile()){
+                                        String assetId = generateAssetId();
+                                        String assetFolderPath = repositoryPath + File.separator + assetId;
+
+                                        // Generate folder
+                                        File assetFolder = new File(assetFolderPath);
+                                        if(!assetFolder.exists()){
+                                            if(!assetFolder.mkdir()){
+                                                throw new Exception("Unable to create folder with path " + assetFolderPath + ".");
+                                            }
+                                        }
+
+                                        // Copy asset file to repository
+                                        File assetSource = inputFile;
+                                        File assetDestination = new File(assetFolderPath + File.separator + assetSource.getName());
+                                        FileSystemUtils.copyRecursively(assetSource, assetDestination);
+
+                                        // Generate database entry
+                                        Asset asset = new Asset();
+                                        asset.setId(assetId);
+                                        asset.setExtension(FilenameUtils.getExtension(assetDestination.getName()));
+                                        asset.setImportDate(LocalDateTime.now().toString());
+                                        asset.setImportedByUsername(uploadFile.getUsername());
+                                        asset.setName(assetDestination.getName());
+                                        asset.setPath(assetDestination.getAbsolutePath());
+                                        asset.setPreviewPath("");
+                                        asset.setThumbnailPath("");
+                                        asset.setType("IMAGE");
+
+                                        insertAsset(asset);
+                                        assets.add(asset);
+                                    }
+                                    else{
+                                        throw new Exception("File " + uploadFile.getPath() + " is not a file!");
+                                    }
+                                }
+                                else{
+                                    throw new Exception("File path " + uploadFile.getPath() + " is not valid!");
+                                }
+                            }
+                            _logger.debug("Adding assets to job context...");
+                        }
+                        else{
+                            throw new Exception("Upload file list is null!");
+                        }
+
+                        chunkContext.getStepContext().getStepExecution().getJobExecution().getExecutionContext().put("assets", assets);
+                        return RepeatStatus.FINISHED;
+                    }
+                })
+                .build();
+
         Step stepGenerateThumbnails = stepBuilderFactory.get(Constants.STEP_IMPORT_GENERATE_THUMBNAILS)
                 .tasklet(new Tasklet() {
                     @Override
                     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
                         _logger.debug("execute() >> [" + Constants.STEP_IMPORT_GENERATE_THUMBNAILS + "]");
-                        thumbnailsToUploadedFilesMap = new HashMap<>();
 
-                        Map<String, Object> jobParameters = chunkContext.getStepContext().getJobParameters();
-                        for(Map.Entry<String, Object> entry: jobParameters.entrySet()){
-                            if(entry.getKey().equalsIgnoreCase(Constants.JOB_PARAM_UPLOADED_FILES)){
-                                String filePathsJsonStr = (String) entry.getValue();
+                        Object obj = chunkContext.getStepContext().getStepExecution().getJobExecution().getExecutionContext().get("assets");
+                        List<Asset> assets = getAssetsFromContext(obj);
 
-                                Gson gson = new Gson();
-                                // Type listType = new TypeToken<ArrayList<UploadFile>>(){}.getType();
-                                UploadFileLst uploadFileLst = gson.fromJson(filePathsJsonStr, UploadFileLst.class);
+                        generateRendition(assets, thumbnailFormat, imagemagickThumbnailSettings, RenditionTypes.Thumbnail);
 
-                                if(uploadFileLst != null){
-                                    List<UploadFile> uploadFiles = uploadFileLst.getUploadFiles();
-                                    for(UploadFile uploadFile: uploadFiles){
-                                        File inputFile = new File(uploadFile.getPath());
-                                        String thumbnailName = "thumb_" + FilenameUtils.removeExtension(inputFile.getName()) + "." + thumbnailFormat;
-                                        File outputFile = new File(importStagingThumbnailsPath + File.separator + thumbnailName);
-
-                                        // Generate thumbnail
-                                        CommandLine cmdLine = new CommandLine(imagemagickExecutable);
-                                        cmdLine.addArgument("${inputFile}");
-                                        String[] arguments = imagemagickThumbnailSettings.split("\\s+");
-                                        for(String argument: arguments){
-                                            cmdLine.addArgument(argument);
-                                        }
-                                        cmdLine.addArgument("${outputFile}");
-                                        HashMap map = new HashMap();
-                                        map.put("inputFile", inputFile);
-                                        map.put("outputFile", outputFile);
-                                        cmdLine.setSubstitutionMap(map);
-
-                                        DefaultExecuteResultHandler resultHandler = new DefaultExecuteResultHandler();
-
-                                        ExecuteWatchdog watchdog = new ExecuteWatchdog(Constants.IMAGEMAGICK_TIMEOUT);
-                                        Executor executor = new DefaultExecutor();
-                                        executor.setExitValue(1);
-                                        executor.setWatchdog(watchdog);
-                                        _logger.debug("Executing command: " + cmdLine.toString());
-                                        executor.execute(cmdLine, resultHandler);
-
-                                        resultHandler.waitFor();
-
-                                        int exitValue = resultHandler.getExitValue();
-                                        if(exitValue != 0){
-                                            String errorMessage = "ImageMagick failed to generate thumbnail of the file '" + inputFile.getAbsolutePath()
-                                                    + "'. " + resultHandler.getException().getLocalizedMessage();
-                                            throw new Exception(errorMessage);
-                                        }
-                                        else{
-                                            _logger.debug("ImageMagick successfully generated the thumbnail '" + outputFile.getAbsolutePath());
-                                            thumbnailsToUploadedFilesMap.put(outputFile.getAbsolutePath(), uploadFile);
-                                        }
-                                    }
-                                }
-                                else{
-                                    throw new Exception("Upload file list is null!");
-                                }
-                            }
-                        }
                         _logger.debug("<< execute() " + Constants.STEP_IMPORT_GENERATE_THUMBNAILS + "]");
                         return RepeatStatus.FINISHED;
                     }
                 })
                 .build();
 
-        // TODO: Add generate previews step
-
-        Step stepGenerateAssets = stepBuilderFactory.get(Constants.STEP_IMPORT_GENERATE_ASSET)
+        Step stepGeneratePreviews = stepBuilderFactory.get(Constants.STEP_IMPORT_GENERATE_PREVIEWS)
                 .tasklet(new Tasklet() {
                     @Override
                     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
-                        _logger.debug("execute() >> [" + Constants.STEP_IMPORT_GENERATE_ASSET + "]");
-                        for(Map.Entry<String, UploadFile> entry: thumbnailsToUploadedFilesMap.entrySet()){
-                            String assetId = generateAssetId();
+                        _logger.debug("execute() >> [" + Constants.STEP_IMPORT_GENERATE_PREVIEWS + "]");
 
-                            String assetFolderPath = repositoryPath + File.separator + assetId;
-                            String assetThumbnailPath = repositoryPath + File.separator + assetId + File.separator + "thumbnail";
+                        Object obj = chunkContext.getStepContext().getStepExecution().getJobExecution().getExecutionContext().get("assets");
+                        List<Asset> assets = getAssetsFromContext(obj);
 
-                            // Create asset folders
-                            createAssetFolders(assetFolderPath, assetThumbnailPath);
+                        generateRendition(assets, previewFormat, imagemagickPreviewSettings, RenditionTypes.Preview);
 
-                            // Copy the thumbnail to repository
-                            File thumbnailSource = new File(entry.getKey());
-                            File thumbnailDestination = new File(assetThumbnailPath + File.separator + assetId + "." + thumbnailFormat);
-                            FileSystemUtils.copyRecursively(thumbnailSource, thumbnailDestination);
-
-                            // Copy asset file to repository
-                            File assetSource = new File(entry.getValue().getPath());
-                            File assetDestination = new File(assetFolderPath + File.separator + assetSource.getName());
-                            FileSystemUtils.copyRecursively(assetSource, assetDestination);
-
-                            // Generate database entry
-                            Asset asset = new Asset();
-                            asset.setId(assetId);
-                            asset.setExtension(FilenameUtils.getExtension(assetDestination.getName()));
-                            asset.setImportDate(LocalDateTime.now().toString());
-                            asset.setImportedByUsername(entry.getValue().getUsername());
-                            asset.setName(assetDestination.getName());
-                            asset.setPath(assetDestination.getAbsolutePath());
-                            asset.setPreviewPath("");
-                            asset.setThumbnailPath(thumbnailDestination.getAbsolutePath());
-                            asset.setType("IMAGE");
-
-                            insertAsset(asset);
-                        }
-
-                        _logger.debug("<< execute() [" + Constants.STEP_IMPORT_GENERATE_ASSET + "]");
-                        return RepeatStatus.FINISHED;
-                    }
-                })
-                .build();
-
-        Step deleteTempFiles = stepBuilderFactory.get(Constants.STEP_IMPORT_DELETE_TEMP_FILES)
-                .tasklet(new Tasklet() {
-                    @Override
-                    public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
-                        _logger.debug("execute() >> [" + Constants.STEP_IMPORT_DELETE_TEMP_FILES + "]");
-                        for(Map.Entry<String, UploadFile> entry: thumbnailsToUploadedFilesMap.entrySet()){
-                            // Delete generated thumbnail
-                            _logger.debug("Deleting temp file '" + entry.getKey() + "'...");
-                            FileUtils.forceDelete(new File(entry.getKey()));
-                            // Delete uploaded file
-                            _logger.debug("Deleting temp file '" + entry.getValue().getPath() + "'...");
-                            FileUtils.forceDelete(new File(entry.getValue().getPath()));
-                        }
-                        _logger.debug("<< execute() [" + Constants.STEP_IMPORT_DELETE_TEMP_FILES + "]");
+                        _logger.debug("<< execute() " + Constants.STEP_IMPORT_GENERATE_PREVIEWS + "]");
                         return RepeatStatus.FINISHED;
                     }
                 })
@@ -204,9 +176,9 @@ public class ImportJobConfig {
         return jobBuilderFactory.get(Constants.JOB_IMPORT_NAME)
                 .incrementer(new RunIdIncrementer())
                 .validator(importValidator())
-                .flow(stepGenerateThumbnails)
-                .next(stepGenerateAssets)
-                .next(deleteTempFiles)
+                .flow(stepGenerateAssets)
+                .next(stepGenerateThumbnails)
+                .next(stepGeneratePreviews)
                 .end()
                 .build();
     }
@@ -243,67 +215,201 @@ public class ImportJobConfig {
         };
     }
 
-    private void createAssetFolders(String assetFolderPath, String assetThumbnailPath){
+    private void createFolder(String assetFolderPath, String assetRenditionPath) throws Exception {
         _logger.debug("createAssetFolders() >>");
-        String[] paths = new String[]{assetFolderPath, assetThumbnailPath};
-        for(String path: paths){
-            File directory = new File(path);
-            if(!directory.exists()){
-                _logger.debug("Creating folder '" + directory.getAbsolutePath() + "'...");
-                directory.mkdir();
+        try{
+            String[] paths = new String[]{assetFolderPath, assetRenditionPath};
+            for(String path: paths){
+                File directory = new File(path);
+                if(!directory.exists()){
+                    _logger.debug("Creating folder '" + path + "'...");
+                    if(!directory.mkdir()){
+                        throw new Exception("Unable to create folder with path " + path + ".");
+                    }
+                }
             }
+        }
+        catch (Exception e){
+            throw e;
         }
 
         _logger.debug("<< createAssetFolders()");
     }
 
+    private void updateAssetRendition(String assetId, String renditionPath, RenditionTypes renditionType) throws Exception {
+        _logger.debug("updateAsset() >>");
+        try {
+            if(renditionType == RenditionTypes.Thumbnail){
+                jdbcTemplate.update("UPDATE assets SET asset_thumbnail_path=? WHERE asset_id=?",new Object[]{renditionPath, assetId});
+
+            }
+            else if(renditionType == RenditionTypes.Preview){
+                jdbcTemplate.update("UPDATE assets SET asset_preview_path=? WHERE asset_id=?",new Object[]{renditionPath, assetId});
+            }
+            else{
+                throw new Exception("Unknown rendition type!");
+            }
+        }
+        catch (Exception e){
+            throw e;
+        }
+        _logger.debug("<< updateAsset()");
+    }
+
     private void insertAsset(Asset asset){
         _logger.debug("insertAsset() >>");
 
-        _logger.debug("Asset:");
-        _logger.debug("Asset ID: " + asset.getId());
-        _logger.debug("Asset Extension: " + asset.getExtension());
-        _logger.debug("Asset Imported By Username: " + asset.getImportedByUsername());
-        _logger.debug("Asset Name: " + asset.getName());
-        _logger.debug("Asset Path: " + asset.getPath());
-        _logger.debug("Asset Preview Path: " + asset.getPreviewPath());
-        _logger.debug("Asset Thumbnail Path: " + asset.getThumbnailPath());
-        _logger.debug("Asset Type: " + asset.getType());
-        _logger.debug("Asset Import Date: " + asset.getImportDate());
+        try{
+            _logger.debug("Asset:");
+            _logger.debug("Asset ID: " + asset.getId());
+            _logger.debug("Asset Extension: " + asset.getExtension());
+            _logger.debug("Asset Imported By Username: " + asset.getImportedByUsername());
+            _logger.debug("Asset Name: " + asset.getName());
+            _logger.debug("Asset Path: " + asset.getPath());
+            _logger.debug("Asset Preview Path: " + asset.getPreviewPath());
+            _logger.debug("Asset Thumbnail Path: " + asset.getThumbnailPath());
+            _logger.debug("Asset Type: " + asset.getType());
+            _logger.debug("Asset Import Date: " + asset.getImportDate());
 
-        _logger.debug("Inserting asset into the database...");
+            _logger.debug("Inserting asset into the database...");
 
-        jdbcTemplate.update("INSERT INTO assets(asset_id, asset_extension, asset_imported_by_username, " +
-                        "asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, asset_import_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                asset.getId(), asset.getName(), asset.getImportedByUsername(), asset.getName(), asset.getPath(),
-                asset.getPreviewPath(), asset.getThumbnailPath(), asset.getType(), asset.getImportDate());
+            jdbcTemplate.update("INSERT INTO assets(asset_id, asset_extension, asset_imported_by_username, " +
+                            "asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, asset_import_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    asset.getId(), asset.getName(), asset.getImportedByUsername(), asset.getName(), asset.getPath(),
+                    asset.getPreviewPath(), asset.getThumbnailPath(), asset.getType(), asset.getImportDate());
+        }
+        catch (Exception e){
+            throw e;
+        }
+
         _logger.debug("<< insertAsset()");
     }
 
     private String generateAssetId(){
         _logger.debug("generateAssetId() >>");
-        String assetId = RandomStringUtils.randomAlphanumeric(Constants.ASSET_ID_LENGTH);
-        if(isAssetIdValid(assetId)){
-            _logger.debug("<< generateAssetId() [" + assetId + "]");
-            return assetId;
+        try{
+            String assetId = RandomStringUtils.randomAlphanumeric(Constants.ASSET_ID_LENGTH);
+            if(isAssetIdValid(assetId)){
+                _logger.debug("<< generateAssetId() [" + assetId + "]");
+                return assetId;
+            }
+            return generateAssetId();
         }
-        return generateAssetId();
+        catch (Exception e){
+            throw e;
+        }
     }
 
     private boolean isAssetIdValid(String assetId){
         _logger.debug("isAssetIdValid() >> [" + assetId + "]");
-        List<Asset> result = jdbcTemplate.query("SELECT asset_id FROM assets WHERE asset_id=?", new Object[]{assetId}, (rs, rowNum) -> new Asset(rs.getString("asset_id")));
-        if(result != null){
-            if(result.size() > 0){
-                _logger.debug("<< isAssetIdValid() [" + false + "]");
-                return false;
-            }
-            else{
-                _logger.debug("<< isAssetIdValid() [" + true + "]");
-                return true;
+        boolean result = false;
+
+        try{
+            List<Asset> assets = jdbcTemplate.query("SELECT asset_id FROM assets WHERE asset_id=?", new Object[]{assetId}, (rs, rowNum) -> new Asset(rs.getString("asset_id")));
+            if(assets != null){
+                if(assets.size() > 0){
+                    _logger.debug("<< isAssetIdValid() [" + false + "]");
+                    result = false;
+                }
+                else{
+                    _logger.debug("<< isAssetIdValid() [" + true + "]");
+                    result = true;
+                }
             }
         }
+        catch (Exception e){
+            throw e;
+        }
+
         _logger.debug("<< isAssetIdValid() [" + true + "]");
-        return true;
+        return result;
+    }
+
+    private void generateRendition(List<Asset> assets, String format, String imagemagickRenditionSettings, RenditionTypes renditionType) throws Exception {
+        _logger.debug("generateRendition() >>");
+
+        try{
+            for(Asset asset: assets){
+                File inputFile = new File(asset.getPath());
+
+                String assetFolderPath = repositoryPath + File.separator + asset.getId();
+
+                File outputFile;
+                if(renditionType == RenditionTypes.Preview){
+                    String assetPreviewPath = repositoryPath + File.separator + asset.getId() + File.separator + "preview";
+                    createFolder(assetFolderPath, assetPreviewPath);
+                    outputFile = new File(assetPreviewPath + File.separator + asset.getId() + "." + format);
+                }
+                else if(renditionType == RenditionTypes.Thumbnail){
+                    String assetThumbnailPath = repositoryPath + File.separator + asset.getId() + File.separator + "thumbnail";
+                    createFolder(assetFolderPath, assetThumbnailPath);
+                    outputFile = new File(assetThumbnailPath + File.separator + asset.getId() + "." + format);
+                }
+                else{
+                    throw new Exception("Unknown rendition type!");
+                }
+
+                // Generate rendition
+                CommandLine cmdLine = new CommandLine(imagemagickExecutable);
+                cmdLine.addArgument("${inputFile}");
+                String[] arguments = imagemagickRenditionSettings.split("\\s+");
+                for(String argument: arguments){
+                    cmdLine.addArgument(argument);
+                }
+                cmdLine.addArgument("${outputFile}");
+                HashMap map = new HashMap();
+                map.put("inputFile", inputFile);
+                map.put("outputFile", outputFile);
+                cmdLine.setSubstitutionMap(map);
+
+                DefaultExecuteResultHandler resultHandler = new DefaultExecuteResultHandler();
+
+                ExecuteWatchdog watchdog = new ExecuteWatchdog(Constants.IMAGEMAGICK_TIMEOUT);
+                Executor executor = new DefaultExecutor();
+                executor.setExitValue(1);
+                executor.setWatchdog(watchdog);
+                _logger.debug("Executing command: " + cmdLine.toString());
+                executor.execute(cmdLine, resultHandler);
+
+                resultHandler.waitFor();
+
+                int exitValue = resultHandler.getExitValue();
+                if(exitValue != 0){
+                    String errorMessage = "ImageMagick failed to generate rendition of the file '" + inputFile.getAbsolutePath()
+                            + "'. " + resultHandler.getException().getLocalizedMessage();
+                    throw new Exception(errorMessage);
+                }
+                else{
+                    _logger.debug("ImageMagick successfully generated the rendition '" + outputFile.getAbsolutePath());
+                    updateAssetRendition(asset.getId(), outputFile.getAbsolutePath(), renditionType);
+                }
+            }
+        }
+        catch (Exception e){
+            throw e;
+        }
+
+        _logger.debug("<< generateRendition()");
+    }
+
+    private List<Asset> getAssetsFromContext(Object obj) throws Exception {
+        _logger.debug("getAssetsFromContext() >>");
+        if(obj instanceof List){
+            if(((List) obj).size() > 0){
+                if(((List) obj).get(0) instanceof Asset){
+                    _logger.debug("<< getAssetsFromContext()");
+                    return (List<Asset>) obj;
+                }
+                else{
+                    throw new Exception("Objects that are in the list are not of type Asset.");
+                }
+            }
+            else{
+                throw new Exception("List is empty and there is no way to check if the contents are of type Asset.");
+            }
+        }
+        else{
+            throw new Exception("Assets object is not of type List.");
+        }
     }
 }
