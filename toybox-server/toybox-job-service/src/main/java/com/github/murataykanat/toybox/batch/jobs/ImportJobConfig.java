@@ -6,6 +6,7 @@ import com.github.murataykanat.toybox.models.dbo.Asset;
 import com.github.murataykanat.toybox.models.UploadFile;
 import com.google.gson.Gson;
 import org.apache.commons.exec.*;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
@@ -190,12 +191,51 @@ public class ImportJobConfig {
                 })
                 .build();
 
+        Step stepDeleteTempFiles = stepBuilderFactory.get(Constants.STEP_IMPORT_DELETE_TEMP_FILES)
+                .tasklet(new Tasklet() {
+                    @Override
+                    public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
+                        _logger.debug("execute() >> [" + Constants.STEP_IMPORT_DELETE_TEMP_FILES + "]");
+
+                        Map<String, Object> jobParameters = chunkContext.getStepContext().getJobParameters();
+                        for(Map.Entry<String, Object> jobParameter: jobParameters.entrySet()){
+                            if(jobParameter.getKey().startsWith(Constants.JOB_PARAM_UPLOADED_FILE)){
+                                String filePath = (String) jobParameter.getValue();
+                                File file = new File(filePath);
+                                if(file.exists()){
+                                    File parentFolder = file.getParentFile();
+                                    if(parentFolder.exists()){
+                                        if(parentFolder.isDirectory()){
+                                            FileUtils.deleteDirectory(parentFolder);
+                                            break;
+                                        }
+                                        else{
+                                            throw new Exception("Directory " + parentFolder.getAbsolutePath() + " is not a directory!");
+                                        }
+                                    }
+                                    else{
+                                        throw new Exception("File path " + parentFolder.getAbsolutePath() + " is not valid!");
+                                    }
+                                }
+                                else{
+                                    throw new Exception("File path " + filePath + " is not valid!");
+                                }
+                            }
+                        }
+
+                        _logger.debug("<< execute() " + Constants.STEP_IMPORT_DELETE_TEMP_FILES + "]");
+                        return RepeatStatus.FINISHED;
+                    }
+                })
+                .build();
+
         return jobBuilderFactory.get(Constants.JOB_IMPORT_NAME)
                 .incrementer(new RunIdIncrementer())
                 .validator(importValidator())
                 .flow(stepGenerateAssets)
                 .next(stepGenerateThumbnails)
                 .next(stepGeneratePreviews)
+                .next(stepDeleteTempFiles)
                 .end()
                 .build();
     }
