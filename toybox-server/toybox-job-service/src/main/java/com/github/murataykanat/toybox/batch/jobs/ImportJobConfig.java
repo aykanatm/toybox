@@ -372,7 +372,7 @@ public class ImportJobConfig {
         _logger.debug("generateRendition() >>");
         try{
             for(Asset asset: assets){
-                if(asset.getType().contains("image")){
+                if(asset.getType().startsWith("image")){
                     File inputFile = new File(asset.getPath());
                     if(inputFile.exists()){
                         String assetFolderPath = repositoryPath + File.separator + asset.getId();
