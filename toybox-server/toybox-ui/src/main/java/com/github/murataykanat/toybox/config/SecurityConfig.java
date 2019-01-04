@@ -9,6 +9,7 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 @EnableOAuth2Sso
 @Configuration
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
+    @Override
     protected void configure(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.antMatcher("/**")
                 .authorizeRequests()
