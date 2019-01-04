@@ -26,6 +26,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.FileSystemUtils;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -85,15 +87,16 @@ public class ImportJobConfig {
                 .tasklet(new Tasklet() {
                     @Override
                     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
+                        _logger.debug("execute() >> [" + Constants.STEP_IMPORT_GENERATE_ASSETS + "]");
                         Tika tika = new Tika();
                         List<Asset> assets = new ArrayList<>();
 
                         Map<String, Object> jobParameters = chunkContext.getStepContext().getJobParameters();
                         String username = (String) jobParameters.get(Constants.JOB_PARAM_USERNAME);
 
-                        for(Map.Entry<String, Object> jobparameter: jobParameters.entrySet()){
-                            if(jobparameter.getKey().startsWith(Constants.JOB_PARAM_UPLOADED_FILE)){
-                                String filePath = (String) jobparameter.getValue();
+                        for(Map.Entry<String, Object> jobParameter: jobParameters.entrySet()){
+                            if(jobParameter.getKey().startsWith(Constants.JOB_PARAM_UPLOADED_FILE)){
+                                String filePath = (String) jobParameter.getValue();
                                 File file = new File(filePath);
                                 if(file.exists()){
                                     if(file.isFile()){
@@ -102,10 +105,8 @@ public class ImportJobConfig {
 
                                         // Generate folder
                                         File assetFolder = new File(assetFolderPath);
-                                        if(!assetFolder.exists()){
-                                            if(!assetFolder.mkdir()){
-                                                throw new Exception("Unable to create folder with path " + assetFolderPath + ".");
-                                            }
+                                        if(!assetFolder.exists() && !assetFolder.mkdir()){
+                                            throw new IOException("Unable to create folder with path " + assetFolderPath + ".");
                                         }
 
                                         // Copy asset file to repository
@@ -114,11 +115,9 @@ public class ImportJobConfig {
                                         FileSystemUtils.copyRecursively(assetSource, assetDestination);
 
                                         String assetMimeType = "UNKNOWN";
-                                        if(assetDestination.exists()){
-                                            if(assetDestination.isFile()){
-                                                assetMimeType = tika.detect(assetDestination);
-                                                _logger.debug("Asset mime type: " + assetMimeType);
-                                            }
+                                        if(assetDestination.exists() && assetDestination.isFile()){
+                                            assetMimeType = tika.detect(assetDestination);
+                                            _logger.debug("Asset mime type: " + assetMimeType);
                                         }
 
                                         // Generate database entry
@@ -137,17 +136,19 @@ public class ImportJobConfig {
                                         assets.add(asset);
                                     }
                                     else{
-                                        throw new Exception("File " + filePath + " is not a file!");
+                                        throw new IOException("File " + filePath + " is not a file!");
                                     }
                                 }
                                 else{
-                                    throw new Exception("File path " + filePath + " is not valid!");
+                                    throw new FileNotFoundException("File path " + filePath + " is not valid!");
                                 }
                             }
                         }
 
                         _logger.debug("Adding assets to job context...");
                         chunkContext.getStepContext().getStepExecution().getJobExecution().getExecutionContext().put("assets", assets);
+
+                        _logger.debug("<< execute() [" + Constants.STEP_IMPORT_GENERATE_ASSETS + "]");
                         return RepeatStatus.FINISHED;
                     }
                 })
@@ -206,15 +207,15 @@ public class ImportJobConfig {
                                             break;
                                         }
                                         else{
-                                            throw new Exception("Directory " + parentFolder.getAbsolutePath() + " is not a directory!");
+                                            throw new IOException("Directory " + parentFolder.getAbsolutePath() + " is not a directory!");
                                         }
                                     }
                                     else{
-                                        throw new Exception("File path " + parentFolder.getAbsolutePath() + " is not valid!");
+                                        throw new FileNotFoundException("File path " + parentFolder.getAbsolutePath() + " is not valid!");
                                     }
                                 }
                                 else{
-                                    throw new Exception("File path " + filePath + " is not valid!");
+                                    throw new FileNotFoundException("File path " + filePath + " is not valid!");
                                 }
                             }
                         }
@@ -258,43 +259,33 @@ public class ImportJobConfig {
         };
     }
 
-    private void createFolder(String assetFolderPath, String assetRenditionPath) throws Exception {
+    private void createFolder(String assetFolderPath, String assetRenditionPath) throws IOException {
         _logger.debug("createAssetFolders() >>");
-        try{
-            String[] paths = new String[]{assetFolderPath, assetRenditionPath};
-            for(String path: paths){
-                File directory = new File(path);
-                if(!directory.exists()){
-                    _logger.debug("Creating folder '" + path + "'...");
-                    if(!directory.mkdir()){
-                        throw new Exception("Unable to create folder with path " + path + ".");
-                    }
+        String[] paths = new String[]{assetFolderPath, assetRenditionPath};
+        for(String path: paths){
+            File directory = new File(path);
+            if(!directory.exists()){
+                _logger.debug("Creating folder '" + path + "'...");
+                if(!directory.mkdir()){
+                    throw new IOException("Unable to create folder with path " + path + ".");
                 }
             }
-        }
-        catch (Exception e){
-            throw e;
         }
 
         _logger.debug("<< createAssetFolders()");
     }
 
-    private void updateAssetRendition(String assetId, String renditionPath, RenditionTypes renditionType) throws Exception {
+    private void updateAssetRendition(String assetId, String renditionPath, RenditionTypes renditionType) {
         _logger.debug("updateAsset() >>");
-        try {
-            if(renditionType == RenditionTypes.Thumbnail){
-                jdbcTemplate.update("UPDATE assets SET asset_thumbnail_path=? WHERE asset_id=?",new Object[]{renditionPath, assetId});
+        if(renditionType == RenditionTypes.Thumbnail){
+            jdbcTemplate.update("UPDATE assets SET asset_thumbnail_path=? WHERE asset_id=?",new Object[]{renditionPath, assetId});
 
-            }
-            else if(renditionType == RenditionTypes.Preview){
-                jdbcTemplate.update("UPDATE assets SET asset_preview_path=? WHERE asset_id=?",new Object[]{renditionPath, assetId});
-            }
-            else{
-                throw new Exception("Unknown rendition type!");
-            }
         }
-        catch (Exception e){
-            throw e;
+        else if(renditionType == RenditionTypes.Preview){
+            jdbcTemplate.update("UPDATE assets SET asset_preview_path=? WHERE asset_id=?",new Object[]{renditionPath, assetId});
+        }
+        else{
+            throw new IllegalArgumentException("Unknown rendition type!");
         }
         _logger.debug("<< updateAsset()");
     }
@@ -302,220 +293,202 @@ public class ImportJobConfig {
     private void insertAsset(Asset asset){
         _logger.debug("insertAsset() >>");
 
-        try{
-            _logger.debug("Asset:");
-            _logger.debug("Asset ID: " + asset.getId());
-            _logger.debug("Asset Extension: " + asset.getExtension());
-            _logger.debug("Asset Imported By Username: " + asset.getImportedByUsername());
-            _logger.debug("Asset Name: " + asset.getName());
-            _logger.debug("Asset Path: " + asset.getPath());
-            _logger.debug("Asset Preview Path: " + asset.getPreviewPath());
-            _logger.debug("Asset Thumbnail Path: " + asset.getThumbnailPath());
-            _logger.debug("Asset Type: " + asset.getType());
-            _logger.debug("Asset Import Date: " + asset.getImportDate());
+        _logger.debug("Asset:");
+        _logger.debug("Asset ID: " + asset.getId());
+        _logger.debug("Asset Extension: " + asset.getExtension());
+        _logger.debug("Asset Imported By Username: " + asset.getImportedByUsername());
+        _logger.debug("Asset Name: " + asset.getName());
+        _logger.debug("Asset Path: " + asset.getPath());
+        _logger.debug("Asset Preview Path: " + asset.getPreviewPath());
+        _logger.debug("Asset Thumbnail Path: " + asset.getThumbnailPath());
+        _logger.debug("Asset Type: " + asset.getType());
+        _logger.debug("Asset Import Date: " + asset.getImportDate());
 
-            _logger.debug("Inserting asset into the database...");
+        _logger.debug("Inserting asset into the database...");
 
-            jdbcTemplate.update("INSERT INTO assets(asset_id, asset_extension, asset_imported_by_username, " +
-                            "asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, asset_import_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    asset.getId(), asset.getName(), asset.getImportedByUsername(), asset.getName(), asset.getPath(),
-                    asset.getPreviewPath(), asset.getThumbnailPath(), asset.getType(), asset.getImportDate());
-        }
-        catch (Exception e){
-            throw e;
-        }
+        jdbcTemplate.update("INSERT INTO assets(asset_id, asset_extension, asset_imported_by_username, " +
+                        "asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, asset_import_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                asset.getId(), asset.getName(), asset.getImportedByUsername(), asset.getName(), asset.getPath(),
+                asset.getPreviewPath(), asset.getThumbnailPath(), asset.getType(), asset.getImportDate());
 
         _logger.debug("<< insertAsset()");
     }
 
     private String generateAssetId(){
         _logger.debug("generateAssetId() >>");
-        try{
-            String assetId = RandomStringUtils.randomAlphanumeric(Constants.ASSET_ID_LENGTH);
-            if(isAssetIdValid(assetId)){
-                _logger.debug("<< generateAssetId() [" + assetId + "]");
-                return assetId;
-            }
-            return generateAssetId();
+        String assetId = RandomStringUtils.randomAlphanumeric(Constants.ASSET_ID_LENGTH);
+        if(isAssetIdValid(assetId)){
+            _logger.debug("<< generateAssetId() [" + assetId + "]");
+            return assetId;
         }
-        catch (Exception e){
-            throw e;
-        }
+        return generateAssetId();
     }
 
     private boolean isAssetIdValid(String assetId){
         _logger.debug("isAssetIdValid() >> [" + assetId + "]");
         boolean result = false;
 
-        try{
-            List<Asset> assets = jdbcTemplate.query("SELECT asset_id FROM assets WHERE asset_id=?", new Object[]{assetId}, (rs, rowNum) -> new Asset(rs.getString("asset_id")));
-            if(assets != null){
-                if(assets.size() > 0){
-                    _logger.debug("<< isAssetIdValid() [" + false + "]");
-                    result = false;
-                }
-                else{
-                    _logger.debug("<< isAssetIdValid() [" + true + "]");
-                    result = true;
-                }
+        List<Asset> assets = jdbcTemplate.query("SELECT asset_id FROM assets WHERE asset_id=?", new Object[]{assetId}, (rs, rowNum) -> new Asset(rs.getString("asset_id")));
+        if(assets != null){
+            if(!assets.isEmpty()){
+                _logger.debug("<< isAssetIdValid() [" + false + "]");
+                result = false;
             }
-        }
-        catch (Exception e){
-            throw e;
+            else{
+                _logger.debug("<< isAssetIdValid() [" + true + "]");
+                result = true;
+            }
         }
 
         _logger.debug("<< isAssetIdValid() [" + true + "]");
         return result;
     }
 
-    private void generateRendition(List<Asset> assets, RenditionTypes renditionType) throws Exception {
+    private void generateRendition(List<Asset> assets, RenditionTypes renditionType) throws IOException, InterruptedException {
         _logger.debug("generateRendition() >>");
-        try{
-            for(Asset asset: assets){
-                if(asset.getType().startsWith("image")){
-                    File inputFile = new File(asset.getPath());
-                    if(inputFile.exists()){
-                        String assetFolderPath = repositoryPath + File.separator + asset.getId();
-                        File outputFile;
-                        String renditionSettings;
+        for(Asset asset: assets){
+            if(asset.getType().startsWith("image")){
+                File inputFile = new File(asset.getPath());
+                if(inputFile.exists()){
+                    String assetFolderPath = repositoryPath + File.separator + asset.getId();
+                    File outputFile;
+                    String renditionSettings;
 
-                        if(renditionType == RenditionTypes.Preview){
-                            String assetPreviewPath = repositoryPath + File.separator + asset.getId() + File.separator + "preview";
-                            createFolder(assetFolderPath, assetPreviewPath);
+                    if(renditionType == RenditionTypes.Preview){
+                        String assetPreviewPath = repositoryPath + File.separator + asset.getId() + File.separator + "preview";
+                        createFolder(assetFolderPath, assetPreviewPath);
 
-                            if(asset.getType().equalsIgnoreCase("image/gif")){
-                                renditionSettings = gifsiclePreviewSettings;
-                                outputFile = new File(assetPreviewPath + File.separator + asset.getId() + ".gif");
-                            }
-                            else{
-                                renditionSettings = imagemagickPreviewSettings;
-                                outputFile = new File(assetPreviewPath + File.separator + asset.getId() + "." + previewFormat);
-                            }
-                        }
-                        else if(renditionType == RenditionTypes.Thumbnail){
-                            String assetThumbnailPath = repositoryPath + File.separator + asset.getId() + File.separator + "thumbnail";
-                            createFolder(assetFolderPath, assetThumbnailPath);
-                            if(asset.getType().equalsIgnoreCase("image/gif")){
-                                renditionSettings = gifsicleThumbnailSettings;
-                                outputFile = new File(assetThumbnailPath + File.separator + asset.getId() + ".gif");
-                            }
-                            else{
-                                renditionSettings = imagemagickThumbnailSettings;
-                                outputFile = new File(assetThumbnailPath + File.separator + asset.getId() + "." + thumbnailFormat);
-                            }
+                        if(asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_GIF)){
+                            renditionSettings = gifsiclePreviewSettings;
+                            outputFile = new File(assetPreviewPath + File.separator + asset.getId() + ".gif");
                         }
                         else{
-                            throw new Exception("Unknown rendition type!");
+                            renditionSettings = imagemagickPreviewSettings;
+                            outputFile = new File(assetPreviewPath + File.separator + asset.getId() + "." + previewFormat);
                         }
-
-                        // Generate rendition
-                        if(asset.getType().equalsIgnoreCase("image/gif")){
-                            CommandLine cmdLine = new CommandLine(gifsicleExecutable);
-                            cmdLine.addArgument("${inputFile}");
-                            String[] arguments = renditionSettings.split("\\s+");
-                            for(String argument: arguments){
-                                cmdLine.addArgument(argument);
-                            }
-                            cmdLine.addArgument("${outputFile}");
-                            HashMap map = new HashMap();
-                            map.put("inputFile", inputFile);
-                            map.put("outputFile", outputFile);
-                            cmdLine.setSubstitutionMap(map);
-
-                            DefaultExecuteResultHandler resultHandler = new DefaultExecuteResultHandler();
-
-                            long gifsicleTimeoutValue = Long.parseLong(gifsicleTimeout);
-                            ExecuteWatchdog watchdog = new ExecuteWatchdog(gifsicleTimeoutValue);
-                            Executor executor = new DefaultExecutor();
-                            executor.setExitValue(1);
-                            executor.setWatchdog(watchdog);
-                            _logger.debug("Executing command: " + cmdLine.toString());
-                            executor.execute(cmdLine, resultHandler);
-
-                            resultHandler.waitFor();
-
-                            int exitValue = resultHandler.getExitValue();
-                            if(exitValue != 0){
-                                String errorMessage = "Gifsicle failed to generate rendition of the file '" + inputFile.getAbsolutePath()
-                                        + "'. " + resultHandler.getException().getLocalizedMessage();
-                                throw new Exception(errorMessage);
-                            }
-                            else{
-                                _logger.debug("Gifsicle successfully generated the rendition '" + outputFile.getAbsolutePath());
-                                updateAssetRendition(asset.getId(), outputFile.getAbsolutePath(), renditionType);
-                            }
+                    }
+                    else if(renditionType == RenditionTypes.Thumbnail){
+                        String assetThumbnailPath = repositoryPath + File.separator + asset.getId() + File.separator + "thumbnail";
+                        createFolder(assetFolderPath, assetThumbnailPath);
+                        if(asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_GIF)){
+                            renditionSettings = gifsicleThumbnailSettings;
+                            outputFile = new File(assetThumbnailPath + File.separator + asset.getId() + ".gif");
                         }
                         else{
-                            CommandLine cmdLine = new CommandLine(imagemagickExecutable);
-                            cmdLine.addArgument("${inputFile}");
-                            String[] arguments = renditionSettings.split("\\s+");
-                            for(String argument: arguments){
-                                cmdLine.addArgument(argument);
-                            }
-                            cmdLine.addArgument("${outputFile}");
-                            HashMap map = new HashMap();
-                            map.put("inputFile", inputFile);
-                            map.put("outputFile", outputFile);
-                            cmdLine.setSubstitutionMap(map);
-
-                            DefaultExecuteResultHandler resultHandler = new DefaultExecuteResultHandler();
-
-                            long imageMagickTimeoutValue = Long.parseLong(imagemagickTimeout);
-                            ExecuteWatchdog watchdog = new ExecuteWatchdog(imageMagickTimeoutValue);
-                            Executor executor = new DefaultExecutor();
-                            executor.setExitValue(1);
-                            executor.setWatchdog(watchdog);
-                            _logger.debug("Executing command: " + cmdLine.toString());
-                            executor.execute(cmdLine, resultHandler);
-
-                            resultHandler.waitFor();
-
-                            int exitValue = resultHandler.getExitValue();
-                            if(exitValue != 0){
-                                String errorMessage = "ImageMagick failed to generate rendition of the file '" + inputFile.getAbsolutePath()
-                                        + "'. " + resultHandler.getException().getLocalizedMessage();
-                                throw new Exception(errorMessage);
-                            }
-                            else{
-                                _logger.debug("ImageMagick successfully generated the rendition '" + outputFile.getAbsolutePath());
-                                updateAssetRendition(asset.getId(), outputFile.getAbsolutePath(), renditionType);
-                            }
+                            renditionSettings = imagemagickThumbnailSettings;
+                            outputFile = new File(assetThumbnailPath + File.separator + asset.getId() + "." + thumbnailFormat);
                         }
                     }
                     else{
-                        throw new Exception("File " + asset.getPath() + " does not exist!");
+                        throw new IllegalArgumentException("Unknown rendition type!");
+                    }
+
+                    // Generate rendition
+                    if(asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_GIF)){
+                        CommandLine cmdLine = new CommandLine(gifsicleExecutable);
+                        cmdLine.addArgument("${inputFile}");
+                        String[] arguments = renditionSettings.split("\\s+");
+                        for(String argument: arguments){
+                            cmdLine.addArgument(argument);
+                        }
+                        cmdLine.addArgument("${outputFile}");
+                        HashMap map = new HashMap();
+                        map.put("inputFile", inputFile);
+                        map.put("outputFile", outputFile);
+                        cmdLine.setSubstitutionMap(map);
+
+                        DefaultExecuteResultHandler resultHandler = new DefaultExecuteResultHandler();
+
+                        long gifsicleTimeoutValue = Long.parseLong(gifsicleTimeout);
+                        ExecuteWatchdog watchdog = new ExecuteWatchdog(gifsicleTimeoutValue);
+                        Executor executor = new DefaultExecutor();
+                        executor.setExitValue(1);
+                        executor.setWatchdog(watchdog);
+                        _logger.debug("Executing command: " + cmdLine.toString());
+                        executor.execute(cmdLine, resultHandler);
+
+                        resultHandler.waitFor();
+
+                        int exitValue = resultHandler.getExitValue();
+                        if(exitValue != 0){
+                            String errorMessage = "Gifsicle failed to generate rendition of the file '" + inputFile.getAbsolutePath()
+                                    + "'. " + resultHandler.getException().getLocalizedMessage();
+                            _logger.error(errorMessage);
+                            throw resultHandler.getException();
+                        }
+                        else{
+                            _logger.debug("Gifsicle successfully generated the rendition '" + outputFile.getAbsolutePath());
+                            updateAssetRendition(asset.getId(), outputFile.getAbsolutePath(), renditionType);
+                        }
+                    }
+                    else{
+                        CommandLine cmdLine = new CommandLine(imagemagickExecutable);
+                        cmdLine.addArgument("${inputFile}");
+                        String[] arguments = renditionSettings.split("\\s+");
+                        for(String argument: arguments){
+                            cmdLine.addArgument(argument);
+                        }
+                        cmdLine.addArgument("${outputFile}");
+                        HashMap map = new HashMap();
+                        map.put("inputFile", inputFile);
+                        map.put("outputFile", outputFile);
+                        cmdLine.setSubstitutionMap(map);
+
+                        DefaultExecuteResultHandler resultHandler = new DefaultExecuteResultHandler();
+
+                        long imageMagickTimeoutValue = Long.parseLong(imagemagickTimeout);
+                        ExecuteWatchdog watchdog = new ExecuteWatchdog(imageMagickTimeoutValue);
+                        Executor executor = new DefaultExecutor();
+                        executor.setExitValue(1);
+                        executor.setWatchdog(watchdog);
+                        _logger.debug("Executing command: " + cmdLine.toString());
+                        executor.execute(cmdLine, resultHandler);
+
+                        resultHandler.waitFor();
+
+                        int exitValue = resultHandler.getExitValue();
+                        if(exitValue != 0){
+                            String errorMessage = "ImageMagick failed to generate rendition of the file '" + inputFile.getAbsolutePath()
+                                    + "'. " + resultHandler.getException().getLocalizedMessage();
+                            _logger.error(errorMessage);
+                            throw resultHandler.getException();
+                        }
+                        else{
+                            _logger.debug("ImageMagick successfully generated the rendition '" + outputFile.getAbsolutePath());
+                            updateAssetRendition(asset.getId(), outputFile.getAbsolutePath(), renditionType);
+                        }
                     }
                 }
                 else{
-                    _logger.debug("Asset cannot have preview or thumbnail, skipping...");
+                    throw new FileNotFoundException("File " + asset.getPath() + " does not exist!");
                 }
             }
-        }
-        catch (Exception e){
-            throw e;
+            else{
+                _logger.debug("Asset cannot have preview or thumbnail, skipping...");
+            }
         }
 
         _logger.debug("<< generateRendition()");
     }
 
-    private List<Asset> getAssetsFromContext(Object obj) throws Exception {
+    private List<Asset> getAssetsFromContext(Object obj) {
         _logger.debug("getAssetsFromContext() >>");
         if(obj instanceof List){
-            if(((List) obj).size() > 0){
+            if(!((List) obj).isEmpty()){
                 if(((List) obj).get(0) instanceof Asset){
                     _logger.debug("<< getAssetsFromContext()");
                     return (List<Asset>) obj;
                 }
                 else{
-                    throw new Exception("Objects that are in the list are not of type Asset.");
+                    throw new IllegalArgumentException("Objects that are in the list are not of type Asset.");
                 }
             }
             else{
-                throw new Exception("List is empty and there is no way to check if the contents are of type Asset.");
+                throw new IllegalArgumentException("List is empty and there is no way to check if the contents are of type Asset.");
             }
         }
         else{
-            throw new Exception("Assets object is not of type List.");
+            throw new IllegalArgumentException("Assets object is not of type List.");
         }
     }
 }

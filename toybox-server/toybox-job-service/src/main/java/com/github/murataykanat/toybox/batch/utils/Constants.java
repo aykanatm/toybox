@@ -14,4 +14,6 @@ public final class Constants {
     public static final String JOB_PARAM_SYSTEM_MILLIS = "toybox-job-param-system-millis";
 
     public static final int ASSET_ID_LENGTH = 40;
+
+    public static final String IMAGE_MIME_TYPE_GIF = "image/gif";
 }
