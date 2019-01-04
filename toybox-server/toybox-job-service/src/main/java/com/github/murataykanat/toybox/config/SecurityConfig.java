@@ -10,6 +10,7 @@ import org.springframework.web.cors.CorsConfiguration;
 @EnableOAuth2Sso
 @Configuration
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
+    @Override
     protected void configure(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.antMatcher("/**")
                 .authorizeRequests()
