@@ -1,6 +1,7 @@
 package com.github.murataykanat.toybox.batch.utils;
 
 public final class Constants {
+    private Constants(){}
     public static final String JOB_IMPORT_NAME = "toybox-import";
 
     public static final String STEP_IMPORT_GENERATE_ASSETS = "toybox-import-generate-asset";
