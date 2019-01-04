@@ -40,7 +40,7 @@ public class JobController {
             if(uploadFileLst != null){
                 _logger.debug("Putting values into the parameter map...");
                 List<UploadFile> uploadedFiles = uploadFileLst.getUploadFiles();
-                if(uploadedFiles != null && uploadedFiles.size() > 0){
+                if(uploadedFiles != null && !uploadedFiles.isEmpty()){
                     JobParametersBuilder builder = new JobParametersBuilder();
                     ImportAssetResponse importAssetResponse = new ImportAssetResponse();
 
@@ -108,10 +108,10 @@ public class JobController {
 
                 List<ToyboxJob> allJobs = jdbcTemplate.query("SELECT JOB_INSTANCE_ID, JOB_EXECUTION_ID, JOB_NAME, JOB_TYPE, START_TIME, END_TIME, STATUS, USERNAME  FROM TOYBOX_JOBS_VW", new ToyboxJobRowMapper());
 
-                if(allJobs.size() > 0){
+                if(!allJobs.isEmpty()){
                     List<ToyboxJob> jobs;
 
-                    if(jobSearchRequestFacetList != null && jobSearchRequestFacetList.size() > 0){
+                    if(jobSearchRequestFacetList != null && !jobSearchRequestFacetList.isEmpty()){
                         jobs = allJobs.stream().filter(j -> j.hasFacetValue(jobSearchRequestFacetList)).collect(Collectors.toList());
                     }
                     else{
@@ -145,14 +145,13 @@ public class JobController {
                                             for(String defaultLookup: defaultLookups){
                                                 lookups.add(defaultLookup);
                                             }
-                                            break;
                                         }
                                         else
                                         {
                                             String lookup = (String) method.invoke(toyboxJob);
                                             lookups.add(lookup);
-                                            break;
                                         }
+                                        break;
                                     }
                                 }
                             }
@@ -254,7 +253,7 @@ public class JobController {
             if(StringUtils.isNotBlank(jobInstanceId)){
                 List<ToyboxJob> jobs = jdbcTemplate.query("SELECT JOB_INSTANCE_ID, JOB_EXECUTION_ID, JOB_NAME, JOB_TYPE, START_TIME, END_TIME, STATUS, USERNAME  FROM TOYBOX_JOBS_VW WHERE JOB_INSTANCE_ID=?",
                         new Object[]{jobInstanceId},new ToyboxJobRowMapper());
-                if(jobs.size() > 0){
+                if(!jobs.isEmpty()){
                     if(jobs.size() == 1){
                         RetrieveToyboxJobResult retrieveToyboxJobResult = new RetrieveToyboxJobResult();
 
