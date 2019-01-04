@@ -28,7 +28,7 @@ public class ToyboxJob {
     private Date endTime;
     @FacetColumnName(value = "Status")
     private String status;
-    // TODO: Allow faceting based on username
+    @FacetColumnName(value = "Username")
     private String username;
 
     private List<ToyboxJobStep> steps;
@@ -86,6 +86,7 @@ public class ToyboxJob {
 
     public void setJobType(String jobType) { this.jobType = jobType; }
 
+    @FacetColumnName(value = "Username")
     public String getUsername() {
         return username;
     }
