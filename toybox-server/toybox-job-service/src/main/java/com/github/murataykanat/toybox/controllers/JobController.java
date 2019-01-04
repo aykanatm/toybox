@@ -252,7 +252,7 @@ public class JobController {
         _logger.debug("retrieveJob() >>");
         try{
             if(StringUtils.isNotBlank(jobInstanceId)){
-                List<ToyboxJob> jobs = jdbcTemplate.query("SELECT JOB_INSTANCE_ID, JOB_EXECUTION_ID, JOB_NAME, JOB_TYPE, START_TIME, END_TIME, STATUS, PARAMETERS  FROM TOYBOX_JOBS_VW WHERE JOB_INSTANCE_ID=?",
+                List<ToyboxJob> jobs = jdbcTemplate.query("SELECT JOB_INSTANCE_ID, JOB_EXECUTION_ID, JOB_NAME, JOB_TYPE, START_TIME, END_TIME, STATUS, USERNAME  FROM TOYBOX_JOBS_VW WHERE JOB_INSTANCE_ID=?",
                         new Object[]{jobInstanceId},new ToyboxJobRowMapper());
                 if(jobs.size() > 0){
                     if(jobs.size() == 1){
