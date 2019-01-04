@@ -30,7 +30,7 @@ public class ConfigController {
         _logger.debug("Configuration Server Field Request URL: " + this.configServerFieldRequestUrl);
 
         try{
-            ConfigurationFieldValue configurationFieldValue = new ConfigurationFieldValue();
+
 
             ResponseEntity<String> response = restTemplate.getForEntity(this.configServerFieldRequestUrl, String.class);
 
@@ -39,6 +39,7 @@ public class ConfigController {
             String fieldValue = root.get("propertySources").get(0).get("source").get(fieldName).textValue();
 
             if(StringUtils.isNotBlank(fieldValue)){
+                ConfigurationFieldValue configurationFieldValue = new ConfigurationFieldValue();
                 configurationFieldValue.setValue(fieldValue);
                 configurationFieldValue.setMessage("Field value retrieved successfully!");
 
@@ -46,7 +47,11 @@ public class ConfigController {
                 return new ResponseEntity<>(configurationFieldValue, HttpStatus.OK);
             }
             else{
-                throw new Exception("Field value is blank!");
+                ConfigurationFieldValue configurationFieldValue = new ConfigurationFieldValue();
+                configurationFieldValue.setMessage("Field value is blank!");
+
+                _logger.debug("<< getConfiguration()");
+                return new ResponseEntity<>(configurationFieldValue, HttpStatus.BAD_REQUEST);
             }
         }
         catch (Exception e){
