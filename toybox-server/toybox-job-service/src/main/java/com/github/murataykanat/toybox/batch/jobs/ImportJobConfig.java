@@ -1,15 +1,11 @@
 package com.github.murataykanat.toybox.batch.jobs;
 
 import com.github.murataykanat.toybox.batch.utils.Constants;
-import com.github.murataykanat.toybox.models.UploadFileLst;
 import com.github.murataykanat.toybox.models.dbo.Asset;
-import com.github.murataykanat.toybox.models.UploadFile;
-import com.google.gson.Gson;
 import org.apache.commons.exec.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.RandomStringUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tika.Tika;
