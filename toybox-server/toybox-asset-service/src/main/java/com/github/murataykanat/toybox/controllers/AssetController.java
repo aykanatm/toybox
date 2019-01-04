@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,11 +32,11 @@ public class AssetController {
         _logger.debug("uploadAssets() >>");
 
         String tempFolderName = Long.toString(System.currentTimeMillis());
-        String importStagingPath = this.importStagingPath + File.separator + tempFolderName;
-        _logger.debug("Import staging path: " + importStagingPath);
+        String tempImportStagingPath = importStagingPath + File.separator + tempFolderName;
+        _logger.debug("Import staging path: " + tempImportStagingPath);
 
         try{
-            File tempFolder = new File(this.importStagingPath + File.separator + tempFolderName);
+            File tempFolder = new File(tempImportStagingPath);
             if(!tempFolder.exists()){
                 tempFolder.mkdir();
             }
@@ -49,7 +50,7 @@ public class AssetController {
                     path = tempFolder.getAbsolutePath() + File.separator + file.getOriginalFilename();
                 }
                 else{
-                    throw new Exception("The temp folder " + tempFolder.getAbsolutePath() + " does not exist!");
+                    throw new FileNotFoundException("The temp folder " + tempFolder.getAbsolutePath() + " does not exist!");
                 }
 
                 file.transferTo(new File(path));
@@ -72,7 +73,7 @@ public class AssetController {
             String errorMessage = "An error occurred while uploading files. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
-            File tempFolder = new File(this.importStagingPath + File.separator + tempFolderName);
+            File tempFolder = new File(tempImportStagingPath);
             try {
                 if(tempFolder.exists()){
                     FileUtils.deleteDirectory(tempFolder);
