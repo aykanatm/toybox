@@ -407,8 +407,9 @@ public class ImportJobConfig {
             if(asset.getType().startsWith("image") || asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_EPS) || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PDF)){
                 File inputFile = new File(asset.getPath());
                 if(inputFile.exists()){
-                    if(asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PDF)){
+                    if(asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PDF) || asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_PHOTOSHOP)){
                         // If we are creating renditions of a PDF file, we only use the first page
+                        // If we are creating renditions of a PSB file, we get the top layer
                         inputFile = new File(asset.getPath() + "[0]");
                     }
 
