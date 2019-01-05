@@ -16,4 +16,5 @@ public final class Constants {
     public static final int ASSET_ID_LENGTH = 40;
 
     public static final String IMAGE_MIME_TYPE_GIF = "image/gif";
+    public static final String IMAGE_MIME_TYPE_EPS = "application/postscript";
 }

@@ -1,6 +1,7 @@
 package com.github.murataykanat.toybox.batch.jobs;
 
 import com.github.murataykanat.toybox.batch.utils.Constants;
+import com.github.murataykanat.toybox.models.RenditionProperties;
 import com.github.murataykanat.toybox.models.dbo.Asset;
 import org.apache.commons.exec.*;
 import org.apache.commons.io.FileUtils;
@@ -58,8 +59,12 @@ public class ImportJobConfig {
 
     @Value("${imagemagickThumbnailSettings}")
     private String imagemagickThumbnailSettings;
+    @Value("${imagemagickEpsThumbnailSettings}")
+    private String imagemagickEpsThumbnailSettings;
     @Value("${imagemagickPreviewSettings}")
     private String imagemagickPreviewSettings;
+    @Value("${imagemagickEpsPreviewSettings}")
+    private String imagemagickEpsPreviewSettings;
     @Value("${imagemagickTimeout}")
     private String imagemagickTimeout;
 
@@ -344,10 +349,50 @@ public class ImportJobConfig {
         return result;
     }
 
+    private RenditionProperties getRenditionProperties(Asset asset, String assetRenditionPath, RenditionTypes renditionType) {
+        RenditionProperties renditionProperties = new RenditionProperties();
+
+        String fileFormat;
+        String gifsicleSettings;
+        String imagemagickSettings;
+        String imagemagickEpsSettings;
+
+        if(renditionType == RenditionTypes.Thumbnail){
+            fileFormat = thumbnailFormat;
+            gifsicleSettings = gifsicleThumbnailSettings;
+            imagemagickSettings = imagemagickThumbnailSettings;
+            imagemagickEpsSettings = imagemagickEpsThumbnailSettings;
+        }
+        else if(renditionType == RenditionTypes.Preview){
+            fileFormat = previewFormat;
+            gifsicleSettings = gifsiclePreviewSettings;
+            imagemagickSettings = imagemagickPreviewSettings;
+            imagemagickEpsSettings = imagemagickEpsPreviewSettings;
+        }
+        else{
+            throw new IllegalArgumentException("Unknown rendition type!");
+        }
+
+        if(asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_GIF)){
+            renditionProperties.setRenditionSettings(gifsicleSettings);
+            renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + ".gif"));
+        }
+        else if(asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_EPS)){
+            renditionProperties.setRenditionSettings(imagemagickSettings);
+            renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + "." + fileFormat));
+        }
+        else{
+            renditionProperties.setRenditionSettings(imagemagickEpsSettings);
+            renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + "." + fileFormat));
+        }
+
+        return renditionProperties;
+    }
+
     private void generateRendition(List<Asset> assets, RenditionTypes renditionType) throws IOException, InterruptedException {
         _logger.debug("generateRendition() >>");
         for(Asset asset: assets){
-            if(asset.getType().startsWith("image")){
+            if(asset.getType().startsWith("image") || asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_EPS)){
                 File inputFile = new File(asset.getPath());
                 if(inputFile.exists()){
                     String assetFolderPath = repositoryPath + File.separator + asset.getId();
@@ -358,26 +403,17 @@ public class ImportJobConfig {
                         String assetPreviewPath = repositoryPath + File.separator + asset.getId() + File.separator + "preview";
                         createFolder(assetFolderPath, assetPreviewPath);
 
-                        if(asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_GIF)){
-                            renditionSettings = gifsiclePreviewSettings;
-                            outputFile = new File(assetPreviewPath + File.separator + asset.getId() + ".gif");
-                        }
-                        else{
-                            renditionSettings = imagemagickPreviewSettings;
-                            outputFile = new File(assetPreviewPath + File.separator + asset.getId() + "." + previewFormat);
-                        }
+                        RenditionProperties renditionProperties = getRenditionProperties(asset, assetPreviewPath, renditionType);
+                        outputFile = renditionProperties.getOutputFile();
+                        renditionSettings = renditionProperties.getRenditionSettings();
                     }
                     else if(renditionType == RenditionTypes.Thumbnail){
                         String assetThumbnailPath = repositoryPath + File.separator + asset.getId() + File.separator + "thumbnail";
                         createFolder(assetFolderPath, assetThumbnailPath);
-                        if(asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_GIF)){
-                            renditionSettings = gifsicleThumbnailSettings;
-                            outputFile = new File(assetThumbnailPath + File.separator + asset.getId() + ".gif");
-                        }
-                        else{
-                            renditionSettings = imagemagickThumbnailSettings;
-                            outputFile = new File(assetThumbnailPath + File.separator + asset.getId() + "." + thumbnailFormat);
-                        }
+
+                        RenditionProperties renditionProperties = getRenditionProperties(asset, assetThumbnailPath, renditionType);
+                        outputFile = renditionProperties.getOutputFile();
+                        renditionSettings = renditionProperties.getRenditionSettings();
                     }
                     else{
                         throw new IllegalArgumentException("Unknown rendition type!");
