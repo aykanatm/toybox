@@ -15,8 +15,11 @@ public final class Constants {
 
     public static final int ASSET_ID_LENGTH = 40;
 
+    public static final String IMAGE_MIME_TYPE_PREFIX = "image";
     public static final String IMAGE_MIME_TYPE_GIF = "image/gif";
     public static final String IMAGE_MIME_TYPE_EPS = "application/postscript";
     public static final String FILE_MIME_TYPE_PDF = "application/pdf";
     public static final String IMAGE_MIME_TYPE_PHOTOSHOP = "image/vnd.adobe.photoshop";
+
+    public static final String VIDEO_MIME_TYPE_PREFIX = "video";
 }
