@@ -17,4 +17,5 @@ public final class Constants {
 
     public static final String IMAGE_MIME_TYPE_GIF = "image/gif";
     public static final String IMAGE_MIME_TYPE_EPS = "application/postscript";
+    public static final String FILE_MIME_TYPE_PDF = "application/pdf";
 }

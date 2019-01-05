@@ -61,10 +61,15 @@ public class ImportJobConfig {
     private String imagemagickThumbnailSettings;
     @Value("${imagemagickEpsThumbnailSettings}")
     private String imagemagickEpsThumbnailSettings;
+    @Value("${imagemagickPdfThumbnailSettings}")
+    private String imagemagickPdfThumbnailSettings;
+
     @Value("${imagemagickPreviewSettings}")
     private String imagemagickPreviewSettings;
     @Value("${imagemagickEpsPreviewSettings}")
     private String imagemagickEpsPreviewSettings;
+    @Value("${imagemagickPdfPreviewSettings}")
+    private String imagemagickPdfPreviewSettings;
     @Value("${imagemagickTimeout}")
     private String imagemagickTimeout;
 
@@ -356,18 +361,21 @@ public class ImportJobConfig {
         String gifsicleSettings;
         String imagemagickSettings;
         String imagemagickEpsSettings;
+        String imagemagickPdfSettings;
 
         if(renditionType == RenditionTypes.Thumbnail){
             fileFormat = thumbnailFormat;
             gifsicleSettings = gifsicleThumbnailSettings;
             imagemagickSettings = imagemagickThumbnailSettings;
             imagemagickEpsSettings = imagemagickEpsThumbnailSettings;
+            imagemagickPdfSettings = imagemagickPdfThumbnailSettings;
         }
         else if(renditionType == RenditionTypes.Preview){
             fileFormat = previewFormat;
             gifsicleSettings = gifsiclePreviewSettings;
             imagemagickSettings = imagemagickPreviewSettings;
             imagemagickEpsSettings = imagemagickEpsPreviewSettings;
+            imagemagickPdfSettings = imagemagickPdfPreviewSettings;
         }
         else{
             throw new IllegalArgumentException("Unknown rendition type!");
@@ -381,6 +389,10 @@ public class ImportJobConfig {
             renditionProperties.setRenditionSettings(imagemagickSettings);
             renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + "." + fileFormat));
         }
+        else if(asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PDF)){
+            renditionProperties.setRenditionSettings(imagemagickPdfSettings);
+            renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + "." + fileFormat));
+        }
         else{
             renditionProperties.setRenditionSettings(imagemagickEpsSettings);
             renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + "." + fileFormat));
@@ -392,9 +404,14 @@ public class ImportJobConfig {
     private void generateRendition(List<Asset> assets, RenditionTypes renditionType) throws IOException, InterruptedException {
         _logger.debug("generateRendition() >>");
         for(Asset asset: assets){
-            if(asset.getType().startsWith("image") || asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_EPS)){
+            if(asset.getType().startsWith("image") || asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_EPS) || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PDF)){
                 File inputFile = new File(asset.getPath());
                 if(inputFile.exists()){
+                    if(asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PDF)){
+                        // If we are creating renditions of a PDF file, we only use the first page
+                        inputFile = new File(asset.getPath() + "[0]");
+                    }
+
                     String assetFolderPath = repositoryPath + File.separator + asset.getId();
                     File outputFile;
                     String renditionSettings;
