@@ -354,6 +354,7 @@ const jobs = new Vue({
         'navbar' : httpVueLoader('../components/navbar/navbar.vue'),
         'job' : httpVueLoader('../components/job/job.vue'),
         'facet' : httpVueLoader('../components/facet/facet.vue'),
-        'message' : httpVueLoader('../components/message/message.vue')
+        'message' : httpVueLoader('../components/message/message.vue'),
+        'job-details-modal-window' : httpVueLoader('../components/job-details-modal-window/job-details-modal-window.vue')
     }
 });

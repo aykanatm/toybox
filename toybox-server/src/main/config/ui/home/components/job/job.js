@@ -37,8 +37,5 @@ module.exports = {
         showJobDetailsModalWindow:function(){
             this.$root.$emit('open-job-details-modal-window', this.jobInstanceId);
         }
-    },
-    components:{
-        'job-details-modal-window' : httpVueLoader('../job-details-modal-window/job-details-modal-window.vue')
     }
 }

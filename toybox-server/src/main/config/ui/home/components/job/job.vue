@@ -10,9 +10,6 @@
             <button class="mini ui button" v-on:click="showJobDetailsModalWindow">View</button>
             <button v-if="isCompleted && isExport" class="mini ui button">Download</button>
         </div>
-        <job-details-modal-window  v-bind:job-instance-id="jobInstanceId" v-bind:job-execution-id="jobExecutionId"
-        v-bind:job-name="jobName" v-bind:job-type="jobType" v-bind:start-time="startTime" v-bind:end-time="endTime"
-         v-bind:status="status" v-bind:username="username" v-bind:steps="steps" v-bind:key="jobInstanceId"/>
     </div>
 </template>
 <script src="../../components/job/job.js"></script>

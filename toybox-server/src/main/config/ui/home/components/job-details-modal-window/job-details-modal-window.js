@@ -1,7 +1,4 @@
 module.exports = {
-    props:{
-        jobInstanceId: String
-    },
     computed:{
         formattedStartTime(){
             if(this.startTime !== null){
@@ -19,6 +16,7 @@ module.exports = {
     data:function(){
         return{
             componentName: 'Job Details Modal Window',
+            jobInstanceId: null,
             jobName: null,
             jobType: null,
             startTime: null,
@@ -30,11 +28,9 @@ module.exports = {
     },
     mounted:function(){
         this.$root.$on('open-job-details-modal-window', (jobInstanceId) => {
-            if(jobInstanceId === this.jobInstanceId)
-            {
-                $(this.$el).modal('show');
-                this.loadJobDetails();
-            }
+            this.jobInstanceId = jobInstanceId;
+            $(this.$el).modal('show');
+            this.loadJobDetails();
         });
     },
     methods:{
