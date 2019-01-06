@@ -11,6 +11,15 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tika.Tika;
+import org.jodconverter.JodConverter;
+import org.jodconverter.LocalConverter;
+import org.jodconverter.OfficeDocumentConverter;
+import org.jodconverter.document.DocumentFormat;
+import org.jodconverter.filter.DefaultFilterChain;
+import org.jodconverter.filter.text.PageSelectorFilter;
+import org.jodconverter.job.ConversionJobWithOptionalSourceFormatUnspecified;
+import org.jodconverter.office.*;
+import org.jodconverter.task.OfficeTask;
 import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
@@ -420,28 +429,35 @@ public class ImportJobConfig {
             throw new IllegalArgumentException("Unknown rendition type!");
         }
 
-        if(asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_GIF)){
+        String assetMimeType = asset.getType();
+        if(assetMimeType.equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_GIF)){
             renditionProperties.setRenditionSettings(gifsicleSettings);
             renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + ".gif"));
         }
-        else if(asset.getType().startsWith(Constants.IMAGE_MIME_TYPE_PREFIX)){
+        else if(assetMimeType.startsWith(Constants.IMAGE_MIME_TYPE_PREFIX)){
             renditionProperties.setRenditionSettings(imagemagickSettings);
             renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + "." + fileFormat));
         }
-        else if(asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_EPS)){
+        else if(assetMimeType.equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_EPS)){
             renditionProperties.setRenditionSettings(imagemagickEpsSettings);
             renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + "." + fileFormat));
         }
-        else if(asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PDF)){
+        else if(assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_PDF)){
             renditionProperties.setRenditionSettings(imagemagickPdfSettings);
             renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + "." + fileFormat));
         }
-        else if(asset.getType().startsWith(Constants.VIDEO_MIME_TYPE_PREFIX)){
+        else if(assetMimeType.startsWith(Constants.VIDEO_MIME_TYPE_PREFIX)){
             renditionProperties.setRenditionSettings(ffmpegVideoSettings);
             renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + "." + fileFormat));
         }
-        else if(asset.getType().startsWith(Constants.AUIDO_MIME_TYPE_PREFIX)){
+        else if(assetMimeType.startsWith(Constants.AUIDO_MIME_TYPE_PREFIX)){
             renditionProperties.setRenditionSettings(ffmpegAudioSettings);
+            renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + "." + fileFormat));
+        }
+        else if(assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPT)
+                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLS)
+                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOC)){
+            renditionProperties.setRenditionSettings("");
             renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + "." + fileFormat));
         }
 
@@ -607,6 +623,52 @@ public class ImportJobConfig {
                             _logger.info("FFMpeg successfully generated the rendition '" + outputFile.getAbsolutePath());
                             updateAssetRendition(asset.getId(), outputFile.getAbsolutePath(), renditionType);
                         }
+                    }
+                }
+                else if(asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOC)
+                        || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLS)
+                        || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPT)){
+                    LocalOfficeManager officeManager = LocalOfficeManager.install();
+
+                    try{
+                        officeManager.start();
+
+                        // DocumentFormat documentFormat = DocumentFormat.builder().name(asset.getType()).build();
+
+                        PageSelectorFilter selectorFilter = new PageSelectorFilter(1);
+
+                        if(outputFile != null){
+                            if(!outputFile.exists()){
+                                _logger.debug("Creating file " + outputFile.getAbsolutePath() + "...");
+                                boolean newFile = outputFile.createNewFile();
+                                if(newFile){
+                                    _logger.debug("Generating office rendition...");
+                                    LocalConverter
+                                            .builder()
+                                            .filterChain(selectorFilter)
+                                            .build()
+                                            .convert(inputFile)
+                                            .to(outputFile)
+                                            .execute();
+                                }
+                                else{
+                                    throw new IOException("Unable to create file " + outputFile.getAbsolutePath() + ".");
+                                }
+                            }
+                            else{
+                                throw new IOException("Output file " + outputFile.getAbsolutePath() + " already exists!");
+                            }
+                        }
+                        else{
+                            throw new Exception("Output file is null!");
+                        }
+                    }
+                    catch (Exception e){
+                        String errorMessage = "Office failed to generate the rendition of the file " + inputFile.getAbsolutePath() + ". " + e.getLocalizedMessage();
+                        _logger.error(errorMessage, e);
+                    }
+                    finally {
+                        LocalOfficeUtils.stopQuietly(officeManager);
                     }
                 }
                 else{
