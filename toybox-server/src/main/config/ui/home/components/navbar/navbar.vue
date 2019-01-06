@@ -1,7 +1,7 @@
 <template>
     <div class="ui icon menu" style="margin: 0; border-radius: 0; border: 0;">
         <div class="item">
-            <img src="http://via.placeholder.com/250x50" class="toybox-brand-logo">
+            <img src="../../images/logo.png" class="toybox-brand-logo">
         </div>
         <a class="item toybox-navbar-item" id="toybox-home-menu" href="/toybox">
             <i class="home icon"></i>
