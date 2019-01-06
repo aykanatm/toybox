@@ -45,11 +45,6 @@ public class ImportJobConfig {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @Value("${importStagingThumbnailsPath}")
-    private String importStagingThumbnailsPath;
-    @Value("${importStagingThumbnailsPath}")
-    private String importStagingPreviewsPath;
-
     @Value("${imageThumbnailFormat}")
     private String imageThumbnailFormat;
     @Value("${videoThumbnailFormat}")
