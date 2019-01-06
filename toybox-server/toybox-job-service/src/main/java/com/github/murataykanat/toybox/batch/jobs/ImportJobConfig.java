@@ -7,6 +7,7 @@ import org.apache.commons.exec.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tika.Tika;
@@ -53,6 +54,8 @@ public class ImportJobConfig {
     private String imageThumbnailFormat;
     @Value("${videoThumbnailFormat}")
     private String videoThumbnailFormat;
+    @Value("${audioThumbnailFormat}")
+    private String audioThumbnailFormat;
 
     @Value("${imagePreviewFormat}")
     private String imagePreviewFormat;
@@ -92,10 +95,14 @@ public class ImportJobConfig {
 
     @Value("${ffmpegExecutable}")
     private String ffmpegExecutable;
-    @Value("${ffmpegPreviewSettings}")
-    private String ffmpegPreviewSettings;
-    @Value("${ffmpegThumbnailSettings}")
-    private String ffmpegThumbnailSettings;
+    @Value("${ffmpegVideoPreviewSettings}")
+    private String ffmpegVideoPreviewSettings;
+    @Value("${ffmpegVideoThumbnailSettings}")
+    private String ffmpegVideoThumbnailSettings;
+    @Value("${ffmpegAudioPreviewSettings}")
+    private String ffmpegAudioPreviewSettings;
+    @Value("${ffmpegAudioThumbnailSettings}")
+    private String ffmpegAudioThumbnailSettings;
     @Value("${ffmpegTimeout}")
     private String ffmpegTimeout;
 
@@ -378,7 +385,8 @@ public class ImportJobConfig {
         String imagemagickSettings;
         String imagemagickEpsSettings;
         String imagemagickPdfSettings;
-        String ffmpegSettings;
+        String ffmpegVideoSettings;
+        String ffmpegAudioSettings;
 
         if(renditionType == RenditionTypes.Thumbnail){
             if(asset.getType().startsWith(Constants.VIDEO_MIME_TYPE_PREFIX)){
@@ -392,11 +400,15 @@ public class ImportJobConfig {
             imagemagickSettings = imagemagickThumbnailSettings;
             imagemagickEpsSettings = imagemagickEpsThumbnailSettings;
             imagemagickPdfSettings = imagemagickPdfThumbnailSettings;
-            ffmpegSettings = ffmpegThumbnailSettings;
+            ffmpegVideoSettings = ffmpegVideoThumbnailSettings;
+            ffmpegAudioSettings = ffmpegAudioThumbnailSettings;
         }
         else if(renditionType == RenditionTypes.Preview){
             if(asset.getType().startsWith(Constants.VIDEO_MIME_TYPE_PREFIX)){
                 fileFormat = videoPreviewFormat;
+            }
+            else if(asset.getType().startsWith(Constants.AUIDO_MIME_TYPE_PREFIX)){
+                fileFormat = audioPreviewFormat;
             }
             else{
                 fileFormat = imagePreviewFormat;
@@ -406,7 +418,8 @@ public class ImportJobConfig {
             imagemagickSettings = imagemagickPreviewSettings;
             imagemagickEpsSettings = imagemagickEpsPreviewSettings;
             imagemagickPdfSettings = imagemagickPdfPreviewSettings;
-            ffmpegSettings = ffmpegPreviewSettings;
+            ffmpegVideoSettings = ffmpegVideoPreviewSettings;
+            ffmpegAudioSettings = ffmpegAudioPreviewSettings;
         }
         else{
             throw new IllegalArgumentException("Unknown rendition type!");
@@ -429,11 +442,12 @@ public class ImportJobConfig {
             renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + "." + fileFormat));
         }
         else if(asset.getType().startsWith(Constants.VIDEO_MIME_TYPE_PREFIX)){
-            renditionProperties.setRenditionSettings(ffmpegSettings);
+            renditionProperties.setRenditionSettings(ffmpegVideoSettings);
             renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + "." + fileFormat));
         }
-        else{
-            throw new IllegalArgumentException("Asset mime type is unknown!");
+        else if(asset.getType().startsWith(Constants.AUIDO_MIME_TYPE_PREFIX)){
+            renditionProperties.setRenditionSettings(ffmpegAudioSettings);
+            renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + "." + fileFormat));
         }
 
         return renditionProperties;
@@ -474,121 +488,134 @@ public class ImportJobConfig {
                     throw new IllegalArgumentException("Unknown rendition type!");
                 }
 
-                // Generate rendition
-                if(asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_GIF)){
-                    CommandLine cmdLine = new CommandLine(gifsicleExecutable);
-                    cmdLine.addArgument("${inputFile}");
-                    String[] arguments = renditionSettings.split("\\s+");
-                    for(String argument: arguments){
-                        cmdLine.addArgument(argument);
+                if(StringUtils.isNotBlank(renditionSettings)){
+                    // Generate rendition
+                    if(asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_GIF)){
+                        CommandLine cmdLine = new CommandLine(gifsicleExecutable);
+                        cmdLine.addArgument("${inputFile}");
+                        String[] arguments = renditionSettings.split("\\s+");
+                        for(String argument: arguments){
+                            cmdLine.addArgument(argument);
+                        }
+                        cmdLine.addArgument("${outputFile}");
+                        HashMap map = new HashMap();
+                        map.put("inputFile", inputFile);
+                        map.put("outputFile", outputFile);
+                        cmdLine.setSubstitutionMap(map);
+
+                        DefaultExecuteResultHandler resultHandler = new DefaultExecuteResultHandler();
+
+                        long gifsicleTimeoutValue = Long.parseLong(gifsicleTimeout);
+                        ExecuteWatchdog watchdog = new ExecuteWatchdog(gifsicleTimeoutValue);
+                        Executor executor = new DefaultExecutor();
+                        executor.setExitValue(1);
+                        executor.setWatchdog(watchdog);
+                        _logger.debug("Executing command: " + cmdLine.toString());
+                        executor.execute(cmdLine, resultHandler);
+
+                        resultHandler.waitFor();
+
+                        int exitValue = resultHandler.getExitValue();
+                        if(exitValue != 0){
+                            String utilityErrorMessage = resultHandler.getException() != null ? resultHandler.getException().getLocalizedMessage() : "";
+                            String errorMessage = "Gifsicle failed to generate rendition of the file '" + inputFile.getAbsolutePath()
+                                    + "'. " + utilityErrorMessage;
+                            _logger.error(errorMessage);
+                        }
+                        else{
+                            _logger.info("Gifsicle successfully generated the rendition '" + outputFile.getAbsolutePath());
+                            updateAssetRendition(asset.getId(), outputFile.getAbsolutePath(), renditionType);
+                        }
                     }
-                    cmdLine.addArgument("${outputFile}");
-                    HashMap map = new HashMap();
-                    map.put("inputFile", inputFile);
-                    map.put("outputFile", outputFile);
-                    cmdLine.setSubstitutionMap(map);
+                    else if(asset.getType().startsWith(Constants.IMAGE_MIME_TYPE_PREFIX)
+                            || asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_EPS)
+                            || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PDF)
+                            || asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_PHOTOSHOP)){
+                        CommandLine cmdLine = new CommandLine(imagemagickExecutable);
+                        cmdLine.addArgument("${inputFile}");
+                        String[] arguments = renditionSettings.split("\\s+");
+                        for(String argument: arguments){
+                            cmdLine.addArgument(argument);
+                        }
+                        cmdLine.addArgument("${outputFile}");
+                        HashMap map = new HashMap();
+                        map.put("inputFile", inputFile);
+                        map.put("outputFile", outputFile);
+                        cmdLine.setSubstitutionMap(map);
 
-                    DefaultExecuteResultHandler resultHandler = new DefaultExecuteResultHandler();
+                        DefaultExecuteResultHandler resultHandler = new DefaultExecuteResultHandler();
 
-                    long gifsicleTimeoutValue = Long.parseLong(gifsicleTimeout);
-                    ExecuteWatchdog watchdog = new ExecuteWatchdog(gifsicleTimeoutValue);
-                    Executor executor = new DefaultExecutor();
-                    executor.setExitValue(1);
-                    executor.setWatchdog(watchdog);
-                    _logger.debug("Executing command: " + cmdLine.toString());
-                    executor.execute(cmdLine, resultHandler);
+                        long imageMagickTimeoutValue = Long.parseLong(imagemagickTimeout);
+                        ExecuteWatchdog watchdog = new ExecuteWatchdog(imageMagickTimeoutValue);
+                        Executor executor = new DefaultExecutor();
+                        executor.setExitValue(1);
+                        executor.setWatchdog(watchdog);
+                        _logger.debug("Executing command: " + cmdLine.toString());
+                        executor.execute(cmdLine, resultHandler);
 
-                    resultHandler.waitFor();
+                        resultHandler.waitFor();
 
-                    int exitValue = resultHandler.getExitValue();
-                    if(exitValue != 0){
-                        String errorMessage = "Gifsicle failed to generate rendition of the file '" + inputFile.getAbsolutePath()
-                                + "'. " + resultHandler.getException().getLocalizedMessage();
-                        _logger.error(errorMessage);
-                        throw resultHandler.getException();
+                        int exitValue = resultHandler.getExitValue();
+                        if(exitValue != 0){
+                            String utilityErrorMessage = resultHandler.getException() != null ? resultHandler.getException().getLocalizedMessage() : "";
+                            String errorMessage = "ImageMagick failed to generate rendition of the file '" + inputFile.getAbsolutePath()
+                                    + "'. " + utilityErrorMessage;
+                            _logger.error(errorMessage);
+                        }
+                        else{
+                            _logger.info("ImageMagick successfully generated the rendition '" + outputFile.getAbsolutePath());
+                            updateAssetRendition(asset.getId(), outputFile.getAbsolutePath(), renditionType);
+                        }
                     }
-                    else{
-                        _logger.debug("Gifsicle successfully generated the rendition '" + outputFile.getAbsolutePath());
-                        updateAssetRendition(asset.getId(), outputFile.getAbsolutePath(), renditionType);
+                    else if(asset.getType().startsWith(Constants.VIDEO_MIME_TYPE_PREFIX) || asset.getType().startsWith(Constants.AUIDO_MIME_TYPE_PREFIX)){
+                        CommandLine cmdLine = new CommandLine(ffmpegExecutable);
+                        cmdLine.addArgument("-i");
+                        cmdLine.addArgument("${inputFile}");
+                        String[] arguments = renditionSettings.split("\\s+");
+                        for(String argument: arguments){
+                            cmdLine.addArgument(argument);
+                        }
+                        cmdLine.addArgument("${outputFile}");
+                        HashMap map = new HashMap();
+                        map.put("inputFile", inputFile);
+                        map.put("outputFile", outputFile);
+                        cmdLine.setSubstitutionMap(map);
+
+                        DefaultExecuteResultHandler resultHandler = new DefaultExecuteResultHandler();
+
+                        long ffmpegTimeoutValue = Long.parseLong(ffmpegTimeout);
+                        ExecuteWatchdog watchdog = new ExecuteWatchdog(ffmpegTimeoutValue);
+                        Executor executor = new DefaultExecutor();
+                        executor.setExitValue(1);
+                        executor.setWatchdog(watchdog);
+                        _logger.debug("Executing command: " + cmdLine.toString());
+                        executor.execute(cmdLine, resultHandler);
+
+                        resultHandler.waitFor();
+
+                        int exitValue = resultHandler.getExitValue();
+                        if(exitValue != 0){
+                            if(renditionType == RenditionTypes.Thumbnail && asset.getType().startsWith(Constants.AUIDO_MIME_TYPE_PREFIX)){
+                                String utilityErrorMessage = resultHandler.getException() != null ? resultHandler.getException().getLocalizedMessage() : "This audio file may have no album art to retrieve. If you would like to see a thumbnail please include an album art.";
+                                String warningMessage = "FFMpeg failed to generate rendition of the file '" + inputFile.getAbsolutePath()
+                                        + "'. " + utilityErrorMessage;
+                                _logger.warn(warningMessage);
+                            }
+                            else{
+                                String utilityErrorMessage = resultHandler.getException() != null ? resultHandler.getException().getLocalizedMessage() : "";
+                                String errorMessage = "FFMpeg failed to generate rendition of the file '" + inputFile.getAbsolutePath()
+                                        + "'. " + utilityErrorMessage;
+                                _logger.error(errorMessage);
+                            }
+                        }
+                        else{
+                            _logger.info("FFMpeg successfully generated the rendition '" + outputFile.getAbsolutePath());
+                            updateAssetRendition(asset.getId(), outputFile.getAbsolutePath(), renditionType);
+                        }
                     }
                 }
-                else if(asset.getType().startsWith(Constants.IMAGE_MIME_TYPE_PREFIX)
-                        || asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_EPS)
-                        || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PDF)
-                        || asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_PHOTOSHOP)){
-                    CommandLine cmdLine = new CommandLine(imagemagickExecutable);
-                    cmdLine.addArgument("${inputFile}");
-                    String[] arguments = renditionSettings.split("\\s+");
-                    for(String argument: arguments){
-                        cmdLine.addArgument(argument);
-                    }
-                    cmdLine.addArgument("${outputFile}");
-                    HashMap map = new HashMap();
-                    map.put("inputFile", inputFile);
-                    map.put("outputFile", outputFile);
-                    cmdLine.setSubstitutionMap(map);
-
-                    DefaultExecuteResultHandler resultHandler = new DefaultExecuteResultHandler();
-
-                    long imageMagickTimeoutValue = Long.parseLong(imagemagickTimeout);
-                    ExecuteWatchdog watchdog = new ExecuteWatchdog(imageMagickTimeoutValue);
-                    Executor executor = new DefaultExecutor();
-                    executor.setExitValue(1);
-                    executor.setWatchdog(watchdog);
-                    _logger.debug("Executing command: " + cmdLine.toString());
-                    executor.execute(cmdLine, resultHandler);
-
-                    resultHandler.waitFor();
-
-                    int exitValue = resultHandler.getExitValue();
-                    if(exitValue != 0){
-                        String errorMessage = "ImageMagick failed to generate rendition of the file '" + inputFile.getAbsolutePath()
-                                + "'. " + resultHandler.getException().getLocalizedMessage();
-                        _logger.error(errorMessage);
-                        throw resultHandler.getException();
-                    }
-                    else{
-                        _logger.debug("ImageMagick successfully generated the rendition '" + outputFile.getAbsolutePath());
-                        updateAssetRendition(asset.getId(), outputFile.getAbsolutePath(), renditionType);
-                    }
-                }
-                else if(asset.getType().startsWith(Constants.VIDEO_MIME_TYPE_PREFIX)){
-                    CommandLine cmdLine = new CommandLine(ffmpegExecutable);
-                    cmdLine.addArgument("-i");
-                    cmdLine.addArgument("${inputFile}");
-                    String[] arguments = renditionSettings.split("\\s+");
-                    for(String argument: arguments){
-                        cmdLine.addArgument(argument);
-                    }
-                    cmdLine.addArgument("${outputFile}");
-                    HashMap map = new HashMap();
-                    map.put("inputFile", inputFile);
-                    map.put("outputFile", outputFile);
-                    cmdLine.setSubstitutionMap(map);
-
-                    DefaultExecuteResultHandler resultHandler = new DefaultExecuteResultHandler();
-
-                    long ffmpegTimeoutValue = Long.parseLong(ffmpegTimeout);
-                    ExecuteWatchdog watchdog = new ExecuteWatchdog(ffmpegTimeoutValue);
-                    Executor executor = new DefaultExecutor();
-                    executor.setExitValue(1);
-                    executor.setWatchdog(watchdog);
-                    _logger.debug("Executing command: " + cmdLine.toString());
-                    executor.execute(cmdLine, resultHandler);
-
-                    resultHandler.waitFor();
-
-                    int exitValue = resultHandler.getExitValue();
-                    if(exitValue != 0){
-                        String errorMessage = "FFMpeg failed to generate rendition of the file '" + inputFile.getAbsolutePath()
-                                + "'. " + resultHandler.getException().getLocalizedMessage();
-                        _logger.error(errorMessage);
-                        throw resultHandler.getException();
-                    }
-                    else{
-                        _logger.debug("FFMpeg successfully generated the rendition '" + outputFile.getAbsolutePath());
-                        updateAssetRendition(asset.getId(), outputFile.getAbsolutePath(), renditionType);
-                    }
+                else{
+                    _logger.debug("There is no rendition settings to apply. Skipping...");
                 }
             }
             else{
