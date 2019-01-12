@@ -33,6 +33,8 @@ import org.springframework.util.FileSystemUtils;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InvalidObjectException;
+import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -463,14 +465,20 @@ public class ImportJobConfig {
 
     private void runExecutable(Asset asset, File inputFile, File outputFile, String executable, String timeout, String renditionSettings, RenditionTypes renditionType, String executableName) throws IOException, InterruptedException {
         CommandLine cmdLine = new CommandLine(executable);
-        if(executableName.equalsIgnoreCase("FFMpeg")){
+
+        if(executableName.equalsIgnoreCase(Constants.FFMPEG)){
             cmdLine.addArgument("-i");
         }
+
         cmdLine.addArgument("${inputFile}");
-        String[] arguments = renditionSettings.split("\\s+");
-        for(String argument: arguments){
-            cmdLine.addArgument(argument);
+
+        if(StringUtils.isNotBlank(renditionSettings)){
+            String[] arguments = renditionSettings.split("\\s+");
+            for(String argument: arguments){
+                cmdLine.addArgument(argument);
+            }
         }
+
         cmdLine.addArgument("${outputFile}");
         HashMap map = new HashMap();
         map.put("inputFile", inputFile);
@@ -523,9 +531,11 @@ public class ImportJobConfig {
                 String assetFolderPath = repositoryPath + File.separator + asset.getId();
                 File outputFile;
                 String renditionSettings;
+                String assetPreviewPath = null;
+                String assetThumbnailPath = null;
 
                 if(renditionType == RenditionTypes.Preview){
-                    String assetPreviewPath = repositoryPath + File.separator + asset.getId() + File.separator + "preview";
+                    assetPreviewPath = repositoryPath + File.separator + asset.getId() + File.separator + "preview";
                     createFolder(assetFolderPath, assetPreviewPath);
 
                     RenditionProperties renditionProperties = getRenditionProperties(asset, assetPreviewPath, renditionType);
@@ -533,7 +543,7 @@ public class ImportJobConfig {
                     renditionSettings = renditionProperties.getRenditionSettings();
                 }
                 else if(renditionType == RenditionTypes.Thumbnail){
-                    String assetThumbnailPath = repositoryPath + File.separator + asset.getId() + File.separator + "thumbnail";
+                    assetThumbnailPath = repositoryPath + File.separator + asset.getId() + File.separator + "thumbnail";
                     createFolder(assetFolderPath, assetThumbnailPath);
 
                     RenditionProperties renditionProperties = getRenditionProperties(asset, assetThumbnailPath, renditionType);
@@ -557,6 +567,23 @@ public class ImportJobConfig {
                     }
                     else if(asset.getType().startsWith(Constants.VIDEO_MIME_TYPE_PREFIX) || asset.getType().startsWith(Constants.AUIDO_MIME_TYPE_PREFIX)){
                         runExecutable(asset, inputFile, outputFile, ffmpegExecutable, ffmpegTimeout, renditionSettings, renditionType, Constants.FFMPEG);
+                        
+                        // Since we can only generate video thumbnails as JPEG, let's convert them to PNG
+                        if(renditionType == RenditionTypes.Thumbnail){
+                            if(outputFile.exists()){
+                                if(StringUtils.isNotBlank(assetThumbnailPath)){
+                                    File pngOutput = new File(assetThumbnailPath + File.separator + asset.getId() + "." + imageThumbnailFormat);
+                                    runExecutable(asset, outputFile, pngOutput, imagemagickExecutable, imagemagickTimeout, null, renditionType, Constants.IMAGEMAGICK);
+                                    Files.delete(outputFile.toPath());
+                                }
+                                else{
+                                    throw new InvalidObjectException("Asset thumbnail path is blank!");
+                                }
+                            }
+                            else{
+                                _logger.warn("No thumbnail was generated for " + asset.getName() + ". Skipping thumbnail format conversion...");
+                            }
+                        }
                     }
                 }
                 else if(asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOCX)
