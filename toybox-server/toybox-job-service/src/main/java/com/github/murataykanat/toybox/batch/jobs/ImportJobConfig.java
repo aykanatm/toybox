@@ -456,7 +456,7 @@ public class ImportJobConfig {
                 || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLS)
                 || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOCX)
                 || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOC)){
-            renditionProperties.setRenditionSettings("");
+            renditionProperties.setRenditionSettings(imagemagickSettings);
             renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + "." + fileFormat));
         }
 
@@ -585,52 +585,65 @@ public class ImportJobConfig {
                             }
                         }
                     }
-                }
-                else if(asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOCX)
-                        || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOC)
-                        || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLSX)
-                        || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLS)
-                        || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPTX)
-                        || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPT)){
-                    LocalOfficeManager officeManager = LocalOfficeManager.install();
+                    else if(asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOCX)
+                            || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOC)
+                            || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLSX)
+                            || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLS)
+                            || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPTX)
+                            || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPT)){
+                        LocalOfficeManager officeManager = LocalOfficeManager.install();
 
-                    try{
-                        officeManager.start();
+                        try{
+                            officeManager.start();
 
-                        PageSelectorFilter selectorFilter = new PageSelectorFilter(1);
+                            PageSelectorFilter selectorFilter = new PageSelectorFilter(1);
 
-                        if(outputFile != null){
-                            if(!outputFile.exists()){
-                                _logger.debug("Creating file " + outputFile.getAbsolutePath() + "...");
-                                boolean newFile = outputFile.createNewFile();
-                                if(newFile){
-                                    _logger.debug("Generating office rendition...");
-                                    LocalConverter
-                                            .builder()
-                                            .filterChain(selectorFilter)
-                                            .build()
-                                            .convert(inputFile)
-                                            .to(outputFile)
-                                            .execute();
+                            if(outputFile != null){
+                                if(!outputFile.exists()){
+                                    _logger.debug("Creating file " + outputFile.getAbsolutePath() + "...");
+                                    boolean newFile = outputFile.createNewFile();
+                                    if(newFile){
+                                        _logger.debug("Generating office rendition...");
+                                        LocalConverter
+                                                .builder()
+                                                .filterChain(selectorFilter)
+                                                .build()
+                                                .convert(inputFile)
+                                                .to(outputFile)
+                                                .execute();
+
+                                        File pngOutput;
+                                        if(renditionType == RenditionTypes.Thumbnail){
+                                            pngOutput = new File(assetThumbnailPath + File.separator + asset.getId() + "." + imageThumbnailFormat);
+                                        }
+                                        else if(renditionType == RenditionTypes.Preview){
+                                            pngOutput = new File(assetPreviewPath + File.separator + asset.getId() + "." + imageThumbnailFormat);
+                                        }
+                                        else{
+                                            throw new IllegalArgumentException("Unknown rendition type!");
+                                        }
+
+                                        runExecutable(asset, outputFile, pngOutput, imagemagickExecutable, imagemagickTimeout, renditionSettings, renditionType, Constants.IMAGEMAGICK);
+                                    }
+                                    else{
+                                        throw new IOException("Unable to create file " + outputFile.getAbsolutePath() + ".");
+                                    }
                                 }
                                 else{
-                                    throw new IOException("Unable to create file " + outputFile.getAbsolutePath() + ".");
+                                    throw new IOException("Output file " + outputFile.getAbsolutePath() + " already exists!");
                                 }
                             }
                             else{
-                                throw new IOException("Output file " + outputFile.getAbsolutePath() + " already exists!");
+                                throw new InvalidObjectException("Output file is null!");
                             }
                         }
-                        else{
-                            throw new Exception("Output file is null!");
+                        catch (Exception e){
+                            String errorMessage = "Office failed to generate the rendition of the file " + inputFile.getAbsolutePath() + ". " + e.getLocalizedMessage();
+                            _logger.error(errorMessage, e);
                         }
-                    }
-                    catch (Exception e){
-                        String errorMessage = "Office failed to generate the rendition of the file " + inputFile.getAbsolutePath() + ". " + e.getLocalizedMessage();
-                        _logger.error(errorMessage, e);
-                    }
-                    finally {
-                        LocalOfficeUtils.stopQuietly(officeManager);
+                        finally {
+                            LocalOfficeUtils.stopQuietly(officeManager);
+                        }
                     }
                 }
                 else{
