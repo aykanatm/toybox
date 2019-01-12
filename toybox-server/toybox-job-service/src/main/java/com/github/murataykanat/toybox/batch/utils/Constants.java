@@ -29,4 +29,8 @@ public final class Constants {
     public static final String FILE_MIME_TYPE_DOC = "application/msword";
     public static final String FILE_MIME_TYPE_XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     public static final String FILE_MIME_TYPE_XLS = "application/vnd.ms-excel";
+
+    public static final String FFMPEG = "FFMpeg";
+    public static final String IMAGEMAGICK = "ImageMagick";
+    public static final String GIFSICLE = "Gifsicle";
 }
