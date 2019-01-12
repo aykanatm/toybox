@@ -454,8 +454,11 @@ public class ImportJobConfig {
             renditionProperties.setRenditionSettings(ffmpegAudioSettings);
             renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + "." + fileFormat));
         }
-        else if(assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPT)
+        else if(assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPTX)
+                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPT)
+                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLSX)
                 || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLS)
+                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOCX)
                 || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOC)){
             renditionProperties.setRenditionSettings("");
             renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + "." + fileFormat));
@@ -625,8 +628,11 @@ public class ImportJobConfig {
                         }
                     }
                 }
-                else if(asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOC)
+                else if(asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOCX)
+                        || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOC)
+                        || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLSX)
                         || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLS)
+                        || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPTX)
                         || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPT)){
                     LocalOfficeManager officeManager = LocalOfficeManager.install();
 

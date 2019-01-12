@@ -23,7 +23,10 @@ public final class Constants {
     public static final String IMAGE_MIME_TYPE_EPS = "application/postscript";
     public static final String FILE_MIME_TYPE_PDF = "application/pdf";
     public static final String IMAGE_MIME_TYPE_PHOTOSHOP = "image/vnd.adobe.photoshop";
-    public static final String FILE_MIME_TYPE_PPT = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
-    public static final String FILE_MIME_TYPE_DOC = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-    public static final String FILE_MIME_TYPE_XLS = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    public static final String FILE_MIME_TYPE_PPTX = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+    public static final String FILE_MIME_TYPE_PPT = "application/vnd.ms-powerpoint";
+    public static final String FILE_MIME_TYPE_DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    public static final String FILE_MIME_TYPE_DOC = "application/msword";
+    public static final String FILE_MIME_TYPE_XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    public static final String FILE_MIME_TYPE_XLS = "application/vnd.ms-excel";
 }
