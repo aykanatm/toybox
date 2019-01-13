@@ -52,10 +52,6 @@ public class ImportJobConfig {
 
     @Value("${imageThumbnailFormat}")
     private String imageThumbnailFormat;
-    @Value("${videoThumbnailFormat}")
-    private String videoThumbnailFormat;
-    @Value("${audioThumbnailFormat}")
-    private String audioThumbnailFormat;
 
     @Value("${imagePreviewFormat}")
     private String imagePreviewFormat;
