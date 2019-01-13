@@ -2,7 +2,7 @@ package com.github.murataykanat.toybox.models.job;
 
 import com.github.murataykanat.toybox.models.annotations.FacetColumnName;
 import com.github.murataykanat.toybox.models.annotations.FacetDefaultLookup;
-import com.github.murataykanat.toybox.schema.job.JobSearchRequestFacet;
+import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -104,11 +104,11 @@ public class ToyboxJob {
         this.jobExecutionId = jobExecutionId;
     }
 
-    public boolean hasFacetValue(List<JobSearchRequestFacet> jobSearchRequestFacetList){
+    public boolean hasFacetValue(List<SearchRequestFacet> jobSearchRequestFacetList){
         boolean result = true;
 
         try{
-            for(JobSearchRequestFacet jobSearchRequestFacet: jobSearchRequestFacetList){
+            for(SearchRequestFacet jobSearchRequestFacet: jobSearchRequestFacetList){
                 boolean hasFacet = false;
                 for(Field field: this.getClass().getDeclaredFields()){
                     if(field.isAnnotationPresent(FacetColumnName.class)){
@@ -187,9 +187,10 @@ public class ToyboxJob {
                                 }
                             }
                             else{
-                                if(jobSearchRequestFacet.getFieldValue().equalsIgnoreCase((String) field.get(this)))
+                                if(jobSearchRequestFacet.getFieldValue().equalsIgnoreCase((String) field.get(this))){
                                     hasFacet = true;
-                                break;
+                                    break;
+                                }
                             }
                         }
                     }
