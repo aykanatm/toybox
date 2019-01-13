@@ -228,7 +228,7 @@ public class JobController {
             }
         }
         catch (Exception e){
-            String errorMessage = "An error occurred while retrieving the jobs. " + e.getLocalizedMessage();
+            String errorMessage = "An error occurred while retrieving jobs. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
             RetrieveToyboxJobsResult retrieveToyboxJobsResult = new RetrieveToyboxJobsResult();
