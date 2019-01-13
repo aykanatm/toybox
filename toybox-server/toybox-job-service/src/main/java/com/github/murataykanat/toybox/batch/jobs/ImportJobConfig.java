@@ -36,10 +36,7 @@ import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RefreshScope
 @Configuration
@@ -153,7 +150,7 @@ public class ImportJobConfig {
                                         Asset asset = new Asset();
                                         asset.setId(assetId);
                                         asset.setExtension(FilenameUtils.getExtension(assetDestination.getName()));
-                                        asset.setImportDate(LocalDateTime.now().toString());
+                                        asset.setImportDate(Calendar.getInstance().getTime());
                                         asset.setImportedByUsername(username);
                                         asset.setName(assetDestination.getName());
                                         asset.setPath(assetDestination.getAbsolutePath());
