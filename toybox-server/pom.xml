@@ -10,6 +10,7 @@
     <packaging>pom</packaging>
 
     <modules>
+        <module>toybox-common-lib</module>
         <module>toybox-eureka-server</module>
         <module>toybox-hystrix-dashboard</module>
         <module>toybox-hystrix-turbine</module>

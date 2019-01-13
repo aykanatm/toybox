@@ -1,7 +1,7 @@
 package com.github.murataykanat.toybox.controllers;
 
-import com.github.murataykanat.toybox.models.UploadFile;
-import com.github.murataykanat.toybox.models.UploadFileLst;
+import com.github.murataykanat.toybox.schema.upload.UploadFile;
+import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

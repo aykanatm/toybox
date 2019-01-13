@@ -1,6 +1,6 @@
-package com.github.murataykanat.toybox.models;
+package com.github.murataykanat.toybox.schema.upload;
 
-import org.codehaus.jackson.annotate.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.io.Serializable;
 import java.util.List;

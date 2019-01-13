@@ -1,6 +1,7 @@
-package com.github.murataykanat.toybox.models;
+package com.github.murataykanat.toybox.schema.job;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.murataykanat.toybox.models.job.ToyboxJobStep;
 
 import java.io.Serializable;
 import java.util.List;

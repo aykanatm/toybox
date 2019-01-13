@@ -1,4 +1,4 @@
-package com.github.murataykanat.toybox.models;
+package com.github.murataykanat.toybox.schema.job;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

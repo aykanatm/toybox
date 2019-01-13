@@ -92,6 +92,11 @@
             <artifactId>jodconverter-local</artifactId>
             <version>4.2.2</version>
         </dependency>
+        <dependency>
+            <groupId>com.github.murataykanat.toybox</groupId>
+            <artifactId>toybox-common-lib</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>

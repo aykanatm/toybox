@@ -1,11 +1,16 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.batch.utils.Constants;
-import com.github.murataykanat.toybox.models.*;
 import com.github.murataykanat.toybox.models.annotations.FacetColumnName;
 import com.github.murataykanat.toybox.models.annotations.FacetDefaultLookup;
 import com.github.murataykanat.toybox.models.dbo.mappers.ToyboxJobRowMapper;
 import com.github.murataykanat.toybox.models.dbo.mappers.ToyboxJobStepRowMapper;
+import com.github.murataykanat.toybox.models.job.ToyboxJob;
+import com.github.murataykanat.toybox.models.job.ToyboxJobFacet;
+import com.github.murataykanat.toybox.models.job.ToyboxJobStep;
+import com.github.murataykanat.toybox.schema.job.*;
+import com.github.murataykanat.toybox.schema.upload.UploadFile;
+import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

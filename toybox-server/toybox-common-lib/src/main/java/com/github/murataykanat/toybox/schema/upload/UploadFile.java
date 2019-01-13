@@ -1,8 +1,10 @@
-package com.github.murataykanat.toybox.models;
+package com.github.murataykanat.toybox.schema.upload;
 
-import org.codehaus.jackson.annotate.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class UploadFile {
+import java.io.Serializable;
+
+public class UploadFile implements Serializable {
     @JsonProperty("path")
     private String path;
     @JsonProperty("username")

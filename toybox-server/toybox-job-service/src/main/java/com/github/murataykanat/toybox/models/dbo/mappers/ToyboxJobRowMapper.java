@@ -1,6 +1,6 @@
 package com.github.murataykanat.toybox.models.dbo.mappers;
 
-import com.github.murataykanat.toybox.models.ToyboxJob;
+import com.github.murataykanat.toybox.models.job.ToyboxJob;
 import com.github.murataykanat.toybox.utilities.DateTimeUtils;
 import org.springframework.jdbc.core.RowMapper;
 

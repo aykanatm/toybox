@@ -1,7 +1,8 @@
-package com.github.murataykanat.toybox.models;
+package com.github.murataykanat.toybox.models.job;
 
 import com.github.murataykanat.toybox.models.annotations.FacetColumnName;
 import com.github.murataykanat.toybox.models.annotations.FacetDefaultLookup;
+import com.github.murataykanat.toybox.schema.job.JobSearchRequestFacet;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
