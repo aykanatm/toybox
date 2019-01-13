@@ -607,10 +607,18 @@ public class ImportJobConfig {
                                             throw new IllegalArgumentException("Unknown rendition type!");
                                         }
 
-                                        // Let's resize the output to default thumbnail/preview size
-                                        File firstPageConfiguration = new File(outputFile.getAbsolutePath() + "[0]");
-                                        runExecutable(asset, firstPageConfiguration, pngOutput, imagemagickExecutable, imagemagickTimeout, renditionSettings, renditionType, Constants.IMAGEMAGICK);
-                                        Files.delete(outputFile.toPath());
+
+                                        if(asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLSX)
+                                                || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLS)){
+                                            // Excel files are first converted to PDF so we convert them again to PNG
+                                            File firstPageConfiguration = new File(outputFile.getAbsolutePath() + "[0]");
+                                            runExecutable(asset, firstPageConfiguration, pngOutput, imagemagickExecutable, imagemagickTimeout, renditionSettings, renditionType, Constants.IMAGEMAGICK);
+                                            Files.delete(outputFile.toPath());
+                                        }
+                                        else{
+                                            // Let's resize the output to default thumbnail/preview size
+                                            runExecutable(asset, outputFile, pngOutput, imagemagickExecutable, imagemagickTimeout, renditionSettings, renditionType, Constants.IMAGEMAGICK);
+                                        }
                                     }
                                     else{
                                         throw new IOException("Unable to create file " + outputFile.getAbsolutePath() + ".");
