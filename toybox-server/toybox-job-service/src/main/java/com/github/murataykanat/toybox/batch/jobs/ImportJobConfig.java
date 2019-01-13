@@ -374,6 +374,8 @@ public class ImportJobConfig {
     }
 
     private RenditionProperties getRenditionProperties(Asset asset, String assetRenditionPath, RenditionTypes renditionType) {
+        String assetMimeType = asset.getType();
+
         RenditionProperties renditionProperties = new RenditionProperties();
 
         String fileFormat;
@@ -385,7 +387,16 @@ public class ImportJobConfig {
         String ffmpegAudioSettings;
 
         if(renditionType == RenditionTypes.Thumbnail){
-            fileFormat = imageThumbnailFormat;
+            if(assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLSX)
+                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLS)){
+                fileFormat = "pdf";
+            }
+            else if(assetMimeType.equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_GIF)){
+                fileFormat = "gif";
+            }
+            else{
+                fileFormat = imageThumbnailFormat;
+            }
 
             gifsicleSettings = gifsicleThumbnailSettings;
             imagemagickSettings = imagemagickThumbnailSettings;
@@ -395,11 +406,18 @@ public class ImportJobConfig {
             ffmpegAudioSettings = ffmpegAudioThumbnailSettings;
         }
         else if(renditionType == RenditionTypes.Preview){
-            if(asset.getType().startsWith(Constants.VIDEO_MIME_TYPE_PREFIX)){
+            if(assetMimeType.startsWith(Constants.VIDEO_MIME_TYPE_PREFIX)){
                 fileFormat = videoPreviewFormat;
             }
-            else if(asset.getType().startsWith(Constants.AUIDO_MIME_TYPE_PREFIX)){
+            else if(assetMimeType.startsWith(Constants.AUIDO_MIME_TYPE_PREFIX)){
                 fileFormat = audioPreviewFormat;
+            }
+            else if(assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLSX)
+                    || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLS)){
+                fileFormat = "pdf";
+            }
+            else if(assetMimeType.equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_GIF)){
+                fileFormat = "gif";
             }
             else{
                 fileFormat = imagePreviewFormat;
@@ -416,10 +434,8 @@ public class ImportJobConfig {
             throw new IllegalArgumentException("Unknown rendition type!");
         }
 
-        String assetMimeType = asset.getType();
         if(assetMimeType.equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_GIF)){
             renditionProperties.setRenditionSettings(gifsicleSettings);
-            renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + ".gif"));
         }
         else if(assetMimeType.startsWith(Constants.IMAGE_MIME_TYPE_PREFIX)
                 || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPTX)
@@ -427,29 +443,23 @@ public class ImportJobConfig {
                 || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOCX)
                 || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOC)){
             renditionProperties.setRenditionSettings(imagemagickSettings);
-            renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + "." + fileFormat));
         }
         else if(assetMimeType.equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_EPS)){
             renditionProperties.setRenditionSettings(imagemagickEpsSettings);
-            renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + "." + fileFormat));
         }
-        else if(assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_PDF)){
+        else if(assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_PDF)
+                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLSX)
+                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLS)){
             renditionProperties.setRenditionSettings(imagemagickPdfSettings);
-            renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + "." + fileFormat));
         }
         else if(assetMimeType.startsWith(Constants.VIDEO_MIME_TYPE_PREFIX)){
             renditionProperties.setRenditionSettings(ffmpegVideoSettings);
-            renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + "." + fileFormat));
         }
         else if(assetMimeType.startsWith(Constants.AUIDO_MIME_TYPE_PREFIX)){
             renditionProperties.setRenditionSettings(ffmpegAudioSettings);
-            renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + "." + fileFormat));
         }
-        else if(assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLSX)
-                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLS)){
-            renditionProperties.setRenditionSettings(imagemagickPdfSettings);
-            renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + ".pdf"));
-        }
+
+        renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + "." + fileFormat));
 
         return renditionProperties;
     }
