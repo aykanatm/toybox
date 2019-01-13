@@ -608,7 +608,9 @@ public class ImportJobConfig {
                                         }
 
                                         // Let's resize the output to default thumbnail/preview size
-                                        runExecutable(asset, outputFile, pngOutput, imagemagickExecutable, imagemagickTimeout, renditionSettings, renditionType, Constants.IMAGEMAGICK);
+                                        File firstPageConfiguration = new File(outputFile.getAbsolutePath() + "[0]");
+                                        runExecutable(asset, firstPageConfiguration, pngOutput, imagemagickExecutable, imagemagickTimeout, renditionSettings, renditionType, Constants.IMAGEMAGICK);
+                                        Files.delete(outputFile.toPath());
                                     }
                                     else{
                                         throw new IOException("Unable to create file " + outputFile.getAbsolutePath() + ".");
