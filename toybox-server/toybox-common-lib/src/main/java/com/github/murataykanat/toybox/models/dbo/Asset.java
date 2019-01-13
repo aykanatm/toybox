@@ -4,6 +4,7 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import java.util.Date;
 
 @Entity
 @Table(name = "assets")
@@ -26,7 +27,7 @@ public class Asset {
     @Column(name = "asset_imported_by_username")
     private String importedByUsername;
     @Column(name = "asset_import_date")
-    private String importDate;
+    private Date importDate;
 
     public Asset(){}
 
@@ -98,11 +99,11 @@ public class Asset {
         this.importedByUsername = importedByUsername;
     }
 
-    public String getImportDate() {
+    public Date getImportDate() {
         return importDate;
     }
 
-    public void setImportDate(String importDate) {
+    public void setImportDate(Date importDate) {
         this.importDate = importDate;
     }
 }
