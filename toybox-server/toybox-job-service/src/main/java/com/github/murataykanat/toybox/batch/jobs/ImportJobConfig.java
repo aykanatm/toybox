@@ -389,12 +389,7 @@ public class ImportJobConfig {
         String ffmpegAudioSettings;
 
         if(renditionType == RenditionTypes.Thumbnail){
-            if(asset.getType().startsWith(Constants.VIDEO_MIME_TYPE_PREFIX)){
-                fileFormat = videoThumbnailFormat;
-            }
-            else{
-                fileFormat = imageThumbnailFormat;
-            }
+            fileFormat = imageThumbnailFormat;
 
             gifsicleSettings = gifsicleThumbnailSettings;
             imagemagickSettings = imagemagickThumbnailSettings;
@@ -430,7 +425,11 @@ public class ImportJobConfig {
             renditionProperties.setRenditionSettings(gifsicleSettings);
             renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + ".gif"));
         }
-        else if(assetMimeType.startsWith(Constants.IMAGE_MIME_TYPE_PREFIX)){
+        else if(assetMimeType.startsWith(Constants.IMAGE_MIME_TYPE_PREFIX)
+                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPTX)
+                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPT)
+                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOCX)
+                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOC)){
             renditionProperties.setRenditionSettings(imagemagickSettings);
             renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + "." + fileFormat));
         }
@@ -450,14 +449,10 @@ public class ImportJobConfig {
             renditionProperties.setRenditionSettings(ffmpegAudioSettings);
             renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + "." + fileFormat));
         }
-        else if(assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPTX)
-                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPT)
-                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLSX)
-                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLS)
-                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOCX)
-                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOC)){
-            renditionProperties.setRenditionSettings(imagemagickSettings);
-            renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + "." + fileFormat));
+        else if(assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLSX)
+                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLS)){
+            renditionProperties.setRenditionSettings(imagemagickPdfSettings);
+            renditionProperties.setOutputFile(new File(assetRenditionPath + File.separator + asset.getId() + ".pdf"));
         }
 
         return renditionProperties;
@@ -567,23 +562,6 @@ public class ImportJobConfig {
                     }
                     else if(asset.getType().startsWith(Constants.VIDEO_MIME_TYPE_PREFIX) || asset.getType().startsWith(Constants.AUIDO_MIME_TYPE_PREFIX)){
                         runExecutable(asset, inputFile, outputFile, ffmpegExecutable, ffmpegTimeout, renditionSettings, renditionType, Constants.FFMPEG);
-                        
-                        // Since we can only generate video thumbnails as JPEG, let's convert them to PNG
-                        if(renditionType == RenditionTypes.Thumbnail){
-                            if(outputFile.exists()){
-                                if(StringUtils.isNotBlank(assetThumbnailPath)){
-                                    File pngOutput = new File(assetThumbnailPath + File.separator + asset.getId() + "." + imageThumbnailFormat);
-                                    runExecutable(asset, outputFile, pngOutput, imagemagickExecutable, imagemagickTimeout, null, renditionType, Constants.IMAGEMAGICK);
-                                    Files.delete(outputFile.toPath());
-                                }
-                                else{
-                                    throw new InvalidObjectException("Asset thumbnail path is blank!");
-                                }
-                            }
-                            else{
-                                _logger.warn("No thumbnail was generated for " + asset.getName() + ". Skipping thumbnail format conversion...");
-                            }
-                        }
                     }
                     else if(asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOCX)
                             || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOC)
@@ -623,6 +601,7 @@ public class ImportJobConfig {
                                             throw new IllegalArgumentException("Unknown rendition type!");
                                         }
 
+                                        // Let's resize the output to default thumbnail/preview size
                                         runExecutable(asset, outputFile, pngOutput, imagemagickExecutable, imagemagickTimeout, renditionSettings, renditionType, Constants.IMAGEMAGICK);
                                     }
                                     else{
