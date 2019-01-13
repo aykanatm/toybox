@@ -1,10 +1,10 @@
-package com.github.murataykanat.toybox.schema.job;
+package com.github.murataykanat.toybox.schema.common;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.io.Serializable;
 
-public class JobSearchRequestFacet implements Serializable {
+public class SearchRequestFacet implements Serializable {
     @JsonProperty("fieldName")
     private String fieldName;
     @JsonProperty("fieldValue")

@@ -1,6 +1,7 @@
 package com.github.murataykanat.toybox.schema.job;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 
 import java.util.List;
 
@@ -16,7 +17,7 @@ public class JobSearchRequest {
     @JsonProperty("username")
     private String username;
     @JsonProperty("jobSearchRequestFacetList")
-    private List<JobSearchRequestFacet> jobSearchRequestFacetList;
+    private List<SearchRequestFacet> searchRequestFacetList;
 
     public int getLimit() {
         return limit;
@@ -58,11 +59,11 @@ public class JobSearchRequest {
         this.username = username;
     }
 
-    public List<JobSearchRequestFacet> getJobSearchRequestFacetList() {
-        return jobSearchRequestFacetList;
+    public List<SearchRequestFacet> getSearchRequestFacetList() {
+        return searchRequestFacetList;
     }
 
-    public void setJobSearchRequestFacetList(List<JobSearchRequestFacet> jobSearchRequestFacetList) {
-        this.jobSearchRequestFacetList = jobSearchRequestFacetList;
+    public void setJobSearchRequestFacetList(List<SearchRequestFacet> jobSearchRequestFacetList) {
+        this.searchRequestFacetList = jobSearchRequestFacetList;
     }
 }

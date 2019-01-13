@@ -1,11 +1,11 @@
-package com.github.murataykanat.toybox.models.job;
+package com.github.murataykanat.toybox.schema.common;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.io.Serializable;
 import java.util.List;
 
-public class ToyboxJobFacet implements Serializable {
+public class Facet implements Serializable {
     @JsonProperty("name")
     private String name;
     @JsonProperty("lookups")

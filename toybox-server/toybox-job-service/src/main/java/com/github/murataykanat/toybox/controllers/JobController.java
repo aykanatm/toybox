@@ -6,8 +6,9 @@ import com.github.murataykanat.toybox.models.annotations.FacetDefaultLookup;
 import com.github.murataykanat.toybox.models.dbo.mappers.job.ToyboxJobRowMapper;
 import com.github.murataykanat.toybox.models.dbo.mappers.job.ToyboxJobStepRowMapper;
 import com.github.murataykanat.toybox.models.job.ToyboxJob;
-import com.github.murataykanat.toybox.models.job.ToyboxJobFacet;
 import com.github.murataykanat.toybox.models.job.ToyboxJobStep;
+import com.github.murataykanat.toybox.schema.common.Facet;
+import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.job.*;
 import com.github.murataykanat.toybox.schema.upload.UploadFile;
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
@@ -109,7 +110,7 @@ public class JobController {
                 String username = jobSearchRequest.getUsername();
                 int offset = jobSearchRequest.getOffset();
                 int limit = jobSearchRequest.getLimit();
-                List<JobSearchRequestFacet> jobSearchRequestFacetList = jobSearchRequest.getJobSearchRequestFacetList();
+                List<SearchRequestFacet> jobSearchRequestFacetList = jobSearchRequest.getSearchRequestFacetList();
 
                 List<ToyboxJob> allJobs = jdbcTemplate.query("SELECT JOB_INSTANCE_ID, JOB_EXECUTION_ID, JOB_NAME, JOB_TYPE, START_TIME, END_TIME, STATUS, USERNAME  FROM TOYBOX_JOBS_VW", new ToyboxJobRowMapper());
 
@@ -129,11 +130,11 @@ public class JobController {
                             .map(f -> f.getAnnotation(FacetColumnName.class).value())
                             .collect(Collectors.toList());
 
-                    List<ToyboxJobFacet> toyboxJobFacets = new ArrayList<>();
+                    List<Facet> toyboxJobFacets = new ArrayList<>();
 
                     // TODO: Convert this to stream implementation
                     for(String facetName: facets){
-                        ToyboxJobFacet toyboxJobFacet = new ToyboxJobFacet();
+                        Facet toyboxJobFacet = new Facet();
                         toyboxJobFacet.setName(facetName);
 
                         List<String> lookups = new ArrayList<>();
