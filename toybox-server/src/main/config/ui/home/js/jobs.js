@@ -113,8 +113,14 @@ const jobs = new Vue({
             this.endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
 
             if(currentPage == 1){
-                this.nextPageButtonDisabled = false;
-                this.previousPageButtonDisabled = true;
+                if(totalPages != 1){
+                    this.nextPageButtonDisabled = false;
+                    this.previousPageButtonDisabled = true;
+                }
+                else{
+                    this.nextPageButtonDisabled = true;
+                    this.previousPageButtonDisabled = true;
+                }
             }
             else if(currentPage == totalPages){
                 this.nextPageButtonDisabled = true;
