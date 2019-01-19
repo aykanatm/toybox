@@ -125,51 +125,9 @@ public class JobController {
                         jobs = allJobs;
                     }
 
-                    List<String> facets = Arrays.asList(ToyboxJob.class.getDeclaredFields())
-                            .stream()
-                            .filter(f -> nonNull(f.getAnnotation(FacetColumnName.class)))
-                            .map(f -> f.getAnnotation(FacetColumnName.class).value())
-                            .collect(Collectors.toList());
+                    List<Facet> facets = FacetUtils.getInstance().getFacets(jobs);
 
-                    List<Facet> toyboxJobFacets = new ArrayList<>();
-
-                    // TODO: Convert this to stream implementation
-                    for(String facetName: facets){
-                        Facet toyboxJobFacet = new Facet();
-                        toyboxJobFacet.setName(facetName);
-
-                        List<String> lookups = new ArrayList<>();
-
-                        for(ToyboxJob toyboxJob: jobs ){
-                            for(Method method: toyboxJob.getClass().getDeclaredMethods()){
-                                if(method.getAnnotation(FacetColumnName.class) != null)
-                                {
-                                    String facetColumnName = method.getAnnotation(FacetColumnName.class).value();
-                                    if(facetColumnName != null && facetColumnName.equalsIgnoreCase(facetName)){
-                                        if(method.getAnnotation(FacetDefaultLookup.class) != null)
-                                        {
-                                            String[] defaultLookups = method.getAnnotation(FacetDefaultLookup.class).values();
-                                            for(String defaultLookup: defaultLookups){
-                                                lookups.add(defaultLookup);
-                                            }
-                                        }
-                                        else
-                                        {
-                                            String lookup = (String) method.invoke(toyboxJob);
-                                            lookups.add(lookup);
-                                        }
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-
-                        Set<String> uniqueLookupValues = new HashSet<>(lookups);
-                        toyboxJobFacet.setLookups(new ArrayList<>(uniqueLookupValues));
-                        toyboxJobFacets.add(toyboxJobFacet);
-                    }
-
-                    retrieveToyboxJobsResult.setFacets(toyboxJobFacets);
+                    retrieveToyboxJobsResult.setFacets(facets);
 
                     if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("JOB_NAME")){
                         sortJobs(sortType, jobs, Comparator.comparing(ToyboxJob::getJobName, Comparator.nullsLast(Comparator.naturalOrder())));

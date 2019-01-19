@@ -3,19 +3,16 @@ package com.github.murataykanat.toybox.utilities;
 import com.github.murataykanat.toybox.models.annotations.FacetColumnName;
 import com.github.murataykanat.toybox.models.annotations.FacetDataType;
 import com.github.murataykanat.toybox.models.annotations.FacetDefaultLookup;
+import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang.reflect.FieldUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 public class FacetUtils {
     private static final Log _logger = LogFactory.getLog(FacetUtils.class);
@@ -31,7 +28,46 @@ public class FacetUtils {
         return new FacetUtils();
     }
 
-    public boolean hasFacetValue(Object obj, List<SearchRequestFacet> searchRequestFacetList){
+    public <T> List<Facet>  getFacets (List<T> objects) throws IllegalAccessException {
+        List<Facet> facets = new ArrayList<>();
+        Field[] declaredFields = objects.get(0).getClass().getDeclaredFields();
+
+        for(Field field: declaredFields){
+            if(field.isAnnotationPresent(FacetColumnName.class)){
+                Facet facet = new Facet();
+
+                String facetFieldName = field.getAnnotation(FacetColumnName.class).value();
+                facet.setName(facetFieldName);
+
+                List<String> lookups = new ArrayList<>();
+
+                for(T obj: objects){
+                    for(Field objField: obj.getClass().getDeclaredFields()){
+                        if(objField.isAnnotationPresent(FacetColumnName.class) && objField.getAnnotation(FacetColumnName.class).value().equalsIgnoreCase(facetFieldName)){
+                            if(objField.isAnnotationPresent(FacetDefaultLookup.class)){
+                                String[] defaultLookups = objField.getAnnotation(FacetDefaultLookup.class).values();
+                                lookups.addAll(Arrays.asList(defaultLookups));
+                            }
+                            else{
+                                lookups.add((String) FieldUtils.readField(obj, field.getName(), true));
+                            }
+
+                            break;
+                        }
+                    }
+                }
+
+                lookups = new ArrayList<>(new HashSet<>(lookups));
+                facet.setLookups(lookups);
+
+                facets.add(facet);
+            }
+        }
+
+        return facets;
+    }
+
+    public <T> boolean hasFacetValue(T obj, List<SearchRequestFacet> searchRequestFacetList){
         boolean result = true;
 
         try{
