@@ -2,7 +2,6 @@ package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.models.annotations.FacetColumnName;
 import com.github.murataykanat.toybox.models.annotations.FacetDefaultLookup;
-import com.github.murataykanat.toybox.models.asset.ToyboxAsset;
 import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.dbo.mappers.asset.AssetRowMapper;
 import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
@@ -11,6 +10,7 @@ import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.upload.UploadFile;
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
+import com.github.murataykanat.toybox.utilities.FacetUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -124,70 +124,27 @@ public class AssetController {
             int limit = assetSearchRequest.getLimit();
             List<SearchRequestFacet> searchRequestFacetList = assetSearchRequest.getAssetSearchRequestFacetList();
 
-            List<Asset> allAssets = jdbcTemplate.query("SELECT asset_id, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type FROM assets", new AssetRowMapper());
+            List<Asset> allAssets = jdbcTemplate.query("SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type FROM assets", new AssetRowMapper());
             if(!allAssets.isEmpty()){
-                List<ToyboxAsset> allToyboxAssets = allAssets.stream().map(asset -> new ToyboxAsset(asset)).collect(Collectors.toList());
 
-                List<ToyboxAsset> assets;
+                List<Asset> assets;
 
                 if(searchRequestFacetList != null && !searchRequestFacetList.isEmpty()){
-                    assets = allToyboxAssets.stream().filter(toyboxAsset -> toyboxAsset.hasFacetValue(searchRequestFacetList)).collect(Collectors.toList());
+                    assets = allAssets.stream().filter(asset -> FacetUtils.getInstance().hasFacetValue(asset, searchRequestFacetList)).collect(Collectors.toList());
                 }
                 else{
-                    assets = allToyboxAssets;
+                    assets = allAssets;
                 }
 
-                List<String> facets = Arrays.asList(Asset.class.getDeclaredFields())
-                        .stream()
-                        .filter(f -> nonNull(f.getAnnotation(FacetColumnName.class)))
-                        .map(f -> f.getAnnotation(FacetColumnName.class).value())
-                        .collect(Collectors.toList());
+                List<Facet> facets = FacetUtils.getInstance().getFacets(assets);
 
-                List<Facet> assetFacets = new ArrayList<>();
-
-                // TODO: Convert this to stream implementation
-                for(String facetName: facets){
-                    Facet assetFacet = new Facet();
-                    assetFacet.setName(facetName);
-
-                    List<String> lookups = new ArrayList<>();
-
-                    for(ToyboxAsset asset: assets ){
-                        for(Method method: asset.getClass().getDeclaredMethods()){
-                            if(method.getAnnotation(FacetColumnName.class) != null)
-                            {
-                                String facetColumnName = method.getAnnotation(FacetColumnName.class).value();
-                                if(facetColumnName != null && facetColumnName.equalsIgnoreCase(facetName)){
-                                    if(method.getAnnotation(FacetDefaultLookup.class) != null)
-                                    {
-                                        String[] defaultLookups = method.getAnnotation(FacetDefaultLookup.class).values();
-                                        for(String defaultLookup: defaultLookups){
-                                            lookups.add(defaultLookup);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        String lookup = (String) method.invoke(asset);
-                                        lookups.add(lookup);
-                                    }
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    Set<String> uniqueLookupValues = new HashSet<>(lookups);
-                    assetFacet.setLookups(new ArrayList<>(uniqueLookupValues));
-                    assetFacets.add(assetFacet);
-                }
-
-                retrieveAssetsResults.setFacets(assetFacets);
+                retrieveAssetsResults.setFacets(facets);
 
                 if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_import_date")){
-                    sortAssets(sortType, assets, Comparator.comparing(ToyboxAsset::getImportDate, Comparator.nullsLast(Comparator.naturalOrder())));
+                    sortAssets(sortType, assets, Comparator.comparing(Asset::getImportDate, Comparator.nullsLast(Comparator.naturalOrder())));
                 }
                 else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_name")){
-                    sortAssets(sortType, assets, Comparator.comparing(ToyboxAsset::getName, Comparator.nullsLast(Comparator.naturalOrder())));
+                    sortAssets(sortType, assets, Comparator.comparing(Asset::getName, Comparator.nullsLast(Comparator.naturalOrder())));
                 }
 
 
@@ -198,14 +155,14 @@ public class AssetController {
                 int startIndex = offset;
                 int endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
 
-                List<ToyboxAsset> assetsOnPage = assets.subList(startIndex, endIndex);
+                List<Asset> assetsOnPage = assets.subList(startIndex, endIndex);
 
 
                 retrieveAssetsResults.setTotalRecords(totalRecords);
                 retrieveAssetsResults.setAssets(assetsOnPage);
 
-                _logger.debug("<< retrieveJobs()");
-                retrieveAssetsResults.setMessage("Jobs retrieved successfully!");
+                _logger.debug("<< retrieveAssets()");
+                retrieveAssetsResults.setMessage("Assets retrieved successfully!");
                 return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.OK);
             }
             else{
@@ -230,7 +187,7 @@ public class AssetController {
         }
     }
 
-    private void sortAssets(String sortType, List<ToyboxAsset> allAssets, Comparator<ToyboxAsset> comparing) {
+    private void sortAssets(String sortType, List<Asset> allAssets, Comparator<Asset> comparing) {
         if(sortType.equalsIgnoreCase("des")){
             allAssets.sort(comparing.reversed());
         }

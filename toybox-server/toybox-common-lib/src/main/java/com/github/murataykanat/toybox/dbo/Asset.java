@@ -1,32 +1,64 @@
 package com.github.murataykanat.toybox.dbo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.murataykanat.toybox.models.annotations.FacetColumnName;
+import com.github.murataykanat.toybox.models.annotations.FacetDataType;
+import com.github.murataykanat.toybox.models.annotations.FacetDefaultLookup;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import java.io.Serializable;
 import java.util.Date;
 
 @Entity
 @Table(name = "assets")
-public class Asset {
+public class Asset implements Serializable {
     @Id
     @Column(name = "asset_id")
+    @JsonProperty("id")
     private String id;
+
     @Column(name = "asset_name")
+    @JsonProperty("name")
     private String name;
+
     @Column(name = "asset_extension")
+    @JsonProperty("extension")
     private String extension;
+
     @Column(name = "asset_type")
+    @JsonProperty("type")
+    @FacetColumnName("Asset Type")
     private String type;
+
     @Column(name = "asset_path")
+    // @JsonProperty("path")
+    @JsonIgnore
     private String path;
+
     @Column(name = "asset_preview_path")
+    // @JsonProperty("previewPath")
+    @JsonIgnore
     private String previewPath;
+
     @Column(name = "asset_thumbnail_path")
+    // @JsonProperty("thumbnailPath")
+    @JsonIgnore
     private String thumbnailPath;
+
     @Column(name = "asset_imported_by_username")
+    @JsonProperty("importedByUsername")
+    @FacetColumnName("Username")
     private String importedByUsername;
+
     @Column(name = "asset_import_date")
+    @JsonProperty("importDate")
+    @FacetColumnName("Import Date")
+    @FacetDataType(value = "Date")
+    @FacetDefaultLookup(values = {"Today","Past 7 days","Past 30 days"})
     private Date importDate;
 
     public Asset(){}

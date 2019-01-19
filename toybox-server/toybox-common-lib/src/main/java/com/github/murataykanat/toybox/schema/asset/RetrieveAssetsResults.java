@@ -1,7 +1,7 @@
 package com.github.murataykanat.toybox.schema.asset;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.github.murataykanat.toybox.models.asset.ToyboxAsset;
+import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.schema.common.Facet;
 
 import java.io.Serializable;
@@ -9,7 +9,7 @@ import java.util.List;
 
 public class RetrieveAssetsResults implements Serializable {
     @JsonProperty("assets")
-    private List<ToyboxAsset> assets;
+    private List<Asset> assets;
     @JsonProperty("totalRecords")
     private int totalRecords;
     @JsonProperty("facets")
@@ -17,11 +17,11 @@ public class RetrieveAssetsResults implements Serializable {
     @JsonProperty("message")
     private String message;
 
-    public List<ToyboxAsset> getAssets() {
+    public List<Asset> getAssets() {
         return assets;
     }
 
-    public void setAssets(List<ToyboxAsset> assets) {
+    public void setAssets(List<Asset> assets) {
         this.assets = assets;
     }
 
