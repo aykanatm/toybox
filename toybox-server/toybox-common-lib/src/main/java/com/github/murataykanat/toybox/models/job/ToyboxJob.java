@@ -3,15 +3,11 @@ package com.github.murataykanat.toybox.models.job;
 import com.github.murataykanat.toybox.models.annotations.FacetColumnName;
 import com.github.murataykanat.toybox.models.annotations.FacetDataType;
 import com.github.murataykanat.toybox.models.annotations.FacetDefaultLookup;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import java.util.Date;
 import java.util.List;
 
 public class ToyboxJob {
-    private static final Log _logger = LogFactory.getLog(ToyboxJob.class);
-
     private String jobInstanceId;
     private String jobExecutionId;
     @FacetColumnName(value = "Job Name")
