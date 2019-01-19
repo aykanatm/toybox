@@ -1,11 +1,11 @@
 <template>
-    <div v-bind:class="{'ui':true, 'fluid':true, 'card':true, 'toybox-card':true, 'toybox-card-selected':isSelected}" v-bind:id="assetId" v-on:click.stop="onClick">
+    <div v-bind:class="{'ui':true, 'fluid':true, 'card':true, 'toybox-card':true, 'toybox-card-selected':isSelected}" v-bind:id="id" v-on:click.stop="onClick">
         <div class="ui fluid image toybox-corner-label" v-show="isSelected">
             <span class="ui blue right corner label" style="overflow: hidden;"></span>
             <img/>
         </div>
         <div class="content">
-            <img class="ui avatar image" v-bind:src="userAvatarUrl"/> {{ importedBy }}
+            <img class="ui avatar image" v-bind:src="userAvatarUrl"/> {{ importedByUsername }}
         </div>
         <div class="ui fluid image" style="z-index: 1;">
             <div class="ui blue ribbon label">
@@ -43,7 +43,7 @@
             </div>
         </div>
         <div class="extra content">
-            <span>{{ assetName }}</span>
+            <span>{{ name }}</span>
         </div>
     </div>
 </template>

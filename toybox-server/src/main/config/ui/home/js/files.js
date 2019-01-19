@@ -2,37 +2,35 @@ const files = new Vue({
     el: '#toybox-files',
     data:{
         view: 'files',
-        // Dummy assets
-        assets:[
-            {
-                assetId: '123456',
-                assetName: 'filename_1.ext',
-                userAvatarUrl: 'http://via.placeholder.com/250x250',
-                importedBy: 'Username',
-                thumbnailUrl: 'http://via.placeholder.com/300x250',
-                extension: 'EXT',
-                isSelected: false
-            },
-            {
-                assetId: '45677',
-                assetName: 'filename_2.ext',
-                userAvatarUrl: 'http://via.placeholder.com/250x250',
-                importedBy: 'Username',
-                thumbnailUrl: 'http://via.placeholder.com/200x200',
-                extension: 'EXT',
-                isSelected: false
-            },
-            {
-                assetId: '45677212423',
-                assetName: 'filename_2.ext',
-                userAvatarUrl: 'http://via.placeholder.com/250x250',
-                importedBy: 'Username',
-                thumbnailUrl: 'http://via.placeholder.com/300x100',
-                extension: 'EXT',
-                isSelected: false
-            }
-        ],
-        selectedAssets:[]
+        assets:[],
+        selectedAssets: [],
+        isLoading: false,
+        // Pagination
+        currentPage: 1,
+        defaultLimit: 10,
+        defaultOffset: 0,
+        limit: 10,
+        offset: 0,
+        totalRecords: 0,
+        totalPages: 0,
+        previousPageButtonDisabled: true,
+        nextPageButtonDisabled: false,
+        startIndex: 0,
+        endIndex: 0,
+        // Sorting
+        defaultSortType: 'des',
+        defaultSortColumn: 'asset_name',
+        sortType: 'des',
+        sortColumn: 'asset_name',
+        sortedAscByAssetName: false,
+        sortedDesByAssetName: false,
+        sortedAscByAssetImportDate: false,
+        sortedDesByAssetImportDate: false,
+        // Filtering
+        facets: [],
+        assetSearchRequestFacetList: [],
+        // Messages
+        messages: [],
     },
     mounted:function(){
         var csrfHeader = $("meta[name='_csrf_header']").attr("content");
@@ -45,9 +43,180 @@ const files = new Vue({
         }
         axios.defaults.withCredentials = true;
 
-        this.$on('asset-selection-changed', this.onAssetSelectionChanged)
+        // Initialize accordions
+        $('.ui.accordion').accordion();
+
+        // Initialize event listeners
+        this.$root.$on('perform-faceted-search', (facet, isAdd) => {
+            if(isAdd){
+                console.log('Adding facet ' + facet.fieldName + ' and its value ' + facet.fieldValue + ' to search');
+                this.assetSearchRequestFacetList.push(facet);
+            }
+            else{
+                console.log('Removing facet ' + facet.fieldName + ' and its value ' + facet.fieldValue + ' from search');
+                var index;
+                for(var i = 0; i < this.assetSearchRequestFacetList.length; i++){
+                    var assetRequestFacet = this.assetSearchRequestFacetList[i];
+                    if(assetRequestFacet.fieldName === facet.fieldName && assetRequestFacet.fieldValue === facet.fieldValue){
+                        index = i;
+                        break;
+                    }
+                }
+                this.assetSearchRequestFacetList.splice(index, 1);
+            }
+
+            this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.assetSearchRequestFacetList);
+        });
+        this.$root.$on('asset-selection-changed', this.onAssetSelectionChanged);
+        this.$root.$on('message-sent', this.displayMessage);
+
+        this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.assetSearchRequestFacetList);
     },
     methods:{
+        getConfiguration(fieldName){
+            return axios.get("/configuration?field=" + fieldName)
+                .catch(error => {
+                    var errorMessage;
+
+                    if(error.response){
+                        errorMessage = error.response.data.message
+                    }
+                    else{
+                        errorMessage = error.message;
+                    }
+
+                    console.error(errorMessage);
+                    this.$root.$emit('message-sent', 'Error', errorMessage);
+                });
+        },
+        getAssets(offset, limit, sortType, sortColumn, username, assetSearchRequestFacetList){
+            this.isLoading = true;
+            this.getConfiguration("assetServiceUrl")
+            .then(response => {
+                if(response){
+                    var searchRequest = {};
+                    searchRequest.limit = limit;
+                    searchRequest.offset = offset;
+                    searchRequest.sortType = sortType;
+                    searchRequest.sortColumn = sortColumn;
+                    searchRequest.username = username;
+                    searchRequest.assetSearchRequestFacetList = assetSearchRequestFacetList;
+
+                    return axios.post(response.data.value + "/assets/search", searchRequest)
+                        .catch(error => {
+                            var errorMessage;
+
+                            if(error.response){
+                                errorMessage = error.response.data.message
+                            }
+                            else{
+                                errorMessage = error.message;
+                            }
+
+                            console.error(errorMessage);
+                            this.$root.$emit('message-sent', 'Error', errorMessage);
+                        });
+                }
+            })
+            .then(response => {
+                console.log(response);
+                if(response){
+                    this.isLoading = false;
+                    if(response.status != 204){
+                        this.assets = response.data.assets;
+                        this.facets = response.data.facets;
+                        this.totalRecords = response.data.totalRecords;
+                        this.totalPages = Math.ceil(this.totalRecords / this.limit);
+                        this.currentPage = Math.ceil((offset / limit) + 1);
+                    }
+                    else{
+                        this.displayMessage('Information','There is no asset in the system');
+                    }
+                }
+            })
+            .then(response => {
+                console.log(response);
+                this.updatePagination(this.currentPage, this.totalPages, offset, limit, this.totalRecords);
+                // this.updateSortStatus(this.sortType, this.sortColumn)
+            });
+        },
+        // Pagination
+        updatePagination(currentPage, totalPages, offset, limit, totalRecords){
+            this.startIndex = offset + 1;
+            this.endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
+
+            if(currentPage == 1){
+                if(totalPages != 1){
+                    this.nextPageButtonDisabled = false;
+                    this.previousPageButtonDisabled = true;
+                }
+                else{
+                    this.nextPageButtonDisabled = true;
+                    this.previousPageButtonDisabled = true;
+                }
+            }
+            else if(currentPage == totalPages){
+                this.nextPageButtonDisabled = true;
+                this.previousPageButtonDisabled = false;
+            }
+            else{
+                this.nextPageButtonDisabled = false;
+                this.previousPageButtonDisabled = false;
+            }
+        },
+        previousPage(){
+            if(this.currentPage != 1){
+                this.offset -= this.limit;
+                this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.assetSearchRequestFacetList);
+            }
+        },
+        nextPage(){
+            if(this.currentPage != this.totalPages){
+                this.offset += this.limit;
+                this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.assetSearchRequestFacetList);
+            }
+        },
+        displayMessage(type, messageString){
+            var isError = false;
+            var isOk = false;
+            var isWarning = false;
+            var isInfo = false;
+
+            if(type === 'Information'){
+                isInfo = true;
+            }
+            else if(type === 'Error'){
+                isError = true;
+            }
+            else if(type === 'Warning'){
+                isWarning = true;
+            }
+            else if(type === 'Success'){
+                isOk = true;
+            }
+            else{
+                isInfo = true;
+            }
+
+            var message = {id:this.messages.length, isError:isError, isOk:isOk, isWarning:isWarning, isInfo:isInfo, header:type, message:messageString}
+            this.messages.push(message);
+            // Initialize events on the message
+            setTimeout(() => {
+                $('.message .close')
+                    .on('click', function() {
+                        $(this)
+                        .closest('.message')
+                        .remove();
+                    });
+
+                var messageSelector = '#' + message.id + '.message';
+                $(messageSelector)
+                    .delay(2000)
+                    .queue(function(){
+                        $(this).remove().dequeue();
+                    });
+            }, 100);
+        },
         onAssetSelectionChanged:function(asset){
             if(asset.isSelected){
                 this.selectedAssets.push(asset);
@@ -109,6 +278,8 @@ const files = new Vue({
     },
     components:{
         'navbar' : httpVueLoader('../components/navbar/navbar.vue'),
-        'asset' : httpVueLoader('../components/asset/asset.vue')
+        'asset' : httpVueLoader('../components/asset/asset.vue'),
+        'facet' : httpVueLoader('../components/facet/facet.vue'),
+        'message' : httpVueLoader('../components/message/message.vue'),
     }
 });

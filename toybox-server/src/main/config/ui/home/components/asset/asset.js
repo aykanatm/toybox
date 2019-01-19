@@ -1,21 +1,25 @@
 module.exports = {
     props:{
-        assetId: String,
-        assetName: String,
-        importedBy: String,
-        userAvatarUrl: String,
-        thumbnailUrl: String,
+        id: String,
+        name: String,
+        importedByUsername: String,
         extension: String,
     },
     data: function() {
         return  {
           componentName: 'Asset',
-          isSelected: false
+          isSelected: false,
+          userAvatarUrl: '',
         }
     },
     watch:{
         isSelected:function(){
-            this.$parent.$emit('asset-selection-changed', this);
+            this.$root.$emit('asset-selection-changed', this);
+        }
+    },
+    computed:{
+        thumbnailUrl:function(){
+            return ''
         }
     },
     methods:{
