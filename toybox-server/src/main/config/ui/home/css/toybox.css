@@ -12,8 +12,20 @@
     height: 100%;
 }
 
-#gallery-top-menu{
-    margin-bottom: 25px;
+/* Assets Tab */
+.toybox-asset-container{
+    height: calc(100% - 40px);
+    background-color: white;
+    border-radius: 5px;
+    margin-top: 20px !important;
+    margin-left: 10px !important;
+    margin-right: 10px !important;
+}
+
+.gallery-top-menu{
+    margin-bottom: 25px !important;
+    margin-top: 18px !important;
+    margin-left: 0px !important;
 }
 
 /* Jobs Tab */

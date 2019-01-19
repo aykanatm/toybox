@@ -19,55 +19,63 @@
         <div style="height: calc(100% - 68px); width: 100%;" id="toybox-files">
             <navbar/>
             <div class="toybox-background">
-                <div id="toybox-files-container" class="toybox-container">
-                    <div class="ui grid" style="height: 100%;">
-                        <div class="three wide stretched column">
-                            <div class="ui segment">
-                                <!-- Facets here-->
+                <div id="toybox-files-container" class="ui grid toybox-asset-container">
+                    <div class="three wide column">
+                        <div class="ui grid" style="margin-top: 10px;">
+                            <div class="one column row toybox-filters-header-row">
+                                <div class="column">
+                                    <i class="filter icon"></i>
+                                    <span>Filters</span>
+                                </div>
                             </div>
                         </div>
-                        <div class="thirteen wide stretched column">
-                            <div class="ui segment">
-                                <div id="gallery-top-menu">
-                                    <div class="ui basic buttons">
-                                        <!-- Top menu buttons -->
-                                        <button class="ui button" v-on:click.stop="share" v-bind:disabled="selectedAssets.length == 0">
-                                            <i class="share alternate icon"></i> Share
-                                        </button>
-                                        <button class="ui button" v-on:click.stop="download" v-bind:disabled="selectedAssets.length == 0">
-                                            <i class="download icon"></i> Download
-                                        </button>
-                                        <!-- <button class="ui button" v-on:click.stop="rename" v-bind:disabled="selectedAssets.length == 0">
-                                            <i class="i cursor icon"></i> Rename
-                                        </button> -->
-                                        <button class="ui button" v-on:click.stop="copy" v-bind:disabled="selectedAssets.length == 0">
-                                            <i class="copy icon"></i> Copy
-                                        </button>
-                                        <button class="ui button" v-on:click.stop="move" v-bind:disabled="selectedAssets.length == 0">
-                                            <i class="external alternate icon"></i> Move
-                                        </button>
-                                        <button class="ui button" v-on:click.stop="subscribe" v-bind:disabled="selectedAssets.length == 0">
-                                            <i class="rss icon"></i> Subscribe
-                                        </button>
-                                        <!-- <button class="ui button" v-on:click.stop="showVersionHistory" v-bind:disabled="selectedAssets.length == 0">
-                                            <i class="list alternate outline icon"></i> Show Version History
-                                        </button> -->
-                                    </div>
-                                    <div class="ui right floated small basic icon buttons">
-                                        <button class="ui icon toggle button" id="grid-list-toggle-button">
-                                            <i class="grid layout icon"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="ui four doubling stackable cards">
-                                    <asset v-for="asset in assets" v-bind:asset-id="asset.assetId" v-bind:asset-name="asset.assetName" v-bind:imported-by="asset.importedBy"
-                                    v-bind:user-avatar-url="asset.userAvatarUrl" v-bind:thumbnail-url="asset.thumbnailUrl" v-bind:extension="asset.extension"
-                                    v-bind:key="asset.assetId"/>
-                                </div>
+                        <div class="ui grid">
+                            <div class="ui styled accordion">
+                                <facet v-for="facet in facets" v-bind:name="facet.name" v-bind:id="facet.id" v-bind:lookups="facet.lookups" v-bind:key="facet.id"/>
                             </div>
                         </div>
                     </div>
+                    <div class="thirteen wide column">
+                        <div class="ui grid gallery-top-menu">
+                            <div class="ui basic buttons">
+                                <!-- Top menu buttons -->
+                                <button class="ui button" v-on:click.stop="share" v-bind:disabled="selectedAssets.length == 0">
+                                    <i class="share alternate icon"></i> Share
+                                </button>
+                                <button class="ui button" v-on:click.stop="download" v-bind:disabled="selectedAssets.length == 0">
+                                    <i class="download icon"></i> Download
+                                </button>
+                                <!-- <button class="ui button" v-on:click.stop="rename" v-bind:disabled="selectedAssets.length == 0">
+                                    <i class="i cursor icon"></i> Rename
+                                </button> -->
+                                <button class="ui button" v-on:click.stop="copy" v-bind:disabled="selectedAssets.length == 0">
+                                    <i class="copy icon"></i> Copy
+                                </button>
+                                <button class="ui button" v-on:click.stop="move" v-bind:disabled="selectedAssets.length == 0">
+                                    <i class="external alternate icon"></i> Move
+                                </button>
+                                <button class="ui button" v-on:click.stop="subscribe" v-bind:disabled="selectedAssets.length == 0">
+                                    <i class="rss icon"></i> Subscribe
+                                </button>
+                                <!-- <button class="ui button" v-on:click.stop="showVersionHistory" v-bind:disabled="selectedAssets.length == 0">
+                                    <i class="list alternate outline icon"></i> Show Version History
+                                </button> -->
+                            </div>
+                            <div class="ui right floated small basic icon buttons">
+                                <button class="ui icon toggle button" id="grid-list-toggle-button">
+                                    <i class="grid layout icon"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="ui four doubling stackable cards">
+                            <asset v-for="asset in assets" v-bind:id="asset.id" v-bind:name="asset.name" v-bind:imported-by-username="asset.importedByUsername"
+                            v-bind:extension="asset.extension" v-bind:key="asset.id"/>
+                        </div>
+                    </div>
                 </div>
+            </div>
+            <div id="messages">
+                <message v-for="message in messages" v-bind:id="message.id" v-bind:is-info="message.isInfo" v-bind:is-ok="message.isOk" v-bind:is-error="message.isError" v-bind:is-warning="message.isWarning" v-bind:header="message.header" v-bind:message="message.message" v-bind:key="message.id"/>
             </div>
         </div>
         <script src="../js/files.js"></script>
