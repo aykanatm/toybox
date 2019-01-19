@@ -148,7 +148,7 @@ public class ImportJobConfig {
                                         // Generate database entry
                                         Asset asset = new Asset();
                                         asset.setId(assetId);
-                                        asset.setExtension(FilenameUtils.getExtension(assetDestination.getName()));
+                                        asset.setExtension(FilenameUtils.getExtension(assetDestination.getAbsolutePath()).toUpperCase(Locale.ENGLISH));
                                         asset.setImportDate(Calendar.getInstance().getTime());
                                         asset.setImportedByUsername(username);
                                         asset.setName(assetDestination.getName());
@@ -333,7 +333,7 @@ public class ImportJobConfig {
 
         jdbcTemplate.update("INSERT INTO assets(asset_id, asset_extension, asset_imported_by_username, " +
                         "asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, asset_import_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                asset.getId(), asset.getName(), asset.getImportedByUsername(), asset.getName(), asset.getPath(),
+                asset.getId(), asset.getExtension(), asset.getImportedByUsername(), asset.getName(), asset.getPath(),
                 asset.getPreviewPath(), asset.getThumbnailPath(), asset.getType(), asset.getImportDate());
 
         _logger.debug("<< insertAsset()");
