@@ -1,14 +1,11 @@
 package com.github.murataykanat.toybox.models.job;
 
 import com.github.murataykanat.toybox.models.annotations.FacetColumnName;
+import com.github.murataykanat.toybox.models.annotations.FacetDataType;
 import com.github.murataykanat.toybox.models.annotations.FacetDefaultLookup;
-import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import java.lang.reflect.Field;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -22,16 +19,17 @@ public class ToyboxJob {
     @FacetColumnName(value = "Job Type")
     private String jobType;
     @FacetColumnName(value = "Start Time")
+    @FacetDataType(value = "Date")
     @FacetDefaultLookup(values = {"Today","Past 7 days","Past 30 days"})
     private Date startTime;
     @FacetColumnName(value = "End Time")
+    @FacetDataType(value = "Date")
     @FacetDefaultLookup(values = {"Today","Past 7 days","Past 30 days"})
     private Date endTime;
     @FacetColumnName(value = "Status")
     private String status;
     @FacetColumnName(value = "Username")
     private String username;
-
     private List<ToyboxJobStep> steps;
 
     public String getJobInstanceId() {
@@ -102,108 +100,6 @@ public class ToyboxJob {
 
     public void setJobExecutionId(String jobExecutionId) {
         this.jobExecutionId = jobExecutionId;
-    }
-
-    public boolean hasFacetValue(List<SearchRequestFacet> jobSearchRequestFacetList){
-        boolean result = true;
-
-        try{
-            for(SearchRequestFacet jobSearchRequestFacet: jobSearchRequestFacetList){
-                boolean hasFacet = false;
-                for(Field field: this.getClass().getDeclaredFields()){
-                    if(field.isAnnotationPresent(FacetColumnName.class)){
-                        String fieldName = field.getAnnotation(FacetColumnName.class).value();
-                        if(jobSearchRequestFacet.getFieldName().equalsIgnoreCase(fieldName)){
-                            if(fieldName.equalsIgnoreCase("Start Time") || fieldName.equalsIgnoreCase("End Time")){
-                                if(field.isAnnotationPresent(FacetDefaultLookup.class)){
-                                    String fieldValue = jobSearchRequestFacet.getFieldValue();
-
-                                    Calendar cal;
-                                    cal = Calendar.getInstance();
-                                    cal.set(Calendar.HOUR_OF_DAY, 0);
-                                    cal.set(Calendar.MINUTE, 0);
-                                    cal.set(Calendar.SECOND, 0);
-                                    Date today = cal.getTime();
-
-                                    SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
-                                    _logger.debug("Today: " + formatter.format(today));
-
-                                    cal = Calendar.getInstance();
-                                    cal.set(Calendar.HOUR_OF_DAY, 0);
-                                    cal.set(Calendar.MINUTE, 0);
-                                    cal.set(Calendar.SECOND, 0);
-                                    cal.add(Calendar.DAY_OF_MONTH, 1);
-                                    Date tomorrow = cal.getTime();
-                                    _logger.debug("Tomorrow: " + formatter.format(tomorrow));
-
-                                    cal = Calendar.getInstance();
-                                    cal.set(Calendar.HOUR_OF_DAY, 0);
-                                    cal.set(Calendar.MINUTE, 0);
-                                    cal.set(Calendar.SECOND, 0);
-                                    cal.add(Calendar.DAY_OF_MONTH, -7);
-                                    Date sevenDaysAgo = cal.getTime();
-                                    _logger.debug("Past 7 days: " + formatter.format(sevenDaysAgo));
-
-                                    cal = Calendar.getInstance();
-                                    cal.set(Calendar.HOUR_OF_DAY, 0);
-                                    cal.set(Calendar.MINUTE, 0);
-                                    cal.set(Calendar.SECOND, 0);
-                                    cal.add(Calendar.DAY_OF_MONTH, -30);
-                                    Date thirtyDaysAgo = cal.getTime();
-                                    _logger.debug("Past 30 days: " + formatter.format(sevenDaysAgo));
-
-                                    Date value = null;
-                                    if(fieldName.equalsIgnoreCase("Start Time")){
-                                        value = this.getStartTime();
-                                    }
-                                    else if(fieldName.equalsIgnoreCase("End Time")){
-                                        value = this.getEndTime();
-                                    }
-                                    else{
-                                        throw new Exception("Field name " + fieldName + " is not recognized.");
-                                    }
-
-                                    if(fieldValue.equalsIgnoreCase("Today")){
-                                        if((value.after(today) || value.equals(today)) && value.before(tomorrow)){
-                                            hasFacet = true;
-                                            break;
-                                        }
-                                    }
-                                    else if(fieldValue.equalsIgnoreCase("Past 7 days")){
-                                        if(value.after(sevenDaysAgo) && value.before(tomorrow)){
-                                            hasFacet = true;
-                                            break;
-                                        }
-                                    }
-                                    else if(fieldValue.equalsIgnoreCase("Past 30 days")){
-                                        if(value.after(thirtyDaysAgo) && value.before(tomorrow)){
-                                            hasFacet = true;
-                                            break;
-                                        }
-                                    }
-                                    else{
-                                        throw new Exception("Field value " + fieldValue + " is not recognized.");
-                                    }
-                                }
-                            }
-                            else{
-                                if(jobSearchRequestFacet.getFieldValue().equalsIgnoreCase((String) field.get(this))){
-                                    hasFacet = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                result = result && hasFacet;
-            }
-        }
-        catch (Exception e){
-            String errorMessage = "An error occurred while determining if the job has the facet value. " + e.getLocalizedMessage();
-            _logger.error(errorMessage, e);
-        }
-        return result;
     }
 
     public List<ToyboxJobStep> getSteps() {

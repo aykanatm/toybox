@@ -12,6 +12,7 @@ import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.job.*;
 import com.github.murataykanat.toybox.schema.upload.UploadFile;
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
+import com.github.murataykanat.toybox.utilities.FacetUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -118,7 +119,7 @@ public class JobController {
                     List<ToyboxJob> jobs;
 
                     if(jobSearchRequestFacetList != null && !jobSearchRequestFacetList.isEmpty()){
-                        jobs = allJobs.stream().filter(j -> j.hasFacetValue(jobSearchRequestFacetList)).collect(Collectors.toList());
+                        jobs = allJobs.stream().filter(j -> FacetUtils.getInstance().hasFacetValue(j, jobSearchRequestFacetList)).collect(Collectors.toList());
                     }
                     else{
                         jobs = allJobs;
