@@ -2,7 +2,7 @@ package com.github.murataykanat.toybox.batch.jobs;
 
 import com.github.murataykanat.toybox.batch.utils.Constants;
 import com.github.murataykanat.toybox.models.RenditionProperties;
-import com.github.murataykanat.toybox.models.dbo.Asset;
+import com.github.murataykanat.toybox.dbo.Asset;
 import org.apache.commons.exec.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -35,7 +35,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.nio.file.Files;
-import java.time.LocalDateTime;
 import java.util.*;
 
 @RefreshScope

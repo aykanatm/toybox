@@ -1,4 +1,4 @@
-package com.github.murataykanat.toybox.models.dbo;
+package com.github.murataykanat.toybox.dbo;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;

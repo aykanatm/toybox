@@ -1,6 +1,6 @@
-package com.github.murataykanat.toybox.models.dbo.mappers.asset;
+package com.github.murataykanat.toybox.dbo.mappers.asset;
 
-import com.github.murataykanat.toybox.models.dbo.Asset;
+import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.utilities.DateTimeUtils;
 import org.springframework.jdbc.core.RowMapper;
 

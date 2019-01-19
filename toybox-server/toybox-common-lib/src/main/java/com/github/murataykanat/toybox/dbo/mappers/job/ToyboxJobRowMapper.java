@@ -1,4 +1,4 @@
-package com.github.murataykanat.toybox.models.dbo.mappers.job;
+package com.github.murataykanat.toybox.dbo.mappers.job;
 
 import com.github.murataykanat.toybox.models.job.ToyboxJob;
 import com.github.murataykanat.toybox.utilities.DateTimeUtils;

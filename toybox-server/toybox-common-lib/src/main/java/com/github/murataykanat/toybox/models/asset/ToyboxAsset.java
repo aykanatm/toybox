@@ -2,7 +2,7 @@ package com.github.murataykanat.toybox.models.asset;
 
 import com.github.murataykanat.toybox.models.annotations.FacetColumnName;
 import com.github.murataykanat.toybox.models.annotations.FacetDefaultLookup;
-import com.github.murataykanat.toybox.models.dbo.Asset;
+import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
