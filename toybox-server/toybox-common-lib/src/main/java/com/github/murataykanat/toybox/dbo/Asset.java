@@ -31,7 +31,7 @@ public class Asset implements Serializable {
 
     @Column(name = "asset_type")
     @JsonProperty("type")
-    @FacetColumnName("Asset Type")
+    @FacetColumnName("Mime Type")
     private String type;
 
     @Column(name = "asset_path")
