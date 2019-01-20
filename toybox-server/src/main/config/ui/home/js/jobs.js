@@ -1,6 +1,6 @@
 const jobs = new Vue({
     el: '#toybox-jobs',
-    mixins:[paginationMixin, messageMixin],
+    mixins:[paginationMixin, messageMixin, facetMixin],
     data:{
         view: 'jobs',
         isLoading: true,
@@ -23,9 +23,6 @@ const jobs = new Vue({
         sortedDesByEndTime: false,
         sortedAscByStatus: false,
         sortedDesByStatus: false,
-        // Filtering
-        facets: [],
-        jobSearchRequestFacetList: [],
     },
     methods:{
         getConfiguration(fieldName){
@@ -44,7 +41,7 @@ const jobs = new Vue({
                     this.displayMessage('Error', errorMessage);
                 });
         },
-        getJobs(offset, limit, sortType, sortColumn, username, jobSearchRequestFacetList)
+        getJobs(offset, limit, sortType, sortColumn, username, searchRequestFacetList)
         {
             this.getConfiguration("jobServiceUrl")
             .then(response => {
@@ -55,7 +52,7 @@ const jobs = new Vue({
                     searchRequest.sortType = sortType;
                     searchRequest.sortColumn = sortColumn;
                     searchRequest.username = username;
-                    searchRequest.jobSearchRequestFacetList = jobSearchRequestFacetList;
+                    searchRequest.jobSearchRequestFacetList = searchRequestFacetList;
                     return axios.post(response.data.value + "/jobs/search", searchRequest)
                         .catch(error => {
                                 var errorMessage;
@@ -164,7 +161,7 @@ const jobs = new Vue({
             this.sortType = sortType;
             this.sortColumn = sortColumn;
 
-            this.getJobs(this.defaultOffset, this.defaultLimit, this.sortType, this.sortColumn, this.username, this.jobSearchRequestFacetList);
+            this.getJobs(this.defaultOffset, this.defaultLimit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
         },
     },
     computed:{
@@ -240,28 +237,28 @@ const jobs = new Vue({
         this.sortType = this.defaultSortType;
         this.sortColumn = this.defaultSortColumn;
 
-        this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.jobSearchRequestFacetList);
+        this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
 
         // Initialize event listeners
         this.$root.$on('perform-faceted-search', (facet, isAdd) => {
             if(isAdd){
                 console.log('Adding facet ' + facet.fieldName + ' and its value ' + facet.fieldValue + ' to search');
-                this.jobSearchRequestFacetList.push(facet);
+                this.searchRequestFacetList.push(facet);
             }
             else{
                 console.log('Removing facet ' + facet.fieldName + ' and its value ' + facet.fieldValue + ' from search');
                 var index;
-                for(var i = 0; i < this.jobSearchRequestFacetList.length; i++){
-                    var jobRequestFacet = this.jobSearchRequestFacetList[i];
+                for(var i = 0; i < this.searchRequestFacetList.length; i++){
+                    var jobRequestFacet = this.searchRequestFacetList[i];
                     if(jobRequestFacet.fieldName === facet.fieldName && jobRequestFacet.fieldValue === facet.fieldValue){
                         index = i;
                         break;
                     }
                 }
-                this.jobSearchRequestFacetList.splice(index, 1);
+                this.searchRequestFacetList.splice(index, 1);
             }
 
-            this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.jobSearchRequestFacetList);
+            this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
         });
 
         this.$root.$on('message-sent', this.displayMessage);

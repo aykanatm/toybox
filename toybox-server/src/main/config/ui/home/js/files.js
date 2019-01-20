@@ -1,6 +1,6 @@
 const files = new Vue({
     el: '#toybox-files',
-    mixins:[paginationMixin, messageMixin],
+    mixins:[paginationMixin, messageMixin, facetMixin],
     data:{
         view: 'files',
         assets:[],
@@ -15,9 +15,6 @@ const files = new Vue({
         sortedDesByAssetName: false,
         sortedAscByAssetImportDate: false,
         sortedDesByAssetImportDate: false,
-        // Filtering
-        facets: [],
-        assetSearchRequestFacetList: [],
     },
     mounted:function(){
         var csrfHeader = $("meta[name='_csrf_header']").attr("content");
@@ -37,27 +34,27 @@ const files = new Vue({
         this.$root.$on('perform-faceted-search', (facet, isAdd) => {
             if(isAdd){
                 console.log('Adding facet ' + facet.fieldName + ' and its value ' + facet.fieldValue + ' to search');
-                this.assetSearchRequestFacetList.push(facet);
+                this.searchRequestFacetList.push(facet);
             }
             else{
                 console.log('Removing facet ' + facet.fieldName + ' and its value ' + facet.fieldValue + ' from search');
                 var index;
-                for(var i = 0; i < this.assetSearchRequestFacetList.length; i++){
-                    var assetRequestFacet = this.assetSearchRequestFacetList[i];
+                for(var i = 0; i < this.searchRequestFacetList.length; i++){
+                    var assetRequestFacet = this.searchRequestFacetList[i];
                     if(assetRequestFacet.fieldName === facet.fieldName && assetRequestFacet.fieldValue === facet.fieldValue){
                         index = i;
                         break;
                     }
                 }
-                this.assetSearchRequestFacetList.splice(index, 1);
+                this.searchRequestFacetList.splice(index, 1);
             }
 
-            this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.assetSearchRequestFacetList);
+            this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
         });
         this.$root.$on('asset-selection-changed', this.onAssetSelectionChanged);
         this.$root.$on('message-sent', this.displayMessage);
 
-        this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.assetSearchRequestFacetList);
+        this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
     },
     methods:{
         getConfiguration(fieldName){
@@ -76,7 +73,7 @@ const files = new Vue({
                     this.$root.$emit('message-sent', 'Error', errorMessage);
                 });
         },
-        getAssets(offset, limit, sortType, sortColumn, username, assetSearchRequestFacetList){
+        getAssets(offset, limit, sortType, sortColumn, username, searchRequestFacetList){
             this.isLoading = true;
             this.getConfiguration("assetServiceUrl")
             .then(response => {
@@ -87,7 +84,7 @@ const files = new Vue({
                     searchRequest.sortType = sortType;
                     searchRequest.sortColumn = sortColumn;
                     searchRequest.username = username;
-                    searchRequest.assetSearchRequestFacetList = assetSearchRequestFacetList;
+                    searchRequest.assetSearchRequestFacetList = searchRequestFacetList;
 
                     return axios.post(response.data.value + "/assets/search", searchRequest)
                         .catch(error => {
