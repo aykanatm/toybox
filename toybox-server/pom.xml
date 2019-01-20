@@ -19,5 +19,6 @@
         <module>toybox-ui</module>
         <module>toybox-asset-service</module>
         <module>toybox-job-service</module>
+        <module>toybox-rendition-service</module>
     </modules>
 </project>
