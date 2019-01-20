@@ -72,7 +72,7 @@
                                 <div class="ui massive text loader">Loading</div>
                             </div>
                             <asset v-for="asset in assets" v-bind:id="asset.id" v-bind:name="asset.name" v-bind:imported-by-username="asset.importedByUsername"
-                            v-bind:extension="asset.extension" v-bind:key="asset.id"/>
+                            v-bind:extension="asset.extension" v-bind:rendition-url="renditionUrl" v-bind:key="asset.id"/>
                         </div>
                         <div class="ui right floated pagination menu toybox-pagination">
                             <a v-bind:class="{icon:true, disabled:previousPageButtonDisabled, item:true}" v-on:click="previousPage">

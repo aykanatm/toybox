@@ -15,6 +15,8 @@ const files = new Vue({
         sortedDesByAssetName: false,
         sortedAscByAssetImportDate: false,
         sortedDesByAssetImportDate: false,
+        // Services
+        renditionUrl: ''
     },
     mounted:function(){
         var csrfHeader = $("meta[name='_csrf_header']").attr("content");
@@ -26,6 +28,11 @@ const files = new Vue({
             'XSRF-TOKEN': csrfToken
         }
         axios.defaults.withCredentials = true;
+
+        this.getConfiguration("renditionServiceUrl")
+            .then(response => {
+                this.renditionUrl = response.data.value;
+            });
 
         // Initialize accordions
         $('.ui.accordion').accordion();

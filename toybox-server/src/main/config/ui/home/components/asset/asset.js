@@ -4,6 +4,7 @@ module.exports = {
         name: String,
         importedByUsername: String,
         extension: String,
+        renditionUrl: String
     },
     data: function() {
         return  {
@@ -19,7 +20,7 @@ module.exports = {
     },
     computed:{
         thumbnailUrl:function(){
-            return ''
+            return this.renditionUrl + '/renditions/' + this.id + '/t'
         }
     },
     methods:{
