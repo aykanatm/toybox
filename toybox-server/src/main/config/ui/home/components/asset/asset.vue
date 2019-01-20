@@ -4,21 +4,36 @@
             <span class="ui blue right corner label" style="overflow: hidden;"></span>
             <img/>
         </div>
-        <div class="content">
-            <img class="ui avatar image" v-bind:src="userAvatarUrl"/> {{ importedByUsername }}
+        <div class="content" style="height: 50px;">
+            <img class="ui mini circular image" v-bind:src="userAvatarUrl" style="max-width: 28px;"/> {{ importedByUsername }}
         </div>
         <div class="ui fluid image" style="z-index: 1;">
-            <div class="ui blue ribbon label">
-                <i class="file image icon"></i> {{ extension }}
+            <div class="ui blue ribbon label" style="font-size: 1em;">
+                <i v-if="isImage" class="file image icon"></i>
+                <i v-else-if="isPdf" class="file pdf icon"></i>
+                <i v-else-if="isWord" class="file word icon"></i>
+                <i v-else-if="isPowerpoint" class="file powerpoint icon"></i>
+                <i v-else-if="isExcel" class="file excel icon"></i>
+                <i v-else-if="isAudio" class="file audio icon"></i>
+                <i v-else-if="isVideo" class="file video icon"></i>
+                <i v-else-if="isArchive" class="file archive icon"></i>
+                <i v-else class="file icon"></i>
+                 {{ extension }}
             </div>
             <img/>
         </div>
         <div class="toybox-card-img">
-            <img class="ui centered image" v-bind:src="thumbnailUrl"/>
+            <div v-if="hasThumbnail" style="height: 100%; display: flex; align-items: center; width: 100%;">
+                <img class="ui centered image" v-bind:src="thumbnailUrl" style="max-width: 200px; max-height: 200px;"/>
+            </div>
+            <div v-else style="height: 100%; width: 100%; position: relative;">
+                <i class="file icon" style="position: absolute; font-size: 8em; top: 40%; left: 15%;"></i>
+            </div>
         </div>
-        <div class="content">
-            <div class="ui small basic icon buttons">
-                <!-- Asset buttons -->
+        <div class="content" style="overflow: hidden; height: 40px; text-overflow: ellipsis;">
+            <span style="white-space: nowrap;">{{ name }}</span>
+            <!-- TODO: Move these to a context menu? -->
+            <!-- <div class="ui small basic icon buttons">
                 <button class="ui icon button" v-on:click.stop="share">
                     <i class="share alternate icon"></i>
                 </button>
@@ -40,10 +55,7 @@
                 <button class="ui icon button" v-on:click.stop="showVersionHistory">
                     <i class="list alternate outline icon"></i>
                 </button>
-            </div>
-        </div>
-        <div class="extra content">
-            <span>{{ name }}</span>
+            </div> -->
         </div>
     </div>
 </template>

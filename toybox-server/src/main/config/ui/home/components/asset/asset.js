@@ -4,13 +4,15 @@ module.exports = {
         name: String,
         importedByUsername: String,
         extension: String,
-        renditionUrl: String
+        renditionUrl: String,
+        type: String
     },
     data: function() {
         return  {
           componentName: 'Asset',
           isSelected: false,
-          userAvatarUrl: '',
+          // TODO: Make dynamic
+          userAvatarUrl: '../../images/users/test.png',
         }
     },
     watch:{
@@ -21,6 +23,33 @@ module.exports = {
     computed:{
         thumbnailUrl:function(){
             return this.renditionUrl + '/renditions/' + this.id + '/t'
+        },
+        hasThumbnail:function(){
+            return true;
+        },
+        isImage:function(){
+            return this.type.startsWith('image') || this.type === 'application/postscript';
+        },
+        isVideo:function(){
+            return this.type.startsWith('video');
+        },
+        isAudio:function(){
+            return this.type.startsWith('audio');
+        },
+        isPdf:function(){
+            return this.type === 'application/pdf';
+        },
+        isWord:function(){
+            return this.type === 'application/msword' || this.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        },
+        isExcel:function(){
+            return this.type === 'application/vnd.ms-excel' || this.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        },
+        isPowerpoint:function(){
+            return this.type === 'application/vnd.ms-powerpoint' || this.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+        },
+        isArchive:function(){
+            return this.type === 'application/zip';
         }
     },
     methods:{

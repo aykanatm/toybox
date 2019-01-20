@@ -1,16 +1,16 @@
 .toybox-card{
-    width: 300px !important;
-    height: 420px;
-    min-width: 300px !important;
-    min-height: 420px;
-    max-width: 300px !important;
-    max-height: 420px;
+    width: 200px !important;
+    height: 300px;
+    min-width: 200px !important;
+    min-height: 300px !important;
+    max-width: 200px !important;
+    max-height: 300px;
 }
 
 .toybox-card-img{
-    height: 250px;
-    max-height: 250px;
-    min-height: 250px;
+    height: 200px;
+    max-height: 200px;
+    min-height: 200px;
     display: flex;
     align-items: center;
 }
