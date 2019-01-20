@@ -7,6 +7,7 @@ module.exports = {
               username: 'test',
               name: 'test_name',
               lastname: 'test_lastname',
+              // TODO: Make dynamic
               avatarUrl: '../../images/users/test.png'
           },
           defaultNotification:{
