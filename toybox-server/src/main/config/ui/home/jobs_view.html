@@ -111,7 +111,7 @@
                                 <job v-for="job in jobs" v-bind:job-instance-id="job.jobInstanceId" v-bind:job-execution-id="job.jobExecutionId" v-bind:job-name="job.jobName" v-bind:job-type="job.jobType" v-bind:start-time="job.startTime"
                                 v-bind:end-time="job.endTime" v-bind:status="job.status" v-bind:username="job.username" v-bind:steps="job.steps" v-bind:key="job.jobInstanceId"/>
                             </div>
-                            <div class="ui right floated pagination menu toybox-jobs-pagination">
+                            <div class="ui right floated pagination menu toybox-pagination">
                                 <a v-bind:class="{icon:true, disabled:previousPageButtonDisabled, item:true}" v-on:click="previousPage">
                                     <i class="left chevron icon"></i>
                                 </a>
@@ -135,6 +135,7 @@
             </div>
         </div>
     </body>
+    <script src="../components/mixins/pagination/pagination-mixin.js"></script>
     <script src="../js/utilities.js"></script>
     <script src="../js/jobs.js"></script>
 </html>

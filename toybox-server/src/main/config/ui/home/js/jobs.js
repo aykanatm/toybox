@@ -1,5 +1,6 @@
 const jobs = new Vue({
     el: '#toybox-jobs',
+    mixins:[paginationMixin],
     data:{
         view: 'jobs',
         isLoading: true,
@@ -7,18 +8,6 @@ const jobs = new Vue({
         // TODO:
         // Make username dynamic
         username: 'test',
-        // Pagination
-        currentPage: 1,
-        defaultLimit: 10,
-        defaultOffset: 0,
-        limit: 10,
-        offset: 0,
-        totalRecords: 0,
-        totalPages: 0,
-        previousPageButtonDisabled: true,
-        nextPageButtonDisabled: false,
-        startIndex: 0,
-        endIndex: 0,
         // Sorting
         defaultSortType: 'des',
         defaultSortColumn: 'END_TIME',
@@ -93,7 +82,7 @@ const jobs = new Vue({
                         this.jobs = response.data.jobs;
                         this.facets = response.data.facets;
                         this.totalRecords = response.data.totalRecords;
-                        this.totalPages = Math.ceil(this.totalRecords / this.limit);
+                        this.totalPages = Math.ceil(this.totalRecords / limit);
                         this.currentPage = Math.ceil((offset / limit) + 1);
                     }
                     else{
@@ -103,45 +92,9 @@ const jobs = new Vue({
             })
             .then(response => {
                 console.log(response);
-                this.updatePagination(this.currentPage, this.totalPages, offset, limit, this.totalRecords);
+                this.updatePagination(this.currentPage, this.totalPages, this.offset, this.limit, this.totalRecords);
                 this.updateSortStatus(this.sortType, this.sortColumn)
             });
-        },
-        // Pagination
-        updatePagination(currentPage, totalPages, offset, limit, totalRecords){
-            this.startIndex = offset + 1;
-            this.endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
-
-            if(currentPage == 1){
-                if(totalPages != 1){
-                    this.nextPageButtonDisabled = false;
-                    this.previousPageButtonDisabled = true;
-                }
-                else{
-                    this.nextPageButtonDisabled = true;
-                    this.previousPageButtonDisabled = true;
-                }
-            }
-            else if(currentPage == totalPages){
-                this.nextPageButtonDisabled = true;
-                this.previousPageButtonDisabled = false;
-            }
-            else{
-                this.nextPageButtonDisabled = false;
-                this.previousPageButtonDisabled = false;
-            }
-        },
-        previousPage(){
-            if(this.currentPage != 1){
-                this.offset -= this.limit;
-                this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.jobSearchRequestFacetList);
-            }
-        },
-        nextPage(){
-            if(this.currentPage != this.totalPages){
-                this.offset += this.limit;
-                this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.jobSearchRequestFacetList);
-            }
         },
         // Sorting
         resetSorting(){
