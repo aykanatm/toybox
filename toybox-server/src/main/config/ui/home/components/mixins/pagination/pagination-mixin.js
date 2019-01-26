@@ -2,9 +2,9 @@ var paginationMixin = {
     data:function(){
         return{
             currentPage: 1,
-            defaultLimit: 10,
+            defaultLimit: 12,
             defaultOffset: 0,
-            limit: 10,
+            limit: 12,
             offset: 0,
             totalRecords: 0,
             totalPages: 0,
