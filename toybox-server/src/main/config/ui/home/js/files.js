@@ -146,7 +146,7 @@ const files = new Vue({
             for(var i = 0; i < this.selectedAssets.length; i++)
             {
                 var asset = this.selectedAssets[i];
-                console.log(asset.assetName + '/ ' +  asset.assetId);
+                console.log(asset.name + ' / ' +  asset.id);
             }
         },
         download:function(){
@@ -154,7 +154,7 @@ const files = new Vue({
             for(var i = 0; i < this.selectedAssets.length; i++)
             {
                 var asset = this.selectedAssets[i];
-                console.log(asset.assetName + '/ ' +  asset.assetId);
+                console.log(asset.name + ' / ' +  asset.id);
             }
         },
         copy:function(){
@@ -162,7 +162,7 @@ const files = new Vue({
             for(var i = 0; i < this.selectedAssets.length; i++)
             {
                 var asset = this.selectedAssets[i];
-                console.log(asset.assetName + '/ ' +  asset.assetId);
+                console.log(asset.name + ' / ' +  asset.id);
             }
         },
         move:function(){
@@ -170,7 +170,7 @@ const files = new Vue({
             for(var i = 0; i < this.selectedAssets.length; i++)
             {
                 var asset = this.selectedAssets[i];
-                console.log(asset.assetName + '/ ' +  asset.assetId);
+                console.log(asset.name + ' / ' +  asset.id);
             }
         },
         subscribe:function(){
@@ -178,7 +178,7 @@ const files = new Vue({
             for(var i = 0; i < this.selectedAssets.length; i++)
             {
                 var asset = this.selectedAssets[i];
-                console.log(asset.assetName + '/ ' +  asset.assetId);
+                console.log(asset.name + ' / ' +  asset.id);
             }
         },
         delete:function(){
@@ -186,7 +186,7 @@ const files = new Vue({
             for(var i = 0; i < this.selectedAssets.length; i++)
             {
                 var asset = this.selectedAssets[i];
-                console.log(asset.assetName + '/ ' +  asset.assetId);
+                console.log(asset.name + ' / ' +  asset.id);
             }
         },
     },
