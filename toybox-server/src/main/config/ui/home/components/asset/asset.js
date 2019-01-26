@@ -13,6 +13,7 @@ module.exports = {
           isSelected: false,
           // TODO: Make dynamic
           userAvatarUrl: '../../images/users/test.png',
+          hasThumbnail: true
         }
     },
     watch:{
@@ -23,9 +24,6 @@ module.exports = {
     computed:{
         thumbnailUrl:function(){
             return this.renditionUrl + '/renditions/' + this.id + '/t'
-        },
-        hasThumbnail:function(){
-            return true;
         },
         isImage:function(){
             return this.type.startsWith('image') || this.type === 'application/postscript';
@@ -60,6 +58,9 @@ module.exports = {
             else{
                 this.isSelected = true;
             }
+        },
+        onThumbnailImgSrcNotFound:function(){
+            this.hasThumbnail = false;
         },
         share:function(){
             console.log('Opening share modal window for asset with ID "' + this.assetId + '"');

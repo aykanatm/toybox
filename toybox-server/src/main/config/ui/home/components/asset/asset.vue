@@ -24,10 +24,18 @@
         </div>
         <div class="toybox-card-img">
             <div v-if="hasThumbnail" style="height: 100%; display: flex; align-items: center; width: 100%;">
-                <img class="ui centered image" v-bind:src="thumbnailUrl" style="max-width: 200px; max-height: 200px;"/>
+                <img class="ui centered image" v-bind:src="thumbnailUrl" style="max-width: 200px; max-height: 200px;" v-on:error="onThumbnailImgSrcNotFound"/>
             </div>
             <div v-else style="height: 100%; width: 100%; position: relative;">
-                <i class="file icon" style="position: absolute; font-size: 8em; top: 40%; left: 15%;"></i>
+                <i v-if="isImage" class="file image icon" style="position: absolute; font-size: 8em; top: 40%; left: 15%;"></i>
+                <i v-else-if="isPdf" class="file pdf icon" style="position: absolute; font-size: 8em; top: 40%; left: 15%;"></i>
+                <i v-else-if="isWord" class="file word icon" style="position: absolute; font-size: 8em; top: 40%; left: 15%;"></i>
+                <i v-else-if="isPowerpoint" class="file powerpoint icon" style="position: absolute; font-size: 8em; top: 40%; left: 15%;"></i>
+                <i v-else-if="isExcel" class="file excel icon" style="position: absolute; font-size: 8em; top: 40%; left: 15%;"></i>
+                <i v-else-if="isAudio" class="file audio icon" style="position: absolute; font-size: 8em; top: 40%; left: 15%;"></i>
+                <i v-else-if="isVideo" class="file video icon" style="position: absolute; font-size: 8em; top: 40%; left: 15%;"></i>
+                <i v-else-if="isArchive" class="file archive icon" style="position: absolute; font-size: 8em; top: 40%; left: 15%;"></i>
+                <i v-else class="file icon" style="position: absolute; font-size: 8em; top: 40%; left: 15%;"></i>
             </div>
         </div>
         <div class="content" style="overflow: hidden; height: 40px; text-overflow: ellipsis;">
