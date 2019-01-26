@@ -13,7 +13,8 @@ module.exports = {
           isSelected: false,
           // TODO: Make dynamic
           userAvatarUrl: '../../images/users/test.png',
-          hasThumbnail: true
+          hasThumbnail: true,
+          contextMenuOpen: false
         }
     },
     watch:{
@@ -59,32 +60,47 @@ module.exports = {
                 this.isSelected = true;
             }
         },
+        onRightClick:function(event){
+            event.preventDefault();
+            this.contextMenuOpen = true;
+        },
+        onMouseLeave:function(){
+            this.contextMenuOpen = false;
+        },
         onThumbnailImgSrcNotFound:function(){
             this.hasThumbnail = false;
         },
         share:function(){
-            console.log('Opening share modal window for asset with ID "' + this.assetId + '"');
+            console.log('Opening share modal window for asset with ID "' + this.id + '"');
+            this.contextMenuOpen = false;
         },
         download:function(){
-            console.log('Downloading the file with ID "' + this.assetId + '"');
+            console.log('Downloading the file with ID "' + this.id + '"');
+            this.contextMenuOpen = false;
         },
         rename:function(){
-            console.log('Renaming the file with ID "' + this.assetId + '"');
+            console.log('Renaming the file with ID "' + this.id + '"');
+            this.contextMenuOpen = false;
         },
         copy:function(){
-            console.log('Opening copy modal window for asset with ID "' + this.assetId + '"');
+            console.log('Opening copy modal window for asset with ID "' + this.id + '"');
+            this.contextMenuOpen = false;
         },
         move:function(){
-            console.log('Opening move modal window for asset with ID "' + this.assetId + '"');
+            console.log('Opening move modal window for asset with ID "' + this.id + '"');
+            this.contextMenuOpen = false;
         },
         subscribe:function(){
-            console.log('Subscribing to the asset with ID "' + this.assetId + '"');
+            console.log('Subscribing to the asset with ID "' + this.id + '"');
+            this.contextMenuOpen = false;
         },
         delete:function(){
-            console.log('Deleting asset with ID "' + this.assetId + '"');
+            console.log('Deleting asset with ID "' + this.id + '"');
+            this.contextMenuOpen = false;
         },
         showVersionHistory:function(){
-            console.log('Showing version history of asset with ID "' + this.assetId + '"');
+            console.log('Showing version history of asset with ID "' + this.id + '"');
+            this.contextMenuOpen = false;
         }
     }
 }

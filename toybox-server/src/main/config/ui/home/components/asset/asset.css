@@ -18,3 +18,10 @@
 .toybox-card-selected{
     box-shadow: 0 1px 3px 0 #3a7dc8, 0 0 0 1px #3a7dc8 !important;
 }
+
+.toybox-asset-context-menu{
+    position: absolute;
+    top: 120px;
+    left: 100px;
+    z-index: 10;
+}

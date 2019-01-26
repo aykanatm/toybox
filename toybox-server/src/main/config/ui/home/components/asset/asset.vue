@@ -1,5 +1,5 @@
 <template>
-    <div v-bind:class="{'ui':true, 'fluid':true, 'card':true, 'toybox-card':true, 'toybox-card-selected':isSelected}" v-bind:id="id" v-on:click.stop="onClick">
+    <div v-bind:class="{'ui':true, 'fluid':true, 'card':true, 'toybox-card':true, 'toybox-card-selected':isSelected}" v-bind:id="id" v-on:click.stop="onClick" v-on:contextmenu="onRightClick($event)" v-on:mouseleave="onMouseLeave">
         <div class="ui fluid image toybox-corner-label" v-show="isSelected">
             <span class="ui blue right corner label" style="overflow: hidden;"></span>
             <img/>
@@ -40,30 +40,36 @@
         </div>
         <div class="content" style="overflow: hidden; height: 40px; text-overflow: ellipsis;">
             <span style="white-space: nowrap;">{{ name }}</span>
-            <!-- TODO: Move these to a context menu? -->
-            <!-- <div class="ui small basic icon buttons">
-                <button class="ui icon button" v-on:click.stop="share">
+            <div v-show="contextMenuOpen" class="ui vertical menu toybox-asset-context-menu">
+                <a class="item" v-on:click.stop="share">
                     <i class="share alternate icon"></i>
-                </button>
-                <button class="ui icon button" v-on:click.stop="download">
+                    Share
+                </a>
+                <a class="item" v-on:click.stop="download">
                     <i class="download icon"></i>
-                </button>
-                <button class="ui icon button" v-on:click.stop="rename">
+                    Download
+                </a>
+                <a class="item" v-on:click.stop="rename">
                     <i class="i cursor icon"></i>
-                </button>
-                <button class="ui icon button" v-on:click.stop="copy">
+                    Rename
+                </a>
+                <a class="item" v-on:click.stop="copy">
                     <i class="copy icon"></i>
-                </button>
-                <button class="ui icon button" v-on:click.stop="move">
+                    Copy
+                </a>
+                <a class="item" v-on:click.stop="move">
                     <i class="external alternate icon"></i>
-                </button>
-                <button class="ui icon button" v-on:click.stop="subscribe">
+                    Move
+                </a>
+                <a class="item" v-on:click.stop="subscribe">
                     <i class="rss icon"></i>
-                </button>
-                <button class="ui icon button" v-on:click.stop="showVersionHistory">
+                    Subscribe
+                </a>
+                <a class="item" v-on:click.stop="showVersionHistory">
                     <i class="list alternate outline icon"></i>
-                </button>
-            </div> -->
+                    Show Version History
+                </a>
+            </div>
         </div>
     </div>
 </template>
