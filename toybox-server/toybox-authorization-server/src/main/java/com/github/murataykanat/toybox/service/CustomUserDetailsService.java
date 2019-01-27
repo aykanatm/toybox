@@ -1,7 +1,7 @@
 package com.github.murataykanat.toybox.service;
 
-import com.github.murataykanat.toybox.models.CustomUserDetails;
-import com.github.murataykanat.toybox.models.User;
+import com.github.murataykanat.toybox.dbo.User;
+import com.github.murataykanat.toybox.models.authentication.CustomUserDetails;
 import com.github.murataykanat.toybox.repository.UsersRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;

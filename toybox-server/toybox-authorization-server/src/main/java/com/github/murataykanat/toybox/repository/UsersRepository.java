@@ -1,6 +1,6 @@
 package com.github.murataykanat.toybox.repository;
 
-import com.github.murataykanat.toybox.models.User;
+import com.github.murataykanat.toybox.dbo.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

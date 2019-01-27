@@ -1,6 +1,4 @@
-package com.github.murataykanat.toybox.models;
-
-import net.minidev.json.annotate.JsonIgnore;
+package com.github.murataykanat.toybox.dbo;
 
 import javax.persistence.*;
 import java.util.Set;
@@ -17,7 +15,6 @@ public class User {
     @Column(name = "username")
     private String username;
 
-    @JsonIgnore
     @Column(name = "password")
     private String password;
 
@@ -41,6 +38,9 @@ public class User {
 
     @Column(name = "credentials_non_expired")
     private boolean isCredentialsNonExpired;
+
+    @Column(name = "avatar_path")
+    private String avatarPath;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinTable(name = "user_role", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
@@ -148,5 +148,13 @@ public class User {
 
     public void setRoles(Set<Role> roles) {
         this.roles = roles;
+    }
+
+    public String getAvatarPath() {
+        return avatarPath;
+    }
+
+    public void setAvatarPath(String avatarPath) {
+        this.avatarPath = avatarPath;
     }
 }
