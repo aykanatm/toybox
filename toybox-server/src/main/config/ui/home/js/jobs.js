@@ -1,6 +1,6 @@
 const jobs = new Vue({
     el: '#toybox-jobs',
-    mixins:[paginationMixin, messageMixin, facetMixin],
+    mixins:[paginationMixin, messageMixin, facetMixin, userMixin, configServiceMixin],
     data:{
         view: 'jobs',
         isLoading: true,
@@ -25,22 +25,6 @@ const jobs = new Vue({
         sortedDesByStatus: false,
     },
     methods:{
-        getConfiguration(fieldName){
-            return axios.get("/configuration?field=" + fieldName)
-                .catch(error => {
-                    var errorMessage;
-
-                    if(error.response){
-                        errorMessage = error.response.data.message
-                    }
-                    else{
-                        errorMessage = error.message;
-                    }
-
-                    console.error(errorMessage);
-                    this.displayMessage('Error', errorMessage);
-                });
-        },
         getJobs(offset, limit, sortType, sortColumn, username, searchRequestFacetList)
         {
             this.getConfiguration("jobServiceUrl")

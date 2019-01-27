@@ -1,15 +1,10 @@
 module.exports = {
+    props:{
+        user: Object
+    },
     data: function() {
         return  {
           componentName: 'Navigation Bar',
-          // Dummy user
-          user:{
-              username: 'test',
-              name: 'test_name',
-              lastname: 'test_lastname',
-              // TODO: Make dynamic
-              avatarUrl: '../../images/users/test.png'
-          },
           defaultNotification:{
               avatarUrl: '../../images/users/system.png',
               message: 'There are no new unread notifications',
@@ -50,6 +45,9 @@ module.exports = {
               }
           ]
         }
+    },
+    mounted:function(){
+
     },
     methods:{
         showUploadModalWindow:function(){

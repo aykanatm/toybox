@@ -1,6 +1,6 @@
 const files = new Vue({
     el: '#toybox-files',
-    mixins:[paginationMixin, messageMixin, facetMixin],
+    mixins:[paginationMixin, messageMixin, facetMixin, userMixin, configServiceMixin],
     data:{
         view: 'files',
         assets:[],
@@ -64,22 +64,6 @@ const files = new Vue({
         this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
     },
     methods:{
-        getConfiguration(fieldName){
-            return axios.get("/configuration?field=" + fieldName)
-                .catch(error => {
-                    var errorMessage;
-
-                    if(error.response){
-                        errorMessage = error.response.data.message
-                    }
-                    else{
-                        errorMessage = error.message;
-                    }
-
-                    console.error(errorMessage);
-                    this.$root.$emit('message-sent', 'Error', errorMessage);
-                });
-        },
         getAssets(offset, limit, sortType, sortColumn, username, searchRequestFacetList){
             this.isLoading = true;
             this.getConfiguration("assetServiceUrl")

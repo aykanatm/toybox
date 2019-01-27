@@ -17,7 +17,7 @@
     </head>
     <body>
         <div style="height: calc(100% - 68px); width: 100%;" id="toybox-jobs">
-            <navbar/>
+            <navbar v-bind:user="user"/>
             <div class="toybox-background">
                 <div class="toybox-container">
                     <div class="ui grid toybox-jobs-container">
@@ -135,6 +135,8 @@
             </div>
         </div>
     </body>
+    <script src="../components/mixins/configuration-service/configuration-service-mixin.js"></script>
+    <script src="../components/mixins/user/user-mixin.js"></script>
     <script src="../components/mixins/facet/facet-mixin.js"></script>
     <script src="../components/mixins/message/message-mixin.js"></script>
     <script src="../components/mixins/pagination/pagination-mixin.js"></script>

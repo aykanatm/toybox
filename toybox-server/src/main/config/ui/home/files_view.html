@@ -17,7 +17,7 @@
     </head>
     <body>
         <div style="height: calc(100% - 68px); width: 100%;" id="toybox-files">
-            <navbar/>
+            <navbar v-bind:user="user"/>
             <div class="toybox-background">
                 <div id="toybox-files-container" class="ui grid toybox-asset-container">
                     <div class="three wide column">
@@ -95,6 +95,8 @@
                 <message v-for="message in messages" v-bind:id="message.id" v-bind:is-info="message.isInfo" v-bind:is-ok="message.isOk" v-bind:is-error="message.isError" v-bind:is-warning="message.isWarning" v-bind:header="message.header" v-bind:message="message.message" v-bind:key="message.id"/>
             </div>
         </div>
+        <script src="../components/mixins/configuration-service/configuration-service-mixin.js"></script>
+        <script src="../components/mixins/user/user-mixin.js"></script>
         <script src="../components/mixins/facet/facet-mixin.js"></script>
         <script src="../components/mixins/message/message-mixin.js"></script>
         <script src="../components/mixins/pagination/pagination-mixin.js"></script>
