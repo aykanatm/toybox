@@ -1,7 +1,9 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.dbo.Asset;
+import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.dbo.mappers.asset.AssetRowMapper;
+import com.github.murataykanat.toybox.dbo.mappers.user.UserRowMapper;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -31,6 +33,35 @@ public class RenditionController {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @RequestMapping(value = "/renditions/users/{userId}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public ResponseEntity<Resource> getUserAvatar(@PathVariable String userId){
+        _logger.debug("getUserAvatar() >>");
+        try{
+            User user = getUser(userId);
+            if(user != null){
+                ByteArrayResource resource;
+                if(StringUtils.isNotBlank(user.getAvatarPath())){
+                    Path path = Paths.get(user.getAvatarPath());
+                    resource = new ByteArrayResource(Files.readAllBytes(path));
+                }
+                else{
+                    return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                }
+
+                return new ResponseEntity<>(resource, HttpStatus.OK);
+            }
+            else{
+                throw new InvalidObjectException("User is null!");
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while retrieving the asset with ID " + userId + ". " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            _logger.debug("<< getRendition()");
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
     @RequestMapping(value = "/renditions/{assetId}/{renditionType}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> getRendition(@PathVariable String assetId, @PathVariable String renditionType){
@@ -94,5 +125,24 @@ public class RenditionController {
 
         _logger.debug("<< getAsset()");
         return result;
+    }
+
+    private User getUser(String userId){
+        _logger.debug("getUser() >>");
+        User user = null;
+
+        List<User> users = jdbcTemplate.query("SELECT email, enabled, account_non_expired, account_non_locked, credentials_non_expired, lastname, name, username, avatar_path FROM users WHERE user_id=?", new Object[]{userId}, new UserRowMapper());
+
+        if(users != null && !users.isEmpty()){
+            if(users.size() == 1){
+                user = users.get(0);
+            }
+            else{
+                throw new DuplicateKeyException("User ID " + userId + " is duplicate!");
+            }
+        }
+
+        _logger.debug("<< getUser()");
+        return user;
     }
 }
