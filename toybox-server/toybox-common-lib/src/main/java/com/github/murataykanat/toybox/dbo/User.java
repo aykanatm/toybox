@@ -1,5 +1,7 @@
 package com.github.murataykanat.toybox.dbo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import javax.persistence.*;
 import java.util.Set;
 
@@ -15,6 +17,7 @@ public class User {
     @Column(name = "username")
     private String username;
 
+    @JsonIgnore
     @Column(name = "password")
     private String password;
 
@@ -39,6 +42,7 @@ public class User {
     @Column(name = "credentials_non_expired")
     private boolean isCredentialsNonExpired;
 
+    @JsonIgnore
     @Column(name = "avatar_path")
     private String avatarPath;
 
@@ -60,6 +64,7 @@ public class User {
         this.email = user.email;
         this.name = user.name;
         this.lastname = user.lastname;
+        this.avatarPath = user.avatarPath;
     }
 
     public int getId() {
