@@ -24,12 +24,17 @@ var userMixin = {
                 console.error(errorMessage);
                 this.$root.$emit('message-sent', 'Error', errorMessage);
         })
-        .then(response => {
-            console.log(response);
-            this.user.username = response.data.user.username;
-            this.user.name = response.data.user.name;
-            this.user.lastname = response.data.user.lastname;
-            this.user.avatarUrl = 'http://localhost:8103/renditions/users/' + response.data.user.id;
+        .then(userResponse => {
+            console.log(userResponse);
+            this.getConfiguration("renditionServiceUrl")
+            .then(response => {
+                var renditionUrl = response.data.value;
+
+                this.user.username = userResponse.data.user.username;
+                this.user.name = userResponse.data.user.name;
+                this.user.lastname = userResponse.data.user.lastname;
+                this.user.avatarUrl = renditionUrl + '/renditions/users/' + userResponse.data.user.id;
+            });
         })
     }
 }
