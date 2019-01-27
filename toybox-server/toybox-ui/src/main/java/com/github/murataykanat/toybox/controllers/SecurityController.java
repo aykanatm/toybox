@@ -16,7 +16,6 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.Set;
 
 @RestController
 public class SecurityController {
