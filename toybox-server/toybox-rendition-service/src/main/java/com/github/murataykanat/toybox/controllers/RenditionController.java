@@ -63,7 +63,7 @@ public class RenditionController {
         }
     }
 
-    @RequestMapping(value = "/renditions/{assetId}/{renditionType}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @RequestMapping(value = "/renditions/assets/{assetId}/{renditionType}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> getRendition(@PathVariable String assetId, @PathVariable String renditionType){
         _logger.debug("getRendition() >>");
         try{

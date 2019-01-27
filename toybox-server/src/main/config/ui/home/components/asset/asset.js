@@ -24,7 +24,7 @@ module.exports = {
     },
     computed:{
         thumbnailUrl:function(){
-            return this.renditionUrl + '/renditions/' + this.id + '/t'
+            return this.renditionUrl + '/renditions/assets/' + this.id + '/t'
         },
         isImage:function(){
             return this.type.startsWith('image') || this.type === 'application/postscript';
