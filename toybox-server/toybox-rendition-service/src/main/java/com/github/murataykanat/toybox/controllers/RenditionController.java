@@ -33,11 +33,11 @@ public class RenditionController {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @RequestMapping(value = "/renditions/users/{userId}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public ResponseEntity<Resource> getUserAvatar(@PathVariable String userId){
+    @RequestMapping(value = "/renditions/users/{username}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public ResponseEntity<Resource> getUserAvatar(@PathVariable String username){
         _logger.debug("getUserAvatar() >>");
         try{
-            User user = getUser(userId);
+            User user = getUser(username);
             if(user != null){
                 ByteArrayResource resource;
                 if(StringUtils.isNotBlank(user.getAvatarPath())){
@@ -55,7 +55,7 @@ public class RenditionController {
             }
         }
         catch (Exception e){
-            String errorMessage = "An error occurred while retrieving the asset with ID " + userId + ". " + e.getLocalizedMessage();
+            String errorMessage = "An error occurred while retrieving the user with username " + username + ". " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
             _logger.debug("<< getRendition()");
@@ -127,18 +127,18 @@ public class RenditionController {
         return result;
     }
 
-    private User getUser(String userId){
+    private User getUser(String username){
         _logger.debug("getUser() >>");
         User user = null;
 
-        List<User> users = jdbcTemplate.query("SELECT email, enabled, account_non_expired, account_non_locked, credentials_non_expired, lastname, name, username, avatar_path FROM users WHERE user_id=?", new Object[]{userId}, new UserRowMapper());
+        List<User> users = jdbcTemplate.query("SELECT email, enabled, account_non_expired, account_non_locked, credentials_non_expired, lastname, name, username, avatar_path FROM users WHERE username=?", new Object[]{username}, new UserRowMapper());
 
         if(users != null && !users.isEmpty()){
             if(users.size() == 1){
                 user = users.get(0);
             }
             else{
-                throw new DuplicateKeyException("User ID " + userId + " is duplicate!");
+                throw new DuplicateKeyException("Username " + username + " is duplicate!");
             }
         }
 

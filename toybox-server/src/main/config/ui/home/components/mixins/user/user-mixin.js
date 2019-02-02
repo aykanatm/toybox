@@ -33,7 +33,7 @@ var userMixin = {
                 this.user.username = userResponse.data.user.username;
                 this.user.name = userResponse.data.user.name;
                 this.user.lastname = userResponse.data.user.lastname;
-                this.user.avatarUrl = renditionUrl + '/renditions/users/' + userResponse.data.user.id;
+                this.user.avatarUrl = renditionUrl + '/renditions/users/' + userResponse.data.user.username;
             });
         })
     }
