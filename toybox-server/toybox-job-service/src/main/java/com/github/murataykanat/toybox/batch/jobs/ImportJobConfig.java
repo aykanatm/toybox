@@ -98,8 +98,8 @@ public class ImportJobConfig {
     @Value("${ffmpegTimeout}")
     private String ffmpegTimeout;
 
-    @Value("${repositoryPath}")
-    private String repositoryPath;
+    @Value("${assetRepositoryPath}")
+    private String assetRepositoryPath;
 
     private enum RenditionTypes{
         Thumbnail,
@@ -126,7 +126,7 @@ public class ImportJobConfig {
                                 if(file.exists()){
                                     if(file.isFile()){
                                         String assetId = generateAssetId();
-                                        String assetFolderPath = repositoryPath + File.separator + assetId;
+                                        String assetFolderPath = assetRepositoryPath + File.separator + assetId;
 
                                         // Generate folder
                                         File assetFolder = new File(assetFolderPath);
@@ -525,14 +525,14 @@ public class ImportJobConfig {
                     inputFile = new File(asset.getPath() + "[0]");
                 }
 
-                String assetFolderPath = repositoryPath + File.separator + asset.getId();
+                String assetFolderPath = assetRepositoryPath + File.separator + asset.getId();
                 File outputFile;
                 String renditionSettings;
                 String assetPreviewPath = null;
                 String assetThumbnailPath = null;
 
                 if(renditionType == RenditionTypes.Preview){
-                    assetPreviewPath = repositoryPath + File.separator + asset.getId() + File.separator + "preview";
+                    assetPreviewPath = assetRepositoryPath + File.separator + asset.getId() + File.separator + "preview";
                     createFolder(assetFolderPath, assetPreviewPath);
 
                     RenditionProperties renditionProperties = getRenditionProperties(asset, assetPreviewPath, renditionType);
@@ -540,7 +540,7 @@ public class ImportJobConfig {
                     renditionSettings = renditionProperties.getRenditionSettings();
                 }
                 else if(renditionType == RenditionTypes.Thumbnail){
-                    assetThumbnailPath = repositoryPath + File.separator + asset.getId() + File.separator + "thumbnail";
+                    assetThumbnailPath = assetRepositoryPath + File.separator + asset.getId() + File.separator + "thumbnail";
                     createFolder(assetFolderPath, assetThumbnailPath);
 
                     RenditionProperties renditionProperties = getRenditionProperties(asset, assetThumbnailPath, renditionType);
