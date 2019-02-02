@@ -22,7 +22,7 @@ const jobs = new Vue({
         sortedDesByStatus: false,
     },
     methods:{
-        getJobs(offset, limit, sortType, sortColumn, username, searchRequestFacetList)
+        getJobs(offset, limit, sortType, sortColumn, searchRequestFacetList)
         {
             this.getConfiguration("jobServiceUrl")
             .then(response => {
@@ -141,7 +141,7 @@ const jobs = new Vue({
             this.sortType = sortType;
             this.sortColumn = sortColumn;
 
-            this.getJobs(this.defaultOffset, this.defaultLimit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
+            this.getJobs(this.defaultOffset, this.defaultLimit, this.sortType, this.sortColumn, this.searchRequestFacetList);
         },
     },
     computed:{
@@ -217,7 +217,7 @@ const jobs = new Vue({
         this.sortType = this.defaultSortType;
         this.sortColumn = this.defaultSortColumn;
 
-        this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
+        this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList);
 
         // Initialize event listeners
         this.$root.$on('perform-faceted-search', (facet, isAdd) => {
@@ -238,7 +238,7 @@ const jobs = new Vue({
                 this.searchRequestFacetList.splice(index, 1);
             }
 
-            this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
+            this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList);
         });
 
         this.$root.$on('message-sent', this.displayMessage);
