@@ -21,6 +21,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -143,9 +144,18 @@ public class JobController {
                         sortJobs(sortType, jobs, Comparator.comparing(ToyboxJob::getEndTime, Comparator.nullsLast(Comparator.naturalOrder())));
                     }
 
-                    // TODO: If an admin users gets the jobs, display all jobs regardless of the username
                     String username = authentication.getName();
-                    List<ToyboxJob> jobsByCurrentUser = jobs.stream().filter(j -> j.getUsername() != null && j.getUsername().equalsIgnoreCase(username)).collect(Collectors.toList());
+                    Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+
+                    List<ToyboxJob> jobsByCurrentUser;
+                    if(authorities.contains("ROLE_ADMIN")){
+                        _logger.debug("Retrieving all jobs [Admin User]...");
+                        jobsByCurrentUser = jobs;
+                    }
+                    else{
+                        _logger.debug("Retrieving jobs of the user '" + username + "'...");
+                        jobsByCurrentUser = jobs.stream().filter(j -> j.getUsername() != null && j.getUsername().equalsIgnoreCase(username)).collect(Collectors.toList());
+                    }
 
                     int totalRecords = jobsByCurrentUser.size();
                     int startIndex = offset;
