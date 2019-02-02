@@ -45,8 +45,52 @@ public class FacetUtils {
                     for(Field objField: obj.getClass().getDeclaredFields()){
                         if(objField.isAnnotationPresent(FacetColumnName.class) && objField.getAnnotation(FacetColumnName.class).value().equalsIgnoreCase(facetFieldName)){
                             if(objField.isAnnotationPresent(FacetDefaultLookup.class)){
-                                String[] defaultLookups = objField.getAnnotation(FacetDefaultLookup.class).values();
-                                lookups.addAll(Arrays.asList(defaultLookups));
+                                Calendar cal;
+                                cal = Calendar.getInstance();
+                                cal.set(Calendar.HOUR_OF_DAY, 0);
+                                cal.set(Calendar.MINUTE, 0);
+                                cal.set(Calendar.SECOND, 0);
+                                Date today = cal.getTime();
+
+                                SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+                                _logger.debug("Today: " + formatter.format(today));
+
+                                cal = Calendar.getInstance();
+                                cal.set(Calendar.HOUR_OF_DAY, 0);
+                                cal.set(Calendar.MINUTE, 0);
+                                cal.set(Calendar.SECOND, 0);
+                                cal.add(Calendar.DAY_OF_MONTH, 1);
+                                Date tomorrow = cal.getTime();
+                                _logger.debug("Tomorrow: " + formatter.format(tomorrow));
+
+                                cal = Calendar.getInstance();
+                                cal.set(Calendar.HOUR_OF_DAY, 0);
+                                cal.set(Calendar.MINUTE, 0);
+                                cal.set(Calendar.SECOND, 0);
+                                cal.add(Calendar.DAY_OF_MONTH, -7);
+                                Date sevenDaysAgo = cal.getTime();
+                                _logger.debug("Past 7 days: " + formatter.format(sevenDaysAgo));
+
+                                cal = Calendar.getInstance();
+                                cal.set(Calendar.HOUR_OF_DAY, 0);
+                                cal.set(Calendar.MINUTE, 0);
+                                cal.set(Calendar.SECOND, 0);
+                                cal.add(Calendar.DAY_OF_MONTH, -30);
+                                Date thirtyDaysAgo = cal.getTime();
+                                _logger.debug("Past 30 days: " + formatter.format(sevenDaysAgo));
+
+                                Date dateValue = (Date) FieldUtils.readField(obj, field.getName(), true);
+                                if(dateValue != null){
+                                    if((dateValue.after(today) || dateValue.equals(today)) && dateValue.before(tomorrow)){
+                                        lookups.add("Today");
+                                    }
+                                    else if(dateValue.after(sevenDaysAgo) && dateValue.before(tomorrow)){
+                                        lookups.add("Past 7 days");
+                                    }
+                                    else if(dateValue.after(thirtyDaysAgo) && dateValue.before(tomorrow)){
+                                        lookups.add("Past 30 days");
+                                    }
+                                }
                             }
                             else{
                                 lookups.add((String) FieldUtils.readField(obj, field.getName(), true));

@@ -220,8 +220,22 @@ const jobs = new Vue({
         this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList);
 
         // Initialize event listeners
-        this.$root.$on('perform-faceted-search', (facet, isAdd) => {
+        this.$root.$on('perform-faceted-search', (facet, isAdd, isDate) => {
             if(isAdd){
+                if(isDate){
+                    var indexes = [];
+                    for(var i = 0; i < this.searchRequestFacetList.length; i++){
+                        var jobRequestFacet = this.searchRequestFacetList[i];
+                        if(jobRequestFacet.fieldName === facet.fieldName){
+                            indexes.push(i);
+                        }
+                    }
+
+                    for(var i = 0; i < indexes.length; i++){
+                        var index = indexes[i];
+                        this.searchRequestFacetList.splice(index, 1);
+                    }
+                }
                 console.log('Adding facet ' + facet.fieldName + ' and its value ' + facet.fieldValue + ' to search');
                 this.searchRequestFacetList.push(facet);
             }

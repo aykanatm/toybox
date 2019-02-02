@@ -10,7 +10,9 @@ module.exports = {
             var fieldName = event.path[4].firstChild.innerText.trim();
             var isAdd = input.checked;
             var facet = {fieldName: fieldName, fieldValue: fieldValue};
-            this.$root.$emit('perform-faceted-search', facet, isAdd);
+            // TODO: Find a better way to do this, add a type value to facets
+            var isDate = fieldName.toLowerCase().includes('time') || fieldName.toLowerCase().includes('date');
+            this.$root.$emit('perform-faceted-search', facet, isAdd, isDate);
         }
     }
 }
