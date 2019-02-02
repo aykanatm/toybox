@@ -1,7 +1,5 @@
 package com.github.murataykanat.toybox.controllers;
 
-import com.github.murataykanat.toybox.models.annotations.FacetColumnName;
-import com.github.murataykanat.toybox.models.annotations.FacetDefaultLookup;
 import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.dbo.mappers.asset.AssetRowMapper;
 import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
@@ -21,17 +19,15 @@ import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static java.util.Objects.nonNull;
 
 @RefreshScope
 @RestController
@@ -46,7 +42,7 @@ public class AssetController {
 
     // The name "upload" must match the "name" attribute of the input in UI (
     @RequestMapping(value = "/assets/upload", method = RequestMethod.POST)
-    public ResponseEntity<UploadFileLst> uploadAssets(@RequestParam("upload") MultipartFile[] files) {
+    public ResponseEntity<UploadFileLst> uploadAssets(Authentication authentication, @RequestParam("upload") MultipartFile[] files) {
         _logger.debug("uploadAssets() >>");
 
         String tempFolderName = Long.toString(System.currentTimeMillis());
@@ -75,8 +71,7 @@ public class AssetController {
 
                 UploadFile uploadFile = new UploadFile();
                 uploadFile.setPath(path);
-                // TODO: Take this value from the session
-                uploadFile.setUsername("test");
+                uploadFile.setUsername(authentication.getName());
 
                 uploadFiles.add(uploadFile);
             }
