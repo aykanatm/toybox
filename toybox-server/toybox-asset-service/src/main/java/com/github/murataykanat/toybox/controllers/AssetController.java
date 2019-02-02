@@ -1,6 +1,7 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.dbo.Asset;
+import com.github.murataykanat.toybox.dbo.Role;
 import com.github.murataykanat.toybox.dbo.mappers.asset.AssetRowMapper;
 import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
 import com.github.murataykanat.toybox.schema.asset.RetrieveAssetsResults;
@@ -20,6 +21,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -141,16 +144,24 @@ public class AssetController {
                     sortAssets(sortType, assets, Comparator.comparing(Asset::getName, Comparator.nullsLast(Comparator.naturalOrder())));
                 }
 
-
-                // TODO: If an admin users gets the assets, display all jobs regardless of the username
                 String username = authentication.getName();
-                List<Asset> assetsByCurrentUser = assets.stream().filter(a -> a.getImportedByUsername() != null && a.getImportedByUsername().equalsIgnoreCase(username)).collect(Collectors.toList());
+                Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+
+                List<Asset> assetsByCurrentUser;
+                if(authorities.contains("ROLE_ADMIN")){
+                    _logger.debug("Retrieving all assets [Admin User]...");
+                    assetsByCurrentUser = assets;
+                }
+                else{
+                    _logger.debug("Retrieving assets of the user '" + username + "'...");
+                    assetsByCurrentUser = assets.stream().filter(a -> a.getImportedByUsername() != null && a.getImportedByUsername().equalsIgnoreCase(username)).collect(Collectors.toList());
+                }
 
                 int totalRecords = assets.size();
                 int startIndex = offset;
                 int endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
 
-                List<Asset> assetsOnPage = assets.subList(startIndex, endIndex);
+                List<Asset> assetsOnPage = assetsByCurrentUser.subList(startIndex, endIndex);
 
 
                 retrieveAssetsResults.setTotalRecords(totalRecords);
