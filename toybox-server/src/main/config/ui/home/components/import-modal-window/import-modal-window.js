@@ -1,6 +1,7 @@
 const STATUS_INITIAL = 0, STATUS_SAVING = 1, STATUS_SUCCESS = 2, STATUS_FAILED = 3;
 
 module.exports = {
+    mixins:[configServiceMixin],
     data: function() {
         return  {
           componentName: 'Import Modal Window',
@@ -87,22 +88,6 @@ module.exports = {
 
             this.save(formData, this.onProgress);
         },
-        getConfiguration(fieldName){
-            return axios.get("/configuration?field=" + fieldName)
-                .catch(error => {
-                    var errorMessage;
-
-                    if(error.response){
-                        errorMessage = error.response.data.message
-                    }
-                    else{
-                        errorMessage = error.message;
-                    }
-
-                    console.error(errorMessage);
-                    this.$root.$emit('message-sent', 'Error', errorMessage);
-                });
-        },
         onProgress(percentCompleted){
             $('#import-modal-window-upload-progress-bar').progress({
                 percent: percentCompleted
@@ -121,7 +106,7 @@ module.exports = {
             return this.getConfiguration("assetServiceUrl")
                 .then(response => {
                     if(response){
-                        return axios.post(response.data.value + "/upload", formData, config)
+                        return axios.post(response.data.value + "/assets/upload", formData, config)
                         .then(response =>{
                             return this.import(response.data);
                         })

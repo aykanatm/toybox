@@ -44,9 +44,8 @@ public class AssetController {
     @Value("${importStagingPath}")
     private String importStagingPath;
 
-    // TODO: Make this /assets/upload
     // The name "upload" must match the "name" attribute of the input in UI (
-    @RequestMapping(value = "/upload", method = RequestMethod.POST)
+    @RequestMapping(value = "/assets/upload", method = RequestMethod.POST)
     public ResponseEntity<UploadFileLst> uploadAssets(@RequestParam("upload") MultipartFile[] files) {
         _logger.debug("uploadAssets() >>");
 
