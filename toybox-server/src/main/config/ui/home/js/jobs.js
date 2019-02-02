@@ -5,9 +5,6 @@ const jobs = new Vue({
         view: 'jobs',
         isLoading: true,
         jobs:[],
-        // TODO:
-        // Make username dynamic
-        username: 'test',
         // Sorting
         defaultSortType: 'des',
         defaultSortColumn: 'END_TIME',
@@ -35,7 +32,6 @@ const jobs = new Vue({
                     searchRequest.offset = offset;
                     searchRequest.sortType = sortType;
                     searchRequest.sortColumn = sortColumn;
-                    searchRequest.username = username;
                     searchRequest.jobSearchRequestFacetList = searchRequestFacetList;
                     return axios.post(response.data.value + "/jobs/search", searchRequest)
                         .catch(error => {

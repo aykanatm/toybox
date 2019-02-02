@@ -14,8 +14,6 @@ public class JobSearchRequest {
     private String sortType;
     @JsonProperty("sortColumn")
     private String sortColumn;
-    @JsonProperty("username")
-    private String username;
     @JsonProperty("jobSearchRequestFacetList")
     private List<SearchRequestFacet> searchRequestFacetList;
 
@@ -49,14 +47,6 @@ public class JobSearchRequest {
 
     public void setSortColumn(String sortColumn) {
         this.sortColumn = sortColumn;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
     }
 
     public List<SearchRequestFacet> getSearchRequestFacetList() {

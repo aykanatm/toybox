@@ -1,8 +1,6 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.batch.utils.Constants;
-import com.github.murataykanat.toybox.models.annotations.FacetColumnName;
-import com.github.murataykanat.toybox.models.annotations.FacetDefaultLookup;
 import com.github.murataykanat.toybox.dbo.mappers.job.ToyboxJobRowMapper;
 import com.github.murataykanat.toybox.dbo.mappers.job.ToyboxJobStepRowMapper;
 import com.github.murataykanat.toybox.models.job.ToyboxJob;
@@ -22,13 +20,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static java.util.Objects.nonNull;
 
 @RestController
 public class JobController {
@@ -99,7 +95,7 @@ public class JobController {
     }
 
     @RequestMapping(value = "/jobs/search", method = RequestMethod.POST)
-    public ResponseEntity<RetrieveToyboxJobsResult> retrieveJobs(@RequestBody JobSearchRequest jobSearchRequest) {
+    public ResponseEntity<RetrieveToyboxJobsResult> retrieveJobs(Authentication authentication, @RequestBody JobSearchRequest jobSearchRequest) {
         _logger.debug("retrieveJobs() >>");
 
         try{
@@ -108,7 +104,6 @@ public class JobController {
 
                 String sortColumn = jobSearchRequest.getSortColumn();
                 String sortType = jobSearchRequest.getSortType();
-                String username = jobSearchRequest.getUsername();
                 int offset = jobSearchRequest.getOffset();
                 int limit = jobSearchRequest.getLimit();
                 List<SearchRequestFacet> jobSearchRequestFacetList = jobSearchRequest.getSearchRequestFacetList();
@@ -149,6 +144,7 @@ public class JobController {
                     }
 
                     // TODO: If an admin users gets the jobs, display all jobs regardless of the username
+                    String username = authentication.getName();
                     List<ToyboxJob> jobsByCurrentUser = jobs.stream().filter(j -> j.getUsername() != null && j.getUsername().equalsIgnoreCase(username)).collect(Collectors.toList());
 
                     int totalRecords = jobsByCurrentUser.size();
