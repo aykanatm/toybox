@@ -106,7 +106,7 @@ public class AssetController {
     }
 
     @RequestMapping(value = "/assets/search", method = RequestMethod.POST)
-    public ResponseEntity<RetrieveAssetsResults> retrieveAssets(@RequestBody AssetSearchRequest assetSearchRequest){
+    public ResponseEntity<RetrieveAssetsResults> retrieveAssets(Authentication authentication, @RequestBody AssetSearchRequest assetSearchRequest){
         _logger.debug("retrieveAssets() >>");
 
         try{
@@ -142,8 +142,9 @@ public class AssetController {
                 }
 
 
-                // TODO: If an admin users gets the jobs, display all jobs regardless of the username
-                // List<Asset> assetsByCurrentUser = assets.stream().filter(a -> a.getImportedByUsername() != null && a.getImportedByUsername().equalsIgnoreCase(username)).collect(Collectors.toList());
+                // TODO: If an admin users gets the assets, display all jobs regardless of the username
+                String username = authentication.getName();
+                List<Asset> assetsByCurrentUser = assets.stream().filter(a -> a.getImportedByUsername() != null && a.getImportedByUsername().equalsIgnoreCase(username)).collect(Collectors.toList());
 
                 int totalRecords = assets.size();
                 int startIndex = offset;
