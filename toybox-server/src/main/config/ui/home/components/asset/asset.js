@@ -11,8 +11,6 @@ module.exports = {
         return  {
           componentName: 'Asset',
           isSelected: false,
-          // TODO: Make dynamic
-          userAvatarUrl: '../../images/users/test.png',
           hasThumbnail: true,
           contextMenuOpen: false
         }
@@ -23,6 +21,9 @@ module.exports = {
         }
     },
     computed:{
+        userAvatarUrl:function(){
+            return this.renditionUrl + '/renditions/users/' + this.importedByUsername;
+        },
         thumbnailUrl:function(){
             return this.renditionUrl + '/renditions/assets/' + this.id + '/t'
         },
