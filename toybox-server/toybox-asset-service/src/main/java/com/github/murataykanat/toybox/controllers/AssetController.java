@@ -10,6 +10,7 @@ import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.upload.UploadFile;
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
 import com.github.murataykanat.toybox.utilities.FacetUtils;
+import com.github.murataykanat.toybox.utilities.SortUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -138,10 +139,10 @@ public class AssetController {
                 retrieveAssetsResults.setFacets(facets);
 
                 if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_import_date")){
-                    sortAssets(sortType, assets, Comparator.comparing(Asset::getImportDate, Comparator.nullsLast(Comparator.naturalOrder())));
+                    SortUtils.getInstance().sortItems(sortType, assets, Comparator.comparing(Asset::getImportDate, Comparator.nullsLast(Comparator.naturalOrder())));
                 }
                 else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_name")){
-                    sortAssets(sortType, assets, Comparator.comparing(Asset::getName, Comparator.nullsLast(Comparator.naturalOrder())));
+                    SortUtils.getInstance().sortItems(sortType, assets, Comparator.comparing(Asset::getName, Comparator.nullsLast(Comparator.naturalOrder())));
                 }
 
                 String username = authentication.getName();
@@ -190,18 +191,6 @@ public class AssetController {
 
             _logger.debug("<< retrieveAssets()");
             return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    private void sortAssets(String sortType, List<Asset> allAssets, Comparator<Asset> comparing) {
-        if(sortType.equalsIgnoreCase("des")){
-            allAssets.sort(comparing.reversed());
-        }
-        else if(sortType.equalsIgnoreCase("asc")){
-            allAssets.sort(comparing);
-        }
-        else{
-            allAssets.sort(comparing.reversed());
         }
     }
 }
