@@ -1,4 +1,5 @@
 module.exports = {
+    mixins:[configServiceMixin],
     computed:{
         formattedStartTime(){
             if(this.startTime !== null){
@@ -34,22 +35,6 @@ module.exports = {
         });
     },
     methods:{
-        getConfiguration(fieldName){
-            return axios.get("/configuration?field=" + fieldName)
-                .catch(error => {
-                    var errorMessage;
-
-                    if(error.response){
-                        errorMessage = error.response.data.message
-                    }
-                    else{
-                        errorMessage = error.message;
-                    }
-
-                    console.error(errorMessage);
-                    this.$root.$emit('message-sent', 'Error', errorMessage);
-                });
-        },
         loadJobDetails:function(){
             this.getConfiguration("jobServiceUrl")
             .then(response => {
