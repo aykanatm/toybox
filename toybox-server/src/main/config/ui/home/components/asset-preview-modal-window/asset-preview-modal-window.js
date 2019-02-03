@@ -68,7 +68,7 @@ module.exports = {
     },
     methods:{
         onPreviewImgSrcNotFound:function(){
-            if(!isFirstRendered)
+            if(!this.isFirstRendered)
             {
                 this.hasPreview = false;
             }
