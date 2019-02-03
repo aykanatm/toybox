@@ -10,7 +10,7 @@
                     <video v-bind:src="previewUrl" type="video/mp4" controls>
                 </div>
                 <div v-else-if="isAudio">
-                    <audio v-bind:src="previewUrl" type="audio/mp3" controls>
+                    <audio v-bind:src="previewUrl" type="audio/mpeg" controls>
                 </div>
                 <div v-else>
                     <img class="ui centered image" v-bind:src="previewUrl" v-on:error="onPreviewImgSrcNotFound"/>
