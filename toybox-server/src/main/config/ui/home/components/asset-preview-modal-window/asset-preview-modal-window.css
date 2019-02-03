@@ -1,0 +1,21 @@
+#toybox-asset-preview-modal-window{
+    height: calc(100% - 30px);
+    width: calc(100% - 50px);
+    background: transparent;
+}
+
+#toybox-asset-preview-modal-window>.close{
+    margin-top: 10px;
+}
+#toybox-asset-preview-modal-window>.content{
+    background: transparent;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.toybox-preview-window-icons{
+    font-size: 15em;
+    color: white;
+}

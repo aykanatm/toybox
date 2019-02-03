@@ -177,6 +177,7 @@ const files = new Vue({
     components:{
         'navbar' : httpVueLoader('../components/navbar/navbar.vue'),
         'asset' : httpVueLoader('../components/asset/asset.vue'),
+        'asset-preview-modal-window' : httpVueLoader('../components/asset-preview-modal-window/asset-preview-modal-window.vue'),
         'facet' : httpVueLoader('../components/facet/facet.vue'),
         'message' : httpVueLoader('../components/message/message.vue'),
     }

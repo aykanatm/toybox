@@ -68,6 +68,9 @@ module.exports = {
         onMouseLeave:function(){
             this.contextMenuOpen = false;
         },
+        onDoubleClick:function(){
+            this.$root.$emit('open-asset-preview-modal-window', this);
+        },
         onThumbnailImgSrcNotFound:function(){
             this.hasThumbnail = false;
         },

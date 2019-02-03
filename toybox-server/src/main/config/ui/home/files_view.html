@@ -94,6 +94,7 @@
             <div id="messages">
                 <message v-for="message in messages" v-bind:id="message.id" v-bind:is-info="message.isInfo" v-bind:is-ok="message.isOk" v-bind:is-error="message.isError" v-bind:is-warning="message.isWarning" v-bind:header="message.header" v-bind:message="message.message" v-bind:key="message.id"/>
             </div>
+            <asset-preview-modal-window v-bind:rendition-url="renditionUrl"/>
         </div>
         <script src="../components/mixins/configuration-service/configuration-service-mixin.js"></script>
         <script src="../components/mixins/user/user-mixin.js"></script>

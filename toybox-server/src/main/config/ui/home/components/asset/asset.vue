@@ -1,5 +1,5 @@
 <template>
-    <div v-bind:class="{'ui':true, 'fluid':true, 'card':true, 'toybox-card':true, 'toybox-card-selected':isSelected}" v-bind:id="id" v-on:click.stop="onClick" v-on:contextmenu="onRightClick($event)" v-on:mouseleave="onMouseLeave">
+    <div v-bind:class="{'ui':true, 'fluid':true, 'card':true, 'toybox-card':true, 'toybox-card-selected':isSelected}" v-bind:id="id" v-on:click.stop="onClick" v-on:contextmenu="onRightClick($event)" v-on:mouseleave="onMouseLeave" v-on:dblclick="onDoubleClick">
         <div class="ui fluid image toybox-corner-label" v-show="isSelected">
             <span class="ui blue right corner label" style="overflow: hidden;"></span>
             <img/>
