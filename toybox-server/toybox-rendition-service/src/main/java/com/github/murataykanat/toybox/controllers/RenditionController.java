@@ -51,7 +51,7 @@ public class RenditionController {
                 return new ResponseEntity<>(resource, HttpStatus.OK);
             }
             else{
-                throw new InvalidObjectException("User is null!");
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
         }
         catch (Exception e){
@@ -95,7 +95,7 @@ public class RenditionController {
                 return new ResponseEntity<>(resource, HttpStatus.OK);
             }
             else{
-                throw new InvalidObjectException("Asset is null!");
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
         }
         catch (Exception e){
