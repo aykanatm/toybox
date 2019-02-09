@@ -41,33 +41,37 @@
         <div class="content" style="overflow: hidden; height: 40px; text-overflow: ellipsis;">
             <span style="white-space: nowrap;">{{ name }}</span>
             <div v-show="contextMenuOpen" class="ui vertical menu toybox-asset-context-menu">
-                <a class="item" v-on:click.stop="share">
+                <a class="item" v-on:click.stop="assetShare">
                     <i class="share alternate icon"></i>
                     Share
                 </a>
-                <a class="item" v-on:click.stop="download">
+                <a class="item" v-on:click.stop="assetDownload">
                     <i class="download icon"></i>
                     Download
                 </a>
-                <a class="item" v-on:click.stop="rename">
+                <a class="item" v-on:click.stop="assetRename">
                     <i class="i cursor icon"></i>
                     Rename
                 </a>
-                <a class="item" v-on:click.stop="copy">
+                <a class="item" v-on:click.stop="assetCopy">
                     <i class="copy icon"></i>
                     Copy
                 </a>
-                <a class="item" v-on:click.stop="move">
+                <a class="item" v-on:click.stop="assetMove">
                     <i class="external alternate icon"></i>
                     Move
                 </a>
-                <a class="item" v-on:click.stop="subscribe">
+                <a class="item" v-on:click.stop="assetSubscribe">
                     <i class="rss icon"></i>
                     Subscribe
                 </a>
-                <a class="item" v-on:click.stop="showVersionHistory">
+                <a class="item" v-on:click.stop="assetShowVersionHistory">
                     <i class="list alternate outline icon"></i>
                     Show Version History
+                </a>
+                <a class="item" v-on:click.stop="assetDelete">
+                    <i class="trash alternate outline icon"></i>
+                    Delete
                 </a>
             </div>
         </div>

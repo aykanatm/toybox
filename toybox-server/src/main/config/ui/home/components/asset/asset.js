@@ -74,35 +74,35 @@ module.exports = {
         onThumbnailImgSrcNotFound:function(){
             this.hasThumbnail = false;
         },
-        share:function(){
+        assetShare:function(){
             console.log('Opening share modal window for asset with ID "' + this.id + '"');
             this.contextMenuOpen = false;
         },
-        download:function(){
+        assetDownload:function(){
             console.log('Downloading the file with ID "' + this.id + '"');
             this.contextMenuOpen = false;
         },
-        rename:function(){
+        assetRename:function(){
             console.log('Renaming the file with ID "' + this.id + '"');
             this.contextMenuOpen = false;
         },
-        copy:function(){
+        assetCopy:function(){
             console.log('Opening copy modal window for asset with ID "' + this.id + '"');
             this.contextMenuOpen = false;
         },
-        move:function(){
+        assetMove:function(){
             console.log('Opening move modal window for asset with ID "' + this.id + '"');
             this.contextMenuOpen = false;
         },
-        subscribe:function(){
+        assetSubscribe:function(){
             console.log('Subscribing to the asset with ID "' + this.id + '"');
             this.contextMenuOpen = false;
         },
-        delete:function(){
+        assetDelete:function(){
             console.log('Deleting asset with ID "' + this.id + '"');
             this.contextMenuOpen = false;
         },
-        showVersionHistory:function(){
+        assetShowVersionHistory:function(){
             console.log('Showing version history of asset with ID "' + this.id + '"');
             this.contextMenuOpen = false;
         }

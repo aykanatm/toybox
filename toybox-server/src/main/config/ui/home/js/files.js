@@ -176,7 +176,7 @@ const files = new Vue({
                 this.$root.$emit('update-arrows', canNavigateToNextAsset, canNavigateToPreviousAsset);
             }
         },
-        share:function(){
+        assetsShare:function(){
             console.log('Sharing the following assets:');
             for(var i = 0; i < this.selectedAssets.length; i++)
             {
@@ -184,7 +184,7 @@ const files = new Vue({
                 console.log(asset.name + ' / ' +  asset.id);
             }
         },
-        download:function(){
+        assetsDownload:function(){
             console.log('Downloading the following assets:');
             for(var i = 0; i < this.selectedAssets.length; i++)
             {
@@ -192,7 +192,7 @@ const files = new Vue({
                 console.log(asset.name + ' / ' +  asset.id);
             }
         },
-        copy:function(){
+        assetsCopy:function(){
             console.log('Copying the following assets:');
             for(var i = 0; i < this.selectedAssets.length; i++)
             {
@@ -200,7 +200,7 @@ const files = new Vue({
                 console.log(asset.name + ' / ' +  asset.id);
             }
         },
-        move:function(){
+        assetsMove:function(){
             console.log('Moving the following assets:');
             for(var i = 0; i < this.selectedAssets.length; i++)
             {
@@ -208,7 +208,7 @@ const files = new Vue({
                 console.log(asset.name + ' / ' +  asset.id);
             }
         },
-        subscribe:function(){
+        assetsSubscribe:function(){
             console.log('Subscribing to the following assets:');
             for(var i = 0; i < this.selectedAssets.length; i++)
             {
@@ -216,7 +216,7 @@ const files = new Vue({
                 console.log(asset.name + ' / ' +  asset.id);
             }
         },
-        delete:function(){
+        assetsDelete:function(){
             console.log('Deleting the following assets:');
             for(var i = 0; i < this.selectedAssets.length; i++)
             {
