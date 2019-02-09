@@ -60,6 +60,9 @@ const files = new Vue({
         });
         this.$root.$on('asset-selection-changed', this.onAssetSelectionChanged);
         this.$root.$on('message-sent', this.displayMessage);
+        this.$root.$on('navigate-to-next-asset', this.onNavigateToNextAsset);
+        this.$root.$on('navigate-to-previous-asset', this.onNavigateToPreviousAsset);
+        this.$root.$on('update-arrows-request', this.updateArrows);
 
         this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
     },
@@ -124,6 +127,54 @@ const files = new Vue({
             }
 
             console.log(this.selectedAssets);
+        },
+        onNavigateToNextAsset:function(asset){
+            if(asset){
+                var assetId = asset.id;
+                var index = this.assets.map(function(a){
+                    return a.id;
+                }).indexOf(assetId);
+                if(index < this.assets.length - 1){
+                    this.$root.$emit('display-asset-in-preview', this.assets[index + 1]);
+                }
+
+                this.updateArrows(this.assets[index + 1]);
+            }
+        },
+        onNavigateToPreviousAsset(asset){
+            if(asset){
+                var assetId = asset.id;
+                var index = this.assets.map(function(a){
+                    return a.id;
+                }).indexOf(assetId);
+                if(index > 0){
+                    this.$root.$emit('display-asset-in-preview', this.assets[index - 1]);
+                }
+
+                this.updateArrows(this.assets[index - 1]);
+            }
+        },
+        updateArrows:function(asset){
+            if(asset){
+                var assetId = asset.id;
+                var index = this.assets.map(function(a){
+                    return a.id;
+                }).indexOf(assetId);
+
+                var canNavigateToNextAsset = false;
+                var canNavigateToPreviousAsset = false;
+
+                if(this.assets.length > 1){
+                    if(index > 0){
+                        canNavigateToPreviousAsset = true;
+                    }
+                    if(index < this.assets.length - 1){
+                        canNavigateToNextAsset = true;
+                    }
+                }
+
+                this.$root.$emit('update-arrows', canNavigateToNextAsset, canNavigateToPreviousAsset);
+            }
         },
         share:function(){
             console.log('Sharing the following assets:');

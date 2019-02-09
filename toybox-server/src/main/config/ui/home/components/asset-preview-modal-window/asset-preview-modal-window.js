@@ -7,7 +7,9 @@ module.exports = {
           componentName: 'Asset Preview Modal Window',
           asset: Object,
           hasPreview: true,
-          isFirstRendered: true
+          isFirstRendered: true,
+          canNavigateToNextAsset: false,
+          canNavigateToPreviousAsset: false,
         }
     },
     mounted:function(){
@@ -32,7 +34,15 @@ module.exports = {
                     }
                 }
             }).modal('show');
+
+            this.$root.$emit('update-arrows-request', this.asset);
         });
+
+        this.$root.$on('display-asset-in-preview', (asset) =>{
+            this.asset = asset;
+        });
+
+        this.$root.$on('update-arrows', this.onUpdateArrows);
     },
     watch:{
 
@@ -82,6 +92,20 @@ module.exports = {
             }
             // Makes sure that when the modal window is first rendered as empty, it will not set the hasPreview to false
             this.isFirstRendered = false;
+        },
+        onUpdateArrows:function(canNavigateToNextAsset, canNavigateToPreviousAsset){
+            this.canNavigateToNextAsset = canNavigateToNextAsset;
+            this.canNavigateToPreviousAsset = canNavigateToPreviousAsset;
+        },
+        nextAsset:function(){
+            if(this.canNavigateToNextAsset){
+                this.$root.$emit('navigate-to-next-asset', this.asset);
+            }
+        },
+        previousAsset:function(){
+            if(this.canNavigateToPreviousAsset){
+                this.$root.$emit('navigate-to-previous-asset', this.asset);
+            }
         }
     }
 }

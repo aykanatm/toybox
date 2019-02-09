@@ -42,3 +42,40 @@
         font-size: 1.2em;
     }
 }
+
+.asset-preview-modal-window-asset-left-arrow{
+    color: black;
+    font-size: 2em;
+    position: absolute;
+    top: 47%;
+    left: 20px;
+    z-index: 20;
+    background: white;
+    border-radius: 70px;
+    height: 25px;
+    width: 25px;
+    cursor: pointer;
+}
+
+.asset-preview-modal-window-asset-right-arrow{
+    color: black;
+    font-size: 2em;
+    position: absolute;
+    top: 47%;
+    right: 20px;
+    z-index: 20;
+    background: white;
+    border-radius: 70px;
+    height: 25px;
+    width: 25px;
+    cursor: pointer;
+}
+
+.asset-preview-modal-window-asset-arrow-icon{
+    margin: 0 !important;
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+    height: 100% !important;
+    width: 100% !important;
+}
