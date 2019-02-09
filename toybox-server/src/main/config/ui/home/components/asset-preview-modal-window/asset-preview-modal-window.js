@@ -106,6 +106,30 @@ module.exports = {
             if(this.canNavigateToPreviousAsset){
                 this.$root.$emit('navigate-to-previous-asset', this.asset);
             }
+        },
+        assetShare:function(){
+            console.log('Opening share modal window for asset with ID "' + this.asset.id + '"');
+        },
+        assetDownload:function(){
+            console.log('Downloading the file with ID "' + this.asset.id + '"');
+        },
+        assetRename:function(){
+            console.log('Renaming the file with ID "' + this.asset.id + '"');
+        },
+        assetCopy:function(){
+            console.log('Opening copy modal window for asset with ID "' + this.asset.id + '"');
+        },
+        assetMove:function(){
+            console.log('Opening move modal window for asset with ID "' + this.asset.id + '"');
+        },
+        assetSubscribe:function(){
+            console.log('Subscribing to the asset with ID "' + this.asset.id + '"');
+        },
+        assetDelete:function(){
+            console.log('Deleting asset with ID "' + this.asset.id + '"');
+        },
+        assetShowVersionHistory:function(){
+            console.log('Showing version history of asset with ID "' + this.asset.id + '"');
         }
     }
 }

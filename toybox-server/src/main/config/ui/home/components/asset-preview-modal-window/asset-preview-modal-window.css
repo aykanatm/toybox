@@ -79,3 +79,10 @@
     height: 100% !important;
     width: 100% !important;
 }
+
+.asset-preview-modal-window-menu-icon{
+    color: white;
+    margin-left: 10px !important;
+    font-size: 1.5em !important;
+    cursor: pointer;
+}

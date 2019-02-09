@@ -1,5 +1,14 @@
 <template>
     <div class="ui modal" id="toybox-asset-preview-modal-window">
+        <i class="share alternate icon asset-preview-modal-window-menu-icon" v-on:click="assetShare"></i>
+        <i class="download icon asset-preview-modal-window-menu-icon" v-on:click="assetDownload"></i>
+        <i class="i cursor icon asset-preview-modal-window-menu-icon" v-on:click="assetRename"></i>
+        <i class="copy icon asset-preview-modal-window-menu-icon" v-on:click="assetCopy"></i>
+        <i class="external alternate icon asset-preview-modal-window-menu-icon" v-on:click="assetMove"></i>
+        <i class="rss icon asset-preview-modal-window-menu-icon" v-on:click="assetSubscribe"></i>
+        <i class="list alternate outline icon asset-preview-modal-window-menu-icon" v-on:click="assetShowVersionHistory"></i>
+        <i class="trash alternate outline icon asset-preview-modal-window-menu-icon" v-on:click="assetDelete"></i>
+
         <i class="close icon" style="right: 0px !important; color: white;"></i>
         <div class="content">
             <div>
