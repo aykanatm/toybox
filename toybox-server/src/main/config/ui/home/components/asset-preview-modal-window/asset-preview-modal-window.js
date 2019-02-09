@@ -39,7 +39,12 @@ module.exports = {
     },
     computed:{
         previewUrl:function(){
-            return this.renditionUrl + '/renditions/assets/' + this.asset.id + '/p'
+            if(this.asset.id !== undefined){
+                return this.renditionUrl + '/renditions/assets/' + this.asset.id + '/p'
+            }
+            else{
+                return null;
+            }
         },
         isImage:function(){
             return this.asset.isImage;
