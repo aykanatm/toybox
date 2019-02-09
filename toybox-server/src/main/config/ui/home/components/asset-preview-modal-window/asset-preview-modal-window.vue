@@ -1,6 +1,6 @@
 <template>
     <div class="ui modal" id="toybox-asset-preview-modal-window">
-        <i class="close icon"></i>
+        <i class="close icon" style="right: 0px !important; color: white;"></i>
         <div class="content">
             <div v-if="hasPreview">
                 <div v-if="isImage">
@@ -26,6 +26,9 @@
                 <i v-else-if="isVideo" class="file video icon"></i>
                 <i v-else-if="isArchive" class="file archive icon"></i>
                 <i v-else class="file icon"></i>
+            </div>
+            <div class="asset-preview-modal-window-asset-name">
+                <span>{{ assetName }}</span>
             </div>
         </div>
     </div>

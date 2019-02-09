@@ -69,6 +69,9 @@ module.exports = {
         },
         isArchive:function(){
             return this.asset.isArchive;
+        },
+        assetName:function(){
+            return this.asset.name;
         }
     },
     methods:{
