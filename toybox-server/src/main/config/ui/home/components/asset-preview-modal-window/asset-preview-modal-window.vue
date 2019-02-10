@@ -17,7 +17,7 @@
                 </div>
                 <div v-if="hasPreview" style="height: 100%; width: 100%;">
                     <div v-if="asset.isImage" class="asset-preview-modal-window-preview-container">
-                        <img class="ui centered image" v-bind:src="asset.previewUrl"/>
+                        <img class="ui centered image" v-bind:src="asset.previewUrl" style="max-height: 100%;"/>
                     </div>
                     <div v-else-if="asset.isVideo" class="asset-preview-modal-window-preview-container">
                         <video v-bind:src="asset.previewUrl" type="video/mp4" controls>
