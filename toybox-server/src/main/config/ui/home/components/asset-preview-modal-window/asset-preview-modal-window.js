@@ -7,7 +7,6 @@ module.exports = {
           componentName: 'Asset Preview Modal Window',
           asset: Object,
           hasPreview: true,
-          isFirstRendered: true,
           canNavigateToNextAsset: false,
           canNavigateToPreviousAsset: false,
         }
@@ -38,7 +37,7 @@ module.exports = {
             this.$root.$emit('update-arrows-request', this.asset);
         });
 
-        this.$root.$on('display-asset-in-preview', (asset) =>{
+        this.$root.$on('send-asset-to-preview', (asset) =>{
             this.asset = asset;
         });
 
@@ -48,54 +47,9 @@ module.exports = {
 
     },
     computed:{
-        previewUrl:function(){
-            if(this.asset.id !== undefined){
-                return this.renditionUrl + '/renditions/assets/' + this.asset.id + '/p'
-            }
-            else{
-                return null;
-            }
-        },
-        isImage:function(){
-            return this.asset.isImage;
-        },
-        isVideo:function(){
-            return this.asset.isVideo;
-        },
-        isAudio:function(){
-            return this.asset.isAudio;
-        },
-        isPdf:function(){
-            return this.asset.isPdf;
-        },
-        isWord:function(){
-            return this.asset.isWord;
-        },
-        isExcel:function(){
-            return this.asset.isExcel;
-        },
-        isPowerpoint:function(){
-            return this.asset.isPowerpoint;
-        },
-        isDocument:function(){
-            return this.asset.isPdf || this.asset.isWord || this.asset.isExcel || this.asset.isPowerpoint;
-        },
-        isArchive:function(){
-            return this.asset.isArchive;
-        },
-        assetName:function(){
-            return this.asset.name;
-        }
+
     },
     methods:{
-        onPreviewImgSrcNotFound:function(){
-            if(!this.isFirstRendered)
-            {
-                this.hasPreview = false;
-            }
-            // Makes sure that when the modal window is first rendered as empty, it will not set the hasPreview to false
-            this.isFirstRendered = false;
-        },
         onUpdateArrows:function(canNavigateToNextAsset, canNavigateToPreviousAsset){
             this.canNavigateToNextAsset = canNavigateToNextAsset;
             this.canNavigateToPreviousAsset = canNavigateToPreviousAsset;

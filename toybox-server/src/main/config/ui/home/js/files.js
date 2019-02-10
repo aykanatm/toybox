@@ -135,7 +135,7 @@ const files = new Vue({
                     return a.id;
                 }).indexOf(assetId);
                 if(index < this.assets.length - 1){
-                    this.$root.$emit('display-asset-in-preview', this.assets[index + 1]);
+                    this.$root.$emit('display-asset-in-preview', this.assets[index + 1].id);
                 }
 
                 this.updateArrows(this.assets[index + 1]);
@@ -148,7 +148,7 @@ const files = new Vue({
                     return a.id;
                 }).indexOf(assetId);
                 if(index > 0){
-                    this.$root.$emit('display-asset-in-preview', this.assets[index - 1]);
+                    this.$root.$emit('display-asset-in-preview', this.assets[index - 1].id);
                 }
 
                 this.updateArrows(this.assets[index - 1]);

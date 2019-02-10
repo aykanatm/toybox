@@ -12,7 +12,19 @@ module.exports = {
           componentName: 'Asset',
           isSelected: false,
           hasThumbnail: true,
-          contextMenuOpen: false
+          contextMenuOpen: false,
+          userAvatarUrl:'',
+          thumbnailUrl:'',
+          previewUrl:'',
+          isImage: false,
+          isVideo: false,
+          isAudio: false,
+          isPdf: false,
+          isWord: false,
+          isExcel: false,
+          isPowerpoint: false,
+          isDocument: false,
+          isArchive: false
         }
     },
     watch:{
@@ -20,37 +32,28 @@ module.exports = {
             this.$root.$emit('asset-selection-changed', this);
         }
     },
+    mounted:function(){
+        this.userAvatarUrl = this.renditionUrl + '/renditions/users/' + this.importedByUsername;
+        this.thumbnailUrl = this.renditionUrl + '/renditions/assets/' + this.id + '/t';
+        this.previewUrl = this.renditionUrl + '/renditions/assets/' + this.id + '/p'
+        this.isImage = this.type.startsWith('image') || this.type === 'application/postscript';
+        this.isVideo = this.type.startsWith('video');
+        this.isAudio = this.type.startsWith('audio');
+        this.isPdf = this.type === 'application/pdf';
+        this.isWord = this.type === 'application/msword' || this.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        this.isExcel = this.type === 'application/vnd.ms-excel' || this.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        this.isPowerpoint = this.type === 'application/vnd.ms-powerpoint' || this.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+        this.isDocument = this.isPdf || this.isWord || this.isExcel || this.isPowerpoint;
+        this.isArchive = this.type === 'application/zip';
+
+        this.$root.$on('display-asset-in-preview', (assetId) =>{
+            if(this.id === assetId){
+                this.$root.$emit('send-asset-to-preview', this);
+            }
+        });
+    },
     computed:{
-        userAvatarUrl:function(){
-            return this.renditionUrl + '/renditions/users/' + this.importedByUsername;
-        },
-        thumbnailUrl:function(){
-            return this.renditionUrl + '/renditions/assets/' + this.id + '/t'
-        },
-        isImage:function(){
-            return this.type.startsWith('image') || this.type === 'application/postscript';
-        },
-        isVideo:function(){
-            return this.type.startsWith('video');
-        },
-        isAudio:function(){
-            return this.type.startsWith('audio');
-        },
-        isPdf:function(){
-            return this.type === 'application/pdf';
-        },
-        isWord:function(){
-            return this.type === 'application/msword' || this.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-        },
-        isExcel:function(){
-            return this.type === 'application/vnd.ms-excel' || this.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-        },
-        isPowerpoint:function(){
-            return this.type === 'application/vnd.ms-powerpoint' || this.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
-        },
-        isArchive:function(){
-            return this.type === 'application/zip';
-        }
+
     },
     methods:{
         onClick:function(){
