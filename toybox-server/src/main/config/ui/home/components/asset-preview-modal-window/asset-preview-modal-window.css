@@ -21,6 +21,19 @@
 .toybox-preview-window-icons{
     font-size: 15em;
     color: white;
+    height: 100%;
+    width: 100%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.asset-preview-modal-window-preview-container{
+    height: 100%;
+    width: 100%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
 }
 
 .asset-preview-modal-window-asset-name{

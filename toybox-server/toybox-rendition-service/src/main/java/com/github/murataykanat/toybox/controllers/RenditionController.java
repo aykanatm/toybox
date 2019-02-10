@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.File;
 import java.io.InvalidObjectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -74,8 +75,11 @@ public class RenditionController {
                     if(StringUtils.isNotBlank(asset.getThumbnailPath())){
                         Path path = Paths.get(asset.getThumbnailPath());
                         resource = new ByteArrayResource(Files.readAllBytes(path));
+
+                        return new ResponseEntity<>(resource, HttpStatus.OK);
                     }
                     else{
+                        _logger.error("Thumbnail path is blank!");
                         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                     }
                 }
@@ -83,16 +87,22 @@ public class RenditionController {
                     if(StringUtils.isNotBlank(asset.getPreviewPath())){
                         Path path = Paths.get(asset.getPreviewPath());
                         resource = new ByteArrayResource(Files.readAllBytes(path));
+
+                        if(asset.getPreviewPath().endsWith("pdf")){
+                            return ResponseEntity.ok().header("Content-Disposition","inline; filename=" + new File(asset.getPreviewPath()).getName()).contentType(MediaType.APPLICATION_PDF).contentLength(resource.contentLength()).body(resource);
+                        }
+                        else{
+                            return new ResponseEntity<>(resource, HttpStatus.OK);
+                        }
                     }
                     else{
+                        _logger.error("Preview path is blank!");
                         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                     }
                 }
                 else{
                     throw new IllegalArgumentException("Rendition type is not recognized!");
                 }
-
-                return new ResponseEntity<>(resource, HttpStatus.OK);
             }
             else{
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);

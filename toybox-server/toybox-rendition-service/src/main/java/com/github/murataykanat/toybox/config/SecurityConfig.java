@@ -12,7 +12,11 @@ import org.springframework.web.cors.CorsConfiguration;
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity httpSecurity) throws Exception {
-        httpSecurity.antMatcher("/**")
+        httpSecurity
+                .headers()
+                    .frameOptions().disable()
+                .and()
+                .antMatcher("/**")
                 .authorizeRequests()
                 .antMatchers("/", "/login**")
                 .permitAll()

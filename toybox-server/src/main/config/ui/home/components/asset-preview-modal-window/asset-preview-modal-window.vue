@@ -11,21 +11,24 @@
 
         <i class="close icon" style="right: 0px !important; color: white;"></i>
         <div class="content">
-            <div>
+            <div style="height: 100%; width: 100%;">
                 <div class="asset-preview-modal-window-asset-left-arrow" v-on:click="previousAsset">
                     <i v-bind:class="{'arrow':true, 'alternate': true, 'circle':true, 'left':true, 'icon':true, 'asset-preview-modal-window-asset-arrow-icon':true, 'disabled':!canNavigateToPreviousAsset}"></i>
                 </div>
-                <div v-if="hasPreview">
-                    <div v-if="isImage">
+                <div v-if="hasPreview" style="height: 100%; width: 100%;">
+                    <div v-if="isImage" class="asset-preview-modal-window-preview-container">
                         <img class="ui centered image" v-bind:src="previewUrl" v-on:error="onPreviewImgSrcNotFound"/>
                     </div>
-                    <div v-else-if="isVideo">
+                    <div v-else-if="isVideo" class="asset-preview-modal-window-preview-container">
                         <video v-bind:src="previewUrl" type="video/mp4" controls>
                     </div>
-                    <div v-else-if="isAudio">
+                    <div v-else-if="isAudio" class="asset-preview-modal-window-preview-container">
                         <audio v-bind:src="previewUrl" type="audio/mpeg" controls>
                     </div>
-                    <div v-else>
+                    <div v-else-if="isDocument" class="asset-preview-modal-window-preview-container">
+                        <iframe v-bind:src="previewUrl" style="width: 100%; height: 100%; border: none;"></iframe>
+                    </div>
+                    <div v-else class="asset-preview-modal-window-preview-container">
                         <img class="ui centered image" v-bind:src="previewUrl" v-on:error="onPreviewImgSrcNotFound"/>
                     </div>
                 </div>

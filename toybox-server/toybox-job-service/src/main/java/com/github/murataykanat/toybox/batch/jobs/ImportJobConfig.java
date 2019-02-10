@@ -34,6 +34,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InvalidObjectException;
+import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.util.*;
 
@@ -55,6 +56,8 @@ public class ImportJobConfig {
     private String videoPreviewFormat;
     @Value("${audioPreviewFormat}")
     private String audioPreviewFormat;
+    @Value("${documentPreviewFormat}")
+    private String documentPreviewFormat;
 
     @Value("${imagemagickExecutable}")
     private String imagemagickExecutable;
@@ -70,8 +73,6 @@ public class ImportJobConfig {
     private String imagemagickPreviewSettings;
     @Value("${imagemagickEpsPreviewSettings}")
     private String imagemagickEpsPreviewSettings;
-    @Value("${imagemagickPdfPreviewSettings}")
-    private String imagemagickPdfPreviewSettings;
     @Value("${imagemagickTimeout}")
     private String imagemagickTimeout;
 
@@ -409,7 +410,12 @@ public class ImportJobConfig {
                 fileFormat = audioPreviewFormat;
             }
             else if(assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLSX)
-                    || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLS)){
+                    || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLS)
+                    || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPT)
+                    || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPTX)
+                    || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOC)
+                    || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOCX)
+                    || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_PDF)){
                 fileFormat = "pdf";
             }
             else if(assetMimeType.equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_GIF)){
@@ -422,7 +428,7 @@ public class ImportJobConfig {
             gifsicleSettings = gifsiclePreviewSettings;
             imagemagickSettings = imagemagickPreviewSettings;
             imagemagickEpsSettings = imagemagickEpsPreviewSettings;
-            imagemagickPdfSettings = imagemagickPdfPreviewSettings;
+            imagemagickPdfSettings = "";
             ffmpegVideoSettings = ffmpegVideoPreviewSettings;
             ffmpegAudioSettings = ffmpegAudioPreviewSettings;
         }
@@ -433,11 +439,7 @@ public class ImportJobConfig {
         if(assetMimeType.equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_GIF)){
             renditionProperties.setRenditionSettings(gifsicleSettings);
         }
-        else if(assetMimeType.startsWith(Constants.IMAGE_MIME_TYPE_PREFIX)
-                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPTX)
-                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPT)
-                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOCX)
-                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOC)){
+        else if(assetMimeType.startsWith(Constants.IMAGE_MIME_TYPE_PREFIX)){
             renditionProperties.setRenditionSettings(imagemagickSettings);
         }
         else if(assetMimeType.equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_EPS)){
@@ -445,7 +447,11 @@ public class ImportJobConfig {
         }
         else if(assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_PDF)
                 || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLSX)
-                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLS)){
+                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLS)
+                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPTX)
+                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPT)
+                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOCX)
+                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOC)){
             renditionProperties.setRenditionSettings(imagemagickPdfSettings);
         }
         else if(assetMimeType.startsWith(Constants.VIDEO_MIME_TYPE_PREFIX)){
@@ -519,12 +525,6 @@ public class ImportJobConfig {
         for(Asset asset: assets){
             File inputFile = new File(asset.getPath());
             if(inputFile.exists()){
-                if(asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PDF) || asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_PHOTOSHOP)){
-                    // If we are creating renditions of a PDF file, we only use the first page
-                    // If we are creating renditions of a PSB file, we get the top layer
-                    inputFile = new File(asset.getPath() + "[0]");
-                }
-
                 String assetFolderPath = assetRepositoryPath + File.separator + asset.getId();
                 File outputFile;
                 String renditionSettings;
@@ -532,6 +532,12 @@ public class ImportJobConfig {
                 String assetThumbnailPath = null;
 
                 if(renditionType == RenditionTypes.Preview){
+                    if(asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_PHOTOSHOP)){
+                        // If we are creating renditions of a PDF file, we only use the first page
+                        // If we are creating renditions of a PSB file, we get the top layer
+                        inputFile = new File(asset.getPath() + "[0]");
+                    }
+
                     assetPreviewPath = assetRepositoryPath + File.separator + asset.getId() + File.separator + "preview";
                     createFolder(assetFolderPath, assetPreviewPath);
 
@@ -540,6 +546,12 @@ public class ImportJobConfig {
                     renditionSettings = renditionProperties.getRenditionSettings();
                 }
                 else if(renditionType == RenditionTypes.Thumbnail){
+                    if(asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PDF) || asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_PHOTOSHOP)){
+                        // If we are creating renditions of a PDF file, we only use the first page
+                        // If we are creating renditions of a PSB file, we get the top layer
+                        inputFile = new File(asset.getPath() + "[0]");
+                    }
+
                     assetThumbnailPath = assetRepositoryPath + File.separator + asset.getId() + File.separator + "thumbnail";
                     createFolder(assetFolderPath, assetThumbnailPath);
 
@@ -551,58 +563,47 @@ public class ImportJobConfig {
                     throw new IllegalArgumentException("Unknown rendition type!");
                 }
 
-                if(StringUtils.isNotBlank(renditionSettings)){
-                    // Generate rendition
-                    if(asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_GIF)){
-                        runExecutable(asset, inputFile, outputFile, gifsicleExecutable, gifsicleTimeout, renditionSettings, renditionType,Constants.GIFSICLE);
-                    }
-                    else if(asset.getType().startsWith(Constants.IMAGE_MIME_TYPE_PREFIX)
-                            || asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_EPS)
-                            || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PDF)
-                            || asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_PHOTOSHOP)){
-                        runExecutable(asset, inputFile, outputFile, imagemagickExecutable, imagemagickTimeout, renditionSettings, renditionType, Constants.IMAGEMAGICK);
-                    }
-                    else if(asset.getType().startsWith(Constants.VIDEO_MIME_TYPE_PREFIX) || asset.getType().startsWith(Constants.AUIDO_MIME_TYPE_PREFIX)){
-                        runExecutable(asset, inputFile, outputFile, ffmpegExecutable, ffmpegTimeout, renditionSettings, renditionType, Constants.FFMPEG);
-                    }
-                    else if(asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOCX)
-                            || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOC)
-                            || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLSX)
-                            || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLS)
-                            || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPTX)
-                            || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPT)){
-                        LocalOfficeManager officeManager = LocalOfficeManager.install();
+                // Generate rendition
+                if(asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_GIF)){
+                    runExecutable(asset, inputFile, outputFile, gifsicleExecutable, gifsicleTimeout, renditionSettings, renditionType,Constants.GIFSICLE);
+                }
+                else if(asset.getType().startsWith(Constants.IMAGE_MIME_TYPE_PREFIX)
+                        || asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_EPS)
+                        || asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_PHOTOSHOP)){
+                    runExecutable(asset, inputFile, outputFile, imagemagickExecutable, imagemagickTimeout, renditionSettings, renditionType, Constants.IMAGEMAGICK);
+                }
+                else if(asset.getType().startsWith(Constants.VIDEO_MIME_TYPE_PREFIX) || asset.getType().startsWith(Constants.AUIDO_MIME_TYPE_PREFIX)){
+                    runExecutable(asset, inputFile, outputFile, ffmpegExecutable, ffmpegTimeout, renditionSettings, renditionType, Constants.FFMPEG);
+                }
+                else if(asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOCX)
+                        || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOC)
+                        || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLSX)
+                        || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLS)
+                        || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPTX)
+                        || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPT)){
+                    LocalOfficeManager officeManager = LocalOfficeManager.install();
 
-                        try{
-                            officeManager.start();
+                    try{
+                        officeManager.start();
 
-                            PageSelectorFilter selectorFilter = new PageSelectorFilter(1);
+                        PageSelectorFilter selectorFilter = new PageSelectorFilter(1);
 
-                            if(outputFile != null){
-                                if(!outputFile.exists()){
-                                    _logger.debug("Creating file " + outputFile.getAbsolutePath() + "...");
-                                    boolean newFile = outputFile.createNewFile();
-                                    if(newFile){
-                                        _logger.debug("Generating office rendition...");
-                                        LocalConverter
-                                                .builder()
-                                                .filterChain(selectorFilter)
-                                                .build()
-                                                .convert(inputFile)
-                                                .to(outputFile)
-                                                .execute();
+                        if(outputFile != null){
+                            if(!outputFile.exists()){
+                                _logger.debug("Creating file " + outputFile.getAbsolutePath() + "...");
+                                boolean newFile = outputFile.createNewFile();
+                                if(newFile){
+                                    _logger.debug("Generating office rendition...");
+                                    LocalConverter
+                                            .builder()
+                                            .filterChain(selectorFilter)
+                                            .build()
+                                            .convert(inputFile)
+                                            .to(outputFile)
+                                            .execute();
 
-                                        File pngOutput;
-                                        if(renditionType == RenditionTypes.Thumbnail){
-                                            pngOutput = new File(assetThumbnailPath + File.separator + asset.getId() + "." + imageThumbnailFormat);
-                                        }
-                                        else if(renditionType == RenditionTypes.Preview){
-                                            pngOutput = new File(assetPreviewPath + File.separator + asset.getId() + "." + imageThumbnailFormat);
-                                        }
-                                        else{
-                                            throw new IllegalArgumentException("Unknown rendition type!");
-                                        }
-
+                                    if(renditionType == RenditionTypes.Thumbnail){
+                                        File pngOutput = new File(assetThumbnailPath + File.separator + asset.getId() + "." + imageThumbnailFormat);
 
                                         if(asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLSX)
                                                 || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLS)){
@@ -617,28 +618,37 @@ public class ImportJobConfig {
                                         }
                                     }
                                     else{
-                                        throw new IOException("Unable to create file " + outputFile.getAbsolutePath() + ".");
+                                        updateAssetRendition(asset.getId(), outputFile.getAbsolutePath(), renditionType);
                                     }
                                 }
                                 else{
-                                    throw new IOException("Output file " + outputFile.getAbsolutePath() + " already exists!");
+                                    throw new IOException("Unable to create file " + outputFile.getAbsolutePath() + ".");
                                 }
                             }
                             else{
-                                throw new InvalidObjectException("Output file is null!");
+                                throw new IOException("Output file " + outputFile.getAbsolutePath() + " already exists!");
                             }
                         }
-                        catch (Exception e){
-                            String errorMessage = "Office failed to generate the rendition of the file " + inputFile.getAbsolutePath() + ". " + e.getLocalizedMessage();
-                            _logger.error(errorMessage, e);
-                        }
-                        finally {
-                            LocalOfficeUtils.stopQuietly(officeManager);
+                        else{
+                            throw new InvalidObjectException("Output file is null!");
                         }
                     }
+                    catch (Exception e){
+                        String errorMessage = "Office failed to generate the rendition of the file " + inputFile.getAbsolutePath() + ". " + e.getLocalizedMessage();
+                        _logger.error(errorMessage, e);
+                    }
+                    finally {
+                        LocalOfficeUtils.stopQuietly(officeManager);
+                    }
                 }
-                else{
-                    _logger.debug("There is no rendition settings to apply. Skipping...");
+                else if(asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PDF)){
+                    if(renditionType == RenditionTypes.Thumbnail){
+                        runExecutable(asset, inputFile, outputFile, imagemagickExecutable, imagemagickTimeout, renditionSettings, renditionType, Constants.IMAGEMAGICK);
+                    }
+                    else{
+                        Files.copy(inputFile.toPath(), outputFile.toPath());
+                        updateAssetRendition(asset.getId(), outputFile.getAbsolutePath(), renditionType);
+                    }
                 }
             }
             else{

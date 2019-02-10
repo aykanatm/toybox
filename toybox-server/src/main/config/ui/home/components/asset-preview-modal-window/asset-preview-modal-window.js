@@ -77,6 +77,9 @@ module.exports = {
         isPowerpoint:function(){
             return this.asset.isPowerpoint;
         },
+        isDocument:function(){
+            return this.asset.isPdf || this.asset.isWord || this.asset.isExcel || this.asset.isPowerpoint;
+        },
         isArchive:function(){
             return this.asset.isArchive;
         },
