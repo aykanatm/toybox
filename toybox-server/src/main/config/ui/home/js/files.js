@@ -8,9 +8,9 @@ const files = new Vue({
         isLoading: false,
         // Sorting
         defaultSortType: 'des',
-        defaultSortColumn: 'asset_name',
+        defaultSortColumn: 'asset_import_date',
         sortType: 'des',
-        sortColumn: 'asset_name',
+        sortColumn: 'asset_import_date',
         sortedAscByAssetName: false,
         sortedDesByAssetName: false,
         sortedAscByAssetImportDate: false,
