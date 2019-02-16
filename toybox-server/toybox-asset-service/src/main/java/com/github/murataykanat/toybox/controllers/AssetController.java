@@ -1,7 +1,6 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.dbo.Asset;
-import com.github.murataykanat.toybox.dbo.Role;
 import com.github.murataykanat.toybox.dbo.mappers.asset.AssetRowMapper;
 import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
 import com.github.murataykanat.toybox.schema.asset.RetrieveAssetsResults;
@@ -18,16 +17,20 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.*;
@@ -43,6 +46,38 @@ public class AssetController {
 
     @Value("${importStagingPath}")
     private String importStagingPath;
+
+    @RequestMapping(value = "/assets/{assetId}/download", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public ResponseEntity<Resource> downloadAsset(@PathVariable String assetId){
+        _logger.debug("downloadAsset() >> [" + assetId + "]");
+        try{
+            Asset asset = getAsset(assetId);
+            if(asset != null){
+                if(StringUtils.isNotBlank(asset.getPath())){
+                    File file = new File(asset.getPath());
+                    InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
+
+                    _logger.debug("<< downloadAsset()");
+                    return new ResponseEntity<>(resource, HttpStatus.OK);
+
+                }
+                else{
+                    _logger.error("Asset path is blank!");
+                    return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                }
+            }
+            else{
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while the asset with ID " + assetId + ". " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            _logger.debug("<< downloadAsset()");
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
     // The name "upload" must match the "name" attribute of the input in UI (
     @RequestMapping(value = "/assets/upload", method = RequestMethod.POST)
@@ -192,5 +227,25 @@ public class AssetController {
             _logger.debug("<< retrieveAssets()");
             return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private Asset getAsset(String assetId){
+        _logger.debug("getAsset() >> [" + assetId + "]");
+        Asset result = null;
+
+        List<Asset> assets = jdbcTemplate.query("SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type FROM assets WHERE asset_id=?", new Object[]{assetId},  new AssetRowMapper());
+        if(assets != null){
+            if(!assets.isEmpty()){
+                if(assets.size() == 1){
+                    result = assets.get(0);
+                }
+                else{
+                    throw new DuplicateKeyException("Asset ID " + assetId + " is duplicate!");
+                }
+            }
+        }
+
+        _logger.debug("<< getAsset()");
+        return result;
     }
 }

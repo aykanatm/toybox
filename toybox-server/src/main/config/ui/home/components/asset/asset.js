@@ -1,4 +1,5 @@
 module.exports = {
+    mixins:[configServiceMixin, assetActionsMixin],
     props:{
         id: String,
         name: String,
@@ -83,6 +84,7 @@ module.exports = {
         },
         assetDownload:function(){
             console.log('Downloading the file with ID "' + this.id + '"');
+            this.downloadAsset(this.name, this.id, this.type);
             this.contextMenuOpen = false;
         },
         assetRename:function(){
