@@ -1,10 +1,13 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.batch.utils.Constants;
+import com.github.murataykanat.toybox.dbo.Asset;
+import com.github.murataykanat.toybox.dbo.mappers.asset.AssetRowMapper;
 import com.github.murataykanat.toybox.dbo.mappers.job.ToyboxJobRowMapper;
 import com.github.murataykanat.toybox.dbo.mappers.job.ToyboxJobStepRowMapper;
 import com.github.murataykanat.toybox.models.job.ToyboxJob;
 import com.github.murataykanat.toybox.models.job.ToyboxJobStep;
+import com.github.murataykanat.toybox.schema.asset.SelectedAssets;
 import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.job.*;
@@ -19,6 +22,7 @@ import org.springframework.batch.core.*;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.Authentication;
@@ -36,7 +40,70 @@ public class JobController {
     @Autowired
     private Job importJob;
     @Autowired
+    private Job compressionJob;
+    @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @RequestMapping(value = "/jobs/compress", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<JobResponse> compressAssets(Authentication authentication, @RequestBody SelectedAssets selectedAssets){
+        _logger.debug("compressAssets() >>");
+        try{
+            List<String> selectedAssetIds = selectedAssets.getSelectedAssets();
+            if(!selectedAssetIds.isEmpty()){
+                // TODO: Find a better way to filter assets
+                List<Asset> allAssets = jdbcTemplate.query("SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type FROM assets", new AssetRowMapper());
+
+                List<Asset> assets = allAssets.stream().filter(asset -> selectedAssetIds.contains(asset.getId())).collect(Collectors.toList());
+
+                if(!assets.isEmpty()){
+                    JobParametersBuilder builder = new JobParametersBuilder();
+
+                    for(int i = 0; i < assets.size(); i++){
+                        Asset asset = assets.get(i);
+                        builder.addString(Constants.JOB_PARAM_COMPRESSION_FILE + "_" + i, asset.getPath());
+                    }
+                    builder.addString(Constants.JOB_PARAM_USERNAME, authentication.getName());
+                    builder.addString(Constants.JOB_PARAM_SYSTEM_MILLIS, String.valueOf(System.currentTimeMillis()));
+
+                    _logger.debug("Launching job [" + compressionJob.getName() + "]...");
+                    JobExecution jobExecution = jobLauncher.run(compressionJob, builder.toJobParameters());
+                    jobExecution.getExecutionContext().put("jobId", jobExecution.getJobId());
+
+                    JobResponse jobResponse = new JobResponse();
+                    jobResponse.setJobId(jobExecution.getJobId());
+                    jobResponse.setMessage("Compression job started.");
+
+                    _logger.debug("<< compressAssets()");
+                    return new ResponseEntity<>(jobResponse, HttpStatus.CREATED);
+                }
+                else{
+                    String message = "No assets were found in the system with the requested IDs.";
+                    JobResponse jobResponse = new JobResponse();
+                    jobResponse.setMessage(message);
+
+                    _logger.debug("<< compressAssets()");
+                    return new ResponseEntity<>(jobResponse, HttpStatus.NO_CONTENT);
+                }
+            }
+            else{
+                String message = "No assets were found in the request.";
+                JobResponse jobResponse = new JobResponse();
+                jobResponse.setMessage(message);
+
+                _logger.debug("<< compressAssets()");
+                return new ResponseEntity<>(jobResponse, HttpStatus.NOT_FOUND);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while compressing a batch. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+            JobResponse jobResponse = new JobResponse();
+            jobResponse.setMessage(errorMessage);
+
+            _logger.debug("<< compressAssets()");
+            return new ResponseEntity<>(jobResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
     @RequestMapping(value = "/jobs/import", method = RequestMethod.POST)
     public ResponseEntity<ImportAssetResponse> importAsset(@RequestBody UploadFileLst uploadFileLst) {

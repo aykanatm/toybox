@@ -4,8 +4,11 @@ import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.dbo.mappers.asset.AssetRowMapper;
 import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
 import com.github.murataykanat.toybox.schema.asset.RetrieveAssetsResults;
+import com.github.murataykanat.toybox.schema.asset.SelectedAssets;
 import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
+import com.github.murataykanat.toybox.schema.job.JobResponse;
+import com.github.murataykanat.toybox.schema.job.RetrieveToyboxJobResult;
 import com.github.murataykanat.toybox.schema.upload.UploadFile;
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
 import com.github.murataykanat.toybox.utilities.FacetUtils;
@@ -20,19 +23,17 @@ import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import javax.servlet.http.HttpSession;
+import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -46,38 +47,114 @@ public class AssetController {
 
     @Value("${importStagingPath}")
     private String importStagingPath;
+    @Value("${exportStagingPath}")
+    private String exportStagingPath;
 
-    @RequestMapping(value = "/assets/{assetId}/download", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public ResponseEntity<Resource> downloadAsset(@PathVariable String assetId){
-        _logger.debug("downloadAsset() >> [" + assetId + "]");
+    @RequestMapping(value = "/assets/download", method = RequestMethod.POST, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public ResponseEntity<Resource> downloadAssets(HttpSession session, @RequestBody SelectedAssets selectedAssets){
+        _logger.debug("downloadAssets() >>");
+        List<String> assets = selectedAssets.getSelectedAssets();
         try{
-            Asset asset = getAsset(assetId);
-            if(asset != null){
-                if(StringUtils.isNotBlank(asset.getPath())){
-                    File file = new File(asset.getPath());
-                    InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
+            if(assets != null){
+                if(!assets.isEmpty()){
+                    if(assets.size() == 1) {
+                        Asset asset = getAsset(assets.get(0));
+                        if(asset != null){
+                            if(StringUtils.isNotBlank(asset.getPath())){
+                                File file = new File(asset.getPath());
+                                InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
 
-                    _logger.debug("<< downloadAsset()");
-                    return new ResponseEntity<>(resource, HttpStatus.OK);
+                                _logger.debug("<< downloadAssets()");
+                                return new ResponseEntity<>(resource, HttpStatus.OK);
+                            }
+                            else{
+                                _logger.error("Asset path is blank!");
+                                _logger.debug("<< downloadAssets()");
+                                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                            }
+                        }
+                        else{
+                            _logger.debug("<< downloadAssets()");
+                            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                        }
+                    }
+                    else{
+                        _logger.debug("Session ID: " + session.getId());
+                        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
+                        _logger.debug("CSRF Token: " + token.getToken());
 
+                        RestTemplate restTemplate = new RestTemplate();
+                        HttpHeaders headers = new HttpHeaders();
+                        headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
+                        headers.set("X-XSRF-TOKEN", token.getToken());
+                        HttpEntity<SelectedAssets> selectedAssetsEntity = new HttpEntity<>(selectedAssets, headers);
+                        ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity("http://localhost:8102/jobs/compress", selectedAssetsEntity, JobResponse.class);
+                        if(jobResponseResponseEntity != null){
+                            _logger.debug(jobResponseResponseEntity);
+                            JobResponse jobResponse = jobResponseResponseEntity.getBody();
+                            if(jobResponse != null){
+                                _logger.debug("Job response message: " + jobResponse.getMessage());
+                                _logger.debug("Job ID: " + jobResponse.getJobId());
+                                File archiveFile = getArchiveFile(jobResponse.getJobId(), headers);
+                                if(archiveFile != null){
+                                    InputStreamResource resource = new InputStreamResource(new FileInputStream(archiveFile));
+
+                                    _logger.debug("<< downloadAssets()");
+                                    return new ResponseEntity<>(resource, HttpStatus.OK);
+                                }
+                                else{
+                                    _logger.debug("<< downloadAssets()");
+                                    return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+                                }
+                            }
+                            else{
+                                throw new InvalidObjectException("Job response is null!");
+                            }
+                        }
+                        else{
+                            throw new InvalidObjectException("Job response entity is null!");
+                        }
+                    }
                 }
                 else{
-                    _logger.error("Asset path is blank!");
+                    _logger.debug("<< downloadAssets()");
                     return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                 }
             }
             else{
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                throw new InvalidObjectException("Asset list is null!");
             }
         }
         catch (Exception e){
-            String errorMessage = "An error occurred while the asset with ID " + assetId + ". " + e.getLocalizedMessage();
+            String errorMessage = "An error occurred while downloading selected assets. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
-            _logger.debug("<< downloadAsset()");
+            _logger.debug("<< downloadAssets()");
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    private File getArchiveFile(long jobId, HttpHeaders headers) {
+        _logger.debug("getArchiveFile() >>");
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<RetrieveToyboxJobResult> retrieveToyboxJobResultResponseEntity = restTemplate.exchange("http://localhost:8102/jobs/" + jobId, HttpMethod.GET, new HttpEntity<>(headers), RetrieveToyboxJobResult.class);
+        RetrieveToyboxJobResult retrieveToyboxJobResult = retrieveToyboxJobResultResponseEntity.getBody();
+        if(retrieveToyboxJobResult.getToyboxJob().getStatus().equalsIgnoreCase("COMPLETED")){
+            String downloadFilePath =  exportStagingPath + File.separator + jobId + File.separator + "Download.zip";
+            File file = new File(downloadFilePath);
+            _logger.debug("<< getArchiveFile()");
+            return file;
+        }
+        else if(retrieveToyboxJobResult.getToyboxJob().getStatus().equalsIgnoreCase("FAILED")){
+            _logger.info("Job with ID '" + jobId + "' failed.");
+            _logger.debug("<< getArchiveFile()");
+            return null;
+        }
+        else{
+            return getArchiveFile(jobId, headers);
+        }
+    }
+
 
     // The name "upload" must match the "name" attribute of the input in UI (
     @RequestMapping(value = "/assets/upload", method = RequestMethod.POST)
