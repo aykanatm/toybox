@@ -11,7 +11,7 @@ import org.springframework.core.task.SimpleAsyncTaskExecutor;
 @Configuration
 @EnableBatchProcessing
 public class BatchConfig {
-    // Makes the job execution asynchronous so that we get the job id immediatly after we start the job
+    // Makes the job execution asynchronous so that we get the job id immediately after we start the job
     @Bean
     public JobLauncher jobLauncher(JobRepository jobRepository){
         SimpleJobLauncher jobLauncher = new SimpleJobLauncher();
