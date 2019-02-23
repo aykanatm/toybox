@@ -93,7 +93,7 @@ public class AssetController {
                         headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
                         headers.set("X-XSRF-TOKEN", token.getToken());
                         HttpEntity<SelectedAssets> selectedAssetsEntity = new HttpEntity<>(selectedAssets, headers);
-                        ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/compress", selectedAssetsEntity, JobResponse.class);
+                        ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/package", selectedAssetsEntity, JobResponse.class);
                         if(jobResponseResponseEntity != null){
                             _logger.debug(jobResponseResponseEntity);
                             JobResponse jobResponse = jobResponseResponseEntity.getBody();

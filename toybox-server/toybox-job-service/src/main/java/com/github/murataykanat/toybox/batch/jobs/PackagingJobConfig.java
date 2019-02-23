@@ -30,14 +30,14 @@ import java.util.zip.ZipOutputStream;
 @RefreshScope
 @Configuration
 @EnableBatchProcessing
-public class CompressJobConfig {
-    private static final Log _logger = LogFactory.getLog(CompressJobConfig.class);
+public class PackagingJobConfig {
+    private static final Log _logger = LogFactory.getLog(PackagingJobConfig.class);
 
     @Value("${exportStagingPath}")
     private String exportStagingPath;
 
     @Bean
-    public Job compressionJob(JobBuilderFactory jobBuilderFactory, StepBuilderFactory stepBuilderFactory){
+    public Job packagingJob(JobBuilderFactory jobBuilderFactory, StepBuilderFactory stepBuilderFactory){
         Step stepCompressAssets = stepBuilderFactory.get(Constants.STEP_COMPRESSION_GENERATE_ARCHIVE)
                 .tasklet(new Tasklet() {
                     @Override
@@ -107,15 +107,15 @@ public class CompressJobConfig {
                 })
                 .build();
 
-        return jobBuilderFactory.get(Constants.JOB_COMPRESSION_NAME)
+        return jobBuilderFactory.get(Constants.JOB_PACKAGING_NAME)
                 .incrementer(new RunIdIncrementer())
-                .validator(compressionValidator())
+                .validator(packagingValidator())
                 .flow(stepCompressAssets)
                 .end()
                 .build();
     }
 
-    private JobParametersValidator compressionValidator(){
+    private JobParametersValidator packagingValidator(){
         return new JobParametersValidator(){
             @Override
             public void validate(JobParameters parameters) throws JobParametersInvalidException {

@@ -40,13 +40,13 @@ public class JobController {
     @Autowired
     private Job importJob;
     @Autowired
-    private Job compressionJob;
+    private Job packagingJob;
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @RequestMapping(value = "/jobs/compress", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<JobResponse> compressAssets(Authentication authentication, @RequestBody SelectedAssets selectedAssets){
-        _logger.debug("compressAssets() >>");
+    @RequestMapping(value = "/jobs/package", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<JobResponse> packageAssets(Authentication authentication, @RequestBody SelectedAssets selectedAssets){
+        _logger.debug("packageAssets() >>");
         try{
             List<String> selectedAssetIds = selectedAssets.getSelectedAssets().stream().map(asset -> asset.getId()).collect(Collectors.toList());
 
@@ -66,15 +66,15 @@ public class JobController {
                     builder.addString(Constants.JOB_PARAM_USERNAME, authentication.getName());
                     builder.addString(Constants.JOB_PARAM_SYSTEM_MILLIS, String.valueOf(System.currentTimeMillis()));
 
-                    _logger.debug("Launching job [" + compressionJob.getName() + "]...");
-                    JobExecution jobExecution = jobLauncher.run(compressionJob, builder.toJobParameters());
+                    _logger.debug("Launching job [" + packagingJob.getName() + "]...");
+                    JobExecution jobExecution = jobLauncher.run(packagingJob, builder.toJobParameters());
                     jobExecution.getExecutionContext().put("jobId", jobExecution.getJobId());
 
                     JobResponse jobResponse = new JobResponse();
                     jobResponse.setJobId(jobExecution.getJobId());
                     jobResponse.setMessage("Compression job started.");
 
-                    _logger.debug("<< compressAssets()");
+                    _logger.debug("<< packageAssets()");
                     return new ResponseEntity<>(jobResponse, HttpStatus.CREATED);
                 }
                 else{
@@ -82,7 +82,7 @@ public class JobController {
                     JobResponse jobResponse = new JobResponse();
                     jobResponse.setMessage(message);
 
-                    _logger.debug("<< compressAssets()");
+                    _logger.debug("<< packageAssets()");
                     return new ResponseEntity<>(jobResponse, HttpStatus.NO_CONTENT);
                 }
             }
@@ -91,7 +91,7 @@ public class JobController {
                 JobResponse jobResponse = new JobResponse();
                 jobResponse.setMessage(message);
 
-                _logger.debug("<< compressAssets()");
+                _logger.debug("<< packageAssets()");
                 return new ResponseEntity<>(jobResponse, HttpStatus.NOT_FOUND);
             }
         }
@@ -101,7 +101,7 @@ public class JobController {
             JobResponse jobResponse = new JobResponse();
             jobResponse.setMessage(errorMessage);
 
-            _logger.debug("<< compressAssets()");
+            _logger.debug("<< packageAssets()");
             return new ResponseEntity<>(jobResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
