@@ -120,7 +120,7 @@ public class RenditionController {
         _logger.debug("getAsset() >> [" + assetId + "]");
         Asset result = null;
 
-        List<Asset> assets = jdbcTemplate.query("SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type FROM assets WHERE asset_id=?", new Object[]{assetId},  new AssetRowMapper());
+        List<Asset> assets = jdbcTemplate.query("SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted FROM assets WHERE asset_id=?", new Object[]{assetId},  new AssetRowMapper());
         if(assets != null){
             if(!assets.isEmpty()){
                 if(assets.size() == 1){

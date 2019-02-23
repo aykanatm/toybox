@@ -4,17 +4,20 @@ public final class Constants {
     private Constants(){}
     public static final String JOB_IMPORT_NAME = "toybox-import";
     public static final String JOB_PACKAGING_NAME = "toybox-packaging";
+    public static final String JOB_DELETE_NAME = "toybox-delete";
 
     public static final String STEP_IMPORT_GENERATE_ASSETS = "toybox-import-generate-asset";
     public static final String STEP_IMPORT_GENERATE_THUMBNAILS = "toybox-import-generate-thumbnail";
     public static final String STEP_IMPORT_GENERATE_PREVIEWS = "toybox-import-generate-preview";
     public static final String STEP_IMPORT_DELETE_TEMP_FILES = "toybox-import-delete-temp-files";
-    public static final String STEP_COMPRESSION_GENERATE_ARCHIVE = "toybox-compression-generate-archive";
+    public static final String STEP_PACKAGING_GENERATE_ARCHIVE = "toybox-packaging-generate-archive";
+    public static final String STEP_DELETE_SET_ASSETS_AS_DELETED = "toybox-delete-set-assets-as-deleted";
 
     public static final String JOB_PARAM_UPLOADED_FILE = "toybox-import-param-uploaded-file";
     public static final String JOB_PARAM_USERNAME = "toybox-job-param-username";
     public static final String JOB_PARAM_SYSTEM_MILLIS = "toybox-job-param-system-millis";
-    public static final String JOB_PARAM_COMPRESSION_FILE = "toybox-job-param-compression-file";
+    public static final String JOB_PARAM_PACKAGING_FILE = "toybox-job-param-packaging-file";
+    public static final String JOB_PARAM_DELETE_ASSET_ID = "toybox-job-param-delete-asset-id";
 
     public static final int ASSET_ID_LENGTH = 40;
 

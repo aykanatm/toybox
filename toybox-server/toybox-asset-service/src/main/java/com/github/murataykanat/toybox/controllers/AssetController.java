@@ -6,6 +6,7 @@ import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
 import com.github.murataykanat.toybox.schema.asset.RetrieveAssetsResults;
 import com.github.murataykanat.toybox.schema.asset.SelectedAssets;
 import com.github.murataykanat.toybox.schema.common.Facet;
+import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
 import com.github.murataykanat.toybox.schema.job.RetrieveToyboxJobResult;
@@ -142,7 +143,7 @@ public class AssetController {
     private File getArchiveFile(long jobId, HttpHeaders headers) {
         _logger.debug("getArchiveFile() >>");
         RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<RetrieveToyboxJobResult> retrieveToyboxJobResultResponseEntity = restTemplate.exchange("http://localhost:8102/jobs/" + jobId, HttpMethod.GET, new HttpEntity<>(headers), RetrieveToyboxJobResult.class);
+        ResponseEntity<RetrieveToyboxJobResult> retrieveToyboxJobResultResponseEntity = restTemplate.exchange(jobServiceUrl + "/jobs/" + jobId, HttpMethod.GET, new HttpEntity<>(headers), RetrieveToyboxJobResult.class);
         RetrieveToyboxJobResult retrieveToyboxJobResult = retrieveToyboxJobResultResponseEntity.getBody();
         if(retrieveToyboxJobResult.getToyboxJob().getStatus().equalsIgnoreCase("COMPLETED")){
             String downloadFilePath =  exportStagingPath + File.separator + jobId + File.separator + "Download.zip";
@@ -251,9 +252,8 @@ public class AssetController {
             int limit = assetSearchRequest.getLimit();
             List<SearchRequestFacet> searchRequestFacetList = assetSearchRequest.getAssetSearchRequestFacetList();
 
-            List<Asset> allAssets = jdbcTemplate.query("SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type FROM assets", new AssetRowMapper());
+            List<Asset> allAssets = jdbcTemplate.query("SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted FROM assets WHERE deleted=?", new Object[]{"N"}, new AssetRowMapper());
             if(!allAssets.isEmpty()){
-
                 List<Asset> assets;
 
                 if(searchRequestFacetList != null && !searchRequestFacetList.isEmpty()){
@@ -323,11 +323,85 @@ public class AssetController {
         }
     }
 
+    @RequestMapping(value = "/assets/delete", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<GenericResponse> deleteAssets(HttpSession session, @RequestBody SelectedAssets selectedAssets){
+        _logger.debug("deleteAssets() >>");
+        try{
+            if(selectedAssets != null){
+
+                _logger.debug("Session ID: " + session.getId());
+                CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
+                _logger.debug("CSRF Token: " + token.getToken());
+
+                RestTemplate restTemplate = new RestTemplate();
+                HttpHeaders headers = new HttpHeaders();
+                headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
+                headers.set("X-XSRF-TOKEN", token.getToken());
+                HttpEntity<SelectedAssets> selectedAssetsEntity = new HttpEntity<>(selectedAssets, headers);
+                ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/delete", selectedAssetsEntity, JobResponse.class);
+                long jobId = jobResponseResponseEntity.getBody().getJobId();
+
+                boolean jobSucceeded = isJobSuccessful(jobId, headers);
+
+                if(jobSucceeded){
+                    GenericResponse genericResponse = new GenericResponse();
+                    genericResponse.setMessage("Asset(s) deleted successfully.");
+
+                    return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                }
+                else{
+                    GenericResponse genericResponse = new GenericResponse();
+                    genericResponse.setMessage("An error occurred while deleting assets.");
+
+                    return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                }
+            }
+            else{
+                String errorMessage = "Selected assets are null!";
+                _logger.error(errorMessage);
+
+                GenericResponse genericResponse = new GenericResponse();
+                genericResponse.setMessage(errorMessage);
+
+                _logger.debug("<< deleteAssets()");
+                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while deleting assets. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            GenericResponse genericResponse = new GenericResponse();
+            genericResponse.setMessage(errorMessage);
+
+            _logger.debug("<< deleteAssets()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private boolean isJobSuccessful(long jobId, HttpHeaders headers) {
+        _logger.debug("isJobSuccessful() >>");
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<RetrieveToyboxJobResult> retrieveToyboxJobResultResponseEntity = restTemplate.exchange(jobServiceUrl + "/jobs/" + jobId, HttpMethod.GET, new HttpEntity<>(headers), RetrieveToyboxJobResult.class);
+        RetrieveToyboxJobResult retrieveToyboxJobResult = retrieveToyboxJobResultResponseEntity.getBody();
+        if(retrieveToyboxJobResult.getToyboxJob().getStatus().equalsIgnoreCase("COMPLETED")){
+            return true;
+        }
+        else if(retrieveToyboxJobResult.getToyboxJob().getStatus().equalsIgnoreCase("FAILED")){
+            _logger.info("Job with ID '" + jobId + "' failed.");
+            _logger.debug("<< isJobSuccessful()");
+            return false;
+        }
+        else{
+            return isJobSuccessful(jobId, headers);
+        }
+    }
+
     private Asset getAsset(String assetId){
         _logger.debug("getAsset() >> [" + assetId + "]");
         Asset result = null;
 
-        List<Asset> assets = jdbcTemplate.query("SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type FROM assets WHERE asset_id=?", new Object[]{assetId},  new AssetRowMapper());
+        List<Asset> assets = jdbcTemplate.query("SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted FROM assets WHERE asset_id=?", new Object[]{assetId},  new AssetRowMapper());
         if(assets != null){
             if(!assets.isEmpty()){
                 if(assets.size() == 1){

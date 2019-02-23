@@ -35,17 +35,14 @@ public class Asset implements Serializable {
     private String type;
 
     @Column(name = "asset_path")
-    // @JsonProperty("path")
     @JsonIgnore
     private String path;
 
     @Column(name = "asset_preview_path")
-    // @JsonProperty("previewPath")
     @JsonIgnore
     private String previewPath;
 
     @Column(name = "asset_thumbnail_path")
-    // @JsonProperty("thumbnailPath")
     @JsonIgnore
     private String thumbnailPath;
 
@@ -60,6 +57,10 @@ public class Asset implements Serializable {
     @FacetDataType(value = "Date")
     @FacetDefaultLookup(values = {"Today","Past 7 days","Past 30 days"})
     private Date importDate;
+
+    @Column(name = "deleted")
+    @JsonProperty("deleted")
+    private String deleted;
 
     public Asset(){}
 
@@ -137,5 +138,13 @@ public class Asset implements Serializable {
 
     public void setImportDate(Date importDate) {
         this.importDate = importDate;
+    }
+
+    public String getDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(String deleted) {
+        this.deleted = deleted;
     }
 }

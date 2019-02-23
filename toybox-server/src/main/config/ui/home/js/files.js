@@ -221,11 +221,14 @@ const files = new Vue({
         },
         assetsDelete:function(){
             console.log('Deleting the following assets:');
+            var selectedAssets = []
             for(var i = 0; i < this.selectedAssets.length; i++)
             {
                 var asset = this.selectedAssets[i];
                 console.log(asset.name + ' / ' +  asset.id);
+                selectedAssets.push({id:asset.id});
             }
+            this.deleteAssets(selectedAssets);
         },
     },
     components:{

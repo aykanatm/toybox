@@ -42,7 +42,71 @@ public class JobController {
     @Autowired
     private Job packagingJob;
     @Autowired
+    private Job deleteJob;
+    @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @RequestMapping(value = "/jobs/delete", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<JobResponse> deleteAssets(Authentication authentication, @RequestBody SelectedAssets selectedAssets){
+        _logger.debug("deleteAssets() >>");
+        try{
+            List<String> selectedAssetIds = selectedAssets.getSelectedAssets().stream().map(asset -> asset.getId()).collect(Collectors.toList());
+            if(!selectedAssetIds.isEmpty()){
+                // TODO: Find a better way to filter assets
+                List<Asset> allAssets = jdbcTemplate.query("SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted FROM assets", new AssetRowMapper());
+
+                List<Asset> assets = allAssets.stream().filter(asset -> selectedAssetIds.contains(asset.getId())).collect(Collectors.toList());
+
+                if(!assets.isEmpty()){
+                    JobParametersBuilder builder = new JobParametersBuilder();
+
+                    for(int i = 0; i < assets.size(); i++){
+                        Asset asset = assets.get(i);
+                        builder.addString(Constants.JOB_PARAM_DELETE_ASSET_ID + "_" + i, asset.getId());
+                    }
+
+                    builder.addString(Constants.JOB_PARAM_USERNAME, authentication.getName());
+                    builder.addString(Constants.JOB_PARAM_SYSTEM_MILLIS, String.valueOf(System.currentTimeMillis()));
+
+                    _logger.debug("Launching job [" + deleteJob.getName() + "]...");
+                    JobExecution jobExecution = jobLauncher.run(deleteJob, builder.toJobParameters());
+                    jobExecution.getExecutionContext().put("jobId", jobExecution.getJobId());
+
+                    JobResponse jobResponse = new JobResponse();
+                    jobResponse.setJobId(jobExecution.getJobId());
+                    jobResponse.setMessage("Packaging job started.");
+
+                    _logger.debug("<< deleteAssets()");
+                    return new ResponseEntity<>(jobResponse, HttpStatus.CREATED);
+                }
+                else{
+                    String message = "No assets were found in the system with the requested IDs.";
+                    JobResponse jobResponse = new JobResponse();
+                    jobResponse.setMessage(message);
+
+                    _logger.debug("<< deleteAssets()");
+                    return new ResponseEntity<>(jobResponse, HttpStatus.NO_CONTENT);
+                }
+            }
+            else{
+                String message = "No assets were found in the request.";
+                JobResponse jobResponse = new JobResponse();
+                jobResponse.setMessage(message);
+
+                _logger.debug("<< deleteAssets()");
+                return new ResponseEntity<>(jobResponse, HttpStatus.NOT_FOUND);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while deleting a batch. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+            JobResponse jobResponse = new JobResponse();
+            jobResponse.setMessage(errorMessage);
+
+            _logger.debug("<< packageAssets()");
+            return new ResponseEntity<>(jobResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
     @RequestMapping(value = "/jobs/package", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<JobResponse> packageAssets(Authentication authentication, @RequestBody SelectedAssets selectedAssets){
@@ -52,7 +116,7 @@ public class JobController {
 
             if(!selectedAssetIds.isEmpty()){
                 // TODO: Find a better way to filter assets
-                List<Asset> allAssets = jdbcTemplate.query("SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type FROM assets", new AssetRowMapper());
+                List<Asset> allAssets = jdbcTemplate.query("SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted FROM assets", new AssetRowMapper());
 
                 List<Asset> assets = allAssets.stream().filter(asset -> selectedAssetIds.contains(asset.getId())).collect(Collectors.toList());
 
@@ -61,7 +125,7 @@ public class JobController {
 
                     for(int i = 0; i < assets.size(); i++){
                         Asset asset = assets.get(i);
-                        builder.addString(Constants.JOB_PARAM_COMPRESSION_FILE + "_" + i, asset.getPath());
+                        builder.addString(Constants.JOB_PARAM_PACKAGING_FILE + "_" + i, asset.getPath());
                     }
                     builder.addString(Constants.JOB_PARAM_USERNAME, authentication.getName());
                     builder.addString(Constants.JOB_PARAM_SYSTEM_MILLIS, String.valueOf(System.currentTimeMillis()));
@@ -72,7 +136,7 @@ public class JobController {
 
                     JobResponse jobResponse = new JobResponse();
                     jobResponse.setJobId(jobExecution.getJobId());
-                    jobResponse.setMessage("Compression job started.");
+                    jobResponse.setMessage("Packaging job started.");
 
                     _logger.debug("<< packageAssets()");
                     return new ResponseEntity<>(jobResponse, HttpStatus.CREATED);
@@ -96,7 +160,7 @@ public class JobController {
             }
         }
         catch (Exception e){
-            String errorMessage = "An error occurred while compressing a batch. " + e.getLocalizedMessage();
+            String errorMessage = "An error occurred while packaging a batch. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
             JobResponse jobResponse = new JobResponse();
             jobResponse.setMessage(errorMessage);

@@ -1,5 +1,33 @@
 var assetActionsMixin = {
     methods:{
+        deleteAssets(selectedAssets){
+            this.getConfiguration("assetServiceUrl")
+                .then(response => {
+                    if(response){
+                        var assets = {
+                            'selectedAssets': selectedAssets
+                        }
+                        return axios.post(response.data.value + '/assets/delete', assets)
+                            .then(response => {
+                                console.log(response);
+                                this.$root.$emit('message-sent', 'Success', response.data.message);
+                            })
+                            .catch(error => {
+                                var errorMessage;
+
+                                if(error.response){
+                                    errorMessage = error.response.data.message
+                                }
+                                else{
+                                    errorMessage = error.message;
+                                }
+
+                                console.error(errorMessage);
+                                this.$root.$emit('message-sent', 'Error', errorMessage);
+                            });
+                    }
+                })
+        },
         downloadAssets(selectedAssets){
             this.getConfiguration("assetServiceUrl")
                 .then(response =>{

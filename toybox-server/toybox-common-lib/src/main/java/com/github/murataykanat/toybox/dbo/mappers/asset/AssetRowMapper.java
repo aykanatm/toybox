@@ -20,6 +20,7 @@ public class AssetRowMapper implements RowMapper<Asset> {
         asset.setPreviewPath(resultSet.getString("asset_preview_path"));
         asset.setThumbnailPath(resultSet.getString("asset_thumbnail_path"));
         asset.setType(resultSet.getString("asset_type"));
+        asset.setDeleted(resultSet.getString("deleted"));
 
         return asset;
     }

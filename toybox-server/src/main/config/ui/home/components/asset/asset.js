@@ -111,6 +111,11 @@ module.exports = {
         },
         assetDelete:function(){
             console.log('Deleting asset with ID "' + this.id + '"');
+            var asset = {
+                id: this.id
+            }
+            var selectedAssets= [asset];
+            this.deleteAssets(selectedAssets);
             this.contextMenuOpen = false;
         },
         assetShowVersionHistory:function(){

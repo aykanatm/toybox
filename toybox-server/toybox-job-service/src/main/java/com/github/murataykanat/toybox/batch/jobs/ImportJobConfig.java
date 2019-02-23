@@ -157,6 +157,7 @@ public class ImportJobConfig {
                                         asset.setPreviewPath("");
                                         asset.setThumbnailPath("");
                                         asset.setType(assetMimeType);
+                                        asset.setDeleted("N");
 
                                         insertAsset(asset);
                                         assets.add(asset);
@@ -329,13 +330,14 @@ public class ImportJobConfig {
         _logger.debug("Asset Thumbnail Path: " + asset.getThumbnailPath());
         _logger.debug("Asset Type: " + asset.getType());
         _logger.debug("Asset Import Date: " + asset.getImportDate());
+        _logger.debug("Deleted" + asset.getDeleted());
 
         _logger.debug("Inserting asset into the database...");
 
         jdbcTemplate.update("INSERT INTO assets(asset_id, asset_extension, asset_imported_by_username, " +
-                        "asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, asset_import_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        "asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, asset_import_date, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 asset.getId(), asset.getExtension(), asset.getImportedByUsername(), asset.getName(), asset.getPath(),
-                asset.getPreviewPath(), asset.getThumbnailPath(), asset.getType(), asset.getImportDate());
+                asset.getPreviewPath(), asset.getThumbnailPath(), asset.getType(), asset.getImportDate(), asset.getDeleted());
 
         _logger.debug("<< insertAsset()");
     }
