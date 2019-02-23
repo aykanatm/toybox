@@ -48,7 +48,8 @@ public class JobController {
     public ResponseEntity<JobResponse> compressAssets(Authentication authentication, @RequestBody SelectedAssets selectedAssets){
         _logger.debug("compressAssets() >>");
         try{
-            List<String> selectedAssetIds = selectedAssets.getSelectedAssets();
+            List<String> selectedAssetIds = selectedAssets.getSelectedAssets().stream().map(asset -> asset.getId()).collect(Collectors.toList());
+
             if(!selectedAssetIds.isEmpty()){
                 // TODO: Find a better way to filter assets
                 List<Asset> allAssets = jdbcTemplate.query("SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type FROM assets", new AssetRowMapper());

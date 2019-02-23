@@ -84,7 +84,13 @@ module.exports = {
         },
         assetDownload:function(){
             console.log('Downloading the file with ID "' + this.id + '"');
-            this.downloadAsset(this.name, this.id, this.type);
+            var asset = {
+                id: this.id,
+                name: this.name,
+                type: this.type
+            }
+            var selectedAssets= [asset];
+            this.downloadAssets(selectedAssets);
             this.contextMenuOpen = false;
         },
         assetRename:function(){

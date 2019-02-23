@@ -186,14 +186,14 @@ const files = new Vue({
         },
         assetsDownload:function(){
             console.log('Downloading the following assets:');
-            var selectedAssetIds = []
+            var selectedAssets = []
             for(var i = 0; i < this.selectedAssets.length; i++)
             {
                 var asset = this.selectedAssets[i];
                 console.log(asset.name + ' / ' +  asset.id);
-                selectedAssetIds.push(asset.id);
+                selectedAssets.push({id:asset.id, name:asset.name, type:asset.type});
             }
-            this.downloadAssets(selectedAssetIds);
+            this.downloadAssets(selectedAssets);
         },
         assetsCopy:function(){
             console.log('Copying the following assets:');

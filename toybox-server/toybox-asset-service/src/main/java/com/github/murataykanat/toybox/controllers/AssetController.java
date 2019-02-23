@@ -55,12 +55,13 @@ public class AssetController {
     @RequestMapping(value = "/assets/download", method = RequestMethod.POST, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> downloadAssets(HttpSession session, @RequestBody SelectedAssets selectedAssets){
         _logger.debug("downloadAssets() >>");
-        List<String> assets = selectedAssets.getSelectedAssets();
+        List<Asset> assets = selectedAssets.getSelectedAssets();
         try{
             if(assets != null){
                 if(!assets.isEmpty()){
                     if(assets.size() == 1) {
-                        Asset asset = getAsset(assets.get(0));
+                        _logger.debug("Downloading a single asset...");
+                        Asset asset = getAsset(assets.get(0).getId());
                         if(asset != null){
                             if(StringUtils.isNotBlank(asset.getPath())){
                                 File file = new File(asset.getPath());
@@ -76,11 +77,13 @@ public class AssetController {
                             }
                         }
                         else{
+                            _logger.warn("Asset with ID '" + assets.get(0).getId() + "' is not found!");
                             _logger.debug("<< downloadAssets()");
                             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                         }
                     }
                     else{
+                        _logger.debug("Downloading multiple assets...");
                         _logger.debug("Session ID: " + session.getId());
                         CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
                         _logger.debug("CSRF Token: " + token.getToken());
@@ -90,7 +93,7 @@ public class AssetController {
                         headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
                         headers.set("X-XSRF-TOKEN", token.getToken());
                         HttpEntity<SelectedAssets> selectedAssetsEntity = new HttpEntity<>(selectedAssets, headers);
-                        ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity("http://localhost:8102/jobs/compress", selectedAssetsEntity, JobResponse.class);
+                        ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/compress", selectedAssetsEntity, JobResponse.class);
                         if(jobResponseResponseEntity != null){
                             _logger.debug(jobResponseResponseEntity);
                             JobResponse jobResponse = jobResponseResponseEntity.getBody();
