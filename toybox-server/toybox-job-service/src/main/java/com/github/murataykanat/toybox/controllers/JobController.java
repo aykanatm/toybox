@@ -106,7 +106,7 @@ public class JobController {
     }
 
     @RequestMapping(value = "/jobs/import", method = RequestMethod.POST)
-    public ResponseEntity<ImportAssetResponse> importAsset(@RequestBody UploadFileLst uploadFileLst) {
+    public ResponseEntity<JobResponse> importAsset(@RequestBody UploadFileLst uploadFileLst) {
         _logger.debug("importAsset() >>");
         try{
             if(uploadFileLst != null){
@@ -114,7 +114,7 @@ public class JobController {
                 List<UploadFile> uploadedFiles = uploadFileLst.getUploadFiles();
                 if(uploadedFiles != null && !uploadedFiles.isEmpty()){
                     JobParametersBuilder builder = new JobParametersBuilder();
-                    ImportAssetResponse importAssetResponse = new ImportAssetResponse();
+                    JobResponse jobResponse = new JobResponse();
 
                     for(int i = 0; i < uploadedFiles.size(); i++){
                         UploadFile uploadedFile = uploadedFiles.get(i);
@@ -126,40 +126,40 @@ public class JobController {
                     _logger.debug("Launching job [" + importJob.getName() + "]...");
                     JobExecution jobExecution = jobLauncher.run(importJob, builder.toJobParameters());
 
-                    importAssetResponse.setJobId(jobExecution.getJobId());
-                    importAssetResponse.setMessage("Import job started.");
+                    jobResponse.setJobId(jobExecution.getJobId());
+                    jobResponse.setMessage("Import job started.");
 
                     _logger.debug("<< importAsset()");
-                    return new ResponseEntity<>(importAssetResponse, HttpStatus.CREATED);
+                    return new ResponseEntity<>(jobResponse, HttpStatus.CREATED);
                 }
                 else{
                     String errorMessage = "Uploaded files list is null or empty!";
                     _logger.error(errorMessage);
-                    ImportAssetResponse importAssetResponse = new ImportAssetResponse();
-                    importAssetResponse.setMessage(errorMessage);
+                    JobResponse jobResponse = new JobResponse();
+                    jobResponse.setMessage(errorMessage);
 
                     _logger.debug("<< importAsset()");
-                    return new ResponseEntity<>(importAssetResponse, HttpStatus.BAD_REQUEST);
+                    return new ResponseEntity<>(jobResponse, HttpStatus.BAD_REQUEST);
                 }
             }
             else{
                 String errorMessage = "Uploaded files request is null!";
                 _logger.error(errorMessage);
-                ImportAssetResponse importAssetResponse = new ImportAssetResponse();
-                importAssetResponse.setMessage(errorMessage);
+                JobResponse jobResponse = new JobResponse();
+                jobResponse.setMessage(errorMessage);
 
                 _logger.debug("<< importAsset()");
-                return new ResponseEntity<>(importAssetResponse, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(jobResponse, HttpStatus.BAD_REQUEST);
             }
         }
         catch (Exception e){
             String errorMessage = "An error occurred while importing a batch. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
-            ImportAssetResponse importAssetResponse = new ImportAssetResponse();
-            importAssetResponse.setMessage(errorMessage);
+            JobResponse jobResponse = new JobResponse();
+            jobResponse.setMessage(errorMessage);
 
             _logger.debug("<< importAsset()");
-            return new ResponseEntity<>(importAssetResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(jobResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
