@@ -38,11 +38,11 @@ public class PackagingJobConfig {
 
     @Bean
     public Job packagingJob(JobBuilderFactory jobBuilderFactory, StepBuilderFactory stepBuilderFactory){
-        Step stepCompressAssets = stepBuilderFactory.get(Constants.STEP_COMPRESSION_GENERATE_ARCHIVE)
+        Step stepCompressAssets = stepBuilderFactory.get(Constants.STEP_PACKAGING_GENERATE_ARCHIVE)
                 .tasklet(new Tasklet() {
                     @Override
                     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
-                        _logger.debug("execute() >> [" + Constants.STEP_COMPRESSION_GENERATE_ARCHIVE + "]");
+                        _logger.debug("execute() >> [" + Constants.STEP_PACKAGING_GENERATE_ARCHIVE + "]");
 
                         // Create job folder
                         Object obj = chunkContext.getStepContext().getStepExecution().getJobExecution().getExecutionContext().get("jobId");
@@ -56,7 +56,7 @@ public class PackagingJobConfig {
                                 // Copy assets to export folder
                                 Map<String, Object> jobParameters = chunkContext.getStepContext().getJobParameters();
                                 for(Map.Entry<String, Object> jobParameter: jobParameters.entrySet()){
-                                    if(jobParameter.getKey().startsWith(Constants.JOB_PARAM_COMPRESSION_FILE)){
+                                    if(jobParameter.getKey().startsWith(Constants.JOB_PARAM_PACKAGING_FILE)){
                                         String filePath = (String) jobParameter.getValue();
 
                                         File inputFile = new File(filePath);
@@ -101,7 +101,7 @@ public class PackagingJobConfig {
                             throw new IOException("Job folder '" + jobFolderPath + "' already exists!");
                         }
 
-                        _logger.debug("<< execute() " + Constants.STEP_COMPRESSION_GENERATE_ARCHIVE + "]");
+                        _logger.debug("<< execute() " + Constants.STEP_PACKAGING_GENERATE_ARCHIVE + "]");
                         return RepeatStatus.FINISHED;
                     }
                 })
@@ -123,7 +123,7 @@ public class PackagingJobConfig {
 
                 Map<String, JobParameter> parameterMap = parameters.getParameters();
                 for(Map.Entry<String, JobParameter> parameterEntry: parameterMap.entrySet()){
-                    if(parameterEntry.getKey().startsWith(Constants.JOB_PARAM_COMPRESSION_FILE)){
+                    if(parameterEntry.getKey().startsWith(Constants.JOB_PARAM_PACKAGING_FILE)){
                         String filePath = (String) parameterEntry.getValue().getValue();
                         File file = new File(filePath);
                         if(!file.exists()){
