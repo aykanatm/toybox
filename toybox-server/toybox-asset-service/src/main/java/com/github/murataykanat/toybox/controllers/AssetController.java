@@ -49,6 +49,8 @@ public class AssetController {
     private String importStagingPath;
     @Value("${exportStagingPath}")
     private String exportStagingPath;
+    @Value("${jobServiceUrl}")
+    private String jobServiceUrl;
 
     @RequestMapping(value = "/assets/download", method = RequestMethod.POST, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> downloadAssets(HttpSession session, @RequestBody SelectedAssets selectedAssets){
@@ -158,7 +160,7 @@ public class AssetController {
 
     // The name "upload" must match the "name" attribute of the input in UI (
     @RequestMapping(value = "/assets/upload", method = RequestMethod.POST)
-    public ResponseEntity<UploadFileLst> uploadAssets(Authentication authentication, @RequestParam("upload") MultipartFile[] files) {
+    public ResponseEntity<JobResponse> uploadAssets(Authentication authentication, HttpSession session, @RequestParam("upload") MultipartFile[] files) {
         _logger.debug("uploadAssets() >>");
 
         String tempFolderName = Long.toString(System.currentTimeMillis());
@@ -195,8 +197,20 @@ public class AssetController {
             uploadFileLst.setUploadFiles(uploadFiles);
             uploadFileLst.setMessage("Files uploaded successfully!");
 
+            _logger.debug("Session ID: " + session.getId());
+            CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
+            _logger.debug("CSRF Token: " + token.getToken());
+
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
+            headers.set("X-XSRF-TOKEN", token.getToken());
+            HttpEntity<UploadFileLst> selectedAssetsEntity = new HttpEntity<>(uploadFileLst, headers);
+            ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/import", selectedAssetsEntity, JobResponse.class);
+            JobResponse jobResponse = jobResponseResponseEntity.getBody();
+
             _logger.debug("<< uploadAssets()");
-            return new ResponseEntity<>(uploadFileLst, HttpStatus.CREATED);
+            return new ResponseEntity<>(jobResponse, HttpStatus.CREATED);
         }
         catch (Exception e){
             String errorMessage = "An error occurred while uploading files. " + e.getLocalizedMessage();
@@ -213,11 +227,11 @@ public class AssetController {
                 errorMessage += ioErrorMessage;
             }
 
-            UploadFileLst uploadFileLst = new UploadFileLst();
-            uploadFileLst.setMessage(errorMessage);
+            JobResponse jobResponse = new JobResponse();
+            jobResponse.setMessage(errorMessage);
 
             _logger.debug("<< uploadAssets()");
-            return new ResponseEntity<>(uploadFileLst, HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(jobResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

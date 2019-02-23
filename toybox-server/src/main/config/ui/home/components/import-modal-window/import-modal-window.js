@@ -125,27 +125,6 @@ module.exports = {
                         });
                     }
                 });
-        },
-        import(uploadedAssets){
-            return this.getConfiguration("jobServiceUrl")
-                .then(response => {
-                    if(response){
-                        return axios.post(response.data.value + "/jobs/import", uploadedAssets)
-                            .catch(error => {
-                                var errorMessage;
-
-                                if(error.response){
-                                    errorMessage = error.response.data.message
-                                }
-                                else{
-                                    errorMessage = error.message;
-                                }
-
-                                console.error(errorMessage);
-                                this.$root.$emit('message-sent', 'Error', errorMessage);
-                            });
-                    }
-                });
         }
     }
 }
