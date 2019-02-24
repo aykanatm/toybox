@@ -2,11 +2,11 @@ package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.batch.utils.Constants;
 import com.github.murataykanat.toybox.dbo.Asset;
-import com.github.murataykanat.toybox.dbo.mappers.asset.AssetRowMapper;
 import com.github.murataykanat.toybox.dbo.mappers.job.ToyboxJobRowMapper;
 import com.github.murataykanat.toybox.dbo.mappers.job.ToyboxJobStepRowMapper;
 import com.github.murataykanat.toybox.models.job.ToyboxJob;
 import com.github.murataykanat.toybox.models.job.ToyboxJobStep;
+import com.github.murataykanat.toybox.repositories.AssetsRepository;
 import com.github.murataykanat.toybox.schema.asset.SelectedAssets;
 import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
@@ -46,6 +46,9 @@ public class JobController {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private AssetsRepository assetsRepository;
+
     @RequestMapping(value = "/jobs/delete", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<JobResponse> deleteAssets(Authentication authentication, @RequestBody SelectedAssets selectedAssets){
         _logger.debug("deleteAssets() >>");
@@ -53,7 +56,7 @@ public class JobController {
             List<String> selectedAssetIds = selectedAssets.getSelectedAssets().stream().map(asset -> asset.getId()).collect(Collectors.toList());
             if(!selectedAssetIds.isEmpty()){
                 // TODO: Find a better way to filter assets
-                List<Asset> allAssets = jdbcTemplate.query("SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted FROM assets", new AssetRowMapper());
+                List<Asset> allAssets = assetsRepository.getNonDeletedAssets();
 
                 List<Asset> assets = allAssets.stream().filter(asset -> selectedAssetIds.contains(asset.getId())).collect(Collectors.toList());
 
@@ -116,7 +119,7 @@ public class JobController {
 
             if(!selectedAssetIds.isEmpty()){
                 // TODO: Find a better way to filter assets
-                List<Asset> allAssets = jdbcTemplate.query("SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted FROM assets", new AssetRowMapper());
+                List<Asset> allAssets = assetsRepository.getNonDeletedAssets();
 
                 List<Asset> assets = allAssets.stream().filter(asset -> selectedAssetIds.contains(asset.getId())).collect(Collectors.toList());
 
