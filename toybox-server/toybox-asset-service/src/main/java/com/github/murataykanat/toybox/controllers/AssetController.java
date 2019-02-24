@@ -328,32 +328,45 @@ public class AssetController {
         _logger.debug("deleteAssets() >>");
         try{
             if(selectedAssets != null){
+                if(!selectedAssets.getSelectedAssets().isEmpty()){
+                    _logger.debug("Session ID: " + session.getId());
+                    CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
+                    _logger.debug("CSRF Token: " + token.getToken());
 
-                _logger.debug("Session ID: " + session.getId());
-                CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-                _logger.debug("CSRF Token: " + token.getToken());
+                    RestTemplate restTemplate = new RestTemplate();
+                    HttpHeaders headers = new HttpHeaders();
+                    headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
+                    headers.set("X-XSRF-TOKEN", token.getToken());
+                    HttpEntity<SelectedAssets> selectedAssetsEntity = new HttpEntity<>(selectedAssets, headers);
+                    ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/delete", selectedAssetsEntity, JobResponse.class);
+                    long jobId = jobResponseResponseEntity.getBody().getJobId();
 
-                RestTemplate restTemplate = new RestTemplate();
-                HttpHeaders headers = new HttpHeaders();
-                headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-                headers.set("X-XSRF-TOKEN", token.getToken());
-                HttpEntity<SelectedAssets> selectedAssetsEntity = new HttpEntity<>(selectedAssets, headers);
-                ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/delete", selectedAssetsEntity, JobResponse.class);
-                long jobId = jobResponseResponseEntity.getBody().getJobId();
+                    boolean jobSucceeded = isJobSuccessful(jobId, headers);
 
-                boolean jobSucceeded = isJobSuccessful(jobId, headers);
+                    if(jobSucceeded){
+                        GenericResponse genericResponse = new GenericResponse();
+                        genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " asset(s) deleted successfully.");
 
-                if(jobSucceeded){
-                    GenericResponse genericResponse = new GenericResponse();
-                    genericResponse.setMessage("Asset(s) deleted successfully.");
+                        _logger.debug("<< deleteAssets()");
+                        return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                    }
+                    else{
+                        GenericResponse genericResponse = new GenericResponse();
+                        genericResponse.setMessage("An error occurred while deleting assets.");
 
-                    return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                        _logger.debug("<< deleteAssets()");
+                        return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                    }
                 }
                 else{
-                    GenericResponse genericResponse = new GenericResponse();
-                    genericResponse.setMessage("An error occurred while deleting assets.");
+                    String warningMessage = "No assets were selected!";
+                    _logger.warn(warningMessage);
 
-                    return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                    GenericResponse genericResponse = new GenericResponse();
+                    genericResponse.setMessage(warningMessage);
+
+                    _logger.debug("<< deleteAssets()");
+                    return new ResponseEntity<>(genericResponse, HttpStatus.NOT_FOUND);
                 }
             }
             else{
