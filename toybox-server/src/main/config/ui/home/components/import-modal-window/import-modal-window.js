@@ -46,8 +46,6 @@ module.exports = {
                     this.$refs.fileInputRef.value = '';
 
                     // Close the modal window
-                    // Display success message up top
-                    this.$root.$emit('message-sent', 'Success', this.numberOfFiles + ' file(s) successfully uploaded. Starting the import job...');
                     $('#toybox-import-modal-window').modal('hide');
                 })
                 .catch(error => {
@@ -108,7 +106,7 @@ module.exports = {
                     if(response){
                         return axios.post(response.data.value + "/assets/upload", formData, config)
                         .then(response =>{
-                            return this.import(response.data);
+                            this.$root.$emit('message-sent', 'Success', response.data.message);
                         })
                         .catch(error => {
                             var errorMessage;

@@ -164,7 +164,7 @@ public class AssetController {
 
     // The name "upload" must match the "name" attribute of the input in UI (
     @RequestMapping(value = "/assets/upload", method = RequestMethod.POST)
-    public ResponseEntity<JobResponse> uploadAssets(Authentication authentication, HttpSession session, @RequestParam("upload") MultipartFile[] files) {
+    public ResponseEntity<GenericResponse> uploadAssets(Authentication authentication, HttpSession session, @RequestParam("upload") MultipartFile[] files) {
         _logger.debug("uploadAssets() >>");
 
         String tempFolderName = Long.toString(System.currentTimeMillis());
@@ -211,10 +211,20 @@ public class AssetController {
             headers.set("X-XSRF-TOKEN", token.getToken());
             HttpEntity<UploadFileLst> selectedAssetsEntity = new HttpEntity<>(uploadFileLst, headers);
             ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/import", selectedAssetsEntity, JobResponse.class);
-            JobResponse jobResponse = jobResponseResponseEntity.getBody();
+            boolean successful = jobResponseResponseEntity.getStatusCode().is2xxSuccessful();
 
-            _logger.debug("<< uploadAssets()");
-            return new ResponseEntity<>(jobResponse, HttpStatus.CREATED);
+            if(successful){
+                GenericResponse genericResponse = new GenericResponse();
+                genericResponse.setMessage(uploadFileLst.getUploadFiles().size() + " file(s) successfully uploaded. Import job started.");
+                _logger.debug("<< uploadAssets()");
+                return new ResponseEntity<>(genericResponse, HttpStatus.CREATED);
+            }
+            else{
+                GenericResponse genericResponse = new GenericResponse();
+                genericResponse.setMessage("Upload was successful but import failed to start. " + jobResponseResponseEntity.getBody().getMessage());
+                _logger.debug("<< uploadAssets()");
+                return new ResponseEntity<>(genericResponse, jobResponseResponseEntity.getStatusCode());
+            }
         }
         catch (Exception e){
             String errorMessage = "An error occurred while uploading files. " + e.getLocalizedMessage();
@@ -231,11 +241,11 @@ public class AssetController {
                 errorMessage += ioErrorMessage;
             }
 
-            JobResponse jobResponse = new JobResponse();
-            jobResponse.setMessage(errorMessage);
+            GenericResponse genericResponse = new GenericResponse();
+            genericResponse.setMessage(errorMessage);
 
             _logger.debug("<< uploadAssets()");
-            return new ResponseEntity<>(jobResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
