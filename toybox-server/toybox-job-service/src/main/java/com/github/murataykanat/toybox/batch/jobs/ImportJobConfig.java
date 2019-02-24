@@ -3,6 +3,7 @@ package com.github.murataykanat.toybox.batch.jobs;
 import com.github.murataykanat.toybox.batch.utils.Constants;
 import com.github.murataykanat.toybox.models.RenditionProperties;
 import com.github.murataykanat.toybox.dbo.Asset;
+import com.github.murataykanat.toybox.repositories.AssetsRepository;
 import org.apache.commons.exec.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -27,14 +28,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.FileSystemUtils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InvalidObjectException;
-import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.util.*;
 
@@ -45,7 +44,7 @@ public class ImportJobConfig {
     private static final Log _logger = LogFactory.getLog(ImportJobConfig.class);
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
+    private AssetsRepository assetsRepository;
 
     @Value("${imageThumbnailFormat}")
     private String imageThumbnailFormat;
@@ -305,11 +304,10 @@ public class ImportJobConfig {
     private void updateAssetRendition(String assetId, String renditionPath, RenditionTypes renditionType) {
         _logger.debug("updateAsset() >>");
         if(renditionType == RenditionTypes.Thumbnail){
-            jdbcTemplate.update("UPDATE assets SET asset_thumbnail_path=? WHERE asset_id=?",new Object[]{renditionPath, assetId});
-
+            assetsRepository.updateAssetThumbnailPath(renditionPath, assetId);
         }
         else if(renditionType == RenditionTypes.Preview){
-            jdbcTemplate.update("UPDATE assets SET asset_preview_path=? WHERE asset_id=?",new Object[]{renditionPath, assetId});
+            assetsRepository.updateAssetPreviewPath(renditionPath, assetId);
         }
         else{
             throw new IllegalArgumentException("Unknown rendition type!");
@@ -334,9 +332,7 @@ public class ImportJobConfig {
 
         _logger.debug("Inserting asset into the database...");
 
-        jdbcTemplate.update("INSERT INTO assets(asset_id, asset_extension, asset_imported_by_username, " +
-                        "asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, asset_import_date, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                asset.getId(), asset.getExtension(), asset.getImportedByUsername(), asset.getName(), asset.getPath(),
+        assetsRepository.insertAsset(asset.getId(), asset.getExtension(), asset.getImportedByUsername(), asset.getName(), asset.getPath(),
                 asset.getPreviewPath(), asset.getThumbnailPath(), asset.getType(), asset.getImportDate(), asset.getDeleted());
 
         _logger.debug("<< insertAsset()");
@@ -356,7 +352,7 @@ public class ImportJobConfig {
         _logger.debug("isAssetIdValid() >> [" + assetId + "]");
         boolean result = false;
 
-        List<Asset> assets = jdbcTemplate.query("SELECT asset_id FROM assets WHERE asset_id=?", new Object[]{assetId}, (rs, rowNum) -> new Asset(rs.getString("asset_id")));
+        List<Asset> assets = assetsRepository.getAssetsById(assetId);
         if(assets != null){
             if(!assets.isEmpty()){
                 _logger.debug("<< isAssetIdValid() [" + false + "]");

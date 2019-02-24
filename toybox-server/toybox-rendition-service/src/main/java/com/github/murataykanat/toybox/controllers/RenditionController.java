@@ -2,8 +2,8 @@ package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.dbo.User;
-import com.github.murataykanat.toybox.dbo.mappers.asset.AssetRowMapper;
 import com.github.murataykanat.toybox.dbo.mappers.user.UserRowMapper;
+import com.github.murataykanat.toybox.repositories.AssetsRepository;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.File;
+import java.io.InvalidObjectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -32,6 +33,8 @@ public class RenditionController {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private AssetsRepository assetsRepository;
 
     @RequestMapping(value = "/renditions/users/{username}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> getUserAvatar(@PathVariable String username){
@@ -67,43 +70,55 @@ public class RenditionController {
     public ResponseEntity<Resource> getRendition(@PathVariable String assetId, @PathVariable String renditionType){
         _logger.debug("getRendition() >>");
         try{
-            Asset asset = getAsset(assetId);
-            if(asset != null){
-                ByteArrayResource resource;
-                if(renditionType.equalsIgnoreCase("t")){
-                    if(StringUtils.isNotBlank(asset.getThumbnailPath())){
-                        Path path = Paths.get(asset.getThumbnailPath());
-                        resource = new ByteArrayResource(Files.readAllBytes(path));
+            List<Asset> assets = assetsRepository.getAssetsById(assetId);
+            if(assets != null){
+                if(assets.size() == 1){
+                    Asset asset = assets.get(0);
+                    if(asset != null){
+                        ByteArrayResource resource;
+                        if(renditionType.equalsIgnoreCase("t")){
+                            if(StringUtils.isNotBlank(asset.getThumbnailPath())){
+                                Path path = Paths.get(asset.getThumbnailPath());
+                                resource = new ByteArrayResource(Files.readAllBytes(path));
 
-                        return new ResponseEntity<>(resource, HttpStatus.OK);
-                    }
-                    else{
-                        _logger.error("Thumbnail path is blank!");
-                        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-                    }
-                }
-                else if(renditionType.equalsIgnoreCase("p")){
-                    if(StringUtils.isNotBlank(asset.getPreviewPath())){
-                        Path path = Paths.get(asset.getPreviewPath());
-                        resource = new ByteArrayResource(Files.readAllBytes(path));
+                                return new ResponseEntity<>(resource, HttpStatus.OK);
+                            }
+                            else{
+                                _logger.error("Thumbnail path is blank!");
+                                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                            }
+                        }
+                        else if(renditionType.equalsIgnoreCase("p")){
+                            if(StringUtils.isNotBlank(asset.getPreviewPath())){
+                                Path path = Paths.get(asset.getPreviewPath());
+                                resource = new ByteArrayResource(Files.readAllBytes(path));
 
-                        if(asset.getPreviewPath().endsWith("pdf")){
-                            return ResponseEntity.ok().header("Content-Disposition","inline; filename=" + new File(asset.getPreviewPath()).getName()).contentType(MediaType.APPLICATION_PDF).contentLength(resource.contentLength()).body(resource);
+                                if(asset.getPreviewPath().endsWith("pdf")){
+                                    return ResponseEntity.ok().header("Content-Disposition","inline; filename=" + new File(asset.getPreviewPath()).getName()).contentType(MediaType.APPLICATION_PDF).contentLength(resource.contentLength()).body(resource);
+                                }
+                                else{
+                                    return new ResponseEntity<>(resource, HttpStatus.OK);
+                                }
+                            }
+                            else{
+                                _logger.error("Preview path is blank!");
+                                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                            }
                         }
                         else{
-                            return new ResponseEntity<>(resource, HttpStatus.OK);
+                            throw new IllegalArgumentException("Rendition type is not recognized!");
                         }
                     }
                     else{
-                        _logger.error("Preview path is blank!");
-                        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                        throw new InvalidObjectException("Asset is null!");
                     }
                 }
                 else{
-                    throw new IllegalArgumentException("Rendition type is not recognized!");
+                    throw new DuplicateKeyException("There are more than one asset with ID '" + assetId + "'");
                 }
             }
             else{
+                _logger.warn("No asset was found with ID '" + assetId + "'");
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
         }
@@ -114,26 +129,6 @@ public class RenditionController {
             _logger.debug("<< getRendition()");
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
-
-    private Asset getAsset(String assetId){
-        _logger.debug("getAsset() >> [" + assetId + "]");
-        Asset result = null;
-
-        List<Asset> assets = jdbcTemplate.query("SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted FROM assets WHERE asset_id=?", new Object[]{assetId},  new AssetRowMapper());
-        if(assets != null){
-            if(!assets.isEmpty()){
-                if(assets.size() == 1){
-                    result = assets.get(0);
-                }
-                else{
-                    throw new DuplicateKeyException("Asset ID " + assetId + " is duplicate!");
-                }
-            }
-        }
-
-        _logger.debug("<< getAsset()");
-        return result;
     }
 
     private User getUser(String username){

@@ -1,7 +1,7 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.dbo.Asset;
-import com.github.murataykanat.toybox.dbo.mappers.asset.AssetRowMapper;
+import com.github.murataykanat.toybox.repositories.AssetsRepository;
 import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
 import com.github.murataykanat.toybox.schema.asset.RetrieveAssetsResults;
 import com.github.murataykanat.toybox.schema.asset.SelectedAssets;
@@ -25,7 +25,6 @@ import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.*;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.csrf.CsrfToken;
@@ -44,7 +43,7 @@ public class AssetController {
     private static final Log _logger = LogFactory.getLog(AssetController.class);
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
+    private AssetsRepository assetsRepository;
 
     @Value("${importStagingPath}")
     private String importStagingPath;
@@ -62,19 +61,30 @@ public class AssetController {
                 if(!assets.isEmpty()){
                     if(assets.size() == 1) {
                         _logger.debug("Downloading a single asset...");
-                        Asset asset = getAsset(assets.get(0).getId());
-                        if(asset != null){
-                            if(StringUtils.isNotBlank(asset.getPath())){
-                                File file = new File(asset.getPath());
-                                InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
+                        List<Asset> assetsWithId = assetsRepository.getAssetsById(assets.get(0).getId());
+                        if(assetsWithId != null){
+                            if(assetsWithId.size() == 1){
+                                Asset asset = assetsWithId.get(0);
+                                if(asset != null){
+                                    if(StringUtils.isNotBlank(asset.getPath())){
+                                        File file = new File(asset.getPath());
+                                        InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
 
-                                _logger.debug("<< downloadAssets()");
-                                return new ResponseEntity<>(resource, HttpStatus.OK);
+                                        _logger.debug("<< downloadAssets()");
+                                        return new ResponseEntity<>(resource, HttpStatus.OK);
+                                    }
+                                    else{
+                                        _logger.error("Asset path is blank!");
+                                        _logger.debug("<< downloadAssets()");
+                                        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                                    }
+                                }
+                                else{
+                                    throw new InvalidObjectException("Asset is null!");
+                                }
                             }
                             else{
-                                _logger.error("Asset path is blank!");
-                                _logger.debug("<< downloadAssets()");
-                                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                                throw new DuplicateKeyException("There are more than one asset with ID '" + assets.get(0).getId() + "'");
                             }
                         }
                         else{
@@ -262,7 +272,7 @@ public class AssetController {
             int limit = assetSearchRequest.getLimit();
             List<SearchRequestFacet> searchRequestFacetList = assetSearchRequest.getAssetSearchRequestFacetList();
 
-            List<Asset> allAssets = jdbcTemplate.query("SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted FROM assets WHERE deleted=?", new Object[]{"N"}, new AssetRowMapper());
+            List<Asset> allAssets = assetsRepository.getNonDeletedAssets();
             if(!allAssets.isEmpty()){
                 List<Asset> assets;
 
@@ -418,25 +428,5 @@ public class AssetController {
         else{
             return isJobSuccessful(jobId, headers);
         }
-    }
-
-    private Asset getAsset(String assetId){
-        _logger.debug("getAsset() >> [" + assetId + "]");
-        Asset result = null;
-
-        List<Asset> assets = jdbcTemplate.query("SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted FROM assets WHERE asset_id=?", new Object[]{assetId},  new AssetRowMapper());
-        if(assets != null){
-            if(!assets.isEmpty()){
-                if(assets.size() == 1){
-                    result = assets.get(0);
-                }
-                else{
-                    throw new DuplicateKeyException("Asset ID " + assetId + " is duplicate!");
-                }
-            }
-        }
-
-        _logger.debug("<< getAsset()");
-        return result;
     }
 }
