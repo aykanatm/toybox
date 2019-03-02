@@ -2,11 +2,11 @@ package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.batch.utils.Constants;
 import com.github.murataykanat.toybox.dbo.Asset;
-import com.github.murataykanat.toybox.dbo.mappers.job.ToyboxJobRowMapper;
-import com.github.murataykanat.toybox.dbo.mappers.job.ToyboxJobStepRowMapper;
 import com.github.murataykanat.toybox.models.job.ToyboxJob;
 import com.github.murataykanat.toybox.models.job.ToyboxJobStep;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
+import com.github.murataykanat.toybox.repositories.JobStepsRepository;
+import com.github.murataykanat.toybox.repositories.JobsRepository;
 import com.github.murataykanat.toybox.schema.asset.SelectedAssets;
 import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
@@ -24,7 +24,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
@@ -43,11 +42,13 @@ public class JobController {
     private Job packagingJob;
     @Autowired
     private Job deleteJob;
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
 
     @Autowired
     private AssetsRepository assetsRepository;
+    @Autowired
+    private JobsRepository jobsRepository;
+    @Autowired
+    JobStepsRepository jobStepsRepository;
 
     @RequestMapping(value = "/jobs/delete", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<JobResponse> deleteAssets(Authentication authentication, @RequestBody SelectedAssets selectedAssets){
@@ -245,7 +246,7 @@ public class JobController {
                 int limit = jobSearchRequest.getLimit();
                 List<SearchRequestFacet> jobSearchRequestFacetList = jobSearchRequest.getSearchRequestFacetList();
 
-                List<ToyboxJob> allJobs = jdbcTemplate.query("SELECT JOB_INSTANCE_ID, JOB_EXECUTION_ID, JOB_NAME, JOB_TYPE, START_TIME, END_TIME, STATUS, USERNAME  FROM TOYBOX_JOBS_VW", new ToyboxJobRowMapper());
+                List<ToyboxJob> allJobs = (List<ToyboxJob>) jobsRepository.getAll();
 
                 if(!allJobs.isEmpty()){
                     List<ToyboxJob> jobs;
@@ -346,16 +347,14 @@ public class JobController {
         _logger.debug("retrieveJob() >>");
         try{
             if(StringUtils.isNotBlank(jobInstanceId)){
-                List<ToyboxJob> jobs = jdbcTemplate.query("SELECT JOB_INSTANCE_ID, JOB_EXECUTION_ID, JOB_NAME, JOB_TYPE, START_TIME, END_TIME, STATUS, USERNAME  FROM TOYBOX_JOBS_VW WHERE JOB_INSTANCE_ID=?",
-                        new Object[]{jobInstanceId},new ToyboxJobRowMapper());
+                List<ToyboxJob> jobs = (List<ToyboxJob>) jobsRepository.getJobsByInstanceId(jobInstanceId);
                 if(!jobs.isEmpty()){
                     if(jobs.size() == 1){
                         RetrieveToyboxJobResult retrieveToyboxJobResult = new RetrieveToyboxJobResult();
 
                         ToyboxJob toyboxJob = jobs.get(0);
 
-                        List<ToyboxJobStep> jobSteps = jdbcTemplate.query("SELECT JOB_EXECUTION_ID, STEP_EXECUTION_ID, STEP_NAME, START_TIME, END_TIME, STATUS  FROM BATCH_STEP_EXECUTION WHERE JOB_EXECUTION_ID=?",
-                                new Object[]{toyboxJob.getJobExecutionId()},new ToyboxJobStepRowMapper());
+                        List<ToyboxJobStep> jobSteps = (List<ToyboxJobStep>) jobStepsRepository.getJobStepsByJobExecutionId(toyboxJob.getJobExecutionId());
                         toyboxJob.setSteps(jobSteps);
 
                         retrieveToyboxJobResult.setToyboxJob(toyboxJob);

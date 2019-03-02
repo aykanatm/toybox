@@ -4,28 +4,42 @@ import com.github.murataykanat.toybox.models.annotations.FacetColumnName;
 import com.github.murataykanat.toybox.models.annotations.FacetDataType;
 import com.github.murataykanat.toybox.models.annotations.FacetDefaultLookup;
 
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Transient;
 import java.util.Date;
 import java.util.List;
-
+@Entity
 public class ToyboxJob {
+    @Id
+    @Column(name = "JOB_INSTANCE_ID")
     private String jobInstanceId;
+    @Column(name = "JOB_EXECUTION_ID")
     private String jobExecutionId;
+    @Column(name = "JOB_NAME")
     @FacetColumnName(value = "Job Name")
     private String jobName;
+    @Column(name = "JOB_TYPE")
     @FacetColumnName(value = "Job Type")
     private String jobType;
+    @Column(name = "START_TIME")
     @FacetColumnName(value = "Start Time")
     @FacetDataType(value = "Date")
     @FacetDefaultLookup(values = {"Today","Past 7 days","Past 30 days"})
     private Date startTime;
+    @Column(name = "END_TIME")
     @FacetColumnName(value = "End Time")
     @FacetDataType(value = "Date")
     @FacetDefaultLookup(values = {"Today","Past 7 days","Past 30 days"})
     private Date endTime;
+    @Column(name = "STATUS")
     @FacetColumnName(value = "Status")
     private String status;
+    @Column(name = "USERNAME")
     @FacetColumnName(value = "Username")
     private String username;
+    @Transient
     private List<ToyboxJobStep> steps;
 
     public String getJobInstanceId() {
