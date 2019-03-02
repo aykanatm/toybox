@@ -2,8 +2,8 @@ package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.dbo.User;
-import com.github.murataykanat.toybox.dbo.mappers.user.UserRowMapper;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
+import com.github.murataykanat.toybox.repositories.UsersRepository;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -14,7 +14,6 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -32,28 +31,40 @@ public class RenditionController {
     private static final Log _logger = LogFactory.getLog(RenditionController.class);
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
-    @Autowired
     private AssetsRepository assetsRepository;
+    @Autowired
+    private UsersRepository usersRepository;
 
     @RequestMapping(value = "/renditions/users/{username}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> getUserAvatar(@PathVariable String username){
         _logger.debug("getUserAvatar() >>");
         try{
-            User user = getUser(username);
-            if(user != null){
-                ByteArrayResource resource;
-                if(StringUtils.isNotBlank(user.getAvatarPath())){
-                    Path path = Paths.get(user.getAvatarPath());
-                    resource = new ByteArrayResource(Files.readAllBytes(path));
+            List<User> users = usersRepository.findUsersByUsername(username);
+            if(users != null){
+                if(users.size() == 1){
+                    User user = users.get(0);
+                    if(user != null){
+                        ByteArrayResource resource;
+                        if(StringUtils.isNotBlank(user.getAvatarPath())){
+                            Path path = Paths.get(user.getAvatarPath());
+                            resource = new ByteArrayResource(Files.readAllBytes(path));
+                        }
+                        else{
+                            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                        }
+
+                        return new ResponseEntity<>(resource, HttpStatus.OK);
+                    }
+                    else{
+                        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                    }
                 }
                 else{
-                    return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                    throw new DuplicateKeyException("There are more than one asset with ID '" + username + "'");
                 }
-
-                return new ResponseEntity<>(resource, HttpStatus.OK);
             }
             else{
+                _logger.warn("No user was found with username '" + username + "'");
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
         }
@@ -129,24 +140,5 @@ public class RenditionController {
             _logger.debug("<< getRendition()");
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
-
-    private User getUser(String username){
-        _logger.debug("getUser() >>");
-        User user = null;
-
-        List<User> users = jdbcTemplate.query("SELECT email, enabled, account_non_expired, account_non_locked, credentials_non_expired, lastname, name, username, avatar_path FROM users WHERE username=?", new Object[]{username}, new UserRowMapper());
-
-        if(users != null && !users.isEmpty()){
-            if(users.size() == 1){
-                user = users.get(0);
-            }
-            else{
-                throw new DuplicateKeyException("Username " + username + " is duplicate!");
-            }
-        }
-
-        _logger.debug("<< getUser()");
-        return user;
     }
 }
