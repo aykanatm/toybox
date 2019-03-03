@@ -1,5 +1,6 @@
 const folders = new Vue({
     el: '#toybox-folders',
+    mixins:[messageMixin, userMixin, configServiceMixin],
     data:{
         view: 'folders',
     },
@@ -13,8 +14,11 @@ const folders = new Vue({
             'XSRF-TOKEN': csrfToken
         }
         axios.defaults.withCredentials = true;
+
+        this.$root.$on('message-sent', this.displayMessage);
     },
     components:{
-        'navbar' : httpVueLoader('../components/navbar/navbar.vue')
+        'navbar' : httpVueLoader('../components/navbar/navbar.vue'),
+        'message' : httpVueLoader('../components/message/message.vue')
     }
 });

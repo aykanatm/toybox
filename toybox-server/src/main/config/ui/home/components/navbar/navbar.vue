@@ -42,7 +42,12 @@
                 </div>
             </div>
             <div class="ui simple dropdown item" id="toybox-profile-menu">
-                <img class="ui mini circular image" v-bind:src="user.avatarUrl"/>
+                <div v-if="userAvatarLoaded">
+                    <img class="ui mini circular image" v-bind:src="user.avatarUrl"/>
+                </div>
+                <div v-else>
+                    <i class="user circle icon" style="font-size: 30pt;"></i>
+                </div>
                 <div class="menu">
                     <a class="item">
                         <i class="edit icon"></i>
