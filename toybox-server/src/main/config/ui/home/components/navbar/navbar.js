@@ -11,7 +11,7 @@ module.exports = {
                 id:'0',
                 date: 'Now',
             },
-            userAvatarLoaded: false,
+            userInitialized: false,
             // Dummy notifications
             notifications:[
                 {
@@ -48,10 +48,29 @@ module.exports = {
         }
     },
     mounted:function(){
-        var self = this;
-        $('#toybox-profile-menu').imagesLoaded( function() {
-            self.userAvatarLoaded = true;
-        });
+
+    },
+    watch:{
+        user:{
+            handler(user){
+                if(user.avatarUrl !== ''){
+                    this.userInitialized = true;
+                    var self = this;
+                    setTimeout(() => {
+                        $('#toybox-profile-menu').imagesLoaded()
+                        .done( function() {
+                            console.log('all images successfully loaded');
+                            self.userInitialized = true;
+                        })
+                        .fail( function() {
+                            console.log('all images loaded, at least one is broken');
+                            self.userInitialized = false;
+                        });
+                    }, 200);
+                }
+            },
+            deep: true
+        }
     },
     methods:{
         showUploadModalWindow:function(){

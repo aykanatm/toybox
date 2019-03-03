@@ -42,7 +42,7 @@
                 </div>
             </div>
             <div class="ui simple dropdown item" id="toybox-profile-menu">
-                <div v-if="userAvatarLoaded">
+                <div v-if="userInitialized">
                     <img class="ui mini circular image" v-bind:src="user.avatarUrl"/>
                 </div>
                 <div v-else>
