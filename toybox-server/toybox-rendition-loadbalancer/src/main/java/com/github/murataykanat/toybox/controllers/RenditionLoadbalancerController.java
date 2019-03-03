@@ -33,7 +33,7 @@ public class RenditionLoadbalancerController {
     @Autowired
     private RestTemplate restTemplate;
 
-    @HystrixCommand
+    @HystrixCommand(fallbackMethod = "userRenditionErrorFallback")
     @RequestMapping(value = "/renditions/users/{username}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> getLoadBalancedUserAvatar(HttpSession session, @PathVariable String username){
         _logger.debug("getLoadBalancedUserAvatar() >>");
@@ -50,7 +50,7 @@ public class RenditionLoadbalancerController {
         return restTemplate.exchange("http://toybox-rendition-service/renditions/users/" + username, HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
     }
 
-    @HystrixCommand
+    @HystrixCommand(fallbackMethod = "assetRenditionErrorFallback")
     @RequestMapping(value = "/renditions/assets/{assetId}/{renditionType}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> getLoadBalancedRendition(HttpSession session, @PathVariable String assetId, @PathVariable String renditionType){
         _logger.debug("getLoadBalancedRendition() >>");
@@ -65,5 +65,23 @@ public class RenditionLoadbalancerController {
 
         _logger.debug("<< getLoadBalancedRendition()");
         return restTemplate.exchange("http://toybox-rendition-service/renditions/assets/" + assetId + "/" + renditionType, HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
+    }
+
+    public ResponseEntity<Resource> userRenditionErrorFallback(HttpSession session, @PathVariable String username){
+        _logger.debug("userRenditionErrorFallback() >>");
+
+        _logger.error("Unable to retrieve rendition for username '" + username + "'. Please check if the any of the rendition services are running.");
+
+        _logger.debug("<< userRenditionErrorFallback()");
+        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    public ResponseEntity<Resource> assetRenditionErrorFallback(HttpSession session, @PathVariable String assetId, @PathVariable String renditionType){
+        _logger.debug("assetRenditionErrorFallback() >>");
+
+        _logger.error("Unable to retrieve " +  renditionType + " rendition for asset with ID '" + assetId + "'. Please check if the any of the rendition services are running.");
+
+        _logger.debug("<< assetRenditionErrorFallback()");
+        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
