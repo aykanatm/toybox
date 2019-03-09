@@ -242,7 +242,7 @@ public class JobLoadbalancerController {
     }
 
     public ResponseEntity<JobResponse> importAssetErrorFallback(HttpSession session, @RequestBody UploadFileLst uploadFileLst){
-        _logger.debug("packageAssetsErrorFallback() >>");
+        _logger.debug("importAssetErrorFallback() >>");
 
         if(uploadFileLst != null){
             String errorMessage = "Unable initiate the import job. Please check if the any of the job services are running.";
@@ -250,7 +250,7 @@ public class JobLoadbalancerController {
             JobResponse jobResponse = new JobResponse();
             jobResponse.setMessage(errorMessage);
 
-            _logger.debug("<< packageAssetsErrorFallback()");
+            _logger.debug("<< importAssetErrorFallback()");
             return new ResponseEntity<>(jobResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         else{
@@ -259,7 +259,7 @@ public class JobLoadbalancerController {
             JobResponse jobResponse = new JobResponse();
             jobResponse.setMessage(errorMessage);
 
-            _logger.debug("<< packageAssetsErrorFallback()");
+            _logger.debug("<< importAssetErrorFallback()");
             return new ResponseEntity<>(jobResponse, HttpStatus.BAD_REQUEST);
         }
     }
