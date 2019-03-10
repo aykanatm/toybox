@@ -10,11 +10,9 @@ import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
 import com.github.murataykanat.toybox.schema.job.RetrieveToyboxJobResult;
-import com.github.murataykanat.toybox.schema.upload.UploadFile;
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
 import com.github.murataykanat.toybox.utilities.FacetUtils;
 import com.github.murataykanat.toybox.utilities.SortUtils;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -30,7 +28,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpSession;
 import java.io.*;
@@ -45,8 +42,6 @@ public class AssetController {
     @Autowired
     private AssetsRepository assetsRepository;
 
-    @Value("${importStagingPath}")
-    private String importStagingPath;
     @Value("${exportStagingPath}")
     private String exportStagingPath;
     @Value("${jobServiceUrl}")
@@ -171,46 +166,10 @@ public class AssetController {
         }
     }
 
-
-    // The name "upload" must match the "name" attribute of the input in UI (
     @RequestMapping(value = "/assets/upload", method = RequestMethod.POST)
-    public ResponseEntity<GenericResponse> uploadAssets(Authentication authentication, HttpSession session, @RequestParam("upload") MultipartFile[] files) {
+    public ResponseEntity<GenericResponse> uploadAssets(Authentication authentication, HttpSession session, @RequestBody UploadFileLst uploadFileLst) {
         _logger.debug("uploadAssets() >>");
-
-        String tempFolderName = Long.toString(System.currentTimeMillis());
-        String tempImportStagingPath = importStagingPath + File.separator + tempFolderName;
-        _logger.debug("Import staging path: " + tempImportStagingPath);
-
         try{
-            File tempFolder = new File(tempImportStagingPath);
-            if(!tempFolder.exists()){
-                tempFolder.mkdir();
-            }
-
-            UploadFileLst uploadFileLst = new UploadFileLst();
-            List<UploadFile> uploadFiles = new ArrayList<>();
-
-            for(MultipartFile file: files){
-                String path;
-                if(tempFolder.exists()){
-                    path = tempFolder.getAbsolutePath() + File.separator + file.getOriginalFilename();
-                }
-                else{
-                    throw new FileNotFoundException("The temp folder " + tempFolder.getAbsolutePath() + " does not exist!");
-                }
-
-                file.transferTo(new File(path));
-
-                UploadFile uploadFile = new UploadFile();
-                uploadFile.setPath(path);
-                uploadFile.setUsername(authentication.getName());
-
-                uploadFiles.add(uploadFile);
-            }
-
-            uploadFileLst.setUploadFiles(uploadFiles);
-            uploadFileLst.setMessage("Files uploaded successfully!");
-
             _logger.debug("Session ID: " + session.getId());
             CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
             _logger.debug("CSRF Token: " + token.getToken());
@@ -237,19 +196,8 @@ public class AssetController {
             }
         }
         catch (Exception e){
-            String errorMessage = "An error occurred while uploading files. " + e.getLocalizedMessage();
+            String errorMessage = "An error occurred while starting the import job. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
-
-            File tempFolder = new File(tempImportStagingPath);
-            try {
-                if(tempFolder.exists()){
-                    FileUtils.deleteDirectory(tempFolder);
-                }
-            }
-            catch (IOException ioe){
-                String ioErrorMessage = ". An error occurred while deleting the temp files. " + ioe.getLocalizedMessage();
-                errorMessage += ioErrorMessage;
-            }
 
             GenericResponse genericResponse = new GenericResponse();
             genericResponse.setMessage(errorMessage);
