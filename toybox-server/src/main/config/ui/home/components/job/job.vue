@@ -6,7 +6,7 @@
         <div class="column">{{ formattedEndTime }}</div>
         <div class="column">{{ status }}</div>
         <div class="column">
-            <button v-if="!isCompleted" class="mini ui button">Cancel</button>
+            <button v-if="!isCompleted" class="mini ui button" v-on:click.stop="stopJob">Cancel</button>
             <button class="mini ui button" v-on:click="showJobDetailsModalWindow">View</button>
             <button v-if="isCompleted && isExport" class="mini ui button" v-on:click.stop="downloadJobResult">Download</button>
         </div>

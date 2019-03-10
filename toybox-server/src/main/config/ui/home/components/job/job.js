@@ -13,7 +13,7 @@ module.exports = {
     },
     computed:{
         isCompleted(){
-            return this.status === 'COMPLETED';
+            return this.status === 'COMPLETED' || this.status === 'STOPPED' || this.status === 'STOPPING';
         },
         isImport(){
             return this.jobType === 'IMPORT';
@@ -64,6 +64,31 @@ module.exports = {
                                 var file = new File([response.data], filename, { type: 'application/force-download' });
                                 window.open(URL.createObjectURL(file));
                             }
+                        })
+                        .catch(error => {
+                            var errorMessage;
+
+                            if(error.response){
+                                errorMessage = error.response.data.message
+                            }
+                            else{
+                                errorMessage = error.message;
+                            }
+
+                            console.error(errorMessage);
+                            this.$root.$emit('message-sent', 'Error', errorMessage);
+                        });
+                }
+            });
+        },
+        stopJob:function(){
+            this.getConfiguration("jobServiceUrl")
+            .then(response =>{
+                if(response){
+                    return axios.post(response.data.value + '/jobs/stop/' + this.jobInstanceId)
+                        .then(response =>{
+                            console.log(response);
+                            this.$root.$emit('message-sent', 'Success', response.data.message);
                         })
                         .catch(error => {
                             var errorMessage;

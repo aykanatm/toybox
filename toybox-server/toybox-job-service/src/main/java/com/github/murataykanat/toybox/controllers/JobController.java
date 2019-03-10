@@ -19,7 +19,9 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.batch.core.*;
+import org.springframework.batch.core.launch.JobExecutionNotStoppedException;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.launch.JobOperator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
@@ -46,6 +48,8 @@ public class JobController {
 
     @Autowired
     private JobLauncher jobLauncher;
+    @Autowired
+    private JobOperator jobOperator;
     @Autowired
     private Job importJob;
     @Autowired
@@ -453,6 +457,47 @@ public class JobController {
 
             _logger.debug("<< downloadJobResult()");
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @RequestMapping(value = "/jobs/stop/{jobInstanceId}", method = RequestMethod.POST)
+    public ResponseEntity<JobResponse> stopJob(@PathVariable String jobInstanceId) {
+        _logger.debug("stopJob() >>");
+        try{
+            if(StringUtils.isNotBlank(jobInstanceId)){
+                boolean stop = jobOperator.stop(Long.parseLong(jobInstanceId));
+                if(stop){
+                    JobResponse jobResponse = new JobResponse();
+                    jobResponse.setJobId(Long.parseLong(jobInstanceId));
+                    jobResponse.setMessage("Job stopped successfully.");
+
+                    _logger.debug("<< stopJob()");
+                    return new ResponseEntity<>(jobResponse, HttpStatus.OK);
+                }
+                else{
+                    throw new JobExecutionNotStoppedException("Job with ID '" + jobInstanceId + "' failed to stop.");
+                }
+            }
+            else{
+                String errorMessage = "Job instance ID is blank!";
+                _logger.error(errorMessage);
+
+                JobResponse jobResponse = new JobResponse();
+                jobResponse.setMessage(errorMessage);
+
+                _logger.debug("<< stopJob()");
+                return new ResponseEntity<>(jobResponse, HttpStatus.BAD_REQUEST);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while stopping the job with ID " + jobInstanceId + ". " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            JobResponse jobResponse = new JobResponse();
+            jobResponse.setMessage(errorMessage);
+
+            _logger.debug("<< stopJob()");
+            return new ResponseEntity<>(jobResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

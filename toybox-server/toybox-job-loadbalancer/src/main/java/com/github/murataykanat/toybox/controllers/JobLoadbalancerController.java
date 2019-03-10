@@ -479,4 +479,81 @@ public class JobLoadbalancerController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
     }
+
+    @HystrixCommand(fallbackMethod = "stopJobErrorFallback")
+    @RequestMapping(value = "/jobs/stop/{jobInstanceId}", method = RequestMethod.POST)
+    public ResponseEntity<JobResponse> stopJob(HttpSession session, @PathVariable String jobInstanceId) {
+        _logger.debug("stopJob() >>");
+        if(StringUtils.isNotBlank(jobInstanceId)){
+            if(session != null){
+                _logger.debug("Session ID: " + session.getId());
+                CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
+                if(token != null){
+                    _logger.debug("CSRF Token: " + token.getToken());
+
+                    HttpHeaders headers = new HttpHeaders();
+                    headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
+                    headers.set("X-XSRF-TOKEN", token.getToken());
+
+                    _logger.debug("<< stopJob()");
+                    return restTemplate.exchange("http://toybox-job-service/jobs/stop/" + jobInstanceId, HttpMethod.POST, new HttpEntity<>(headers), JobResponse.class);
+                }
+                else{
+                    String errorMessage = "CSRF token is null!";
+                    _logger.error(errorMessage);
+
+                    JobResponse jobResponse = new JobResponse();
+                    jobResponse.setMessage(errorMessage);
+
+                    _logger.debug("<< stopJob()");
+                    return new ResponseEntity<>(jobResponse, HttpStatus.UNAUTHORIZED);
+                }
+            }
+            else{
+                String errorMessage = "Session is null!";
+                _logger.error(errorMessage);
+
+                JobResponse jobResponse = new JobResponse();
+                jobResponse.setMessage(errorMessage);
+
+                _logger.debug("<< stopJob()");
+                return new ResponseEntity<>(jobResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        else{
+            String errorMessage = "Job instance id is blank!";
+            _logger.error(errorMessage);
+
+            JobResponse jobResponse = new JobResponse();
+            jobResponse.setMessage(errorMessage);
+
+            _logger.debug("<< stopJob()");
+            return new ResponseEntity<>(jobResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    public ResponseEntity<JobResponse> stopJobErrorFallback(HttpSession session, @PathVariable String jobInstanceId){
+        _logger.debug("stopJobErrorFallback() >>");
+
+        if(StringUtils.isNotBlank(jobInstanceId)){
+            String errorMessage = "Unable stop the job with the ID '" + jobInstanceId + "'. Please check if the any of the job services are running.";
+            _logger.error(errorMessage);
+
+            JobResponse jobResponse = new JobResponse();
+            jobResponse.setMessage(errorMessage);
+
+            _logger.debug("<< stopJobErrorFallback()");
+            return new ResponseEntity<>(jobResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        else{
+            String errorMessage = "Job instance id is blank!";
+            _logger.error(errorMessage);
+
+            JobResponse jobResponse = new JobResponse();
+            jobResponse.setMessage(errorMessage);
+
+            _logger.debug("<< stopJobErrorFallback()");
+            return new ResponseEntity<>(jobResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
 }
