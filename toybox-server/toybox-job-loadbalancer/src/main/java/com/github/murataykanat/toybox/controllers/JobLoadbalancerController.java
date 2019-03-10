@@ -15,6 +15,7 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.cloud.netflix.ribbon.RibbonClient;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.io.Resource;
 import org.springframework.http.*;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
@@ -413,6 +414,69 @@ public class JobLoadbalancerController {
 
             _logger.debug("<< retrieveJobErrorFallback()");
             return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @HystrixCommand(fallbackMethod = "downloadJobResultErrorFallback")
+    @RequestMapping(value = "/jobs/download/{jobInstanceId}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public ResponseEntity<Resource> downloadJobResult(HttpSession session, @PathVariable String jobInstanceId){
+        _logger.debug("downloadJobResult() >>");
+
+        if(StringUtils.isNotBlank(jobInstanceId)){
+            if(session != null){
+                _logger.debug("Session ID: " + session.getId());
+                CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
+                if(token != null){
+                    _logger.debug("CSRF Token: " + token.getToken());
+
+                    HttpHeaders headers = new HttpHeaders();
+                    headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
+                    headers.set("X-XSRF-TOKEN", token.getToken());
+
+                    _logger.debug("<< retrieveJob()");
+                    return restTemplate.exchange("http://toybox-job-service/jobs/download/" + jobInstanceId, HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
+                }
+                else{
+                    String errorMessage = "CSRF token is null!";
+                    _logger.error(errorMessage);
+
+                    _logger.debug("<< retrieveJob()");
+                    return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                }
+            }
+            else{
+                String errorMessage = "Session is null!";
+                _logger.error(errorMessage);
+
+                _logger.debug("<< retrieveJob()");
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            }
+        }
+        else{
+            String errorMessage = "Job instance id is blank!";
+            _logger.error(errorMessage);
+
+            _logger.debug("<< retrieveJobs()");
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    public ResponseEntity<Resource> downloadJobResultErrorFallback(HttpSession session, @PathVariable String jobInstanceId){
+        _logger.debug("downloadJobResultErrorFallback() >>");
+
+        if(StringUtils.isNotBlank(jobInstanceId)){
+            String errorMessage = "Unable download the result of the job with the ID '" + jobInstanceId + "'. Please check if the any of the job services are running.";
+            _logger.error(errorMessage);
+
+            _logger.debug("<< downloadJobResultErrorFallback()");
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        else{
+            String errorMessage = "Job instance id is blank!";
+            _logger.error(errorMessage);
+
+            _logger.debug("<< downloadJobResultErrorFallback()");
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
     }
 }

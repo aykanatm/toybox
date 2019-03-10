@@ -21,6 +21,9 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.batch.core.*;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -28,12 +31,19 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
 public class JobController {
     private static final Log _logger = LogFactory.getLog(JobController.class);
+
+    @Value("${exportStagingPath}")
+    private String exportStagingPath;
+
     @Autowired
     private JobLauncher jobLauncher;
     @Autowired
@@ -408,6 +418,41 @@ public class JobController {
 
             _logger.debug("<< retrieveJob()");
             return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @RequestMapping(value = "/jobs/download/{jobInstanceId}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public ResponseEntity<Resource> downloadJobResult(@PathVariable String jobInstanceId){
+        _logger.debug("downloadJobResult() >>");
+        try{
+            if(StringUtils.isNotBlank(jobInstanceId)){
+                String downloadFilePath =  exportStagingPath + File.separator + jobInstanceId + File.separator + "Download.zip";
+                File file = new File(downloadFilePath);
+
+                if(file.exists()){
+                    InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
+
+                    _logger.debug("<< downloadJobResult()");
+                    return new ResponseEntity<>(resource, HttpStatus.OK);
+                }
+                else{
+                    throw new IOException("File '" + downloadFilePath + "' does not exist!");
+                }
+            }
+            else{
+                String errorMessage = "Job instance ID is blank!";
+                _logger.error(errorMessage);
+
+                _logger.debug("<< downloadJobResult()");
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while download the export job result. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            _logger.debug("<< downloadJobResult()");
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }
