@@ -107,15 +107,14 @@ public class AssetController {
                                 _logger.debug("Job response message: " + jobResponse.getMessage());
                                 _logger.debug("Job ID: " + jobResponse.getJobId());
                                 File archiveFile = getArchiveFile(jobResponse.getJobId(), headers);
-                                if(archiveFile != null){
+                                if(archiveFile.exists()){
                                     InputStreamResource resource = new InputStreamResource(new FileInputStream(archiveFile));
 
                                     _logger.debug("<< downloadAssets()");
                                     return new ResponseEntity<>(resource, HttpStatus.OK);
                                 }
                                 else{
-                                    _logger.debug("<< downloadAssets()");
-                                    return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+                                    throw new IOException("File '" + archiveFile.getAbsolutePath() + "' does not exist!");
                                 }
                             }
                             else{
