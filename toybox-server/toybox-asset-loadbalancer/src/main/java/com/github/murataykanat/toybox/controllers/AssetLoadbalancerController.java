@@ -280,7 +280,7 @@ public class AssetLoadbalancerController {
     }
 
     public ResponseEntity<GenericResponse> uploadAssetsErrorFallback(Authentication authentication, HttpSession session, MultipartFile[] files, Throwable e){
-        _logger.debug("downloadAssetsErrorFallback() >>");
+        _logger.debug("uploadAssetsErrorFallback() >>");
 
         if(files != null){
             String errorMessage;
@@ -296,7 +296,7 @@ public class AssetLoadbalancerController {
             GenericResponse genericResponse = new GenericResponse();
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< downloadAssetsErrorFallback()");
+            _logger.debug("<< uploadAssetsErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         else{
