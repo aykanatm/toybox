@@ -41,31 +41,37 @@ public class RenditionController {
         try{
             List<User> users = usersRepository.findUsersByUsername(username);
             if(users != null){
-                if(users.size() == 1){
-                    User user = users.get(0);
-                    if(user != null){
-                        ByteArrayResource resource;
-                        if(StringUtils.isNotBlank(user.getAvatarPath())){
-                            Path path = Paths.get(user.getAvatarPath());
-                            resource = new ByteArrayResource(Files.readAllBytes(path));
+                if(!users.isEmpty()){
+                    if(users.size() == 1){
+                        User user = users.get(0);
+                        if(user != null){
+                            ByteArrayResource resource;
+                            if(StringUtils.isNotBlank(user.getAvatarPath())){
+                                Path path = Paths.get(user.getAvatarPath());
+                                resource = new ByteArrayResource(Files.readAllBytes(path));
+                            }
+                            else{
+                                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                            }
+
+                            return new ResponseEntity<>(resource, HttpStatus.OK);
                         }
                         else{
                             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                         }
-
-                        return new ResponseEntity<>(resource, HttpStatus.OK);
                     }
                     else{
-                        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                        throw new DuplicateKeyException("There are more than one asset with ID '" + username + "'");
                     }
                 }
                 else{
-                    throw new DuplicateKeyException("There are more than one asset with ID '" + username + "'");
+                    _logger.error("No user was found with username '" + username + "'");
+                    return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                 }
+
             }
             else{
-                _logger.warn("No user was found with username '" + username + "'");
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                throw new InvalidObjectException("Users is null!");
             }
         }
         catch (Exception e){
@@ -83,54 +89,59 @@ public class RenditionController {
         try{
             List<Asset> assets = assetsRepository.getAssetsById(assetId);
             if(assets != null){
-                if(assets.size() == 1){
-                    Asset asset = assets.get(0);
-                    if(asset != null){
-                        ByteArrayResource resource;
-                        if(renditionType.equalsIgnoreCase("t")){
-                            if(StringUtils.isNotBlank(asset.getThumbnailPath())){
-                                Path path = Paths.get(asset.getThumbnailPath());
-                                resource = new ByteArrayResource(Files.readAllBytes(path));
+                if(!assets.isEmpty()){
+                    if(assets.size() == 1){
+                        Asset asset = assets.get(0);
+                        if(asset != null){
+                            ByteArrayResource resource;
+                            if(renditionType.equalsIgnoreCase("t")){
+                                if(StringUtils.isNotBlank(asset.getThumbnailPath())){
+                                    Path path = Paths.get(asset.getThumbnailPath());
+                                    resource = new ByteArrayResource(Files.readAllBytes(path));
 
-                                return new ResponseEntity<>(resource, HttpStatus.OK);
-                            }
-                            else{
-                                _logger.error("Thumbnail path is blank!");
-                                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-                            }
-                        }
-                        else if(renditionType.equalsIgnoreCase("p")){
-                            if(StringUtils.isNotBlank(asset.getPreviewPath())){
-                                Path path = Paths.get(asset.getPreviewPath());
-                                resource = new ByteArrayResource(Files.readAllBytes(path));
-
-                                if(asset.getPreviewPath().endsWith("pdf")){
-                                    return ResponseEntity.ok().header("Content-Disposition","inline; filename=" + new File(asset.getPreviewPath()).getName()).contentType(MediaType.APPLICATION_PDF).contentLength(resource.contentLength()).body(resource);
-                                }
-                                else{
                                     return new ResponseEntity<>(resource, HttpStatus.OK);
                                 }
+                                else{
+                                    _logger.error("Thumbnail path is blank!");
+                                    return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                                }
+                            }
+                            else if(renditionType.equalsIgnoreCase("p")){
+                                if(StringUtils.isNotBlank(asset.getPreviewPath())){
+                                    Path path = Paths.get(asset.getPreviewPath());
+                                    resource = new ByteArrayResource(Files.readAllBytes(path));
+
+                                    if(asset.getPreviewPath().endsWith("pdf")){
+                                        return ResponseEntity.ok().header("Content-Disposition","inline; filename=" + new File(asset.getPreviewPath()).getName()).contentType(MediaType.APPLICATION_PDF).contentLength(resource.contentLength()).body(resource);
+                                    }
+                                    else{
+                                        return new ResponseEntity<>(resource, HttpStatus.OK);
+                                    }
+                                }
+                                else{
+                                    _logger.error("Preview path is blank!");
+                                    return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                                }
                             }
                             else{
-                                _logger.error("Preview path is blank!");
-                                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                                throw new IllegalArgumentException("Rendition type is not recognized!");
                             }
                         }
                         else{
-                            throw new IllegalArgumentException("Rendition type is not recognized!");
+                            throw new InvalidObjectException("Asset is null!");
                         }
                     }
                     else{
-                        throw new InvalidObjectException("Asset is null!");
+                        throw new DuplicateKeyException("There are more than one asset with ID '" + assetId + "'");
                     }
                 }
                 else{
-                    throw new DuplicateKeyException("There are more than one asset with ID '" + assetId + "'");
+                    _logger.error("No asset was found with ID '" + assetId + "'");
+                    return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                 }
             }
             else{
-                _logger.warn("No asset was found with ID '" + assetId + "'");
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                throw new InvalidObjectException("Assets is null!");
             }
         }
         catch (Exception e){
