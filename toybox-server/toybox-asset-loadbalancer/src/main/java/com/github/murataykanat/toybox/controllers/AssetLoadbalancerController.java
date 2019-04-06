@@ -7,12 +7,15 @@ import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.upload.UploadFile;
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.cloud.client.ServiceInstance;
+import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.cloud.netflix.ribbon.RibbonClient;
 import org.springframework.context.annotation.Bean;
@@ -36,6 +39,8 @@ import java.util.List;
 public class AssetLoadbalancerController {
     private static final Log _logger = LogFactory.getLog(AssetLoadbalancerController.class);
 
+    private static final String assetServiceName = "toybox-asset-service";
+
     @Value("${importStagingPath}")
     private String importStagingPath;
 
@@ -46,28 +51,47 @@ public class AssetLoadbalancerController {
     }
 
     @Autowired
+    private DiscoveryClient discoveryClient;
+
+    @Autowired
     private RestTemplate restTemplate;
 
     @HystrixCommand(fallbackMethod = "downloadAssetsErrorFallback")
     @RequestMapping(value = "/assets/download", method = RequestMethod.POST, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> downloadAssets(HttpSession session, @RequestBody SelectedAssets selectedAssets){
         _logger.debug("downloadAssets() >>");
-        if(selectedAssets != null){
-            if(session != null){
-                _logger.debug("Session ID: " + session.getId());
-                CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-                if(token != null){
-                    _logger.debug("CSRF Token: " + token.getToken());
+        try {
+            if(selectedAssets != null){
+                if(session != null){
+                    _logger.debug("Session ID: " + session.getId());
+                    CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
+                    if(token != null){
+                        _logger.debug("CSRF Token: " + token.getToken());
 
-                    HttpHeaders headers = new HttpHeaders();
-                    headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-                    headers.set("X-XSRF-TOKEN", token.getToken());
+                        HttpHeaders headers = new HttpHeaders();
+                        headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
+                        headers.set("X-XSRF-TOKEN", token.getToken());
 
-                    _logger.debug("<< downloadAssets()");
-                    return restTemplate.exchange("http://toybox-asset-service/assets/download", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), Resource.class);
+                        String prefix = getPrefix();
+                        if(StringUtils.isNotBlank(prefix)){
+                            _logger.debug("<< downloadAssets()");
+                            return restTemplate.exchange(prefix + assetServiceName + "/assets/download", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), Resource.class);
+                        }
+                        else{
+                            _logger.debug("<< downloadAssets()");
+                            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+                        }
+                    }
+                    else{
+                        String errorMessage = "CSRF token is null!";
+                        _logger.error(errorMessage);
+
+                        _logger.debug("<< downloadAssets()");
+                        return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                    }
                 }
                 else{
-                    String errorMessage = "CSRF token is null!";
+                    String errorMessage = "Session is null!";
                     _logger.error(errorMessage);
 
                     _logger.debug("<< downloadAssets()");
@@ -75,28 +99,35 @@ public class AssetLoadbalancerController {
                 }
             }
             else{
-                String errorMessage = "Session is null!";
+                String errorMessage = "Selected assets are null!";
                 _logger.error(errorMessage);
 
                 _logger.debug("<< downloadAssets()");
-                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
         }
-        else{
-            String errorMessage = "Selected assets are null!";
-            _logger.error(errorMessage);
+        catch (Exception e){
+            String errorMessage = "An error occurred while downloading the assets. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
 
-            _logger.debug("<< downloadAssets()");
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            _logger.debug("<< getLoadBalancedRendition()");
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    public ResponseEntity<Resource> downloadAssetsErrorFallback(HttpSession session, @RequestBody SelectedAssets selectedAssets){
+    public ResponseEntity<Resource> downloadAssetsErrorFallback(HttpSession session, SelectedAssets selectedAssets, Throwable e){
         _logger.debug("downloadAssetsErrorFallback() >>");
 
         if(selectedAssets != null){
-            String errorMessage = "Unable download selected assets. Please check if any of the asset services are running.";
-            _logger.error(errorMessage);
+            String errorMessage;
+            if(e.getLocalizedMessage() != null){
+                errorMessage = "Unable download selected assets. " + e.getLocalizedMessage();
+            }
+            else{
+                errorMessage = "Unable to get response from the asset service.";
+            }
+
+            _logger.error(errorMessage, e);
 
             _logger.debug("<< downloadAssetsErrorFallback()");
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -161,8 +192,21 @@ public class AssetLoadbalancerController {
                             uploadFileLst.setUploadFiles(uploadFiles);
                             uploadFileLst.setMessage("Files uploaded successfully!");
 
-                            _logger.debug("<< uploadAssets()");
-                            return restTemplate.exchange("http://toybox-asset-service/assets/upload", HttpMethod.POST, new HttpEntity<>(uploadFileLst, headers), GenericResponse.class);
+                            String prefix = getPrefix();
+                            if(StringUtils.isNotBlank(prefix)){
+                                _logger.debug("<< uploadAssets()");
+                                return restTemplate.exchange(prefix + assetServiceName + "/assets/upload", HttpMethod.POST, new HttpEntity<>(uploadFileLst, headers), GenericResponse.class);
+                            }
+                            else{
+                                String errorMessage = "Service ID prefix is null!";
+                                _logger.error(errorMessage);
+
+                                GenericResponse genericResponse = new GenericResponse();
+                                genericResponse.setMessage(errorMessage);
+
+                                _logger.debug("<< stopJob()");
+                                return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                            }
                         }
                         else{
                             String errorMessage = "Token is null!";
@@ -197,7 +241,7 @@ public class AssetLoadbalancerController {
                     genericResponse.setMessage(errorMessage);
 
                     _logger.debug("<< uploadAssets()");
-                    return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                    return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
                 }
             }
             else{
@@ -235,12 +279,19 @@ public class AssetLoadbalancerController {
         }
     }
 
-    public ResponseEntity<GenericResponse> uploadAssetsErrorFallback(Authentication authentication, HttpSession session, @RequestParam("upload") MultipartFile[] files){
+    public ResponseEntity<GenericResponse> uploadAssetsErrorFallback(Authentication authentication, HttpSession session, MultipartFile[] files, Throwable e){
         _logger.debug("downloadAssetsErrorFallback() >>");
 
         if(files != null){
-            String errorMessage = "Unable to upload assets. Please check if any of the asset services are running.";
-            _logger.error(errorMessage);
+            String errorMessage;
+            if(e.getLocalizedMessage() != null){
+                errorMessage = "Unable to upload assets. " + e.getLocalizedMessage();
+            }
+            else{
+                errorMessage = "Unable to get response from the asset service.";
+            }
+
+            _logger.error(errorMessage, e);
 
             GenericResponse genericResponse = new GenericResponse();
             genericResponse.setMessage(errorMessage);
@@ -265,23 +316,50 @@ public class AssetLoadbalancerController {
     @RequestMapping(value = "/assets/search", method = RequestMethod.POST)
     public ResponseEntity<RetrieveAssetsResults> retrieveAssets(Authentication authentication, HttpSession session, @RequestBody AssetSearchRequest assetSearchRequest){
         _logger.debug("retrieveAssets() >>");
-        if(assetSearchRequest != null){
-            if(session != null){
-                if(authentication != null){
-                    _logger.debug("Session ID: " + session.getId());
-                    CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-                    if(token != null){
-                        _logger.debug("CSRF Token: " + token.getToken());
+        try{
+            if(assetSearchRequest != null){
+                if(session != null){
+                    if(authentication != null){
+                        _logger.debug("Session ID: " + session.getId());
+                        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
+                        if(token != null){
+                            _logger.debug("CSRF Token: " + token.getToken());
 
-                        HttpHeaders headers = new HttpHeaders();
-                        headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-                        headers.set("X-XSRF-TOKEN", token.getToken());
+                            HttpHeaders headers = new HttpHeaders();
+                            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
+                            headers.set("X-XSRF-TOKEN", token.getToken());
 
-                        _logger.debug("<< retrieveAssets()");
-                        return restTemplate.exchange("http://toybox-asset-service/assets/search", HttpMethod.POST, new HttpEntity<>(assetSearchRequest, headers), RetrieveAssetsResults.class);
+                            String prefix = getPrefix();
+                            if(StringUtils.isNotBlank(prefix)){
+                                _logger.debug("<< retrieveAssets()");
+                                return restTemplate.exchange(prefix + assetServiceName + "/assets/search", HttpMethod.POST, new HttpEntity<>(assetSearchRequest, headers), RetrieveAssetsResults.class);
+                            }
+                            else{
+                                String errorMessage = "Service ID prefix is null!";
+
+                                _logger.error(errorMessage);
+
+                                RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
+                                retrieveAssetsResults.setMessage(errorMessage);
+
+                                _logger.debug("<< uploadAssets()");
+                                return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.INTERNAL_SERVER_ERROR);
+                            }
+                        }
+                        else{
+                            String errorMessage = "Token is null!";
+
+                            _logger.error(errorMessage);
+
+                            RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
+                            retrieveAssetsResults.setMessage(errorMessage);
+
+                            _logger.debug("<< retrieveAssets()");
+                            return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.UNAUTHORIZED);
+                        }
                     }
                     else{
-                        String errorMessage = "Token is null!";
+                        String errorMessage = "Authentication is null!";
 
                         _logger.error(errorMessage);
 
@@ -293,7 +371,7 @@ public class AssetLoadbalancerController {
                     }
                 }
                 else{
-                    String errorMessage = "Authentication is null!";
+                    String errorMessage = "Session is null!";
 
                     _logger.error(errorMessage);
 
@@ -305,7 +383,7 @@ public class AssetLoadbalancerController {
                 }
             }
             else{
-                String errorMessage = "Session is null!";
+                String errorMessage = "Asset search request is null!";
 
                 _logger.error(errorMessage);
 
@@ -313,28 +391,34 @@ public class AssetLoadbalancerController {
                 retrieveAssetsResults.setMessage(errorMessage);
 
                 _logger.debug("<< retrieveAssets()");
-                return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.UNAUTHORIZED);
+                return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.BAD_REQUEST);
             }
         }
-        else{
-            String errorMessage = "Asset search request is null!";
-
-            _logger.error(errorMessage);
+        catch (Exception e){
+            String errorMessage = "An error occurred while searching for assets. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
 
             RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
             retrieveAssetsResults.setMessage(errorMessage);
 
             _logger.debug("<< retrieveAssets()");
-            return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    public ResponseEntity<RetrieveAssetsResults> retrieveAssetsErrorFallback(Authentication authentication, HttpSession session, @RequestBody AssetSearchRequest assetSearchRequest){
+    public ResponseEntity<RetrieveAssetsResults> retrieveAssetsErrorFallback(Authentication authentication, HttpSession session, AssetSearchRequest assetSearchRequest, Throwable e){
         _logger.debug("retrieveAssetsErrorFallback() >>");
 
         if(assetSearchRequest != null){
-            String errorMessage = "Unable to retrieve assets. Please check if any of the asset services are running.";
-            _logger.error(errorMessage);
+            String errorMessage;
+            if(e.getLocalizedMessage() != null){
+                errorMessage = "Unable to retrieve assets. " + e.getLocalizedMessage();
+            }
+            else{
+                errorMessage = "Unable to get response from the asset service.";
+            }
+
+            _logger.error(errorMessage, e);
 
             RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
             retrieveAssetsResults.setMessage(errorMessage);
@@ -359,22 +443,48 @@ public class AssetLoadbalancerController {
     @RequestMapping(value = "/assets/delete", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> deleteAssets(HttpSession session, @RequestBody SelectedAssets selectedAssets){
         _logger.debug("deleteAssets() >>");
-        if(selectedAssets != null){
-            if(session != null){
-                _logger.debug("Session ID: " + session.getId());
-                CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-                if(token != null){
-                    _logger.debug("CSRF Token: " + token.getToken());
+        try {
+            if(selectedAssets != null){
+                if(session != null){
+                    _logger.debug("Session ID: " + session.getId());
+                    CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
+                    if(token != null){
+                        _logger.debug("CSRF Token: " + token.getToken());
 
-                    HttpHeaders headers = new HttpHeaders();
-                    headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-                    headers.set("X-XSRF-TOKEN", token.getToken());
+                        HttpHeaders headers = new HttpHeaders();
+                        headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
+                        headers.set("X-XSRF-TOKEN", token.getToken());
 
-                    _logger.debug("<< deleteAssets()");
-                    return restTemplate.exchange("http://toybox-asset-service/assets/delete", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
+                        String prefix = getPrefix();
+                        if(StringUtils.isNotBlank(prefix)){
+                            _logger.debug("<< deleteAssets()");
+                            return restTemplate.exchange(prefix + assetServiceName + "/assets/delete", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
+                        }
+                        else{
+                            String errorMessage = "Service ID prefix is null!";
+                            _logger.error(errorMessage);
+
+                            GenericResponse genericResponse = new GenericResponse();
+                            genericResponse.setMessage(errorMessage);
+
+                            _logger.debug("<< stopJob()");
+                            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                        }
+                    }
+                    else{
+                        String errorMessage = "Token is null!";
+
+                        _logger.error(errorMessage);
+
+                        GenericResponse genericResponse = new GenericResponse();
+                        genericResponse.setMessage(errorMessage);
+
+                        _logger.debug("<< deleteAssets()");
+                        return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                    }
                 }
                 else{
-                    String errorMessage = "Token is null!";
+                    String errorMessage = "Session is null!";
 
                     _logger.error(errorMessage);
 
@@ -386,7 +496,7 @@ public class AssetLoadbalancerController {
                 }
             }
             else{
-                String errorMessage = "Session is null!";
+                String errorMessage = "Selected assets are null!";
 
                 _logger.error(errorMessage);
 
@@ -394,28 +504,34 @@ public class AssetLoadbalancerController {
                 genericResponse.setMessage(errorMessage);
 
                 _logger.debug("<< deleteAssets()");
-                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
             }
         }
-        else{
-            String errorMessage = "Selected assets are null!";
-
-            _logger.error(errorMessage);
+        catch (Exception e){
+            String errorMessage = "An error occurred while searching for assets. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
 
             GenericResponse genericResponse = new GenericResponse();
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< deleteAssets()");
-            return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+            _logger.debug("<< retrieveAssets()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    public ResponseEntity<GenericResponse> deleteAssetsErrorFallback(HttpSession session, @RequestBody SelectedAssets selectedAssets){
+    public ResponseEntity<GenericResponse> deleteAssetsErrorFallback(HttpSession session, SelectedAssets selectedAssets, Throwable e){
         _logger.debug("downloadAssetsErrorFallback() >>");
 
         if(selectedAssets != null){
-            String errorMessage = "Unable to delete selected assets. Please check if any of the asset services are running.";
-            _logger.error(errorMessage);
+            String errorMessage;
+            if(e.getLocalizedMessage() != null){
+                errorMessage = "Unable to delete selected assets. " + e.getLocalizedMessage();
+            }
+            else{
+                errorMessage = "Unable to get response from the asset service.";
+            }
+
+            _logger.error(errorMessage, e);
 
             GenericResponse genericResponse = new GenericResponse();
             genericResponse.setMessage(errorMessage);
@@ -433,6 +549,43 @@ public class AssetLoadbalancerController {
 
             _logger.debug("<< downloadAssetsErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    private String getPrefix() throws Exception {
+        _logger.debug("getPrefix() >>");
+        List<ServiceInstance> instances = discoveryClient.getInstances(assetServiceName);
+        if(!instances.isEmpty()){
+            List<Boolean> serviceSecurity = new ArrayList<>();
+            for(ServiceInstance serviceInstance: instances){
+                serviceSecurity.add(serviceInstance.isSecure());
+            }
+
+            boolean result = serviceSecurity.get(0);
+
+            for(boolean isServiceSecure : serviceSecurity){
+                result ^= isServiceSecure;
+            }
+
+            if(!result){
+                String prefix = result ? "https://" : "http://";
+
+                _logger.debug("<< getPrefix() [" + prefix + "]");
+                return prefix;
+            }
+            else{
+                String errorMessage = "Not all asset services have the same transfer protocol!";
+                _logger.error(errorMessage);
+
+                throw new Exception(errorMessage);
+
+            }
+        }
+        else{
+            String errorMessage = "No asset services are running!";
+            _logger.error(errorMessage);
+
+            throw new Exception(errorMessage);
         }
     }
 }
