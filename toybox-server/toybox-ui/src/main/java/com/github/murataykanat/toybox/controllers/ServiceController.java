@@ -31,7 +31,7 @@ public class ServiceController {
                         ServiceInstance serviceInstance = instances.get(0);
 
                         String message = "Service ID '" + serviceId + "' successfully retrieved.";
-                        _logger.error(message);
+                        _logger.debug(message);
 
                         GenericFieldValue serviceFieldValue = new GenericFieldValue();
                         serviceFieldValue.setMessage(message);
