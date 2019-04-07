@@ -1,5 +1,5 @@
 module.exports = {
-    mixins:[configServiceMixin, assetActionsMixin],
+    mixins:[assetActionsMixin],
     props:{
         id: String,
         name: String,

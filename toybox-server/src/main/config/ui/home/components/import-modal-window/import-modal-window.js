@@ -1,7 +1,7 @@
 const STATUS_INITIAL = 0, STATUS_SAVING = 1, STATUS_SUCCESS = 2, STATUS_FAILED = 3;
 
 module.exports = {
-    mixins:[configServiceMixin],
+    mixins:[serviceMixin],
     data: function() {
         return  {
           componentName: 'Import Modal Window',
@@ -101,7 +101,7 @@ module.exports = {
                 }
             }
 
-            return this.getConfiguration("assetServiceUrl")
+            return this.getService("toybox-asset-loadbalancer")
                 .then(response => {
                     if(response){
                         return axios.post(response.data.value + "/assets/upload", formData, config)

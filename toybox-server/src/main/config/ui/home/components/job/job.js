@@ -1,5 +1,5 @@
 module.exports = {
-    mixins:[configServiceMixin],
+    mixins:[serviceMixin],
     props:{
         jobInstanceId: String,
         jobExecutionId: String,
@@ -39,7 +39,7 @@ module.exports = {
             this.$root.$emit('open-job-details-modal-window', this.jobInstanceId);
         },
         downloadJobResult:function(){
-            this.getConfiguration("jobServiceUrl")
+            this.getService("toybox-job-loadbalancer")
             .then(response =>{
                 if(response){
                     return axios.get(response.data.value + '/jobs/download/' + this.jobInstanceId, {responseType:'blob'})
@@ -82,7 +82,7 @@ module.exports = {
             });
         },
         stopJob:function(){
-            this.getConfiguration("jobServiceUrl")
+            this.getService("toybox-job-loadbalancer")
             .then(response =>{
                 if(response){
                     return axios.post(response.data.value + '/jobs/stop/' + this.jobInstanceId)

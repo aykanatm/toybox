@@ -1,5 +1,5 @@
 module.exports = {
-    mixins:[configServiceMixin],
+    mixins:[serviceMixin],
     computed:{
         formattedStartTime(){
             if(this.startTime !== null){
@@ -36,7 +36,7 @@ module.exports = {
     },
     methods:{
         loadJobDetails:function(){
-            this.getConfiguration("jobServiceUrl")
+            this.getService("toybox-job-loadbalancer")
             .then(response => {
                 if(response){
                     return axios.get(response.data.value + "/jobs/" + this.jobInstanceId)

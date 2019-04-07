@@ -1,6 +1,6 @@
 const files = new Vue({
     el: '#toybox-files',
-    mixins:[paginationMixin, messageMixin, facetMixin, userMixin, assetActionsMixin, configServiceMixin],
+    mixins:[paginationMixin, messageMixin, facetMixin, userMixin, assetActionsMixin, serviceMixin],
     data:{
         view: 'files',
         assets:[],
@@ -29,7 +29,7 @@ const files = new Vue({
         }
         axios.defaults.withCredentials = true;
 
-        this.getConfiguration("renditionServiceUrl")
+        this.getService("toybox-rendition-loadbalancer")
             .then(response => {
                 this.renditionUrl = response.data.value;
             });
@@ -69,7 +69,7 @@ const files = new Vue({
     methods:{
         getAssets(offset, limit, sortType, sortColumn, username, searchRequestFacetList){
             this.isLoading = true;
-            this.getConfiguration("assetServiceUrl")
+            this.getService("toybox-asset-loadbalancer")
             .then(response => {
                 if(response){
                     var searchRequest = {};

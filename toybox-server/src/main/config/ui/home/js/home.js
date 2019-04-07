@@ -1,6 +1,6 @@
 const home = new Vue({
     el: '#toybox-home',
-    mixins:[messageMixin, userMixin, configServiceMixin],
+    mixins:[messageMixin, userMixin, serviceMixin],
     data:{
         view: 'home',
     },

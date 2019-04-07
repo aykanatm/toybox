@@ -26,7 +26,7 @@ var userMixin = {
         })
         .then(userResponse => {
             console.log(userResponse);
-            this.getConfiguration("renditionServiceUrl")
+            this.getService("toybox-rendition-loadbalancer")
             .then(response => {
                 var renditionUrl = response.data.value;
 

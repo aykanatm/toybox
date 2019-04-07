@@ -1,6 +1,6 @@
 const folders = new Vue({
     el: '#toybox-folders',
-    mixins:[messageMixin, userMixin, configServiceMixin],
+    mixins:[messageMixin, userMixin, serviceMixin],
     data:{
         view: 'folders',
     },

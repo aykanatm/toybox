@@ -1,6 +1,6 @@
 const jobs = new Vue({
     el: '#toybox-jobs',
-    mixins:[paginationMixin, messageMixin, facetMixin, userMixin, configServiceMixin],
+    mixins:[paginationMixin, messageMixin, facetMixin, userMixin, serviceMixin],
     data:{
         view: 'jobs',
         isLoading: true,
@@ -24,7 +24,7 @@ const jobs = new Vue({
     methods:{
         getJobs(offset, limit, sortType, sortColumn, searchRequestFacetList)
         {
-            this.getConfiguration("jobServiceUrl")
+            this.getService("toybox-job-loadbalancer")
             .then(response => {
                 if(response){
                     var searchRequest = {};
