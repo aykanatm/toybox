@@ -1,8 +1,10 @@
-package com.github.murataykanat.toybox.models;
+package com.github.murataykanat.toybox.schema.configuration;
 
-import org.codehaus.jackson.annotate.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class ConfigurationFieldValue {
+import java.io.Serializable;
+
+public class GenericFieldValue implements Serializable {
     @JsonProperty("value")
     private String value;
     @JsonProperty("message")

@@ -2,7 +2,7 @@ package com.github.murataykanat.toybox.controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.murataykanat.toybox.models.ConfigurationFieldValue;
+import com.github.murataykanat.toybox.schema.configuration.GenericFieldValue;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -25,13 +25,11 @@ public class ConfigController {
     private RestTemplate restTemplate = new RestTemplateBuilder().build();
 
     @RequestMapping(value = "/configuration", method = RequestMethod.GET)
-    public ResponseEntity<ConfigurationFieldValue> getConfiguration(@RequestParam("field") String fieldName){
+    public ResponseEntity<GenericFieldValue> getConfiguration(@RequestParam("field") String fieldName){
         _logger.debug("getConfiguration() >> [" + fieldName + "]");
         _logger.debug("Configuration Server Field Request URL: " + this.configServerFieldRequestUrl);
 
         try{
-
-
             ResponseEntity<String> response = restTemplate.getForEntity(this.configServerFieldRequestUrl, String.class);
 
             ObjectMapper mapper = new ObjectMapper();
@@ -39,7 +37,7 @@ public class ConfigController {
             String fieldValue = root.get("propertySources").get(0).get("source").get(fieldName).textValue();
 
             if(StringUtils.isNotBlank(fieldValue)){
-                ConfigurationFieldValue configurationFieldValue = new ConfigurationFieldValue();
+                GenericFieldValue configurationFieldValue = new GenericFieldValue();
                 configurationFieldValue.setValue(fieldValue);
                 configurationFieldValue.setMessage("Field value retrieved successfully!");
 
@@ -47,7 +45,7 @@ public class ConfigController {
                 return new ResponseEntity<>(configurationFieldValue, HttpStatus.OK);
             }
             else{
-                ConfigurationFieldValue configurationFieldValue = new ConfigurationFieldValue();
+                GenericFieldValue configurationFieldValue = new GenericFieldValue();
                 configurationFieldValue.setMessage("Field value is blank!");
 
                 _logger.debug("<< getConfiguration()");
@@ -58,7 +56,7 @@ public class ConfigController {
             String errorMessage = "An error occurred while getting the configuration. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
-            ConfigurationFieldValue configurationFieldValue = new ConfigurationFieldValue();
+            GenericFieldValue configurationFieldValue = new GenericFieldValue();
             configurationFieldValue.setMessage(errorMessage);
 
             _logger.debug("<< getConfiguration()");
