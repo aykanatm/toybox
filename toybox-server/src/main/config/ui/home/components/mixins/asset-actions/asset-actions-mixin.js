@@ -1,7 +1,7 @@
 var assetActionsMixin = {
     methods:{
         deleteAssets(selectedAssets){
-            this.getConfiguration("assetServiceUrl")
+            this.getService("toybox-asset-loadbalancer")
                 .then(response => {
                     if(response){
                         var assets = {
@@ -29,7 +29,7 @@ var assetActionsMixin = {
                 })
         },
         downloadAssets(selectedAssets){
-            this.getConfiguration("assetServiceUrl")
+            this.getService("toybox-asset-loadbalancer")
                 .then(response =>{
                     if(response){
                         var assets = {
