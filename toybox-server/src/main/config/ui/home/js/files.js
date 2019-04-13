@@ -82,6 +82,7 @@ const files = new Vue({
 
                     return axios.post(response.data.value + "/assets/search", searchRequest)
                         .catch(error => {
+                            this.isLoading = false;
                             var errorMessage;
 
                             if(error.response){
@@ -213,11 +214,14 @@ const files = new Vue({
         },
         assetsSubscribe:function(){
             console.log('Subscribing to the following assets:');
+            var selectedAssets = []
             for(var i = 0; i < this.selectedAssets.length; i++)
             {
                 var asset = this.selectedAssets[i];
                 console.log(asset.name + ' / ' +  asset.id);
+                selectedAssets.push({id:asset.id, name:asset.name, type:asset.type});
             }
+            this.subscribeToAssets(selectedAssets);
         },
         assetsDelete:function(){
             console.log('Deleting the following assets:');

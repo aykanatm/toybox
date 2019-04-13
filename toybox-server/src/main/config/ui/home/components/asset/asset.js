@@ -108,6 +108,12 @@ module.exports = {
         assetSubscribe:function(){
             console.log('Subscribing to the asset with ID "' + this.id + '"');
             this.contextMenuOpen = false;
+            var asset = {
+                id: this.id
+            }
+            var selectedAssets= [asset];
+            this.subscribeToAssets(selectedAssets);
+            this.contextMenuOpen = false;
         },
         assetDelete:function(){
             console.log('Deleting asset with ID "' + this.id + '"');

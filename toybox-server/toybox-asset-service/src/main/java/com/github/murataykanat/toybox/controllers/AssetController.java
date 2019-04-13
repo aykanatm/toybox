@@ -1,7 +1,10 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.dbo.Asset;
+import com.github.murataykanat.toybox.dbo.User;
+import com.github.murataykanat.toybox.repositories.AssetUserRepository;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
+import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
 import com.github.murataykanat.toybox.schema.asset.RetrieveAssetsResults;
 import com.github.murataykanat.toybox.schema.asset.SelectedAssets;
@@ -48,6 +51,10 @@ public class AssetController {
 
     @Autowired
     private AssetsRepository assetsRepository;
+    @Autowired
+    private AssetUserRepository assetUserRepository;
+    @Autowired
+    private UsersRepository usersRepository;
 
     @Value("${exportStagingPath}")
     private String exportStagingPath;
@@ -155,28 +162,6 @@ public class AssetController {
 
             _logger.debug("<< downloadAssets()");
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    private File getArchiveFile(long jobId, HttpHeaders headers, String jobServiceUrl) throws Exception {
-        _logger.debug("getArchiveFile() >>");
-
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<RetrieveToyboxJobResult> retrieveToyboxJobResultResponseEntity = restTemplate.exchange(jobServiceUrl + "/jobs/" + jobId, HttpMethod.GET, new HttpEntity<>(headers), RetrieveToyboxJobResult.class);
-        RetrieveToyboxJobResult retrieveToyboxJobResult = retrieveToyboxJobResultResponseEntity.getBody();
-        if(retrieveToyboxJobResult.getToyboxJob().getStatus().equalsIgnoreCase("COMPLETED")){
-            String downloadFilePath =  exportStagingPath + File.separator + jobId + File.separator + "Download.zip";
-            File file = new File(downloadFilePath);
-            _logger.debug("<< getArchiveFile()");
-            return file;
-        }
-        else if(retrieveToyboxJobResult.getToyboxJob().getStatus().equalsIgnoreCase("FAILED")){
-            _logger.info("Job with ID '" + jobId + "' failed.");
-            _logger.debug("<< getArchiveFile()");
-            return null;
-        }
-        else{
-            return getArchiveFile(jobId, headers, jobServiceUrl);
         }
     }
 
@@ -388,6 +373,102 @@ public class AssetController {
 
             _logger.debug("<< deleteAssets()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @RequestMapping(value = "/assets/subscribe", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<GenericResponse> subscribeToAssets(HttpSession session, Authentication authentication, @RequestBody SelectedAssets selectedAssets){
+        _logger.debug("subscribeToAssets() >>");
+        try{
+            if(selectedAssets != null){
+                if(!selectedAssets.getSelectedAssets().isEmpty()){
+                    List<User> users = usersRepository.findUsersByUsername(authentication.getName());
+                    if(!users.isEmpty()){
+                        if(users.size() == 1){
+                            User user = users.get(0);
+                            selectedAssets.getSelectedAssets().forEach(asset -> assetUserRepository.insertSubscriber(asset.getId(), user.getId()));
+
+                            GenericResponse genericResponse = new GenericResponse();
+                            genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " asset(s) were subscribed successfully.");
+
+                            _logger.debug("<< subscribeToAssets()");
+                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                        }
+                        else{
+                            String errorMessage = "Multiple users found with username '" + authentication.getName() + "'.";
+                            _logger.error(errorMessage);
+
+                            GenericResponse genericResponse = new GenericResponse();
+                            genericResponse.setMessage(errorMessage);
+
+                            _logger.debug("<< subscribeToAssets()");
+                            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                        }
+                    }
+                    else{
+                        String errorMessage = "No user was found with username '" + authentication.getName() + "'.";
+                        _logger.error(errorMessage);
+
+                        GenericResponse genericResponse = new GenericResponse();
+                        genericResponse.setMessage(errorMessage);
+
+                        _logger.debug("<< subscribeToAssets()");
+                        return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                    }
+                }
+                else{
+                    String warningMessage = "No assets were selected!";
+                    _logger.warn(warningMessage);
+
+                    GenericResponse genericResponse = new GenericResponse();
+                    genericResponse.setMessage(warningMessage);
+
+                    _logger.debug("<< subscribeToAssets()");
+                    return new ResponseEntity<>(genericResponse, HttpStatus.NOT_FOUND);
+                }
+            }
+            else{
+                String errorMessage = "Selected assets are null!";
+                _logger.error(errorMessage);
+
+                GenericResponse genericResponse = new GenericResponse();
+                genericResponse.setMessage(errorMessage);
+
+                _logger.debug("<< subscribeToAssets()");
+                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while subscribing to assets. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            GenericResponse genericResponse = new GenericResponse();
+            genericResponse.setMessage(errorMessage);
+
+            _logger.debug("<< subscribeToAssets()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private File getArchiveFile(long jobId, HttpHeaders headers, String jobServiceUrl) throws Exception {
+        _logger.debug("getArchiveFile() >>");
+
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<RetrieveToyboxJobResult> retrieveToyboxJobResultResponseEntity = restTemplate.exchange(jobServiceUrl + "/jobs/" + jobId, HttpMethod.GET, new HttpEntity<>(headers), RetrieveToyboxJobResult.class);
+        RetrieveToyboxJobResult retrieveToyboxJobResult = retrieveToyboxJobResultResponseEntity.getBody();
+        if(retrieveToyboxJobResult.getToyboxJob().getStatus().equalsIgnoreCase("COMPLETED")){
+            String downloadFilePath =  exportStagingPath + File.separator + jobId + File.separator + "Download.zip";
+            File file = new File(downloadFilePath);
+            _logger.debug("<< getArchiveFile()");
+            return file;
+        }
+        else if(retrieveToyboxJobResult.getToyboxJob().getStatus().equalsIgnoreCase("FAILED")){
+            _logger.info("Job with ID '" + jobId + "' failed.");
+            _logger.debug("<< getArchiveFile()");
+            return null;
+        }
+        else{
+            return getArchiveFile(jobId, headers, jobServiceUrl);
         }
     }
 
