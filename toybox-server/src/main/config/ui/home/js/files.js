@@ -63,6 +63,7 @@ const files = new Vue({
         this.$root.$on('navigate-to-next-asset', this.onNavigateToNextAsset);
         this.$root.$on('navigate-to-previous-asset', this.onNavigateToPreviousAsset);
         this.$root.$on('update-arrows-request', this.updateArrows);
+        this.$root.$on('refresh-assets', this.refreshAssets);
 
         this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
     },
@@ -245,6 +246,9 @@ const files = new Vue({
             }
             this.deleteAssets(selectedAssets);
         },
+        refreshAssets:function(){
+            this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
+        }
     },
     components:{
         'navbar' : httpVueLoader('../components/navbar/navbar.vue'),

@@ -11,6 +11,7 @@ var assetActionsMixin = {
                             .then(response => {
                                 console.log(response);
                                 this.$root.$emit('message-sent', 'Success', response.data.message);
+                                this.$root.$emit('refresh-assets');
                             })
                             .catch(error => {
                                 var errorMessage;
@@ -40,6 +41,7 @@ var assetActionsMixin = {
                             .then(response => {
                                 console.log(response);
                                 this.$root.$emit('message-sent', 'Success', response.data.message);
+                                this.$root.$emit('refresh-assets');
                             })
                             .catch(error => {
                                 var errorMessage;
@@ -69,6 +71,7 @@ var assetActionsMixin = {
                         .then(response => {
                             console.log(response);
                             this.$root.$emit('message-sent', 'Success', response.data.message);
+                            this.$root.$emit('refresh-assets');
                         })
                         .catch(error => {
                             var errorMessage;
