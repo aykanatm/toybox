@@ -1,5 +1,7 @@
 package com.github.murataykanat.toybox.controllers;
 
+import com.github.murataykanat.toybox.dbo.User;
+import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
 import com.github.murataykanat.toybox.schema.asset.RetrieveAssetsResults;
 import com.github.murataykanat.toybox.schema.asset.SelectedAssets;
@@ -54,47 +56,60 @@ public class AssetLoadbalancerController {
     private DiscoveryClient discoveryClient;
 
     @Autowired
+    private UsersRepository usersRepository;
+
+    @Autowired
     private RestTemplate restTemplate;
 
     @HystrixCommand(fallbackMethod = "downloadAssetsErrorFallback")
     @RequestMapping(value = "/assets/download", method = RequestMethod.POST, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public ResponseEntity<Resource> downloadAssets(HttpSession session, @RequestBody SelectedAssets selectedAssets){
+    public ResponseEntity<Resource> downloadAssets(Authentication authentication, HttpSession session, @RequestBody SelectedAssets selectedAssets){
         _logger.debug("downloadAssets() >>");
         try {
             if(selectedAssets != null){
-                if(session != null){
-                    _logger.debug("Session ID: " + session.getId());
-                    CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-                    if(token != null){
-                        _logger.debug("CSRF Token: " + token.getToken());
+                List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
+                if(!usersByUsername.isEmpty()){
+                    if(usersByUsername.size() == 1){
+                        _logger.debug("Session ID: " + session.getId());
+                        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
+                        if(token != null){
+                            _logger.debug("CSRF Token: " + token.getToken());
 
-                        HttpHeaders headers = new HttpHeaders();
-                        headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-                        headers.set("X-XSRF-TOKEN", token.getToken());
+                            HttpHeaders headers = new HttpHeaders();
+                            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
+                            headers.set("X-XSRF-TOKEN", token.getToken());
 
-                        String prefix = getPrefix();
-                        if(StringUtils.isNotBlank(prefix)){
-                            _logger.debug("<< downloadAssets()");
-                            return restTemplate.exchange(prefix + assetServiceName + "/assets/download", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), Resource.class);
+                            String prefix = getPrefix();
+                            if(StringUtils.isNotBlank(prefix)){
+                                _logger.debug("<< downloadAssets()");
+                                return restTemplate.exchange(prefix + assetServiceName + "/assets/download", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), Resource.class);
+                            }
+                            else{
+                                _logger.debug("<< downloadAssets()");
+                                return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+                            }
                         }
                         else{
+                            String errorMessage = "CSRF token is null!";
+                            _logger.error(errorMessage);
+
                             _logger.debug("<< downloadAssets()");
-                            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+                            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
                         }
                     }
                     else{
-                        String errorMessage = "CSRF token is null!";
-                        _logger.error(errorMessage);
+                        String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
+                        _logger.debug(errorMessage);
 
-                        _logger.debug("<< downloadAssets()");
+                        _logger.debug("<< retrieveJobs()");
                         return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
                     }
                 }
                 else{
-                    String errorMessage = "Session is null!";
-                    _logger.error(errorMessage);
+                    String errorMessage = "No users with username '" + authentication.getName() + " is found!";
+                    _logger.debug(errorMessage);
 
-                    _logger.debug("<< downloadAssets()");
+                    _logger.debug("<< retrieveJobs()");
                     return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
                 }
             }
@@ -115,7 +130,7 @@ public class AssetLoadbalancerController {
         }
     }
 
-    public ResponseEntity<Resource> downloadAssetsErrorFallback(HttpSession session, SelectedAssets selectedAssets, Throwable e){
+    public ResponseEntity<Resource> downloadAssetsErrorFallback(Authentication authentication, HttpSession session, SelectedAssets selectedAssets, Throwable e){
         _logger.debug("downloadAssetsErrorFallback() >>");
 
         if(selectedAssets != null){
@@ -151,9 +166,12 @@ public class AssetLoadbalancerController {
         _logger.debug("Import staging path: " + tempImportStagingPath);
 
         try{
+            GenericResponse genericResponse = new GenericResponse();
+
             if(files != null){
-                if(session != null){
-                    if(authentication != null){
+                List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
+                if(!usersByUsername.isEmpty()){
+                    if(usersByUsername.size() == 1){
                         _logger.debug("Session ID: " + session.getId());
                         CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
                         if(token != null){
@@ -201,7 +219,6 @@ public class AssetLoadbalancerController {
                                 String errorMessage = "Service ID prefix is null!";
                                 _logger.error(errorMessage);
 
-                                GenericResponse genericResponse = new GenericResponse();
                                 genericResponse.setMessage(errorMessage);
 
                                 _logger.debug("<< stopJob()");
@@ -209,11 +226,10 @@ public class AssetLoadbalancerController {
                             }
                         }
                         else{
-                            String errorMessage = "Token is null!";
+                            String errorMessage = "CSRF token is null!";
 
                             _logger.error(errorMessage);
 
-                            GenericResponse genericResponse = new GenericResponse();
                             genericResponse.setMessage(errorMessage);
 
                             _logger.debug("<< uploadAssets()");
@@ -221,11 +237,9 @@ public class AssetLoadbalancerController {
                         }
                     }
                     else{
-                        String errorMessage = "Authentication is null!";
+                        String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
+                        _logger.debug(errorMessage);
 
-                        _logger.error(errorMessage);
-
-                        GenericResponse genericResponse = new GenericResponse();
                         genericResponse.setMessage(errorMessage);
 
                         _logger.debug("<< uploadAssets()");
@@ -233,15 +247,13 @@ public class AssetLoadbalancerController {
                     }
                 }
                 else{
-                    String errorMessage = "Session is null!";
+                    String errorMessage = "No users with username '" + authentication.getName() + " is found!";
+                    _logger.debug(errorMessage);
 
-                    _logger.error(errorMessage);
-
-                    GenericResponse genericResponse = new GenericResponse();
                     genericResponse.setMessage(errorMessage);
 
                     _logger.debug("<< uploadAssets()");
-                    return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                    return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
                 }
             }
             else{
@@ -249,7 +261,6 @@ public class AssetLoadbalancerController {
 
                 _logger.error(errorMessage);
 
-                GenericResponse genericResponse = new GenericResponse();
                 genericResponse.setMessage(errorMessage);
 
                 _logger.debug("<< uploadAssets()");
@@ -317,9 +328,12 @@ public class AssetLoadbalancerController {
     public ResponseEntity<RetrieveAssetsResults> retrieveAssets(Authentication authentication, HttpSession session, @RequestBody AssetSearchRequest assetSearchRequest){
         _logger.debug("retrieveAssets() >>");
         try{
+            RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
+
             if(assetSearchRequest != null){
-                if(session != null){
-                    if(authentication != null){
+                List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
+                if(!usersByUsername.isEmpty()){
+                    if(usersByUsername.size() == 1){
                         _logger.debug("Session ID: " + session.getId());
                         CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
                         if(token != null){
@@ -339,19 +353,17 @@ public class AssetLoadbalancerController {
 
                                 _logger.error(errorMessage);
 
-                                RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
                                 retrieveAssetsResults.setMessage(errorMessage);
 
-                                _logger.debug("<< uploadAssets()");
+                                _logger.debug("<< retrieveAssets()");
                                 return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.INTERNAL_SERVER_ERROR);
                             }
                         }
                         else{
-                            String errorMessage = "Token is null!";
+                            String errorMessage = "CSRF token is null!";
 
                             _logger.error(errorMessage);
 
-                            RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
                             retrieveAssetsResults.setMessage(errorMessage);
 
                             _logger.debug("<< retrieveAssets()");
@@ -359,11 +371,9 @@ public class AssetLoadbalancerController {
                         }
                     }
                     else{
-                        String errorMessage = "Authentication is null!";
+                        String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
+                        _logger.debug(errorMessage);
 
-                        _logger.error(errorMessage);
-
-                        RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
                         retrieveAssetsResults.setMessage(errorMessage);
 
                         _logger.debug("<< retrieveAssets()");
@@ -371,11 +381,9 @@ public class AssetLoadbalancerController {
                     }
                 }
                 else{
-                    String errorMessage = "Session is null!";
+                    String errorMessage = "No users with username '" + authentication.getName() + " is found!";
+                    _logger.debug(errorMessage);
 
-                    _logger.error(errorMessage);
-
-                    RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
                     retrieveAssetsResults.setMessage(errorMessage);
 
                     _logger.debug("<< retrieveAssets()");
@@ -387,7 +395,6 @@ public class AssetLoadbalancerController {
 
                 _logger.error(errorMessage);
 
-                RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
                 retrieveAssetsResults.setMessage(errorMessage);
 
                 _logger.debug("<< retrieveAssets()");
@@ -441,42 +448,54 @@ public class AssetLoadbalancerController {
 
     @HystrixCommand(fallbackMethod = "deleteAssetsErrorFallback")
     @RequestMapping(value = "/assets/delete", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<GenericResponse> deleteAssets(HttpSession session, @RequestBody SelectedAssets selectedAssets){
+    public ResponseEntity<GenericResponse> deleteAssets(Authentication authentication, HttpSession session, @RequestBody SelectedAssets selectedAssets){
         _logger.debug("deleteAssets() >>");
         try {
+            GenericResponse genericResponse = new GenericResponse();
+
             if(selectedAssets != null){
-                if(session != null){
-                    _logger.debug("Session ID: " + session.getId());
-                    CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-                    if(token != null){
-                        _logger.debug("CSRF Token: " + token.getToken());
+                List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
+                if(!usersByUsername.isEmpty()){
+                    if(usersByUsername.size() == 1){
+                        _logger.debug("Session ID: " + session.getId());
+                        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
+                        if(token != null){
+                            _logger.debug("CSRF Token: " + token.getToken());
 
-                        HttpHeaders headers = new HttpHeaders();
-                        headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-                        headers.set("X-XSRF-TOKEN", token.getToken());
+                            HttpHeaders headers = new HttpHeaders();
+                            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
+                            headers.set("X-XSRF-TOKEN", token.getToken());
 
-                        String prefix = getPrefix();
-                        if(StringUtils.isNotBlank(prefix)){
-                            _logger.debug("<< deleteAssets()");
-                            return restTemplate.exchange(prefix + assetServiceName + "/assets/delete", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
+                            String prefix = getPrefix();
+                            if(StringUtils.isNotBlank(prefix)){
+                                _logger.debug("<< deleteAssets()");
+                                return restTemplate.exchange(prefix + assetServiceName + "/assets/delete", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
+                            }
+                            else{
+                                String errorMessage = "Service ID prefix is null!";
+                                _logger.error(errorMessage);
+
+                                genericResponse.setMessage(errorMessage);
+
+                                _logger.debug("<< deleteAssets()");
+                                return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                            }
                         }
                         else{
-                            String errorMessage = "Service ID prefix is null!";
+                            String errorMessage = "CSRF token is null!";
+
                             _logger.error(errorMessage);
 
-                            GenericResponse genericResponse = new GenericResponse();
                             genericResponse.setMessage(errorMessage);
 
-                            _logger.debug("<< stopJob()");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                            _logger.debug("<< deleteAssets()");
+                            return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
                         }
                     }
                     else{
-                        String errorMessage = "Token is null!";
+                        String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
+                        _logger.debug(errorMessage);
 
-                        _logger.error(errorMessage);
-
-                        GenericResponse genericResponse = new GenericResponse();
                         genericResponse.setMessage(errorMessage);
 
                         _logger.debug("<< deleteAssets()");
@@ -484,11 +503,9 @@ public class AssetLoadbalancerController {
                     }
                 }
                 else{
-                    String errorMessage = "Session is null!";
+                    String errorMessage = "No users with username '" + authentication.getName() + " is found!";
+                    _logger.debug(errorMessage);
 
-                    _logger.error(errorMessage);
-
-                    GenericResponse genericResponse = new GenericResponse();
                     genericResponse.setMessage(errorMessage);
 
                     _logger.debug("<< deleteAssets()");
@@ -500,7 +517,6 @@ public class AssetLoadbalancerController {
 
                 _logger.error(errorMessage);
 
-                GenericResponse genericResponse = new GenericResponse();
                 genericResponse.setMessage(errorMessage);
 
                 _logger.debug("<< deleteAssets()");
@@ -514,12 +530,12 @@ public class AssetLoadbalancerController {
             GenericResponse genericResponse = new GenericResponse();
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< retrieveAssets()");
+            _logger.debug("<< deleteAssets()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    public ResponseEntity<GenericResponse> deleteAssetsErrorFallback(HttpSession session, SelectedAssets selectedAssets, Throwable e){
+    public ResponseEntity<GenericResponse> deleteAssetsErrorFallback(Authentication authentication, HttpSession session, SelectedAssets selectedAssets, Throwable e){
         _logger.debug("downloadAssetsErrorFallback() >>");
 
         if(selectedAssets != null){
@@ -557,39 +573,51 @@ public class AssetLoadbalancerController {
     public ResponseEntity<GenericResponse> subscribeToAssets(HttpSession session, Authentication authentication, @RequestBody SelectedAssets selectedAssets){
         _logger.debug("subscribeToAssets() >>");
         try{
+            GenericResponse genericResponse = new GenericResponse();
+
             if(selectedAssets != null){
-                if(session != null){
-                    _logger.debug("Session ID: " + session.getId());
-                    CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-                    if(token != null){
-                        _logger.debug("CSRF Token: " + token.getToken());
+                List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
+                if(!usersByUsername.isEmpty()){
+                    if(usersByUsername.size() == 1){
+                        _logger.debug("Session ID: " + session.getId());
+                        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
+                        if(token != null){
+                            _logger.debug("CSRF Token: " + token.getToken());
 
-                        HttpHeaders headers = new HttpHeaders();
-                        headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-                        headers.set("X-XSRF-TOKEN", token.getToken());
+                            HttpHeaders headers = new HttpHeaders();
+                            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
+                            headers.set("X-XSRF-TOKEN", token.getToken());
 
-                        String prefix = getPrefix();
-                        if(StringUtils.isNotBlank(prefix)){
-                            _logger.debug("<< subscribeToAssets()");
-                            return restTemplate.exchange(prefix + assetServiceName + "/assets/subscribe", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
+                            String prefix = getPrefix();
+                            if(StringUtils.isNotBlank(prefix)){
+                                _logger.debug("<< subscribeToAssets()");
+                                return restTemplate.exchange(prefix + assetServiceName + "/assets/subscribe", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
+                            }
+                            else{
+                                String errorMessage = "Service ID prefix is null!";
+                                _logger.error(errorMessage);
+
+                                genericResponse.setMessage(errorMessage);
+
+                                _logger.debug("<< subscribeToAssets()");
+                                return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                            }
                         }
                         else{
-                            String errorMessage = "Service ID prefix is null!";
+                            String errorMessage = "Token is null!";
+
                             _logger.error(errorMessage);
 
-                            GenericResponse genericResponse = new GenericResponse();
                             genericResponse.setMessage(errorMessage);
 
                             _logger.debug("<< subscribeToAssets()");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                            return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
                         }
                     }
                     else{
-                        String errorMessage = "Token is null!";
+                        String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
+                        _logger.debug(errorMessage);
 
-                        _logger.error(errorMessage);
-
-                        GenericResponse genericResponse = new GenericResponse();
                         genericResponse.setMessage(errorMessage);
 
                         _logger.debug("<< subscribeToAssets()");
@@ -597,11 +625,9 @@ public class AssetLoadbalancerController {
                     }
                 }
                 else{
-                    String errorMessage = "Session is null!";
+                    String errorMessage = "No users with username '" + authentication.getName() + " is found!";
+                    _logger.debug(errorMessage);
 
-                    _logger.error(errorMessage);
-
-                    GenericResponse genericResponse = new GenericResponse();
                     genericResponse.setMessage(errorMessage);
 
                     _logger.debug("<< subscribeToAssets()");
@@ -613,7 +639,6 @@ public class AssetLoadbalancerController {
 
                 _logger.error(errorMessage);
 
-                GenericResponse genericResponse = new GenericResponse();
                 genericResponse.setMessage(errorMessage);
 
                 _logger.debug("<< subscribeToAssets()");
@@ -670,39 +695,50 @@ public class AssetLoadbalancerController {
     public ResponseEntity<GenericResponse> unsubscribeFromAssets(HttpSession session, Authentication authentication, @RequestBody SelectedAssets selectedAssets){
         _logger.debug("unsubscribeFromAssets() >>");
         try {
+            GenericResponse genericResponse = new GenericResponse();
+
             if(selectedAssets != null){
-                if(session != null){
-                    _logger.debug("Session ID: " + session.getId());
-                    CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-                    if(token != null){
-                        _logger.debug("CSRF Token: " + token.getToken());
+                List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
+                if(!usersByUsername.isEmpty()){
+                    if(usersByUsername.size() == 1){
+                        _logger.debug("Session ID: " + session.getId());
+                        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
+                        if(token != null){
+                            _logger.debug("CSRF Token: " + token.getToken());
 
-                        HttpHeaders headers = new HttpHeaders();
-                        headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-                        headers.set("X-XSRF-TOKEN", token.getToken());
+                            HttpHeaders headers = new HttpHeaders();
+                            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
+                            headers.set("X-XSRF-TOKEN", token.getToken());
 
-                        String prefix = getPrefix();
-                        if(StringUtils.isNotBlank(prefix)){
-                            _logger.debug("<< subscribeToAssets()");
-                            return restTemplate.exchange(prefix + assetServiceName + "/assets/unsubscribe", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
+                            String prefix = getPrefix();
+                            if(StringUtils.isNotBlank(prefix)){
+                                _logger.debug("<< unsubscribeFromAssets()");
+                                return restTemplate.exchange(prefix + assetServiceName + "/assets/unsubscribe", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
+                            }
+                            else{
+                                String errorMessage = "Service ID prefix is null!";
+                                _logger.error(errorMessage);
+
+                                genericResponse.setMessage(errorMessage);
+
+                                _logger.debug("<< unsubscribeFromAssets()");
+                                return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                            }
                         }
                         else{
-                            String errorMessage = "Service ID prefix is null!";
+                            String errorMessage = "CSRF token is null!";
                             _logger.error(errorMessage);
 
-                            GenericResponse genericResponse = new GenericResponse();
                             genericResponse.setMessage(errorMessage);
 
-                            _logger.debug("<< subscribeToAssets()");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                            _logger.debug("<< unsubscribeFromAssets()");
+                            return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
                         }
                     }
                     else{
-                        String errorMessage = "Token is null!";
+                        String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
+                        _logger.debug(errorMessage);
 
-                        _logger.error(errorMessage);
-
-                        GenericResponse genericResponse = new GenericResponse();
                         genericResponse.setMessage(errorMessage);
 
                         _logger.debug("<< unsubscribeFromAssets()");
@@ -710,11 +746,9 @@ public class AssetLoadbalancerController {
                     }
                 }
                 else{
-                    String errorMessage = "Session is null!";
+                    String errorMessage = "No users with username '" + authentication.getName() + " is found!";
+                    _logger.debug(errorMessage);
 
-                    _logger.error(errorMessage);
-
-                    GenericResponse genericResponse = new GenericResponse();
                     genericResponse.setMessage(errorMessage);
 
                     _logger.debug("<< unsubscribeFromAssets()");
@@ -723,10 +757,9 @@ public class AssetLoadbalancerController {
             }
             else{
                 String errorMessage = "Selected assets are null!";
-
                 _logger.error(errorMessage);
 
-                GenericResponse genericResponse = new GenericResponse();
+
                 genericResponse.setMessage(errorMessage);
 
                 _logger.debug("<< unsubscribeFromAssets()");
