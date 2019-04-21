@@ -452,7 +452,7 @@ public class AssetController {
                             genericResponse.setMessage(errorMessage);
 
                             _logger.debug("<< subscribeToAssets()");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                            return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
                         }
                     }
                     else{
@@ -463,7 +463,7 @@ public class AssetController {
                         genericResponse.setMessage(errorMessage);
 
                         _logger.debug("<< subscribeToAssets()");
-                        return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                        return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
                     }
                 }
                 else{
@@ -496,6 +496,79 @@ public class AssetController {
             genericResponse.setMessage(errorMessage);
 
             _logger.debug("<< subscribeToAssets()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    @RequestMapping(value = "/assets/unsubscribe", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<GenericResponse> unsubscribeFromAssets(HttpSession session, Authentication authentication, @RequestBody SelectedAssets selectedAssets){
+        _logger.debug("unsubscribeFromAssets() >>");
+        try{
+            if(selectedAssets != null){
+                if(!selectedAssets.getSelectedAssets().isEmpty()){
+                    List<User> users = usersRepository.findUsersByUsername(authentication.getName());
+                    if(!users.isEmpty()){
+                        if(users.size() == 1){
+                            User user = users.get(0);
+                            selectedAssets.getSelectedAssets().forEach(asset -> assetUserRepository.deleteSubscriber(asset.getId(), user.getId()));
+
+                            GenericResponse genericResponse = new GenericResponse();
+                            genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " asset(s) were unsubscribed successfully.");
+
+                            _logger.debug("<< unsubscribeFromAssets()");
+                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                        }
+                        else{
+                            String errorMessage = "Multiple users found with username '" + authentication.getName() + "'.";
+                            _logger.error(errorMessage);
+
+                            GenericResponse genericResponse = new GenericResponse();
+                            genericResponse.setMessage(errorMessage);
+
+                            _logger.debug("<< unsubscribeFromAssets()");
+                            return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                        }
+                    }
+                    else{
+                        String errorMessage = "No user was found with username '" + authentication.getName() + "'.";
+                        _logger.error(errorMessage);
+
+                        GenericResponse genericResponse = new GenericResponse();
+                        genericResponse.setMessage(errorMessage);
+
+                        _logger.debug("<< unsubscribeFromAssets()");
+                        return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                    }
+                }
+                else{
+                    String errorMessage = "No assets were selected!";
+                    _logger.warn(errorMessage);
+
+                    GenericResponse genericResponse = new GenericResponse();
+                    genericResponse.setMessage(errorMessage);
+
+                    _logger.debug("<< unsubscribeFromAssets()");
+                    return new ResponseEntity<>(genericResponse, HttpStatus.NOT_FOUND);
+                }
+            }
+            else{
+                String errorMessage = "Selected assets are null!";
+                _logger.error(errorMessage);
+
+                GenericResponse genericResponse = new GenericResponse();
+                genericResponse.setMessage(errorMessage);
+
+                _logger.debug("<< unsubscribeFromAssets()");
+                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while unsubscribing from assets. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            GenericResponse genericResponse = new GenericResponse();
+            genericResponse.setMessage(errorMessage);
+
+            _logger.debug("<< unsubscribeFromAssets()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

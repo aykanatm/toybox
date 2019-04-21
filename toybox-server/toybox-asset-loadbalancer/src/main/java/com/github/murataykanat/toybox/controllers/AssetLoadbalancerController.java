@@ -665,6 +665,119 @@ public class AssetLoadbalancerController {
         }
     }
 
+    @HystrixCommand(fallbackMethod = "unsubscribeFromAssetsErrorFallback")
+    @RequestMapping(value = "/assets/unsubscribe", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<GenericResponse> unsubscribeFromAssets(HttpSession session, Authentication authentication, @RequestBody SelectedAssets selectedAssets){
+        _logger.debug("unsubscribeFromAssets() >>");
+        try {
+            if(selectedAssets != null){
+                if(session != null){
+                    _logger.debug("Session ID: " + session.getId());
+                    CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
+                    if(token != null){
+                        _logger.debug("CSRF Token: " + token.getToken());
+
+                        HttpHeaders headers = new HttpHeaders();
+                        headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
+                        headers.set("X-XSRF-TOKEN", token.getToken());
+
+                        String prefix = getPrefix();
+                        if(StringUtils.isNotBlank(prefix)){
+                            _logger.debug("<< subscribeToAssets()");
+                            return restTemplate.exchange(prefix + assetServiceName + "/assets/unsubscribe", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
+                        }
+                        else{
+                            String errorMessage = "Service ID prefix is null!";
+                            _logger.error(errorMessage);
+
+                            GenericResponse genericResponse = new GenericResponse();
+                            genericResponse.setMessage(errorMessage);
+
+                            _logger.debug("<< subscribeToAssets()");
+                            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                        }
+                    }
+                    else{
+                        String errorMessage = "Token is null!";
+
+                        _logger.error(errorMessage);
+
+                        GenericResponse genericResponse = new GenericResponse();
+                        genericResponse.setMessage(errorMessage);
+
+                        _logger.debug("<< unsubscribeFromAssets()");
+                        return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                    }
+                }
+                else{
+                    String errorMessage = "Session is null!";
+
+                    _logger.error(errorMessage);
+
+                    GenericResponse genericResponse = new GenericResponse();
+                    genericResponse.setMessage(errorMessage);
+
+                    _logger.debug("<< unsubscribeFromAssets()");
+                    return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                }
+            }
+            else{
+                String errorMessage = "Selected assets are null!";
+
+                _logger.error(errorMessage);
+
+                GenericResponse genericResponse = new GenericResponse();
+                genericResponse.setMessage(errorMessage);
+
+                _logger.debug("<< unsubscribeFromAssets()");
+                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while unsubscribing from assets. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            GenericResponse genericResponse = new GenericResponse();
+            genericResponse.setMessage(errorMessage);
+
+            _logger.debug("<< unsubscribeFromAssets()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public ResponseEntity<GenericResponse> unsubscribeFromAssetsErrorFallback(HttpSession session, Authentication authentication, SelectedAssets selectedAssets, Throwable e){
+        _logger.debug("unsubscribeFromAssetsErrorFallback() >>");
+
+        if(selectedAssets != null){
+            String errorMessage;
+            if(e.getLocalizedMessage() != null){
+                errorMessage = "Unable to unsubscribe from the selected assets. " + e.getLocalizedMessage();
+            }
+            else{
+                errorMessage = "Unable to get response from the asset service.";
+            }
+
+            _logger.error(errorMessage, e);
+
+            GenericResponse genericResponse = new GenericResponse();
+            genericResponse.setMessage(errorMessage);
+
+            _logger.debug("<< unsubscribeFromAssetsErrorFallback()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        else{
+            String errorMessage = "Selected assets are null!";
+
+            _logger.error(errorMessage);
+
+            GenericResponse genericResponse = new GenericResponse();
+            genericResponse.setMessage(errorMessage);
+
+            _logger.debug("<< unsubscribeFromAssetsErrorFallback()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
+
     private String getPrefix() throws Exception {
         _logger.debug("getPrefix() >>");
         List<ServiceInstance> instances = discoveryClient.getInstances(assetServiceName);

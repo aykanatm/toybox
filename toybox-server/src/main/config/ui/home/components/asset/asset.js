@@ -6,7 +6,8 @@ module.exports = {
         importedByUsername: String,
         extension: String,
         renditionUrl: String,
-        type: String
+        type: String,
+        subscribed: String
     },
     data: function() {
         return  {
@@ -113,6 +114,16 @@ module.exports = {
             }
             var selectedAssets= [asset];
             this.subscribeToAssets(selectedAssets);
+            this.contextMenuOpen = false;
+        },
+        assetUnsubscribe:function(){
+            console.log('Unsubscribing from the asset with ID "' + this.id + '"');
+            this.contextMenuOpen = false;
+            var asset = {
+                id: this.id
+            }
+            var selectedAssets= [asset];
+            this.unsubscribeFromAssets(selectedAssets);
             this.contextMenuOpen = false;
         },
         assetDelete:function(){
