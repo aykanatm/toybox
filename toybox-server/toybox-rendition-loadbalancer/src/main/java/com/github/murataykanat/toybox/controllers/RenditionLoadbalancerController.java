@@ -1,5 +1,7 @@
 package com.github.murataykanat.toybox.controllers;
 
+import com.github.murataykanat.toybox.dbo.User;
+import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -13,6 +15,7 @@ import org.springframework.cloud.netflix.ribbon.RibbonClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.Resource;
 import org.springframework.http.*;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,96 +44,20 @@ public class RenditionLoadbalancerController {
     private DiscoveryClient discoveryClient;
 
     @Autowired
+    private UsersRepository usersRepository;
+
+    @Autowired
     private RestTemplate restTemplate;
 
-    @HystrixCommand(fallbackMethod = "userRenditionErrorFallback")
-    @RequestMapping(value = "/renditions/users/{username}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public ResponseEntity<Resource> getLoadBalancedUserAvatar(HttpSession session, @PathVariable String username) {
+    @HystrixCommand(fallbackMethod = "currentUserAvatarErrorFallback")
+    @RequestMapping(value = "/renditions/users/me", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public ResponseEntity<Resource> getCurrentUserAvatar(HttpSession session, Authentication authentication) {
         _logger.debug("getLoadBalancedUserAvatar() >>");
         try{
-            if(StringUtils.isNotBlank(username)){
-                if(session != null){
-                    _logger.debug("Session ID: " + session.getId());
-                    CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-                    if(token != null){
-                        _logger.debug("CSRF Token: " + token.getToken());
-
-                        HttpHeaders headers = new HttpHeaders();
-                        headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-                        headers.set("X-XSRF-TOKEN", token.getToken());
-
-                        String prefix = getPrefix();
-                        if(StringUtils.isNotBlank(prefix)){
-                            _logger.debug("<< getLoadBalancedUserAvatar()");
-                            return restTemplate.exchange(prefix + renditionServiceName + "/renditions/users/" + username, HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
-                        }
-                        else{
-                            _logger.debug("<< getLoadBalancedUserAvatar()");
-                            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-                        }
-                    }
-                    else{
-                        String errorMessage = "CSRF token is null!";
-                        _logger.error(errorMessage);
-
-                        _logger.debug("<< getLoadBalancedUserAvatar()");
-                        return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-                    }
-                }
-                else{
-                    String errorMessage = "Session is null!";
-                    _logger.error(errorMessage);
-
-                    _logger.debug("<< getLoadBalancedUserAvatar()");
-                    return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-                }
-            }
-            else{
-                String errorMessage = "Username is blank!";
-                _logger.error(errorMessage);
-
-                _logger.debug("<< getLoadBalancedUserAvatar()");
-                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-            }
-        }
-        catch (Exception e){
-            String errorMessage = "An error occurred while retrieving the rendition of user with username '" + username + "'. " + e.getLocalizedMessage();
-            _logger.error(errorMessage, e);
-
-            _logger.debug("<< getLoadBalancedRendition()");
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    public ResponseEntity<Resource> userRenditionErrorFallback(HttpSession session, String username, Throwable e){
-        _logger.debug("userRenditionErrorFallback() >>");
-
-        if(StringUtils.isNotBlank(username)){
-            if(e.getLocalizedMessage() != null){
-                _logger.error("Unable to retrieve rendition for username '" + username + "'. " + e.getLocalizedMessage(), e);
-            }
-            else{
-                _logger.error("Unable to get response from the rendition service.", e);
-            }
-
-            _logger.debug("<< userRenditionErrorFallback()");
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-        else{
-            _logger.error("Username is blank!");
-
-            _logger.debug("<< userRenditionErrorFallback()");
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-    }
-
-    @HystrixCommand(fallbackMethod = "assetRenditionErrorFallback")
-    @RequestMapping(value = "/renditions/assets/{assetId}/{renditionType}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public ResponseEntity<Resource> getLoadBalancedRendition(HttpSession session, @PathVariable String assetId, @PathVariable String renditionType){
-        _logger.debug("getLoadBalancedRendition() >>");
-        try{
-            if(StringUtils.isNotBlank(assetId)){
-                if(StringUtils.isNotBlank(renditionType)){
+            List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
+            if(!usersByUsername.isEmpty()){
+                if(usersByUsername.size() == 1){
+                    User user = usersByUsername.get(0);
                     if(session != null){
                         _logger.debug("Session ID: " + session.getId());
                         CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
@@ -142,15 +69,20 @@ public class RenditionLoadbalancerController {
                             headers.set("X-XSRF-TOKEN", token.getToken());
 
                             String prefix = getPrefix();
-
-                            _logger.debug("<< getLoadBalancedRendition()");
-                            return restTemplate.exchange(prefix + renditionServiceName + "/renditions/assets/" + assetId + "/" + renditionType, HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
+                            if(StringUtils.isNotBlank(prefix)){
+                                _logger.debug("<< getLoadBalancedUserAvatar()");
+                                return restTemplate.exchange(prefix + renditionServiceName + "/renditions/users/" + user.getUsername(), HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
+                            }
+                            else{
+                                _logger.debug("<< getLoadBalancedUserAvatar()");
+                                return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+                            }
                         }
                         else{
                             String errorMessage = "CSRF token is null!";
                             _logger.error(errorMessage);
 
-                            _logger.debug("<< getLoadBalancedRendition()");
+                            _logger.debug("<< getLoadBalancedUserAvatar()");
                             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
                         }
                     }
@@ -158,7 +90,103 @@ public class RenditionLoadbalancerController {
                         String errorMessage = "Session is null!";
                         _logger.error(errorMessage);
 
-                        _logger.debug("<< getLoadBalancedRendition()");
+                        _logger.debug("<< getLoadBalancedUserAvatar()");
+                        return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                    }
+                }
+                else{
+                    String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
+                    _logger.debug(errorMessage);
+
+                    _logger.debug("<< getLoadBalancedUserAvatar()");
+                    return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                }
+            }
+            else{
+                String errorMessage = "No users with username '" + authentication.getName() + " is found!";
+                _logger.debug(errorMessage);
+
+                _logger.debug("<< getLoadBalancedUserAvatar()");
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while retrieving the rendition of the current user. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            _logger.debug("<< getLoadBalancedRendition()");
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public ResponseEntity<Resource> currentUserAvatarErrorFallback(HttpSession session, Authentication authentication, Throwable e){
+        _logger.debug("userRenditionErrorFallback() >>");
+
+        if(e.getLocalizedMessage() != null){
+            _logger.error("Unable to retrieve rendition for the current user. " + e.getLocalizedMessage(), e);
+        }
+        else{
+            _logger.error("Unable to get response from the rendition service.", e);
+        }
+
+        _logger.debug("<< userRenditionErrorFallback()");
+        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @HystrixCommand(fallbackMethod = "assetRenditionErrorFallback")
+    @RequestMapping(value = "/renditions/assets/{assetId}/{renditionType}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public ResponseEntity<Resource> getAssetRendition(HttpSession session, Authentication authentication, @PathVariable String assetId, @PathVariable String renditionType){
+        _logger.debug("getLoadBalancedRendition() >>");
+        try{
+            if(StringUtils.isNotBlank(assetId)){
+                if(StringUtils.isNotBlank(renditionType)){
+                    List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
+                    if(!usersByUsername.isEmpty()){
+                        if(usersByUsername.size() == 1){
+                            if(session != null){
+                                _logger.debug("Session ID: " + session.getId());
+                                CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
+                                if(token != null){
+                                    _logger.debug("CSRF Token: " + token.getToken());
+
+                                    HttpHeaders headers = new HttpHeaders();
+                                    headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
+                                    headers.set("X-XSRF-TOKEN", token.getToken());
+
+                                    String prefix = getPrefix();
+
+                                    _logger.debug("<< getLoadBalancedRendition()");
+                                    return restTemplate.exchange(prefix + renditionServiceName + "/renditions/assets/" + assetId + "/" + renditionType, HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
+                                }
+                                else{
+                                    String errorMessage = "CSRF token is null!";
+                                    _logger.error(errorMessage);
+
+                                    _logger.debug("<< getLoadBalancedRendition()");
+                                    return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                                }
+                            }
+                            else{
+                                String errorMessage = "Session is null!";
+                                _logger.error(errorMessage);
+
+                                _logger.debug("<< getLoadBalancedRendition()");
+                                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                            }
+                        }
+                        else{
+                            String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
+                            _logger.debug(errorMessage);
+
+                            _logger.debug("<< retrieveJobs()");
+                            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                        }
+                    }
+                    else{
+                        String errorMessage = "No users with username '" + authentication.getName() + " is found!";
+                        _logger.debug(errorMessage);
+
+                        _logger.debug("<< retrieveJobs()");
                         return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
                     }
                 }
@@ -187,7 +215,7 @@ public class RenditionLoadbalancerController {
         }
     }
 
-    public ResponseEntity<Resource> assetRenditionErrorFallback(HttpSession session, String assetId, String renditionType, Throwable e){
+    public ResponseEntity<Resource> assetRenditionErrorFallback(HttpSession session, Authentication authentication, String assetId, String renditionType, Throwable e){
         _logger.debug("assetRenditionErrorFallback() >>");
 
         if(StringUtils.isNotBlank(assetId)){
