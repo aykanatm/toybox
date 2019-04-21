@@ -37,36 +37,41 @@ module.exports = {
     methods:{
         loadJobDetails:function(){
             this.getService("toybox-job-loadbalancer")
-            .then(response => {
-                if(response){
-                    return axios.get(response.data.value + "/jobs/" + this.jobInstanceId)
-                    .catch(error => {
-                        var errorMessage;
+                .then(response => {
+                    if(response){
+                        return axios.get(response.data.value + "/jobs/" + this.jobInstanceId)
+                            .catch(error => {
+                                var errorMessage;
 
-                        if(error.response){
-                            errorMessage = error.response.data.message
-                        }
-                        else{
-                            errorMessage = error.message;
-                        }
+                                if(error.response.status == 401){
+                                    window.location = '/logout';
+                                }
+                                else{
+                                    if(error.response){
+                                        errorMessage = error.response.data.message
+                                    }
+                                    else{
+                                        errorMessage = error.message;
+                                    }
 
-                        console.error(errorMessage);
-                        this.$root.$emit('message-sent', 'Error', errorMessage);
-                    });
-                }
-            })
-            .then(response => {
-                console.log(response);
-                if(response){
-                    this.jobName = response.data.toyboxJob.jobName;
-                    this.jobType = response.data.toyboxJob.jobType;
-                    this.startTime = response.data.toyboxJob.startTime;
-                    this.endTime = response.data.toyboxJob.endTime;
-                    this.status = response.data.toyboxJob.status;
-                    this.username = response.data.toyboxJob.username;
-                    this.steps = response.data.toyboxJob.steps;
-                }
-            });
+                                    console.error(errorMessage);
+                                    this.$root.$emit('message-sent', 'Error', errorMessage);
+                                }
+                            });
+                    }
+                })
+                .then(response => {
+                    console.log(response);
+                    if(response){
+                        this.jobName = response.data.toyboxJob.jobName;
+                        this.jobType = response.data.toyboxJob.jobType;
+                        this.startTime = response.data.toyboxJob.startTime;
+                        this.endTime = response.data.toyboxJob.endTime;
+                        this.status = response.data.toyboxJob.status;
+                        this.username = response.data.toyboxJob.username;
+                        this.steps = response.data.toyboxJob.steps;
+                    }
+                });
         }
     },
     components:{
