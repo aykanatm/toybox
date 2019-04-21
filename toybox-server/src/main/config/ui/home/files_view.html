@@ -59,7 +59,10 @@
                                     <i class="external alternate icon"></i> Move
                                 </button>
                                 <button class="ui button" v-on:click.stop="assetsSubscribe" v-bind:disabled="selectedAssets.length == 0">
-                                    <i class="rss icon"></i> Subscribe
+                                    <i class="eye icon"></i> Subscribe
+                                </button>
+                                <button class="ui button" v-on:click.stop="assetsUnsubscribe" v-bind:disabled="selectedAssets.length == 0">
+                                    <i class="eye slash icon"></i> Unsubscribe
                                 </button>
                                 <!-- <button class="ui button" v-on:click.stop="showVersionHistory" v-bind:disabled="selectedAssets.length == 0">
                                     <i class="list alternate outline icon"></i> Show Version History
@@ -79,7 +82,7 @@
                                 <div class="ui massive text loader">Loading</div>
                             </div>
                             <asset v-for="asset in assets" v-bind:id="asset.id" v-bind:name="asset.name" v-bind:imported-by-username="asset.importedByUsername"
-                            v-bind:extension="asset.extension" v-bind:type="asset.type" v-bind:rendition-url="renditionUrl" v-bind:key="asset.id"/>
+                            v-bind:extension="asset.extension" v-bind:type="asset.type" v-bind:rendition-url="renditionUrl" v-bind:subscribed="asset.subscribed" v-bind:key="asset.id"/>
                         </div>
                         <div class="ui right floated pagination menu toybox-pagination">
                             <a v-bind:class="{icon:true, disabled:previousPageButtonDisabled, item:true}" v-on:click="previousPage">

@@ -61,9 +61,13 @@
                     <i class="external alternate icon"></i>
                     Move
                 </a>
-                <a class="item" v-on:click.stop="assetSubscribe">
-                    <i class="rss icon"></i>
+                <a class="item" v-on:click.stop="assetSubscribe" v-show="!(subscribed === 'Y')">
+                    <i class="eye icon"></i>
                     Subscribe
+                </a>
+                <a class="item" v-on:click.stop="assetUnsubscribe" v-show="subscribed === 'Y'">
+                    <i class="eye slash icon"></i>
+                    Unsubscribe
                 </a>
                 <a class="item" v-on:click.stop="assetShowVersionHistory">
                     <i class="list alternate outline icon"></i>
