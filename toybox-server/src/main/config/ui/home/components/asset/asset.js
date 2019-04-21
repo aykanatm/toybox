@@ -1,5 +1,5 @@
 module.exports = {
-    mixins:[assetActionsMixin],
+    mixins:[assetActionsMixin, serviceMixin],
     props:{
         id: String,
         name: String,
