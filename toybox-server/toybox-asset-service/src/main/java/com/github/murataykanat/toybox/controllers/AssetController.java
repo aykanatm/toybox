@@ -1,6 +1,7 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.dbo.Asset;
+import com.github.murataykanat.toybox.dbo.AssetUser;
 import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.AssetUserRepository;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
@@ -217,73 +218,122 @@ public class AssetController {
     @RequestMapping(value = "/assets/search", method = RequestMethod.POST)
     public ResponseEntity<RetrieveAssetsResults> retrieveAssets(Authentication authentication, @RequestBody AssetSearchRequest assetSearchRequest){
         _logger.debug("retrieveAssets() >>");
-
         try{
             RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
+            if(assetSearchRequest != null){
+                List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
+                if(!usersByUsername.isEmpty()){
+                    if(usersByUsername.size() == 1){
+                        User user = usersByUsername.get(0);
 
-            String sortColumn = assetSearchRequest.getSortColumn();
-            String sortType = assetSearchRequest.getSortType();
-            int offset = assetSearchRequest.getOffset();
-            int limit = assetSearchRequest.getLimit();
-            List<SearchRequestFacet> searchRequestFacetList = assetSearchRequest.getAssetSearchRequestFacetList();
+                        String sortColumn = assetSearchRequest.getSortColumn();
+                        String sortType = assetSearchRequest.getSortType();
+                        int offset = assetSearchRequest.getOffset();
+                        int limit = assetSearchRequest.getLimit();
+                        List<SearchRequestFacet> searchRequestFacetList = assetSearchRequest.getAssetSearchRequestFacetList();
 
-            List<Asset> allAssets = assetsRepository.getNonDeletedAssets();
-            if(!allAssets.isEmpty()){
-                List<Asset> assets;
+                        List<Asset> allAssets = assetsRepository.getNonDeletedAssets();
+                        if(!allAssets.isEmpty()){
+                            List<Asset> assets;
 
-                if(searchRequestFacetList != null && !searchRequestFacetList.isEmpty()){
-                    assets = allAssets.stream().filter(asset -> FacetUtils.getInstance().hasFacetValue(asset, searchRequestFacetList)).collect(Collectors.toList());
+                            if(searchRequestFacetList != null && !searchRequestFacetList.isEmpty()){
+                                assets = allAssets.stream().filter(asset -> FacetUtils.getInstance().hasFacetValue(asset, searchRequestFacetList)).collect(Collectors.toList());
+                            }
+                            else{
+                                assets = allAssets;
+                            }
+
+                            List<Facet> facets = FacetUtils.getInstance().getFacets(assets);
+
+                            retrieveAssetsResults.setFacets(facets);
+
+                            if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_import_date")){
+                                SortUtils.getInstance().sortItems(sortType, assets, Comparator.comparing(Asset::getImportDate, Comparator.nullsLast(Comparator.naturalOrder())));
+                            }
+                            else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_name")){
+                                SortUtils.getInstance().sortItems(sortType, assets, Comparator.comparing(Asset::getName, Comparator.nullsLast(Comparator.naturalOrder())));
+                            }
+
+                            Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+
+                            List<Asset> assetsByCurrentUser;
+                            if(authorities.contains("ROLE_ADMIN")){
+                                _logger.debug("Retrieving all assets [Admin User]...");
+                                assetsByCurrentUser = assets;
+                            }
+                            else{
+                                _logger.debug("Retrieving assets of the user '" + user.getUsername() + "'...");
+                                assetsByCurrentUser = assets.stream().filter(a -> a.getImportedByUsername() != null && a.getImportedByUsername().equalsIgnoreCase(user.getUsername())).collect(Collectors.toList());
+                            }
+
+                            int totalRecords = assets.size();
+                            int startIndex = offset;
+                            int endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
+
+                            List<Asset> assetsOnPage = assetsByCurrentUser.subList(startIndex, endIndex);
+
+                            List<AssetUser> assetUsersByUserId = assetUserRepository.findAssetUsersByUserId(user.getId());
+
+                            for(Asset assetOnPage: assetsOnPage){
+                                if(!assetUsersByUserId.isEmpty()){
+                                    for(AssetUser assetUser: assetUsersByUserId){
+                                        if(assetOnPage.getId().equalsIgnoreCase(assetUser.getAssetId())){
+                                            assetOnPage.setSubscribed("Y");
+                                            break;
+                                        }
+                                        assetOnPage.setSubscribed("N");
+                                    }
+                                }
+                                else{
+                                    assetOnPage.setSubscribed("N");
+                                }
+                            }
+
+                            retrieveAssetsResults.setTotalRecords(totalRecords);
+                            retrieveAssetsResults.setAssets(assetsOnPage);
+
+                            _logger.debug("<< retrieveAssets()");
+                            retrieveAssetsResults.setMessage("Assets retrieved successfully!");
+                            return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.OK);
+                        }
+                        else{
+                            String message = "There is no asset to return.";
+                            _logger.debug(message);
+
+                            retrieveAssetsResults.setMessage(message);
+
+                            _logger.debug("<< retrieveJobs()");
+                            return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.NO_CONTENT);
+                        }
+                    }
+                    else{
+                        String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
+                        _logger.debug(errorMessage);
+
+                        retrieveAssetsResults.setMessage(errorMessage);
+
+                        _logger.debug("<< retrieveJobs()");
+                        return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.UNAUTHORIZED);
+                    }
                 }
                 else{
-                    assets = allAssets;
+                    String errorMessage = "No users with username '" + authentication.getName() + " is found!";
+                    _logger.debug(errorMessage);
+
+                    retrieveAssetsResults.setMessage(errorMessage);
+
+                    _logger.debug("<< retrieveJobs()");
+                    return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.UNAUTHORIZED);
                 }
-
-                List<Facet> facets = FacetUtils.getInstance().getFacets(assets);
-
-                retrieveAssetsResults.setFacets(facets);
-
-                if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_import_date")){
-                    SortUtils.getInstance().sortItems(sortType, assets, Comparator.comparing(Asset::getImportDate, Comparator.nullsLast(Comparator.naturalOrder())));
-                }
-                else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_name")){
-                    SortUtils.getInstance().sortItems(sortType, assets, Comparator.comparing(Asset::getName, Comparator.nullsLast(Comparator.naturalOrder())));
-                }
-
-                String username = authentication.getName();
-                Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
-
-                List<Asset> assetsByCurrentUser;
-                if(authorities.contains("ROLE_ADMIN")){
-                    _logger.debug("Retrieving all assets [Admin User]...");
-                    assetsByCurrentUser = assets;
-                }
-                else{
-                    _logger.debug("Retrieving assets of the user '" + username + "'...");
-                    assetsByCurrentUser = assets.stream().filter(a -> a.getImportedByUsername() != null && a.getImportedByUsername().equalsIgnoreCase(username)).collect(Collectors.toList());
-                }
-
-                int totalRecords = assets.size();
-                int startIndex = offset;
-                int endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
-
-                List<Asset> assetsOnPage = assetsByCurrentUser.subList(startIndex, endIndex);
-
-
-                retrieveAssetsResults.setTotalRecords(totalRecords);
-                retrieveAssetsResults.setAssets(assetsOnPage);
-
-                _logger.debug("<< retrieveAssets()");
-                retrieveAssetsResults.setMessage("Assets retrieved successfully!");
-                return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.OK);
             }
             else{
-                String message = "There is no assets to return.";
-                _logger.debug(message);
+                String errorMessage = "Asset search request is null!";
+                _logger.debug(errorMessage);
 
-                retrieveAssetsResults.setMessage(message);
+                retrieveAssetsResults.setMessage(errorMessage);
 
                 _logger.debug("<< retrieveJobs()");
-                return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.NO_CONTENT);
+                return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.BAD_REQUEST);
             }
         }
         catch (Exception e){

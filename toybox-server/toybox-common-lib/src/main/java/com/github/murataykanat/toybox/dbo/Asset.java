@@ -1,7 +1,11 @@
 package com.github.murataykanat.toybox.dbo;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.github.murataykanat.toybox.models.annotations.FacetColumnName;
 import com.github.murataykanat.toybox.models.annotations.FacetDataType;
 import com.github.murataykanat.toybox.models.annotations.FacetDefaultLookup;
@@ -60,8 +64,12 @@ public class Asset implements Serializable {
     @JsonProperty("deleted")
     private String deleted;
 
+    @Transient
+    private String subscribed;
+
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, targetEntity = User.class)
     @JoinTable(name = "asset_user", joinColumns = @JoinColumn(name = "asset_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
+    @JsonIgnore
     private Set<User> subscribers;
 
     public Asset(){}
@@ -156,5 +164,15 @@ public class Asset implements Serializable {
 
     public void setSubscribers(Set<User> subscribers) {
         this.subscribers = subscribers;
+    }
+
+    @Transient
+    @JsonGetter(value = "subscribed")
+    public String getSubscribed() {
+        return subscribed;
+    }
+
+    public void setSubscribed(String subscribed) {
+        this.subscribed = subscribed;
     }
 }
