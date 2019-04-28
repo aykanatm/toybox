@@ -40,46 +40,59 @@ public class RenditionController {
     public ResponseEntity<Resource> getUserAvatar(Authentication authentication, @PathVariable String username){
         _logger.debug("getUserAvatar() >>");
         try{
-            List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-            if(!usersByUsername.isEmpty()){
-                if(usersByUsername.size() == 1){
-                    List<User> users = usersRepository.findUsersByUsername(username);
-                    if(users != null){
-                        if(!users.isEmpty()){
-                            if(users.size() == 1){
-                                User user = users.get(0);
-                                ByteArrayResource resource;
-                                if(StringUtils.isNotBlank(user.getAvatarPath())){
-                                    Path path = Paths.get(user.getAvatarPath());
-                                    resource = new ByteArrayResource(Files.readAllBytes(path));
-                                }
-                                else{
-                                    _logger.error("User avatar path is blank!");
+            if(StringUtils.isNotBlank(username)){
+                List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
+                if(!usersByUsername.isEmpty()){
+                    if(usersByUsername.size() == 1){
+                        if(username.equalsIgnoreCase("me")){
+                            username = authentication.getName();
+                        }
+
+                        List<User> users = usersRepository.findUsersByUsername(username);
+                        if(users != null){
+                            if(!users.isEmpty()){
+                                if(users.size() == 1){
+                                    User user = users.get(0);
+                                    ByteArrayResource resource;
+                                    if(StringUtils.isNotBlank(user.getAvatarPath())){
+                                        Path path = Paths.get(user.getAvatarPath());
+                                        resource = new ByteArrayResource(Files.readAllBytes(path));
+                                    }
+                                    else{
+                                        _logger.error("User avatar path is blank!");
+
+                                        _logger.debug("<< getUserAvatar()");
+                                        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                                    }
 
                                     _logger.debug("<< getUserAvatar()");
-                                    return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                                    return new ResponseEntity<>(resource, HttpStatus.OK);
                                 }
-
-                                _logger.debug("<< getUserAvatar()");
-                                return new ResponseEntity<>(resource, HttpStatus.OK);
+                                else{
+                                    throw new DuplicateKeyException("There are more than one asset with ID '" + username + "'");
+                                }
                             }
                             else{
-                                throw new DuplicateKeyException("There are more than one asset with ID '" + username + "'");
+                                _logger.error("No user was found with username '" + username + "'");
+
+                                _logger.debug("<< getUserAvatar()");
+                                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                             }
                         }
                         else{
-                            _logger.error("No user was found with username '" + username + "'");
-
-                            _logger.debug("<< getUserAvatar()");
-                            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                            throw new InvalidObjectException("Users is null!");
                         }
                     }
                     else{
-                        throw new InvalidObjectException("Users is null!");
+                        String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
+                        _logger.debug(errorMessage);
+
+                        _logger.debug("<< getUserAvatar()");
+                        return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
                     }
                 }
                 else{
-                    String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
+                    String errorMessage = "No users with username '" + authentication.getName() + " is found!";
                     _logger.debug(errorMessage);
 
                     _logger.debug("<< getUserAvatar()");
@@ -87,11 +100,11 @@ public class RenditionController {
                 }
             }
             else{
-                String errorMessage = "No users with username '" + authentication.getName() + " is found!";
-                _logger.debug(errorMessage);
+                String errorMessage = "Username parameter is blank!";
+                _logger.error(errorMessage);
 
                 _logger.debug("<< getUserAvatar()");
-                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
         }
         catch (Exception e){
