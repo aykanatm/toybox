@@ -56,8 +56,6 @@ public class JobController {
     private Job importJob;
     @Autowired
     private Job packagingJob;
-    @Autowired
-    private Job deleteJob;
 
     @Autowired
     private AssetsRepository assetsRepository;
@@ -67,98 +65,6 @@ public class JobController {
     JobStepsRepository jobStepsRepository;
     @Autowired
     private UsersRepository usersRepository;
-
-    @RequestMapping(value = "/jobs/delete", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<JobResponse> deleteAssets(Authentication authentication, @RequestBody SelectedAssets selectedAssets){
-        _logger.debug("deleteAssets() >>");
-        try{
-            JobResponse jobResponse = new JobResponse();
-
-            if(selectedAssets != null){
-                List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-                if(!usersByUsername.isEmpty()){
-                    if(usersByUsername.size() == 1){
-                        List<String> selectedAssetIds = selectedAssets.getSelectedAssets().stream().map(asset -> asset.getId()).collect(Collectors.toList());
-                        if(!selectedAssetIds.isEmpty()){
-                            List<Asset> allAssets = assetsRepository.getNonDeletedAssets();
-
-                            List<Asset> assets = allAssets.stream().filter(asset -> selectedAssetIds.contains(asset.getId())).collect(Collectors.toList());
-
-                            if(!assets.isEmpty()){
-                                JobParametersBuilder builder = new JobParametersBuilder();
-
-                                for(int i = 0; i < assets.size(); i++){
-                                    Asset asset = assets.get(i);
-                                    builder.addString(Constants.JOB_PARAM_DELETE_ASSET_ID + "_" + i, asset.getId());
-                                }
-
-                                builder.addString(Constants.JOB_PARAM_USERNAME, authentication.getName());
-                                builder.addString(Constants.JOB_PARAM_SYSTEM_MILLIS, String.valueOf(System.currentTimeMillis()));
-
-                                _logger.debug("Launching job [" + deleteJob.getName() + "]...");
-                                JobExecution jobExecution = jobLauncher.run(deleteJob, builder.toJobParameters());
-                                jobExecution.getExecutionContext().put("jobId", jobExecution.getJobId());
-
-                                jobResponse.setJobId(jobExecution.getJobId());
-                                jobResponse.setMessage("Packaging job started.");
-
-                                _logger.debug("<< deleteAssets()");
-                                return new ResponseEntity<>(jobResponse, HttpStatus.CREATED);
-                            }
-                            else{
-                                String message = "No assets were found in the system with the requested IDs.";
-                                jobResponse.setMessage(message);
-
-                                _logger.debug("<< deleteAssets()");
-                                return new ResponseEntity<>(jobResponse, HttpStatus.NO_CONTENT);
-                            }
-                        }
-                        else{
-                            String message = "No assets were found in the request.";
-                            jobResponse.setMessage(message);
-
-                            _logger.debug("<< deleteAssets()");
-                            return new ResponseEntity<>(jobResponse, HttpStatus.NOT_FOUND);
-                        }
-                    }
-                    else{
-                        String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-                        _logger.debug(errorMessage);
-
-                        jobResponse.setMessage(errorMessage);
-
-                        _logger.debug("<< deleteAssets()");
-                        return new ResponseEntity<>(jobResponse, HttpStatus.UNAUTHORIZED);
-                    }
-                }
-                else{
-                    String errorMessage = "No users with username '" + authentication.getName() + " is found!";
-                    _logger.debug(errorMessage);
-
-                    jobResponse.setMessage(errorMessage);
-
-                    _logger.debug("<< deleteAssets()");
-                    return new ResponseEntity<>(jobResponse, HttpStatus.UNAUTHORIZED);
-                }
-            }
-            else{
-                String message = "Selected assets are null!";
-                jobResponse.setMessage(message);
-
-                _logger.debug("<< deleteAssets()");
-                return new ResponseEntity<>(jobResponse, HttpStatus.BAD_REQUEST);
-            }
-        }
-        catch (Exception e){
-            String errorMessage = "An error occurred while deleting a batch. " + e.getLocalizedMessage();
-            _logger.error(errorMessage, e);
-            JobResponse jobResponse = new JobResponse();
-            jobResponse.setMessage(errorMessage);
-
-            _logger.debug("<< deleteAssets()");
-            return new ResponseEntity<>(jobResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
 
     @RequestMapping(value = "/jobs/package", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<JobResponse> packageAssets(Authentication authentication, @RequestBody SelectedAssets selectedAssets){

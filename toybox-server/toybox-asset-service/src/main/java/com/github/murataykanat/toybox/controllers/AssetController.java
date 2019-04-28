@@ -423,53 +423,11 @@ public class AssetController {
                 if(!usersByUsername.isEmpty()){
                     if(usersByUsername.size() == 1){
                         if(!selectedAssets.getSelectedAssets().isEmpty()){
-                            _logger.debug("Session ID: " + session.getId());
-                            CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-                            if(token != null){
-                                _logger.debug("CSRF Token: " + token.getToken());
+                            selectedAssets.getSelectedAssets().forEach(asset -> assetsRepository.deleteAssetById("Y", asset.getId()));
+                             genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " asset(s) deleted successfully.");
 
-                                RestTemplate restTemplate = new RestTemplate();
-                                HttpHeaders headers = new HttpHeaders();
-                                headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-                                headers.set("X-XSRF-TOKEN", token.getToken());
-                                HttpEntity<SelectedAssets> selectedAssetsEntity = new HttpEntity<>(selectedAssets, headers);
-
-                                List<ServiceInstance> instances = discoveryClient.getInstances(jobServiceLoadBalancerServiceName);
-                                if(!instances.isEmpty()){
-                                    ServiceInstance serviceInstance = instances.get(0);
-                                    String jobServiceUrl = serviceInstance.getUri().toString();
-                                    ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/delete", selectedAssetsEntity, JobResponse.class);
-                                    long jobId = jobResponseResponseEntity.getBody().getJobId();
-
-                                    boolean jobSucceeded = isJobSuccessful(jobId, headers, jobServiceUrl);
-
-                                    if(jobSucceeded){
-                                        genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " asset(s) deleted successfully.");
-
-                                        _logger.debug("<< deleteAssets()");
-                                        return new ResponseEntity<>(genericResponse, HttpStatus.OK);
-                                    }
-                                    else{
-                                        genericResponse.setMessage("An error occurred while deleting assets.");
-
-                                        _logger.debug("<< deleteAssets()");
-                                        return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-                                    }
-                                }
-                                else{
-                                    throw new Exception("There is no job load balancer instance!");
-                                }
-                            }
-                            else{
-                                String errorMessage = "Token is null!";
-
-                                _logger.error(errorMessage);
-
-                                genericResponse.setMessage(errorMessage);
-
-                                _logger.debug("<< deleteAssets()");
-                                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
-                            }
+                             _logger.debug("<< deleteAssets()");
+                             return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                         }
                         else{
                             String warningMessage = "No assets were selected!";

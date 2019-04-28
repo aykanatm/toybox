@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
@@ -32,6 +33,7 @@ public interface AssetsRepository extends JpaRepository<Asset, String> {
                     @Param("asset_name") String name, @Param("asset_path") String path, @Param("asset_preview_path") String previewPath, @Param("asset_thumbnail_path") String thumbnailPath,
                     @Param("asset_type") String mimeType, @Param("asset_import_date") Date importDate, @Param("deleted") String deleted);
 
+    @Transactional
     @Modifying
     @Query(value = "UPDATE assets SET deleted=?1 WHERE asset_id=?2", nativeQuery = true)
     int deleteAssetById(String deleted, String assetId);
