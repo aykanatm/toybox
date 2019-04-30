@@ -110,7 +110,9 @@ module.exports = {
             console.log('Subscribing to the asset with ID "' + this.id + '"');
             this.contextMenuOpen = false;
             var asset = {
-                id: this.id
+                id: this.id,
+                name: this.name,
+                type: this.type
             }
             var selectedAssets= [asset];
             this.subscribeToAssets(selectedAssets);
@@ -120,7 +122,9 @@ module.exports = {
             console.log('Unsubscribing from the asset with ID "' + this.id + '"');
             this.contextMenuOpen = false;
             var asset = {
-                id: this.id
+                id: this.id,
+                name: this.name,
+                type: this.type
             }
             var selectedAssets= [asset];
             this.unsubscribeFromAssets(selectedAssets);
@@ -129,7 +133,9 @@ module.exports = {
         assetDelete:function(){
             console.log('Deleting asset with ID "' + this.id + '"');
             var asset = {
-                id: this.id
+                id: this.id,
+                name: this.name,
+                type: this.type
             }
             var selectedAssets= [asset];
             this.deleteAssets(selectedAssets);
