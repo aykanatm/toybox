@@ -58,40 +58,15 @@ public class RenditionLoadbalancerController {
                 List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
                 if(!usersByUsername.isEmpty()){
                     if(usersByUsername.size() == 1){
-                        if(session != null){
-                            _logger.debug("Session ID: " + session.getId());
-                            CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-                            if(token != null){
-                                _logger.debug("CSRF Token: " + token.getToken());
-
-                                HttpHeaders headers = new HttpHeaders();
-                                headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-                                headers.set("X-XSRF-TOKEN", token.getToken());
-
-                                String prefix = getPrefix();
-                                if(StringUtils.isNotBlank(prefix)){
-                                    _logger.debug("<< getLoadBalancedUserAvatar()");
-                                    return restTemplate.exchange(prefix + renditionServiceName + "/renditions/users/" + username, HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
-                                }
-                                else{
-                                    _logger.debug("<< getUserAvatar()");
-                                    return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-                                }
-                            }
-                            else{
-                                String errorMessage = "CSRF token is null!";
-                                _logger.error(errorMessage);
-
-                                _logger.debug("<< getUserAvatar()");
-                                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-                            }
+                        HttpHeaders headers = getHeaders(session);
+                        String prefix = getPrefix();
+                        if(StringUtils.isNotBlank(prefix)){
+                            _logger.debug("<< getLoadBalancedUserAvatar()");
+                            return restTemplate.exchange(prefix + renditionServiceName + "/renditions/users/" + username, HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
                         }
                         else{
-                            String errorMessage = "Session is null!";
-                            _logger.error(errorMessage);
-
                             _logger.debug("<< getUserAvatar()");
-                            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
                         }
                     }
                     else{
@@ -156,35 +131,15 @@ public class RenditionLoadbalancerController {
                     List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
                     if(!usersByUsername.isEmpty()){
                         if(usersByUsername.size() == 1){
-                            if(session != null){
-                                _logger.debug("Session ID: " + session.getId());
-                                CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-                                if(token != null){
-                                    _logger.debug("CSRF Token: " + token.getToken());
-
-                                    HttpHeaders headers = new HttpHeaders();
-                                    headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-                                    headers.set("X-XSRF-TOKEN", token.getToken());
-
-                                    String prefix = getPrefix();
-
-                                    _logger.debug("<< getLoadBalancedRendition()");
-                                    return restTemplate.exchange(prefix + renditionServiceName + "/renditions/assets/" + assetId + "/" + renditionType, HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
-                                }
-                                else{
-                                    String errorMessage = "CSRF token is null!";
-                                    _logger.error(errorMessage);
-
-                                    _logger.debug("<< getLoadBalancedRendition()");
-                                    return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-                                }
+                            HttpHeaders headers = getHeaders(session);
+                            String prefix = getPrefix();
+                            if(StringUtils.isNotBlank(prefix)){
+                                _logger.debug("<< getLoadBalancedRendition()");
+                                return restTemplate.exchange(prefix + renditionServiceName + "/renditions/assets/" + assetId + "/" + renditionType, HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
                             }
                             else{
-                                String errorMessage = "Session is null!";
-                                _logger.error(errorMessage);
-
                                 _logger.debug("<< getLoadBalancedRendition()");
-                                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                                return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
                             }
                         }
                         else{
@@ -257,6 +212,25 @@ public class RenditionLoadbalancerController {
 
             _logger.debug("<< assetRenditionErrorFallback()");
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    private HttpHeaders getHeaders(HttpSession session) throws Exception {
+        _logger.debug("getHeaders() >>");
+        HttpHeaders headers = new HttpHeaders();
+
+        _logger.debug("Session ID: " + session.getId());
+        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
+        if(token != null){
+            _logger.debug("CSRF Token: " + token.getToken());
+            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
+            headers.set("X-XSRF-TOKEN", token.getToken());
+
+            _logger.debug("<< getHeaders()");
+            return headers;
+        }
+        else{
+            throw new Exception("CSRF token is null!");
         }
     }
 
