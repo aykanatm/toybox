@@ -70,31 +70,16 @@ public class AssetLoadbalancerController {
                 List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
                 if(!usersByUsername.isEmpty()){
                     if(usersByUsername.size() == 1){
-                        _logger.debug("Session ID: " + session.getId());
-                        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-                        if(token != null){
-                            _logger.debug("CSRF Token: " + token.getToken());
+                        HttpHeaders headers = getHeaders(session);
+                        String prefix = getPrefix();
 
-                            HttpHeaders headers = new HttpHeaders();
-                            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-                            headers.set("X-XSRF-TOKEN", token.getToken());
-
-                            String prefix = getPrefix();
-                            if(StringUtils.isNotBlank(prefix)){
-                                _logger.debug("<< downloadAssets()");
-                                return restTemplate.exchange(prefix + assetServiceName + "/assets/download", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), Resource.class);
-                            }
-                            else{
-                                _logger.debug("<< downloadAssets()");
-                                return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-                            }
+                        if(StringUtils.isNotBlank(prefix)){
+                            _logger.debug("<< downloadAssets()");
+                            return restTemplate.exchange(prefix + assetServiceName + "/assets/download", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), Resource.class);
                         }
                         else{
-                            String errorMessage = "CSRF token is null!";
-                            _logger.error(errorMessage);
-
                             _logger.debug("<< downloadAssets()");
-                            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
                         }
                     }
                     else{
@@ -172,15 +157,10 @@ public class AssetLoadbalancerController {
                 List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
                 if(!usersByUsername.isEmpty()){
                     if(usersByUsername.size() == 1){
-                        _logger.debug("Session ID: " + session.getId());
-                        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-                        if(token != null){
-                            _logger.debug("CSRF Token: " + token.getToken());
+                        String prefix = getPrefix();
+                        HttpHeaders headers = getHeaders(session);
 
-                            HttpHeaders headers = new HttpHeaders();
-                            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-                            headers.set("X-XSRF-TOKEN", token.getToken());
-
+                        if(StringUtils.isNotBlank(prefix)){
                             File tempFolder = new File(tempImportStagingPath);
                             if(!tempFolder.exists()){
                                 tempFolder.mkdir();
@@ -210,30 +190,17 @@ public class AssetLoadbalancerController {
                             uploadFileLst.setUploadFiles(uploadFiles);
                             uploadFileLst.setMessage("Files uploaded successfully!");
 
-                            String prefix = getPrefix();
-                            if(StringUtils.isNotBlank(prefix)){
-                                _logger.debug("<< uploadAssets()");
-                                return restTemplate.exchange(prefix + assetServiceName + "/assets/upload", HttpMethod.POST, new HttpEntity<>(uploadFileLst, headers), GenericResponse.class);
-                            }
-                            else{
-                                String errorMessage = "Service ID prefix is null!";
-                                _logger.error(errorMessage);
-
-                                genericResponse.setMessage(errorMessage);
-
-                                _logger.debug("<< stopJob()");
-                                return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-                            }
+                            _logger.debug("<< uploadAssets()");
+                            return restTemplate.exchange(prefix + assetServiceName + "/assets/upload", HttpMethod.POST, new HttpEntity<>(uploadFileLst, headers), GenericResponse.class);
                         }
                         else{
-                            String errorMessage = "CSRF token is null!";
-
+                            String errorMessage = "Service ID prefix is null!";
                             _logger.error(errorMessage);
 
                             genericResponse.setMessage(errorMessage);
 
                             _logger.debug("<< uploadAssets()");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
                         }
                     }
                     else{
@@ -334,40 +301,22 @@ public class AssetLoadbalancerController {
                 List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
                 if(!usersByUsername.isEmpty()){
                     if(usersByUsername.size() == 1){
-                        _logger.debug("Session ID: " + session.getId());
-                        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-                        if(token != null){
-                            _logger.debug("CSRF Token: " + token.getToken());
+                        HttpHeaders headers = getHeaders(session);
+                        String prefix = getPrefix();
 
-                            HttpHeaders headers = new HttpHeaders();
-                            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-                            headers.set("X-XSRF-TOKEN", token.getToken());
-
-                            String prefix = getPrefix();
-                            if(StringUtils.isNotBlank(prefix)){
-                                _logger.debug("<< retrieveAssets()");
-                                return restTemplate.exchange(prefix + assetServiceName + "/assets/search", HttpMethod.POST, new HttpEntity<>(assetSearchRequest, headers), RetrieveAssetsResults.class);
-                            }
-                            else{
-                                String errorMessage = "Service ID prefix is null!";
-
-                                _logger.error(errorMessage);
-
-                                retrieveAssetsResults.setMessage(errorMessage);
-
-                                _logger.debug("<< retrieveAssets()");
-                                return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.INTERNAL_SERVER_ERROR);
-                            }
+                        if(StringUtils.isNotBlank(prefix)){
+                            _logger.debug("<< retrieveAssets()");
+                            return restTemplate.exchange(prefix + assetServiceName + "/assets/search", HttpMethod.POST, new HttpEntity<>(assetSearchRequest, headers), RetrieveAssetsResults.class);
                         }
                         else{
-                            String errorMessage = "CSRF token is null!";
+                            String errorMessage = "Service ID prefix is null!";
 
                             _logger.error(errorMessage);
 
                             retrieveAssetsResults.setMessage(errorMessage);
 
                             _logger.debug("<< retrieveAssets()");
-                            return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.UNAUTHORIZED);
+                            return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.INTERNAL_SERVER_ERROR);
                         }
                     }
                     else{
@@ -457,39 +406,21 @@ public class AssetLoadbalancerController {
                 List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
                 if(!usersByUsername.isEmpty()){
                     if(usersByUsername.size() == 1){
-                        _logger.debug("Session ID: " + session.getId());
-                        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-                        if(token != null){
-                            _logger.debug("CSRF Token: " + token.getToken());
+                        HttpHeaders headers = getHeaders(session);
+                        String prefix = getPrefix();
 
-                            HttpHeaders headers = new HttpHeaders();
-                            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-                            headers.set("X-XSRF-TOKEN", token.getToken());
-
-                            String prefix = getPrefix();
-                            if(StringUtils.isNotBlank(prefix)){
-                                _logger.debug("<< deleteAssets()");
-                                return restTemplate.exchange(prefix + assetServiceName + "/assets/delete", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
-                            }
-                            else{
-                                String errorMessage = "Service ID prefix is null!";
-                                _logger.error(errorMessage);
-
-                                genericResponse.setMessage(errorMessage);
-
-                                _logger.debug("<< deleteAssets()");
-                                return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-                            }
+                        if(StringUtils.isNotBlank(prefix)){
+                            _logger.debug("<< deleteAssets()");
+                            return restTemplate.exchange(prefix + assetServiceName + "/assets/delete", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
                         }
                         else{
-                            String errorMessage = "CSRF token is null!";
-
+                            String errorMessage = "Service ID prefix is null!";
                             _logger.error(errorMessage);
 
                             genericResponse.setMessage(errorMessage);
 
                             _logger.debug("<< deleteAssets()");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
                         }
                     }
                     else{
@@ -579,39 +510,21 @@ public class AssetLoadbalancerController {
                 List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
                 if(!usersByUsername.isEmpty()){
                     if(usersByUsername.size() == 1){
-                        _logger.debug("Session ID: " + session.getId());
-                        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-                        if(token != null){
-                            _logger.debug("CSRF Token: " + token.getToken());
+                        HttpHeaders headers = getHeaders(session);
+                        String prefix = getPrefix();
 
-                            HttpHeaders headers = new HttpHeaders();
-                            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-                            headers.set("X-XSRF-TOKEN", token.getToken());
-
-                            String prefix = getPrefix();
-                            if(StringUtils.isNotBlank(prefix)){
-                                _logger.debug("<< subscribeToAssets()");
-                                return restTemplate.exchange(prefix + assetServiceName + "/assets/subscribe", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
-                            }
-                            else{
-                                String errorMessage = "Service ID prefix is null!";
-                                _logger.error(errorMessage);
-
-                                genericResponse.setMessage(errorMessage);
-
-                                _logger.debug("<< subscribeToAssets()");
-                                return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-                            }
+                        if(StringUtils.isNotBlank(prefix)){
+                            _logger.debug("<< subscribeToAssets()");
+                            return restTemplate.exchange(prefix + assetServiceName + "/assets/subscribe", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
                         }
                         else{
-                            String errorMessage = "Token is null!";
-
+                            String errorMessage = "Service ID prefix is null!";
                             _logger.error(errorMessage);
 
                             genericResponse.setMessage(errorMessage);
 
                             _logger.debug("<< subscribeToAssets()");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
                         }
                     }
                     else{
@@ -701,38 +614,21 @@ public class AssetLoadbalancerController {
                 List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
                 if(!usersByUsername.isEmpty()){
                     if(usersByUsername.size() == 1){
-                        _logger.debug("Session ID: " + session.getId());
-                        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-                        if(token != null){
-                            _logger.debug("CSRF Token: " + token.getToken());
+                        HttpHeaders headers = getHeaders(session);
+                        String prefix = getPrefix();
 
-                            HttpHeaders headers = new HttpHeaders();
-                            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-                            headers.set("X-XSRF-TOKEN", token.getToken());
-
-                            String prefix = getPrefix();
-                            if(StringUtils.isNotBlank(prefix)){
-                                _logger.debug("<< unsubscribeFromAssets()");
-                                return restTemplate.exchange(prefix + assetServiceName + "/assets/unsubscribe", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
-                            }
-                            else{
-                                String errorMessage = "Service ID prefix is null!";
-                                _logger.error(errorMessage);
-
-                                genericResponse.setMessage(errorMessage);
-
-                                _logger.debug("<< unsubscribeFromAssets()");
-                                return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-                            }
+                        if(StringUtils.isNotBlank(prefix)){
+                            _logger.debug("<< unsubscribeFromAssets()");
+                            return restTemplate.exchange(prefix + assetServiceName + "/assets/unsubscribe", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
                         }
                         else{
-                            String errorMessage = "CSRF token is null!";
+                            String errorMessage = "Service ID prefix is null!";
                             _logger.error(errorMessage);
 
                             genericResponse.setMessage(errorMessage);
 
                             _logger.debug("<< unsubscribeFromAssets()");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
                         }
                     }
                     else{
@@ -808,6 +704,25 @@ public class AssetLoadbalancerController {
 
             _logger.debug("<< unsubscribeFromAssetsErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    private HttpHeaders getHeaders(HttpSession session) throws Exception {
+        _logger.debug("getHeaders() >>");
+        HttpHeaders headers = new HttpHeaders();
+
+        _logger.debug("Session ID: " + session.getId());
+        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
+        if(token != null){
+            _logger.debug("CSRF Token: " + token.getToken());
+            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
+            headers.set("X-XSRF-TOKEN", token.getToken());
+
+            _logger.debug("<< getHeaders()");
+            return headers;
+        }
+        else{
+            throw new Exception("CSRF token is null!");
         }
     }
 

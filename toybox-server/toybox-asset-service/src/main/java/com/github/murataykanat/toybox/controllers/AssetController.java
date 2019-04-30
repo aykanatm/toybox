@@ -108,58 +108,46 @@ public class AssetController {
                             }
                             else{
                                 _logger.debug("Downloading multiple assets...");
-                                _logger.debug("Session ID: " + session.getId());
-                                CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-                                if(token != null){
-                                    _logger.debug("CSRF Token: " + token.getToken());
+                                RestTemplate restTemplate = new RestTemplate();
+                                HttpHeaders headers = getHeaders(session);
 
-                                    RestTemplate restTemplate = new RestTemplate();
-                                    HttpHeaders headers = new HttpHeaders();
-                                    headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-                                    headers.set("X-XSRF-TOKEN", token.getToken());
-                                    HttpEntity<SelectedAssets> selectedAssetsEntity = new HttpEntity<>(selectedAssets, headers);
+                                HttpEntity<SelectedAssets> selectedAssetsEntity = new HttpEntity<>(selectedAssets, headers);
 
-                                    List<ServiceInstance> instances = discoveryClient.getInstances(jobServiceLoadBalancerServiceName);
-                                    if(!instances.isEmpty()){
-                                        ServiceInstance serviceInstance = instances.get(0);
-                                        String jobServiceUrl = serviceInstance.getUri().toString();
-                                        ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/package", selectedAssetsEntity, JobResponse.class);
-                                        if(jobResponseResponseEntity != null){
-                                            _logger.debug(jobResponseResponseEntity);
-                                            JobResponse jobResponse = jobResponseResponseEntity.getBody();
-                                            if(jobResponse != null){
-                                                _logger.debug("Job response message: " + jobResponse.getMessage());
-                                                _logger.debug("Job ID: " + jobResponse.getJobId());
-                                                File archiveFile = getArchiveFile(jobResponse.getJobId(), headers, jobServiceUrl);
-                                                if(archiveFile.exists()){
-                                                    InputStreamResource resource = new InputStreamResource(new FileInputStream(archiveFile));
+                                List<ServiceInstance> instances = discoveryClient.getInstances(jobServiceLoadBalancerServiceName);
+                                if(!instances.isEmpty()){
+                                    ServiceInstance serviceInstance = instances.get(0);
+                                    String jobServiceUrl = serviceInstance.getUri().toString();
+                                    ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/package", selectedAssetsEntity, JobResponse.class);
+                                    if(jobResponseResponseEntity != null){
+                                        _logger.debug(jobResponseResponseEntity);
+                                        JobResponse jobResponse = jobResponseResponseEntity.getBody();
+                                        if(jobResponse != null){
+                                            _logger.debug("Job response message: " + jobResponse.getMessage());
+                                            _logger.debug("Job ID: " + jobResponse.getJobId());
+                                            File archiveFile = getArchiveFile(jobResponse.getJobId(), headers, jobServiceUrl);
+                                            if(archiveFile != null && archiveFile.exists()){
+                                                InputStreamResource resource = new InputStreamResource(new FileInputStream(archiveFile));
 
-                                                    _logger.debug("<< downloadAssets()");
-                                                    return new ResponseEntity<>(resource, HttpStatus.OK);
-                                                }
-                                                else{
-                                                    throw new IOException("File '" + archiveFile.getAbsolutePath() + "' does not exist!");
-                                                }
+                                                _logger.debug("<< downloadAssets()");
+                                                return new ResponseEntity<>(resource, HttpStatus.OK);
                                             }
                                             else{
-                                                throw new InvalidObjectException("Job response is null!");
+                                                if(archiveFile != null){
+                                                    throw new IOException("File '" + archiveFile.getAbsolutePath() + "' does not exist!");
+                                                }
+                                                throw new InvalidObjectException("Archive file is null!");
                                             }
                                         }
                                         else{
-                                            throw new InvalidObjectException("Job response entity is null!");
+                                            throw new InvalidObjectException("Job response is null!");
                                         }
                                     }
                                     else{
-                                        throw new Exception("There is no job load balancer instance!");
+                                        throw new InvalidObjectException("Job response entity is null!");
                                     }
                                 }
                                 else{
-                                    String errorMessage = "Token is null!";
-
-                                    _logger.error(errorMessage);
-
-                                    _logger.debug("<< downloadAssets()");
-                                    return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                                    throw new Exception("There is no job load balancer instance!");
                                 }
                             }
                         }
@@ -206,47 +194,31 @@ public class AssetController {
             List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
             if(!usersByUsername.isEmpty()){
                 if(usersByUsername.size() == 1){
-                    _logger.debug("Session ID: " + session.getId());
-                    CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-                    if(token != null){
-                        _logger.debug("CSRF Token: " + token.getToken());
+                    RestTemplate restTemplate = new RestTemplate();
 
-                        RestTemplate restTemplate = new RestTemplate();
-                        HttpHeaders headers = new HttpHeaders();
-                        headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-                        headers.set("X-XSRF-TOKEN", token.getToken());
-                        HttpEntity<UploadFileLst> selectedAssetsEntity = new HttpEntity<>(uploadFileLst, headers);
-                        List<ServiceInstance> instances = discoveryClient.getInstances(jobServiceLoadBalancerServiceName);
-                        if(!instances.isEmpty()){
-                            ServiceInstance serviceInstance = instances.get(0);
-                            String jobServiceUrl = serviceInstance.getUri().toString();
-                            ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/import", selectedAssetsEntity, JobResponse.class);
-                            boolean successful = jobResponseResponseEntity.getStatusCode().is2xxSuccessful();
+                    HttpHeaders headers = getHeaders(session);
+                    HttpEntity<UploadFileLst> selectedAssetsEntity = new HttpEntity<>(uploadFileLst, headers);
 
-                            if(successful){
-                                genericResponse.setMessage(uploadFileLst.getUploadFiles().size() + " file(s) successfully uploaded. Import job started.");
-                                _logger.debug("<< uploadAssets()");
-                                return new ResponseEntity<>(genericResponse, HttpStatus.CREATED);
-                            }
-                            else{
-                                genericResponse.setMessage("Upload was successful but import failed to start. " + jobResponseResponseEntity.getBody().getMessage());
-                                _logger.debug("<< uploadAssets()");
-                                return new ResponseEntity<>(genericResponse, jobResponseResponseEntity.getStatusCode());
-                            }
+                    List<ServiceInstance> instances = discoveryClient.getInstances(jobServiceLoadBalancerServiceName);
+                    if(!instances.isEmpty()){
+                        ServiceInstance serviceInstance = instances.get(0);
+                        String jobServiceUrl = serviceInstance.getUri().toString();
+                        ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/import", selectedAssetsEntity, JobResponse.class);
+                        boolean successful = jobResponseResponseEntity.getStatusCode().is2xxSuccessful();
+
+                        if(successful){
+                            genericResponse.setMessage(uploadFileLst.getUploadFiles().size() + " file(s) successfully uploaded. Import job started.");
+                            _logger.debug("<< uploadAssets()");
+                            return new ResponseEntity<>(genericResponse, HttpStatus.CREATED);
                         }
                         else{
-                            throw new Exception("There is no job load balancer instance!");
+                            genericResponse.setMessage("Upload was successful but import failed to start. " + jobResponseResponseEntity.getBody().getMessage());
+                            _logger.debug("<< uploadAssets()");
+                            return new ResponseEntity<>(genericResponse, jobResponseResponseEntity.getStatusCode());
                         }
                     }
                     else{
-                        String errorMessage = "Token is null!";
-
-                        _logger.error(errorMessage);
-
-                        genericResponse.setMessage(errorMessage);
-
-                        _logger.debug("<< uploadAssets()");
-                        return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                        throw new Exception("There is no job load balancer instance!");
                     }
                 }
                 else{
@@ -472,8 +444,6 @@ public class AssetController {
                     _logger.debug("<< deleteAssets()");
                     return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
                 }
-
-
             }
             else{
                 String errorMessage = "Selected assets are null!";
