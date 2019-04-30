@@ -1,0 +1,185 @@
+package com.github.murataykanat.toybox.controllers;
+
+import com.github.murataykanat.toybox.dbo.User;
+import com.github.murataykanat.toybox.repositories.UsersRepository;
+import com.github.murataykanat.toybox.schema.common.GenericResponse;
+import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.cloud.client.ServiceInstance;
+import org.springframework.cloud.client.discovery.DiscoveryClient;
+import org.springframework.cloud.client.loadbalancer.LoadBalanced;
+import org.springframework.cloud.netflix.ribbon.RibbonClient;
+import org.springframework.context.annotation.Bean;
+import org.springframework.http.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
+
+import javax.servlet.http.HttpSession;
+import java.util.ArrayList;
+import java.util.List;
+
+@RibbonClient(name = "toybox-notification-loadbalancer")
+@RestController
+public class NotificationLoadbalancerController {
+    private static final Log _logger = LogFactory.getLog(NotificationLoadbalancerController.class);
+
+    private static final String notificationServiceName = "toybox-notification-service";
+
+    @LoadBalanced
+    @Bean
+    public RestTemplate restTemplate(RestTemplateBuilder builder){
+        return builder.build();
+    }
+
+    @Autowired
+    private DiscoveryClient discoveryClient;
+
+    @Autowired
+    private UsersRepository usersRepository;
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @HystrixCommand(fallbackMethod = "sendNotificationErrorFallback")
+    @RequestMapping(value = "/notifications", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<GenericResponse> sendNotification(Authentication authentication, HttpSession session, @RequestBody SendNotificationRequest sendNotificationRequest){
+        _logger.debug("sendNotification() >>");
+        GenericResponse genericResponse = new GenericResponse();
+        try{
+            if(sendNotificationRequest != null){
+                List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
+                if(!usersByUsername.isEmpty()){
+                    if(usersByUsername.size() == 1){
+                        HttpHeaders headers = getHeaders(session);
+                        String prefix = getPrefix();
+
+                        _logger.debug("<< sendNotification()");
+                        return restTemplate.exchange(prefix + notificationServiceName + "/notifications", HttpMethod.POST, new HttpEntity<>(sendNotificationRequest, headers), GenericResponse.class);
+                    }
+                    else{
+                        String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
+                        _logger.error(errorMessage);
+
+                        genericResponse.setMessage(errorMessage);
+
+                        _logger.debug("<< sendNotification()");
+                        return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                    }
+                }
+                else{
+                    String errorMessage = "No users with username '" + authentication.getName() + " is found!";
+                    _logger.error(errorMessage);
+
+                    genericResponse.setMessage(errorMessage);
+
+                    _logger.debug("<< sendNotification()");
+                    return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                }
+            }
+            else{
+                String errorMessage = "Send notification request parameter is null.";
+                genericResponse.setMessage(errorMessage);
+
+                _logger.debug("<< sendNotificationErrorFallback()");
+                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while retrieving the rendition of the current user. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            _logger.debug("<< getUserAvatar()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public ResponseEntity<GenericResponse> sendNotificationErrorFallback(Authentication authentication, HttpSession session, SendNotificationRequest sendNotificationRequest, Throwable e){
+        _logger.debug("sendNotificationErrorFallback() >>");
+        GenericResponse genericResponse = new GenericResponse();
+        if(sendNotificationRequest != null){
+            String errorMessage;
+            if(e.getLocalizedMessage() != null){
+                errorMessage = "Unable to retrieve rendition for the current user. " + e.getLocalizedMessage();
+            }
+            else{
+                errorMessage = "Unable to get response from the rendition service.";
+            }
+
+            _logger.error(errorMessage, e);
+            genericResponse.setMessage(errorMessage);
+            _logger.debug("<< sendNotificationErrorFallback()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        else{
+            String errorMessage = "Send notification request parameter is null.";
+            genericResponse.setMessage(errorMessage);
+
+            _logger.debug("<< sendNotificationErrorFallback()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    private String getPrefix() throws Exception {
+        _logger.debug("getPrefix() >>");
+        List<ServiceInstance> instances = discoveryClient.getInstances(notificationServiceName);
+        if(!instances.isEmpty()){
+            List<Boolean> serviceSecurity = new ArrayList<>();
+            for(ServiceInstance serviceInstance: instances){
+                serviceSecurity.add(serviceInstance.isSecure());
+            }
+
+            boolean result = serviceSecurity.get(0);
+
+            for(boolean isServiceSecure : serviceSecurity){
+                result ^= isServiceSecure;
+            }
+
+            if(!result){
+                String prefix = result ? "https://" : "http://";
+
+                _logger.debug("<< getPrefix() [" + prefix + "]");
+                return prefix;
+            }
+            else{
+                String errorMessage = "Not all rendition services have the same transfer protocol!";
+                _logger.error(errorMessage);
+
+                throw new Exception(errorMessage);
+
+            }
+        }
+        else{
+            String errorMessage = "No rendition services are running!";
+            _logger.error(errorMessage);
+
+            throw new Exception(errorMessage);
+        }
+    }
+
+    private HttpHeaders getHeaders(HttpSession session) throws Exception {
+        HttpHeaders headers = new HttpHeaders();
+
+        _logger.debug("Session ID: " + session.getId());
+        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
+        if(token != null){
+            _logger.debug("CSRF Token: " + token.getToken());
+            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
+            headers.set("X-XSRF-TOKEN", token.getToken());
+            return headers;
+        }
+        else{
+            throw new Exception("CSRF token is null!");
+        }
+    }
+}

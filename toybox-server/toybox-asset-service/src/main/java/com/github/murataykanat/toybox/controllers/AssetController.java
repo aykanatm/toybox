@@ -14,6 +14,7 @@ import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
 import com.github.murataykanat.toybox.schema.job.RetrieveToyboxJobResult;
+import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
 import com.github.murataykanat.toybox.utilities.FacetUtils;
 import com.github.murataykanat.toybox.utilities.SortUtils;
@@ -46,6 +47,7 @@ public class AssetController {
     private static final Log _logger = LogFactory.getLog(AssetController.class);
 
     private static final String jobServiceLoadBalancerServiceName = "toybox-job-loadbalancer";
+    private static final String notificationServiceLoadBalancerServiceName = "toybox-notification-loadbalancer";
 
     @Autowired
     private DiscoveryClient discoveryClient;
@@ -422,12 +424,24 @@ public class AssetController {
                 List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
                 if(!usersByUsername.isEmpty()){
                     if(usersByUsername.size() == 1){
+                        User user = usersByUsername.get(0);
                         if(!selectedAssets.getSelectedAssets().isEmpty()){
-                            selectedAssets.getSelectedAssets().forEach(asset -> assetsRepository.deleteAssetById("Y", asset.getId()));
-                             genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " asset(s) deleted successfully.");
+                            for(Asset asset: selectedAssets.getSelectedAssets()){
+                                assetsRepository.deleteAssetById("Y", asset.getId());
 
-                             _logger.debug("<< deleteAssets()");
-                             return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                // Send notification
+                                String message = "Asset '" + asset.getName() + "' is deleted by '" + user.getUsername() + "'";
+                                SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                sendNotificationRequest.setAsset(asset);
+                                sendNotificationRequest.setFromUser(user);
+                                sendNotificationRequest.setMessage(message);
+                                sendNotification(sendNotificationRequest, session);
+                            }
+
+                            genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " asset(s) deleted successfully.");
+
+                            _logger.debug("<< deleteAssets()");
+                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                         }
                         else{
                             String warningMessage = "No assets were selected!";
@@ -649,6 +663,59 @@ public class AssetController {
         }
         else{
             return getArchiveFile(jobId, headers, jobServiceUrl);
+        }
+    }
+
+    private String getLoadbalancerUrl(String loadbalancerServiceName) throws Exception {
+        _logger.debug("getLoadbalancerUrl() [" + loadbalancerServiceName + "]");
+        List<ServiceInstance> instances = discoveryClient.getInstances(loadbalancerServiceName);
+        if(!instances.isEmpty()){
+            ServiceInstance serviceInstance = instances.get(0);
+            _logger.debug("Load balancer URL: " + serviceInstance.getUri().toString());
+            _logger.debug("<< getLoadbalancerUrl()");
+            return serviceInstance.getUri().toString();
+        }
+        else{
+            throw new Exception("There is no load balancer instance with name '" + loadbalancerServiceName + "'.");
+        }
+    }
+
+    private void sendNotification(SendNotificationRequest sendNotificationRequest, HttpSession session) throws Exception {
+        _logger.debug("sendNotification() >>");
+        HttpHeaders headers = getHeaders(session);
+        String loadbalancerUrl = getLoadbalancerUrl(notificationServiceLoadBalancerServiceName);
+        HttpEntity<SendNotificationRequest> sendNotificationRequestHttpEntity = new HttpEntity<>(sendNotificationRequest, headers);
+
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<GenericResponse> genericResponseResponseEntity = restTemplate.postForEntity(loadbalancerUrl + "/notifications", sendNotificationRequestHttpEntity, GenericResponse.class);
+
+        boolean successful = genericResponseResponseEntity.getStatusCode().is2xxSuccessful();
+
+        if(successful){
+            _logger.debug("Notification was send successfully!");
+            _logger.debug("<< sendNotification()");
+        }
+        else{
+            throw new Exception("An error occurred while sending a notification. " + genericResponseResponseEntity.getBody().getMessage());
+        }
+    }
+
+    private HttpHeaders getHeaders(HttpSession session) throws Exception {
+        _logger.debug("getHeaders() >>");
+        HttpHeaders headers = new HttpHeaders();
+
+        _logger.debug("Session ID: " + session.getId());
+        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
+        if(token != null){
+            _logger.debug("CSRF Token: " + token.getToken());
+            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
+            headers.set("X-XSRF-TOKEN", token.getToken());
+
+            _logger.debug("<< getHeaders()");
+            return headers;
+        }
+        else{
+            throw new Exception("CSRF token is null!");
         }
     }
 

@@ -19,4 +19,6 @@ public interface AssetUserRepository extends JpaRepository<AssetUser, String> {
     int deleteSubscriber(String assetId, int userId);
     @Query(value = "SELECT asset_id, user_id FROM asset_user WHERE user_id=?1", nativeQuery = true)
     List<AssetUser> findAssetUsersByUserId(int userId);
+    @Query(value = "SELECT asset_id, user_id FROM asset_user WHERE asset_id=?1", nativeQuery = true)
+    List<AssetUser> findAssetUsersByAssetId(String assetId);
 }
