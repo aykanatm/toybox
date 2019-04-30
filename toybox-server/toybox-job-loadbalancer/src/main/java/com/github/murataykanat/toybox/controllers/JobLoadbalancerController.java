@@ -63,38 +63,21 @@ public class JobLoadbalancerController {
                 List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
                 if(!usersByUsername.isEmpty()){
                     if(usersByUsername.size() == 1){
-                        _logger.debug("Session ID: " + session.getId());
-                        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-                        if(token != null){
-                            _logger.debug("CSRF Token: " + token.getToken());
+                        HttpHeaders headers = getHeaders(session);
+                        String prefix = getPrefix();
 
-                            HttpHeaders headers = new HttpHeaders();
-                            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-                            headers.set("X-XSRF-TOKEN", token.getToken());
-
-                            String prefix = getPrefix();
-                            if(StringUtils.isNotBlank(prefix)){
-                                _logger.debug("<< packageAssets()");
-                                return restTemplate.exchange(prefix + jobServiceName + "/jobs/package", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), JobResponse.class);
-                            }
-                            else{
-                                String errorMessage = "Service ID prefix is null!";
-                                _logger.error(errorMessage);
-
-                                jobResponse.setMessage(errorMessage);
-
-                                _logger.debug("<< packageAssets()");
-                                return new ResponseEntity<>(jobResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-                            }
+                        if(StringUtils.isNotBlank(prefix)){
+                            _logger.debug("<< packageAssets()");
+                            return restTemplate.exchange(prefix + jobServiceName + "/jobs/package", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), JobResponse.class);
                         }
                         else{
-                            String errorMessage = "CSRF token is null!";
+                            String errorMessage = "Service ID prefix is null!";
                             _logger.error(errorMessage);
 
                             jobResponse.setMessage(errorMessage);
 
                             _logger.debug("<< packageAssets()");
-                            return new ResponseEntity<>(jobResponse, HttpStatus.UNAUTHORIZED);
+                            return new ResponseEntity<>(jobResponse, HttpStatus.INTERNAL_SERVER_ERROR);
                         }
                     }
                     else{
@@ -180,38 +163,21 @@ public class JobLoadbalancerController {
                 List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
                 if(!usersByUsername.isEmpty()){
                     if(usersByUsername.size() == 1){
-                        _logger.debug("Session ID: " + session.getId());
-                        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-                        if(token != null){
-                            _logger.debug("CSRF Token: " + token.getToken());
+                        HttpHeaders headers = getHeaders(session);
+                        String prefix = getPrefix();
 
-                            HttpHeaders headers = new HttpHeaders();
-                            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-                            headers.set("X-XSRF-TOKEN", token.getToken());
-
-                            String prefix = getPrefix();
-                            if(StringUtils.isNotBlank(prefix)){
-                                _logger.debug("<< importAsset()");
-                                return restTemplate.exchange(prefix + jobServiceName + "/jobs/import", HttpMethod.POST, new HttpEntity<>(uploadFileLst, headers), JobResponse.class);
-                            }
-                            else{
-                                String errorMessage = "Service ID prefix is null!";
-                                _logger.error(errorMessage);
-
-                                jobResponse.setMessage(errorMessage);
-
-                                _logger.debug("<< importAsset()");
-                                return new ResponseEntity<>(jobResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-                            }
+                        if(StringUtils.isNotBlank(prefix)){
+                            _logger.debug("<< importAsset()");
+                            return restTemplate.exchange(prefix + jobServiceName + "/jobs/import", HttpMethod.POST, new HttpEntity<>(uploadFileLst, headers), JobResponse.class);
                         }
                         else{
-                            String errorMessage = "CSRF token is null!";
+                            String errorMessage = "Service ID prefix is null!";
                             _logger.error(errorMessage);
 
                             jobResponse.setMessage(errorMessage);
 
                             _logger.debug("<< importAsset()");
-                            return new ResponseEntity<>(jobResponse, HttpStatus.UNAUTHORIZED);
+                            return new ResponseEntity<>(jobResponse, HttpStatus.INTERNAL_SERVER_ERROR);
                         }
                     }
                     else{
@@ -297,40 +263,22 @@ public class JobLoadbalancerController {
                 List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
                 if(!usersByUsername.isEmpty()){
                     if(usersByUsername.size() == 1){
-                        _logger.debug("Session ID: " + session.getId());
-                        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-                        if(token != null){
-                            _logger.debug("CSRF Token: " + token.getToken());
+                        HttpHeaders headers = getHeaders(session);
+                        String prefix = getPrefix();
 
-                            HttpHeaders headers = new HttpHeaders();
-                            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-                            headers.set("X-XSRF-TOKEN", token.getToken());
-
-                            String prefix = getPrefix();
-                            if(StringUtils.isNotBlank(prefix)){
-                                _logger.debug("<< retrieveJobs()");
-                                return restTemplate.exchange(prefix + jobServiceName + "/jobs/search", HttpMethod.POST, new HttpEntity<>(jobSearchRequest, headers), RetrieveToyboxJobsResult.class);
-                            }
-                            else{
-                                String errorMessage = "Service ID prefix is null!";
-                                _logger.error(errorMessage);
-
-                                retrieveToyboxJobsResult.setMessage(errorMessage);
-
-                                _logger.debug("<< importAsset()");
-                                return new ResponseEntity<>(retrieveToyboxJobsResult, HttpStatus.INTERNAL_SERVER_ERROR);
-                            }
+                        if(StringUtils.isNotBlank(prefix)){
+                            _logger.debug("<< retrieveJobs()");
+                            return restTemplate.exchange(prefix + jobServiceName + "/jobs/search", HttpMethod.POST, new HttpEntity<>(jobSearchRequest, headers), RetrieveToyboxJobsResult.class);
                         }
                         else{
-                            String errorMessage = "CSRF token is null!";
+                            String errorMessage = "Service ID prefix is null!";
                             _logger.error(errorMessage);
 
                             retrieveToyboxJobsResult.setMessage(errorMessage);
 
-                            _logger.debug("<< retrieveJobs()");
-                            return new ResponseEntity<>(retrieveToyboxJobsResult, HttpStatus.UNAUTHORIZED);
+                            _logger.debug("<< importAsset()");
+                            return new ResponseEntity<>(retrieveToyboxJobsResult, HttpStatus.INTERNAL_SERVER_ERROR);
                         }
-
                     }
                     else{
                         String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
@@ -415,39 +363,21 @@ public class JobLoadbalancerController {
                 List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
                 if(!usersByUsername.isEmpty()){
                     if(usersByUsername.size() == 1){
-                        _logger.debug("Session ID: " + session.getId());
-                        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-                        if(token != null){
-                            _logger.debug("CSRF Token: " + token.getToken());
+                        HttpHeaders headers = getHeaders(session);
+                        String prefix = getPrefix();
 
-                            HttpHeaders headers = new HttpHeaders();
-                            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-                            headers.set("X-XSRF-TOKEN", token.getToken());
-
-                            String prefix = getPrefix();
-                            if(StringUtils.isNotBlank(prefix)){
-                                _logger.debug("<< retrieveJob()");
-                                return restTemplate.exchange(prefix + jobServiceName + "/jobs/" + jobInstanceId, HttpMethod.GET, new HttpEntity<>(headers), RetrieveToyboxJobResult.class);
-                            }
-                            else{
-                                String errorMessage = "Service ID prefix is null!";
-                                _logger.error(errorMessage);
-
-                                retrieveToyboxJobResult.setMessage(errorMessage);
-
-                                _logger.debug("<< retrieveJob()");
-                                return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.INTERNAL_SERVER_ERROR);
-                            }
-
+                        if(StringUtils.isNotBlank(prefix)){
+                            _logger.debug("<< retrieveJob()");
+                            return restTemplate.exchange(prefix + jobServiceName + "/jobs/" + jobInstanceId, HttpMethod.GET, new HttpEntity<>(headers), RetrieveToyboxJobResult.class);
                         }
                         else{
-                            String errorMessage = "CSRF token is null!";
+                            String errorMessage = "Service ID prefix is null!";
                             _logger.error(errorMessage);
 
                             retrieveToyboxJobResult.setMessage(errorMessage);
 
                             _logger.debug("<< retrieveJob()");
-                            return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.UNAUTHORIZED);
+                            return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.INTERNAL_SERVER_ERROR);
                         }
                     }
                     else{
@@ -531,34 +461,19 @@ public class JobLoadbalancerController {
                 List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
                 if(!usersByUsername.isEmpty()){
                     if(usersByUsername.size() == 1){
-                        _logger.debug("Session ID: " + session.getId());
-                        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-                        if(token != null){
-                            _logger.debug("CSRF Token: " + token.getToken());
+                        HttpHeaders headers = getHeaders(session);
+                        String prefix = getPrefix();
 
-                            HttpHeaders headers = new HttpHeaders();
-                            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-                            headers.set("X-XSRF-TOKEN", token.getToken());
-
-                            String prefix = getPrefix();
-                            if(StringUtils.isNotBlank(prefix)){
-                                _logger.debug("<< downloadJobResult()");
-                                return restTemplate.exchange(prefix + jobServiceName + "/jobs/download/" + jobInstanceId, HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
-                            }
-                            else{
-                                String errorMessage = "Service ID prefix is null!";
-                                _logger.error(errorMessage);
-
-                                _logger.debug("<< downloadJobResult()");
-                                return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-                            }
+                        if(StringUtils.isNotBlank(prefix)){
+                            _logger.debug("<< downloadJobResult()");
+                            return restTemplate.exchange(prefix + jobServiceName + "/jobs/download/" + jobInstanceId, HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
                         }
                         else{
-                            String errorMessage = "CSRF token is null!";
+                            String errorMessage = "Service ID prefix is null!";
                             _logger.error(errorMessage);
 
                             _logger.debug("<< downloadJobResult()");
-                            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
                         }
                     }
                     else{
@@ -631,39 +546,21 @@ public class JobLoadbalancerController {
                 List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
                 if(!usersByUsername.isEmpty()){
                     if(usersByUsername.size() == 1){
-                        _logger.debug("Session ID: " + session.getId());
-                        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-                        if(token != null){
-                            _logger.debug("CSRF Token: " + token.getToken());
+                        HttpHeaders headers = getHeaders(session);
+                        String prefix = getPrefix();
 
-                            HttpHeaders headers = new HttpHeaders();
-                            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-                            headers.set("X-XSRF-TOKEN", token.getToken());
-
-                            String prefix = getPrefix();
-                            if(StringUtils.isNotBlank(prefix)){
-                                _logger.debug("<< stopJob()");
-                                return restTemplate.exchange(prefix + jobServiceName + "/jobs/stop/" + jobInstanceId, HttpMethod.POST, new HttpEntity<>(headers), JobResponse.class);
-                            }
-                            else{
-                                String errorMessage = "Service ID prefix is null!";
-                                _logger.error(errorMessage);
-
-                                jobResponse.setMessage(errorMessage);
-
-                                _logger.debug("<< stopJob()");
-                                return new ResponseEntity<>(jobResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-                            }
-
+                        if(StringUtils.isNotBlank(prefix)){
+                            _logger.debug("<< stopJob()");
+                            return restTemplate.exchange(prefix + jobServiceName + "/jobs/stop/" + jobInstanceId, HttpMethod.POST, new HttpEntity<>(headers), JobResponse.class);
                         }
                         else{
-                            String errorMessage = "CSRF token is null!";
+                            String errorMessage = "Service ID prefix is null!";
                             _logger.error(errorMessage);
 
                             jobResponse.setMessage(errorMessage);
 
                             _logger.debug("<< stopJob()");
-                            return new ResponseEntity<>(jobResponse, HttpStatus.UNAUTHORIZED);
+                            return new ResponseEntity<>(jobResponse, HttpStatus.INTERNAL_SERVER_ERROR);
                         }
                     }
                     else{
@@ -703,7 +600,7 @@ public class JobLoadbalancerController {
             JobResponse jobResponse = new JobResponse();
             jobResponse.setMessage(errorMessage);
 
-            _logger.debug("<< retrieveJob()");
+            _logger.debug("<< stopJob()");
             return new ResponseEntity<>(jobResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -737,6 +634,25 @@ public class JobLoadbalancerController {
 
             _logger.debug("<< stopJobErrorFallback()");
             return new ResponseEntity<>(jobResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    private HttpHeaders getHeaders(HttpSession session) throws Exception {
+        _logger.debug("getHeaders() >>");
+        HttpHeaders headers = new HttpHeaders();
+
+        _logger.debug("Session ID: " + session.getId());
+        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
+        if(token != null){
+            _logger.debug("CSRF Token: " + token.getToken());
+            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
+            headers.set("X-XSRF-TOKEN", token.getToken());
+
+            _logger.debug("<< getHeaders()");
+            return headers;
+        }
+        else{
+            throw new Exception("CSRF token is null!");
         }
     }
 
