@@ -53,66 +53,54 @@ public class NotificationController {
         int notificationCount = 0;
         try{
             if(sendNotificationRequest != null){
-                List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-                if(!usersByUsername.isEmpty()){
-                    if(usersByUsername.size() == 1){
-                        List<AssetUser> assetUsersByAssetId = assetUserRepository.findAssetUsersByAssetId(sendNotificationRequest.getAsset().getId());
-                        if(assetUsersByAssetId != null && !assetUsersByAssetId.isEmpty()){
-                            for(AssetUser assetUser: assetUsersByAssetId){
-                                List<User> toUsersByUserId = usersRepository.findUsersByUserId(assetUser.getUserId());
-                                if(!toUsersByUserId.isEmpty()){
-                                    if(toUsersByUserId.size() == 1){
-                                        User toUser = toUsersByUserId.get(0);
+                if(isSessionValid(authentication)){
+                    List<AssetUser> assetUsersByAssetId = assetUserRepository.findAssetUsersByAssetId(sendNotificationRequest.getAsset().getId());
+                    if(assetUsersByAssetId != null && !assetUsersByAssetId.isEmpty()){
+                        for(AssetUser assetUser: assetUsersByAssetId){
+                            List<User> toUsersByUserId = usersRepository.findUsersByUserId(assetUser.getUserId());
+                            if(!toUsersByUserId.isEmpty()){
+                                if(toUsersByUserId.size() == 1){
+                                    User toUser = toUsersByUserId.get(0);
 
-                                        String toUsername = toUser.getUsername();
-                                        String fromUsername = sendNotificationRequest.getFromUser().getUsername();
+                                    String toUsername = toUser.getUsername();
+                                    String fromUsername = sendNotificationRequest.getFromUser().getUsername();
 
-                                        Notification notification = new Notification();
-                                        notification.setUsername(toUsername);
-                                        notification.setNotification(sendNotificationRequest.getMessage());
-                                        notification.setIsRead("N");
-                                        notification.setDate(new Date());
-                                        notification.setFrom(fromUsername);
+                                    Notification notification = new Notification();
+                                    notification.setUsername(toUsername);
+                                    notification.setNotification(sendNotificationRequest.getMessage());
+                                    notification.setIsRead("N");
+                                    notification.setDate(new Date());
+                                    notification.setFrom(fromUsername);
 
-                                        rabbitTemplate.convertAndSend(topicExchangeName,"toybox.notification." + System.currentTimeMillis(), notification);
-                                        notificationCount++;
-                                    }
-                                    else{
-                                        throw new Exception("There are more than one user with ID '" + assetUser.getUserId() + "'.");
-                                    }
+                                    rabbitTemplate.convertAndSend(topicExchangeName,"toybox.notification." + System.currentTimeMillis(), notification);
+                                    notificationCount++;
                                 }
                                 else{
-                                    throw new Exception("There is no user with ID '" + assetUser.getUserId() + "'.");
+                                    throw new Exception("There are more than one user with ID '" + assetUser.getUserId() + "'.");
                                 }
                             }
-
-                            genericResponse.setMessage(notificationCount + " notification(s) were sent successfully!");
-
-                            _logger.debug("<< sendNotification()");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                            else{
+                                throw new Exception("There is no user with ID '" + assetUser.getUserId() + "'.");
+                            }
                         }
-                        else{
-                            String errorMessage = "No users associated with asset with ID '" + sendNotificationRequest.getAsset().getId() + "' is found.";
-                            _logger.error(errorMessage);
 
-                            genericResponse.setMessage(errorMessage);
+                        genericResponse.setMessage(notificationCount + " notification(s) were sent successfully!");
 
-                            _logger.debug("<< sendNotification()");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
-                        }
+                        _logger.debug("<< sendNotification()");
+                        return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                     }
                     else{
-                        String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
+                        String errorMessage = "No users associated with asset with ID '" + sendNotificationRequest.getAsset().getId() + "' is found.";
                         _logger.error(errorMessage);
 
                         genericResponse.setMessage(errorMessage);
 
                         _logger.debug("<< sendNotification()");
-                        return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                        return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                     }
                 }
                 else{
-                    String errorMessage = "No users with username '" + authentication.getName() + " is found!";
+                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                     _logger.error(errorMessage);
 
                     genericResponse.setMessage(errorMessage);
