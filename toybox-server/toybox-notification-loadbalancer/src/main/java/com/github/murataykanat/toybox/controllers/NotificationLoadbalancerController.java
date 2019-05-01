@@ -3,6 +3,8 @@ package com.github.murataykanat.toybox.controllers;
 import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
+import com.github.murataykanat.toybox.schema.notification.SearchNotificationsRequest;
+import com.github.murataykanat.toybox.schema.notification.SearchNotificationsResponse;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import org.apache.commons.logging.Log;
@@ -94,7 +96,7 @@ public class NotificationLoadbalancerController {
             }
         }
         catch (Exception e){
-            String errorMessage = "An error occurred while retrieving the rendition of the current user. " + e.getLocalizedMessage();
+            String errorMessage = "An error occurred while sending notification. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
             genericResponse.setMessage(errorMessage);
@@ -110,10 +112,10 @@ public class NotificationLoadbalancerController {
         if(sendNotificationRequest != null){
             String errorMessage;
             if(e.getLocalizedMessage() != null){
-                errorMessage = "Unable to retrieve rendition for the current user. " + e.getLocalizedMessage();
+                errorMessage = "Unable to send notification. " + e.getLocalizedMessage();
             }
             else{
-                errorMessage = "Unable to get response from the rendition service.";
+                errorMessage = "Unable to get response from the notification service.";
             }
 
             _logger.error(errorMessage, e);
@@ -127,6 +129,75 @@ public class NotificationLoadbalancerController {
 
             _logger.debug("<< sendNotificationErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @HystrixCommand(fallbackMethod = "searchNotificationsErrorFallback")
+    @RequestMapping(value = "/notifications/search", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<SearchNotificationsResponse> searchNotifications(Authentication authentication, HttpSession session, @RequestBody SearchNotificationsRequest searchNotificationsRequest){
+        _logger.debug("searchNotifications() >>");
+        SearchNotificationsResponse searchNotificationsResponse = new SearchNotificationsResponse();
+        try{
+            if(searchNotificationsRequest != null){
+                if(isSessionValid(authentication)){
+                    HttpHeaders headers = getHeaders(session);
+                    String prefix = getPrefix();
+
+                    _logger.debug("<< searchNotifications()");
+                    return restTemplate.exchange(prefix + notificationServiceName + "/notifications/search", HttpMethod.POST, new HttpEntity<>(searchNotificationsRequest, headers), SearchNotificationsResponse.class);
+                }
+                else{
+                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    _logger.error(errorMessage);
+
+                    searchNotificationsResponse.setMessage(errorMessage);
+
+                    _logger.debug("<< searchNotifications()");
+                    return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.UNAUTHORIZED);
+                }
+            }
+            else{
+                String errorMessage = "Search notifications request parameter is null.";
+                searchNotificationsResponse.setMessage(errorMessage);
+
+                _logger.debug("<< searchNotificationsErrorFallback()");
+                return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.BAD_REQUEST);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while searching notifications. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            searchNotificationsResponse.setMessage(errorMessage);
+
+            _logger.debug("<< getUserAvatar()");
+            return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public ResponseEntity<SearchNotificationsResponse> searchNotificationsErrorFallback(Authentication authentication, HttpSession session, SearchNotificationsRequest searchNotificationsRequest, Throwable e){
+        _logger.debug("searchNotificationsErrorFallback() >>");
+        SearchNotificationsResponse searchNotificationsResponse = new SearchNotificationsResponse();
+        if(searchNotificationsRequest != null){
+            String errorMessage;
+            if(e.getLocalizedMessage() != null){
+                errorMessage = "Unable to search notifications. " + e.getLocalizedMessage();
+            }
+            else{
+                errorMessage = "Unable to get response from the notification service.";
+            }
+
+            _logger.error(errorMessage, e);
+            searchNotificationsResponse.setMessage(errorMessage);
+            _logger.debug("<< searchNotificationsErrorFallback()");
+            return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        else{
+            String errorMessage = "Search notifications request parameter is null.";
+            searchNotificationsResponse.setMessage(errorMessage);
+
+            _logger.debug("<< searchNotificationsErrorFallback()");
+            return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -165,6 +236,25 @@ public class NotificationLoadbalancerController {
 
             throw new Exception(errorMessage);
         }
+    }
+
+    private boolean isSessionValid(Authentication authentication){
+        String errorMessage;
+        List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
+        if(!usersByUsername.isEmpty()){
+            if(usersByUsername.size() == 1){
+                return true;
+            }
+            else{
+                errorMessage = "Username '" + authentication.getName() + "' is not unique!";
+            }
+        }
+        else{
+            errorMessage = "No users with username '" + authentication.getName() + " is found!";
+        }
+
+        _logger.error(errorMessage);
+        return false;
     }
 
     private HttpHeaders getHeaders(HttpSession session) throws Exception {

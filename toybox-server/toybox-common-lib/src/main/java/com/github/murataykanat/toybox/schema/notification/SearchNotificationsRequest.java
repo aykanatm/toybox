@@ -5,17 +5,24 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;
 import java.util.Date;
 
-public class Notification implements Serializable {
+public class SearchNotificationsRequest implements Serializable {
+    @JsonProperty("id")
+    private int id;
+
     @JsonProperty("username")
     private String username;
-    @JsonProperty("from")
+
+    @JsonProperty("fromUsername")
     private String from;
-    @JsonProperty("notification")
-    private String notification;
-    @JsonProperty("date")
+
+    @JsonProperty("content")
+    private String content;
+
+    @JsonProperty("notificationDate")
     private Date date;
+
     @JsonProperty("isRead")
-    private boolean isRead;
+    private String isRead;
 
     public String getUsername() {
         return username;
@@ -25,12 +32,12 @@ public class Notification implements Serializable {
         this.username = username;
     }
 
-    public String getNotification() {
-        return notification;
+    public String getContent() {
+        return content;
     }
 
-    public void setNotification(String notification) {
-        this.notification = notification;
+    public void setContent(String notification) {
+        this.content = notification;
     }
 
     public Date getDate() {
@@ -49,11 +56,19 @@ public class Notification implements Serializable {
         this.from = from;
     }
 
-    public boolean getIsRead() {
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getIsRead() {
         return isRead;
     }
 
-    public void setIsRead(boolean read) {
-        isRead = read;
+    public void setIsRead(String isRead) {
+        this.isRead = isRead;
     }
 }
