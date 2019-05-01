@@ -7,10 +7,10 @@
             <div class="summary">
                 <div class="content">
                     <div class="date">
-                        {{date}}
+                        {{friendlyDate}}
                     </div>
                     <div class="summary">
-                        {{ message }}
+                        {{ notification }}
                     </div>
                 </div>
             </div>

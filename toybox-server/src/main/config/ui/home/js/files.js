@@ -247,7 +247,7 @@ const files = new Vue({
             {
                 var asset = this.selectedAssets[i];
                 console.log(asset.name + ' / ' +  asset.id);
-                selectedAssets.push({id:asset.id});
+                selectedAssets.push({id:asset.id, name:asset.name, type:asset.type});
             }
             this.deleteAssets(selectedAssets);
         },

@@ -1,4 +1,5 @@
 module.exports = {
+    mixins:[serviceMixin],
     props:{
         user: Object
     },
@@ -6,49 +7,69 @@ module.exports = {
         return  {
             componentName: 'Navigation Bar',
             defaultNotification:{
-                avatarUrl: '../../images/users/system.png',
-                message: 'There are no new unread notifications',
-                id:'0',
-                date: 'Now',
+                id:0,
+                fromUsername: 'system',
+                notification: 'There are no new unread notifications',
+                notificationDate: new Date(),
+                isRead: false
             },
             userInitialized: false,
-            // Dummy notifications
-            notifications:[
-                {
-                    avatarUrl: '../../images/users/test.png',
-                    message: 'Eu sale officiis per. Ad laoreet civibus eum, partem docendi tincidunt ad mei. Cu maiorum oportere salutandi nam. Qui ne harum labitur nostrud, scripta salutatus per ut. Detracto signiferumque vis eu.',
-                    id:'1',
-                    date: '1 hour ago',
-                },
-                {
-                    avatarUrl: '../../images/users/test.png',
-                    message: 'Eu sale officiis per. Ad laoreet civibus eum, partem docendi tincidunt ad mei. Cu maiorum oportere salutandi nam. Qui ne harum labitur nostrud, scripta salutatus per ut. Detracto signiferumque vis eu.',
-                    id:'2',
-                    date: '2 hours ago',
-                },
-                {
-                    avatarUrl: '../../images/users/test.png',
-                    message: 'Eu sale officiis per. Ad laoreet civibus eum, partem docendi tincidunt ad mei. Cu maiorum oportere salutandi nam. Qui ne harum labitur nostrud, scripta salutatus per ut. Detracto signiferumque vis eu.',
-                    id:'3',
-                    date: '2 minutes ago',
-                },
-                {
-                    avatarUrl: '../../images/users/test.png',
-                    message: 'Eu sale officiis per. Ad laoreet civibus eum, partem docendi tincidunt ad mei. Cu maiorum oportere salutandi nam. Qui ne harum labitur nostrud, scripta salutatus per ut. Detracto signiferumque vis eu.',
-                    id:'4',
-                    date: '2 minutes ago',
-                },
-                {
-                    avatarUrl: '../../images/users/test.png',
-                    message: 'Eu sale officiis per. Ad laoreet civibus eum, partem docendi tincidunt ad mei. Cu maiorum oportere salutandi nam. Qui ne harum labitur nostrud, scripta salutatus per ut. Detracto signiferumque vis eu.',
-                    id:'5',
-                    date: '2 minutes ago',
-                }
-            ]
+            notifications:[]
         }
     },
     mounted:function(){
+        this.getService("toybox-notification-loadbalancer")
+            .then(response => {
+                if(response){
+                    var searchRequest = {
+                        'fromUsername': null,
+                        'content': '*',
+                        'notificationDate': new Date(),
+                        'isRead': 'N'
+                    }
 
+                    return axios.post(response.data.value + "/notifications/search", searchRequest)
+                        .then(response => {
+                            this.notifications = response.data.notifications;
+                        })
+                        .catch(error => {
+                            var errorMessage;
+
+                            if(error.response.status == 401){
+                                window.location = '/logout';
+                            }
+                            else{
+                                if(error.response){
+                                    errorMessage = error.response.data.message
+                                }
+                                else{
+                                    errorMessage = error.message;
+                                }
+
+                                console.error(errorMessage);
+                                this.$root.$emit('message-sent', 'Error', errorMessage);
+                            }
+                        });
+                }
+            })
+            .catch(error => {
+                var errorMessage;
+
+                if(error.response.status == 401){
+                    window.location = '/logout';
+                }
+                else{
+                    if(error.response){
+                        errorMessage = error.response.data.message
+                    }
+                    else{
+                        errorMessage = error.message;
+                    }
+
+                    console.error(errorMessage);
+                    this.$root.$emit('message-sent', 'Error', errorMessage);
+                }
+            });
     },
     watch:{
         user:{

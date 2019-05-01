@@ -32,12 +32,12 @@
                 <div class="floating ui red circular mini label toybox-notification-label" v-show="notifications.length != 0">{{ notifications.length }}</div>
                 <div class="left menu">
                     <div class="ui feed toybox-notification-feed" v-if="notifications.length == 0">
-                        <notification v-bind:avatar-url="defaultNotification.avatarUrl" v-bind:message="defaultNotification.message"
-                        v-bind:date="defaultNotification.date" v-bind:key="defaultNotification.id"/>
+                        <notification v-bind:from-username="defaultNotification.fromUsername" v-bind:notification="defaultNotification.notification"
+                        v-bind:notification-date="defaultNotification.notificationDate" v-bind:is-read="defaultNotification.isRead" v-bind:key="defaultNotification.id"/>
                     </div>
                     <div class="ui feed toybox-notification-feed" v-else>
-                        <notification v-for="notification in notifications" v-bind:avatar-url="notification.avatarUrl" v-bind:message="notification.message"
-                        v-bind:date="notification.date" v-bind:key="notification.id"/>
+                        <notification v-for="notification in notifications" v-bind:from-username="notification.fromUsername" v-bind:notification="notification.notification"
+                        v-bind:notification-date="notification.notificationDate" v-bind:is-read="notification.isRead" v-bind:key="notification.id"/>
                     </div>
                 </div>
             </div>
