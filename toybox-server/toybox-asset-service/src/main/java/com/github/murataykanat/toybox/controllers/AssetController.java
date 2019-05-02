@@ -65,11 +65,11 @@ public class AssetController {
     @RequestMapping(value = "/assets/download", method = RequestMethod.POST, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> downloadAssets(Authentication authentication, HttpSession session, @RequestBody SelectedAssets selectedAssets){
         _logger.debug("downloadAssets() >>");
-        List<Asset> assets = selectedAssets.getSelectedAssets();
+
         try{
-            List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-            if(!usersByUsername.isEmpty()){
-                if(usersByUsername.size() == 1){
+            if(selectedAssets != null){
+                if(isSessionValid(authentication)){
+                    List<Asset> assets = selectedAssets.getSelectedAssets();
                     if(assets != null){
                         if(!assets.isEmpty()){
                             if(assets.size() == 1) {
@@ -161,16 +161,16 @@ public class AssetController {
                     }
                 }
                 else{
-                    String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-                    _logger.debug(errorMessage);
+                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    _logger.error(errorMessage);
 
                     _logger.debug("<< downloadAssets()");
                     return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
                 }
             }
             else{
-                String errorMessage = "No users with username '" + authentication.getName() + " is found!";
-                _logger.debug(errorMessage);
+                String errorMessage = "Selected assets paramater is null!";
+                _logger.error(errorMessage);
 
                 _logger.debug("<< downloadAssets()");
                 return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
@@ -191,9 +191,8 @@ public class AssetController {
         try{
             GenericResponse genericResponse = new GenericResponse();
 
-            List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-            if(!usersByUsername.isEmpty()){
-                if(usersByUsername.size() == 1){
+            if(uploadFileLst != null){
+                if(isSessionValid(authentication)){
                     RestTemplate restTemplate = new RestTemplate();
 
                     HttpHeaders headers = getHeaders(session);
@@ -222,23 +221,23 @@ public class AssetController {
                     }
                 }
                 else{
-                    String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-                    _logger.debug(errorMessage);
+                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    _logger.error(errorMessage);
 
                     genericResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< uploadAssets()");
+                    _logger.debug("<< updateNotifications()");
                     return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
                 }
             }
             else{
-                String errorMessage = "No users with username '" + authentication.getName() + " is found!";
-                _logger.debug(errorMessage);
+                String errorMessage = "Upload file list parameter is null!";
+                _logger.error(errorMessage);
 
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< uploadAssets()");
-                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                _logger.debug("<< updateNotifications()");
+                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
             }
         }
         catch (Exception e){
@@ -259,108 +258,107 @@ public class AssetController {
         try{
             RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
             if(assetSearchRequest != null){
-                List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-                if(!usersByUsername.isEmpty()){
-                    if(usersByUsername.size() == 1){
-                        User user = usersByUsername.get(0);
+                if(isSessionValid(authentication)){
+                    List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
+                    if(!usersByUsername.isEmpty()){
+                        if(usersByUsername.size() == 1){
+                            User user = usersByUsername.get(0);
 
-                        String sortColumn = assetSearchRequest.getSortColumn();
-                        String sortType = assetSearchRequest.getSortType();
-                        int offset = assetSearchRequest.getOffset();
-                        int limit = assetSearchRequest.getLimit();
-                        List<SearchRequestFacet> searchRequestFacetList = assetSearchRequest.getAssetSearchRequestFacetList();
+                            String sortColumn = assetSearchRequest.getSortColumn();
+                            String sortType = assetSearchRequest.getSortType();
+                            int offset = assetSearchRequest.getOffset();
+                            int limit = assetSearchRequest.getLimit();
+                            List<SearchRequestFacet> searchRequestFacetList = assetSearchRequest.getAssetSearchRequestFacetList();
 
-                        List<Asset> allAssets = assetsRepository.getNonDeletedAssets();
-                        if(!allAssets.isEmpty()){
-                            List<Asset> assets;
+                            List<Asset> allAssets = assetsRepository.getNonDeletedAssets();
+                            if(!allAssets.isEmpty()){
+                                List<Asset> assets;
 
-                            if(searchRequestFacetList != null && !searchRequestFacetList.isEmpty()){
-                                assets = allAssets.stream().filter(asset -> FacetUtils.getInstance().hasFacetValue(asset, searchRequestFacetList)).collect(Collectors.toList());
-                            }
-                            else{
-                                assets = allAssets;
-                            }
+                                if(searchRequestFacetList != null && !searchRequestFacetList.isEmpty()){
+                                    assets = allAssets.stream().filter(asset -> FacetUtils.getInstance().hasFacetValue(asset, searchRequestFacetList)).collect(Collectors.toList());
+                                }
+                                else{
+                                    assets = allAssets;
+                                }
 
-                            List<Facet> facets = FacetUtils.getInstance().getFacets(assets);
+                                List<Facet> facets = FacetUtils.getInstance().getFacets(assets);
 
-                            retrieveAssetsResults.setFacets(facets);
+                                retrieveAssetsResults.setFacets(facets);
 
-                            if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_import_date")){
-                                SortUtils.getInstance().sortItems(sortType, assets, Comparator.comparing(Asset::getImportDate, Comparator.nullsLast(Comparator.naturalOrder())));
-                            }
-                            else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_name")){
-                                SortUtils.getInstance().sortItems(sortType, assets, Comparator.comparing(Asset::getName, Comparator.nullsLast(Comparator.naturalOrder())));
-                            }
+                                if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_import_date")){
+                                    SortUtils.getInstance().sortItems(sortType, assets, Comparator.comparing(Asset::getImportDate, Comparator.nullsLast(Comparator.naturalOrder())));
+                                }
+                                else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_name")){
+                                    SortUtils.getInstance().sortItems(sortType, assets, Comparator.comparing(Asset::getName, Comparator.nullsLast(Comparator.naturalOrder())));
+                                }
 
-                            Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+                                Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
 
-                            List<Asset> assetsByCurrentUser;
-                            if(authorities.contains("ROLE_ADMIN")){
-                                _logger.debug("Retrieving all assets [Admin User]...");
-                                assetsByCurrentUser = assets;
-                            }
-                            else{
-                                _logger.debug("Retrieving assets of the user '" + user.getUsername() + "'...");
-                                assetsByCurrentUser = assets.stream().filter(a -> a.getImportedByUsername() != null && a.getImportedByUsername().equalsIgnoreCase(user.getUsername())).collect(Collectors.toList());
-                            }
+                                List<Asset> assetsByCurrentUser;
+                                if(authorities.contains("ROLE_ADMIN")){
+                                    _logger.debug("Retrieving all assets [Admin User]...");
+                                    assetsByCurrentUser = assets;
+                                }
+                                else{
+                                    _logger.debug("Retrieving assets of the user '" + user.getUsername() + "'...");
+                                    assetsByCurrentUser = assets.stream().filter(a -> a.getImportedByUsername() != null && a.getImportedByUsername().equalsIgnoreCase(user.getUsername())).collect(Collectors.toList());
+                                }
 
-                            int totalRecords = assets.size();
-                            int startIndex = offset;
-                            int endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
+                                int totalRecords = assets.size();
+                                int startIndex = offset;
+                                int endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
 
-                            List<Asset> assetsOnPage = assetsByCurrentUser.subList(startIndex, endIndex);
+                                List<Asset> assetsOnPage = assetsByCurrentUser.subList(startIndex, endIndex);
 
-                            List<AssetUser> assetUsersByUserId = assetUserRepository.findAssetUsersByUserId(user.getId());
+                                List<AssetUser> assetUsersByUserId = assetUserRepository.findAssetUsersByUserId(user.getId());
 
-                            for(Asset assetOnPage: assetsOnPage){
-                                if(!assetUsersByUserId.isEmpty()){
-                                    for(AssetUser assetUser: assetUsersByUserId){
-                                        if(assetOnPage.getId().equalsIgnoreCase(assetUser.getAssetId())){
-                                            assetOnPage.setSubscribed("Y");
-                                            break;
+                                for(Asset assetOnPage: assetsOnPage){
+                                    if(!assetUsersByUserId.isEmpty()){
+                                        for(AssetUser assetUser: assetUsersByUserId){
+                                            if(assetOnPage.getId().equalsIgnoreCase(assetUser.getAssetId())){
+                                                assetOnPage.setSubscribed("Y");
+                                                break;
+                                            }
+                                            assetOnPage.setSubscribed("N");
                                         }
+                                    }
+                                    else{
                                         assetOnPage.setSubscribed("N");
                                     }
                                 }
-                                else{
-                                    assetOnPage.setSubscribed("N");
-                                }
+
+                                retrieveAssetsResults.setTotalRecords(totalRecords);
+                                retrieveAssetsResults.setAssets(assetsOnPage);
+
+                                _logger.debug("<< retrieveAssets()");
+                                retrieveAssetsResults.setMessage("Assets retrieved successfully!");
+                                return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.OK);
                             }
+                            else{
+                                String message = "There is no asset to return.";
+                                _logger.debug(message);
 
-                            retrieveAssetsResults.setTotalRecords(totalRecords);
-                            retrieveAssetsResults.setAssets(assetsOnPage);
+                                retrieveAssetsResults.setMessage(message);
 
-                            _logger.debug("<< retrieveAssets()");
-                            retrieveAssetsResults.setMessage("Assets retrieved successfully!");
-                            return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.OK);
+                                _logger.debug("<< retrieveAssets()");
+                                return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.NO_CONTENT);
+                            }
                         }
                         else{
-                            String message = "There is no asset to return.";
-                            _logger.debug(message);
-
-                            retrieveAssetsResults.setMessage(message);
-
-                            _logger.debug("<< retrieveJobs()");
-                            return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.NO_CONTENT);
+                            throw new Exception("Username '" + authentication.getName() + "' is not unique!");
                         }
                     }
                     else{
-                        String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-                        _logger.debug(errorMessage);
-
-                        retrieveAssetsResults.setMessage(errorMessage);
-
-                        _logger.debug("<< retrieveJobs()");
-                        return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.UNAUTHORIZED);
+                        throw new Exception("No users with username '" + authentication.getName() + " is found!");
                     }
                 }
                 else{
-                    String errorMessage = "No users with username '" + authentication.getName() + " is found!";
-                    _logger.debug(errorMessage);
+                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    _logger.error(errorMessage);
 
                     retrieveAssetsResults.setMessage(errorMessage);
 
-                    _logger.debug("<< retrieveJobs()");
+                    _logger.debug("<< retrieveAssets()");
                     return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.UNAUTHORIZED);
                 }
             }
@@ -370,7 +368,7 @@ public class AssetController {
 
                 retrieveAssetsResults.setMessage(errorMessage);
 
-                _logger.debug("<< retrieveJobs()");
+                _logger.debug("<< retrieveAssets()");
                 return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.BAD_REQUEST);
             }
         }
@@ -393,51 +391,50 @@ public class AssetController {
             GenericResponse genericResponse = new GenericResponse();
 
             if(selectedAssets != null){
-                List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-                if(!usersByUsername.isEmpty()){
-                    if(usersByUsername.size() == 1){
-                        User user = usersByUsername.get(0);
-                        if(!selectedAssets.getSelectedAssets().isEmpty()){
-                            for(Asset asset: selectedAssets.getSelectedAssets()){
-                                assetsRepository.deleteAssetById("Y", asset.getId());
+                if(isSessionValid(authentication)){
+                    List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
+                    if(!usersByUsername.isEmpty()){
+                        if(usersByUsername.size() == 1){
+                            User user = usersByUsername.get(0);
+                            if(!selectedAssets.getSelectedAssets().isEmpty()){
+                                for(Asset asset: selectedAssets.getSelectedAssets()){
+                                    assetsRepository.deleteAssetById("Y", asset.getId());
 
-                                // Send notification
-                                String message = "Asset '" + asset.getName() + "' is deleted by '" + user.getUsername() + "'";
-                                SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                                sendNotificationRequest.setAsset(asset);
-                                sendNotificationRequest.setFromUser(user);
-                                sendNotificationRequest.setMessage(message);
-                                sendNotification(sendNotificationRequest, session);
+                                    // Send notification
+                                    String message = "Asset '" + asset.getName() + "' is deleted by '" + user.getUsername() + "'";
+                                    SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                    sendNotificationRequest.setAsset(asset);
+                                    sendNotificationRequest.setFromUser(user);
+                                    sendNotificationRequest.setMessage(message);
+                                    sendNotification(sendNotificationRequest, session);
+                                }
+
+                                genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " asset(s) deleted successfully.");
+
+                                _logger.debug("<< deleteAssets()");
+                                return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                             }
+                            else{
+                                String warningMessage = "No assets were selected!";
+                                _logger.warn(warningMessage);
 
-                            genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " asset(s) deleted successfully.");
+                                genericResponse.setMessage(warningMessage);
 
-                            _logger.debug("<< deleteAssets()");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                _logger.debug("<< deleteAssets()");
+                                return new ResponseEntity<>(genericResponse, HttpStatus.NOT_FOUND);
+                            }
                         }
                         else{
-                            String warningMessage = "No assets were selected!";
-                            _logger.warn(warningMessage);
-
-                            genericResponse.setMessage(warningMessage);
-
-                            _logger.debug("<< deleteAssets()");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.NOT_FOUND);
+                            throw new Exception("Username '" + authentication.getName() + "' is not unique!");
                         }
                     }
                     else{
-                        String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-                        _logger.debug(errorMessage);
-
-                        genericResponse.setMessage(errorMessage);
-
-                        _logger.debug("<< deleteAssets()");
-                        return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                        throw new Exception("No users with username '" + authentication.getName() + " is found!");
                     }
                 }
                 else{
-                    String errorMessage = "No users with username '" + authentication.getName() + " is found!";
-                    _logger.debug(errorMessage);
+                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    _logger.error(errorMessage);
 
                     genericResponse.setMessage(errorMessage);
 
@@ -470,37 +467,36 @@ public class AssetController {
     @RequestMapping(value = "/assets/subscribe", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> subscribeToAssets(HttpSession session, Authentication authentication, @RequestBody SelectedAssets selectedAssets){
         _logger.debug("subscribeToAssets() >>");
+        GenericResponse genericResponse = new GenericResponse();
+
         try{
             if(selectedAssets != null){
                 if(!selectedAssets.getSelectedAssets().isEmpty()){
-                    List<User> users = usersRepository.findUsersByUsername(authentication.getName());
-                    if(!users.isEmpty()){
-                        if(users.size() == 1){
-                            User user = users.get(0);
-                            selectedAssets.getSelectedAssets().forEach(asset -> assetUserRepository.insertSubscriber(asset.getId(), user.getId()));
+                    if(isSessionValid(authentication)){
+                        List<User> users = usersRepository.findUsersByUsername(authentication.getName());
+                        if(!users.isEmpty()){
+                            if(users.size() == 1){
+                                User user = users.get(0);
+                                selectedAssets.getSelectedAssets().forEach(asset -> assetUserRepository.insertSubscriber(asset.getId(), user.getId()));
 
-                            GenericResponse genericResponse = new GenericResponse();
-                            genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " asset(s) were subscribed successfully.");
 
-                            _logger.debug("<< subscribeToAssets()");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " asset(s) were subscribed successfully.");
+
+                                _logger.debug("<< subscribeToAssets()");
+                                return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                            }
+                            else{
+                                throw new Exception("Multiple users found with username '" + authentication.getName() + "'.");
+                            }
                         }
                         else{
-                            String errorMessage = "Multiple users found with username '" + authentication.getName() + "'.";
-                            _logger.error(errorMessage);
-
-                            GenericResponse genericResponse = new GenericResponse();
-                            genericResponse.setMessage(errorMessage);
-
-                            _logger.debug("<< subscribeToAssets()");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                            throw new Exception("No user was found with username '" + authentication.getName() + "'.");
                         }
                     }
                     else{
-                        String errorMessage = "No user was found with username '" + authentication.getName() + "'.";
+                        String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                         _logger.error(errorMessage);
 
-                        GenericResponse genericResponse = new GenericResponse();
                         genericResponse.setMessage(errorMessage);
 
                         _logger.debug("<< subscribeToAssets()");
@@ -511,7 +507,6 @@ public class AssetController {
                     String warningMessage = "No assets were selected!";
                     _logger.warn(warningMessage);
 
-                    GenericResponse genericResponse = new GenericResponse();
                     genericResponse.setMessage(warningMessage);
 
                     _logger.debug("<< subscribeToAssets()");
@@ -522,7 +517,6 @@ public class AssetController {
                 String errorMessage = "Selected assets are null!";
                 _logger.error(errorMessage);
 
-                GenericResponse genericResponse = new GenericResponse();
                 genericResponse.setMessage(errorMessage);
 
                 _logger.debug("<< subscribeToAssets()");
@@ -533,7 +527,6 @@ public class AssetController {
             String errorMessage = "An error occurred while subscribing to assets. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
-            GenericResponse genericResponse = new GenericResponse();
             genericResponse.setMessage(errorMessage);
 
             _logger.debug("<< subscribeToAssets()");
@@ -543,37 +536,34 @@ public class AssetController {
     @RequestMapping(value = "/assets/unsubscribe", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> unsubscribeFromAssets(HttpSession session, Authentication authentication, @RequestBody SelectedAssets selectedAssets){
         _logger.debug("unsubscribeFromAssets() >>");
+        GenericResponse genericResponse = new GenericResponse();
         try{
             if(selectedAssets != null){
                 if(!selectedAssets.getSelectedAssets().isEmpty()){
-                    List<User> users = usersRepository.findUsersByUsername(authentication.getName());
-                    if(!users.isEmpty()){
-                        if(users.size() == 1){
-                            User user = users.get(0);
-                            selectedAssets.getSelectedAssets().forEach(asset -> assetUserRepository.deleteSubscriber(asset.getId(), user.getId()));
+                    if(isSessionValid(authentication)){
+                        List<User> users = usersRepository.findUsersByUsername(authentication.getName());
+                        if(!users.isEmpty()){
+                            if(users.size() == 1){
+                                User user = users.get(0);
+                                selectedAssets.getSelectedAssets().forEach(asset -> assetUserRepository.deleteSubscriber(asset.getId(), user.getId()));
 
-                            GenericResponse genericResponse = new GenericResponse();
-                            genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " asset(s) were unsubscribed successfully.");
+                                genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " asset(s) were unsubscribed successfully.");
 
-                            _logger.debug("<< unsubscribeFromAssets()");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                _logger.debug("<< unsubscribeFromAssets()");
+                                return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                            }
+                            else{
+                                throw new Exception("Multiple users found with username '" + authentication.getName() + "'.");
+                            }
                         }
                         else{
-                            String errorMessage = "Multiple users found with username '" + authentication.getName() + "'.";
-                            _logger.error(errorMessage);
-
-                            GenericResponse genericResponse = new GenericResponse();
-                            genericResponse.setMessage(errorMessage);
-
-                            _logger.debug("<< unsubscribeFromAssets()");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                            throw new Exception("No user was found with username '" + authentication.getName() + "'.");
                         }
                     }
                     else{
-                        String errorMessage = "No user was found with username '" + authentication.getName() + "'.";
+                        String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                         _logger.error(errorMessage);
 
-                        GenericResponse genericResponse = new GenericResponse();
                         genericResponse.setMessage(errorMessage);
 
                         _logger.debug("<< unsubscribeFromAssets()");
@@ -584,7 +574,6 @@ public class AssetController {
                     String errorMessage = "No assets were selected!";
                     _logger.warn(errorMessage);
 
-                    GenericResponse genericResponse = new GenericResponse();
                     genericResponse.setMessage(errorMessage);
 
                     _logger.debug("<< unsubscribeFromAssets()");
@@ -595,7 +584,6 @@ public class AssetController {
                 String errorMessage = "Selected assets are null!";
                 _logger.error(errorMessage);
 
-                GenericResponse genericResponse = new GenericResponse();
                 genericResponse.setMessage(errorMessage);
 
                 _logger.debug("<< unsubscribeFromAssets()");
@@ -606,7 +594,6 @@ public class AssetController {
             String errorMessage = "An error occurred while unsubscribing from assets. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
-            GenericResponse genericResponse = new GenericResponse();
             genericResponse.setMessage(errorMessage);
 
             _logger.debug("<< unsubscribeFromAssets()");
@@ -687,6 +674,25 @@ public class AssetController {
         else{
             throw new Exception("CSRF token is null!");
         }
+    }
+
+    private boolean isSessionValid(Authentication authentication){
+        String errorMessage;
+        List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
+        if(!usersByUsername.isEmpty()){
+            if(usersByUsername.size() == 1){
+                return true;
+            }
+            else{
+                errorMessage = "Username '" + authentication.getName() + "' is not unique!";
+            }
+        }
+        else{
+            errorMessage = "No users with username '" + authentication.getName() + " is found!";
+        }
+
+        _logger.error(errorMessage);
+        return false;
     }
 
     private boolean isJobSuccessful(long jobId, HttpHeaders headers, String jobServiceUrl) {

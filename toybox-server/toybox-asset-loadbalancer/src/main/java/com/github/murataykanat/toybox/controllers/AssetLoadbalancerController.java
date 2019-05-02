@@ -67,34 +67,24 @@ public class AssetLoadbalancerController {
         _logger.debug("downloadAssets() >>");
         try {
             if(selectedAssets != null){
-                List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-                if(!usersByUsername.isEmpty()){
-                    if(usersByUsername.size() == 1){
-                        HttpHeaders headers = getHeaders(session);
-                        String prefix = getPrefix();
+                if(isSessionValid(authentication)){
+                    HttpHeaders headers = getHeaders(session);
+                    String prefix = getPrefix();
 
-                        if(StringUtils.isNotBlank(prefix)){
-                            _logger.debug("<< downloadAssets()");
-                            return restTemplate.exchange(prefix + assetServiceName + "/assets/download", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), Resource.class);
-                        }
-                        else{
-                            _logger.debug("<< downloadAssets()");
-                            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-                        }
+                    if(StringUtils.isNotBlank(prefix)){
+                        _logger.debug("<< downloadAssets()");
+                        return restTemplate.exchange(prefix + assetServiceName + "/assets/download", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), Resource.class);
                     }
                     else{
-                        String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-                        _logger.debug(errorMessage);
-
-                        _logger.debug("<< retrieveJobs()");
-                        return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                        _logger.debug("<< downloadAssets()");
+                        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
                     }
                 }
                 else{
-                    String errorMessage = "No users with username '" + authentication.getName() + " is found!";
-                    _logger.debug(errorMessage);
+                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    _logger.error(errorMessage);
 
-                    _logger.debug("<< retrieveJobs()");
+                    _logger.debug("<< updateNotifications()");
                     return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
                 }
             }
@@ -154,68 +144,56 @@ public class AssetLoadbalancerController {
             GenericResponse genericResponse = new GenericResponse();
 
             if(files != null){
-                List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-                if(!usersByUsername.isEmpty()){
-                    if(usersByUsername.size() == 1){
-                        String prefix = getPrefix();
-                        HttpHeaders headers = getHeaders(session);
+                if(isSessionValid(authentication)){
+                    String prefix = getPrefix();
+                    HttpHeaders headers = getHeaders(session);
 
-                        if(StringUtils.isNotBlank(prefix)){
-                            File tempFolder = new File(tempImportStagingPath);
-                            if(!tempFolder.exists()){
-                                tempFolder.mkdir();
+                    if(StringUtils.isNotBlank(prefix)){
+                        File tempFolder = new File(tempImportStagingPath);
+                        if(!tempFolder.exists()){
+                            tempFolder.mkdir();
+                        }
+
+                        UploadFileLst uploadFileLst = new UploadFileLst();
+                        List<UploadFile> uploadFiles = new ArrayList<>();
+
+                        for(MultipartFile file: files){
+                            String path;
+                            if(tempFolder.exists()){
+                                path = tempFolder.getAbsolutePath() + File.separator + file.getOriginalFilename();
+                            }
+                            else{
+                                throw new FileNotFoundException("The temp folder " + tempFolder.getAbsolutePath() + " does not exist!");
                             }
 
-                            UploadFileLst uploadFileLst = new UploadFileLst();
-                            List<UploadFile> uploadFiles = new ArrayList<>();
+                            file.transferTo(new File(path));
 
-                            for(MultipartFile file: files){
-                                String path;
-                                if(tempFolder.exists()){
-                                    path = tempFolder.getAbsolutePath() + File.separator + file.getOriginalFilename();
-                                }
-                                else{
-                                    throw new FileNotFoundException("The temp folder " + tempFolder.getAbsolutePath() + " does not exist!");
-                                }
+                            UploadFile uploadFile = new UploadFile();
+                            uploadFile.setPath(path);
+                            uploadFile.setUsername(authentication.getName());
 
-                                file.transferTo(new File(path));
-
-                                UploadFile uploadFile = new UploadFile();
-                                uploadFile.setPath(path);
-                                uploadFile.setUsername(authentication.getName());
-
-                                uploadFiles.add(uploadFile);
-                            }
-
-                            uploadFileLst.setUploadFiles(uploadFiles);
-                            uploadFileLst.setMessage("Files uploaded successfully!");
-
-                            _logger.debug("<< uploadAssets()");
-                            return restTemplate.exchange(prefix + assetServiceName + "/assets/upload", HttpMethod.POST, new HttpEntity<>(uploadFileLst, headers), GenericResponse.class);
+                            uploadFiles.add(uploadFile);
                         }
-                        else{
-                            String errorMessage = "Service ID prefix is null!";
-                            _logger.error(errorMessage);
 
-                            genericResponse.setMessage(errorMessage);
+                        uploadFileLst.setUploadFiles(uploadFiles);
+                        uploadFileLst.setMessage("Files uploaded successfully!");
 
-                            _logger.debug("<< uploadAssets()");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-                        }
+                        _logger.debug("<< uploadAssets()");
+                        return restTemplate.exchange(prefix + assetServiceName + "/assets/upload", HttpMethod.POST, new HttpEntity<>(uploadFileLst, headers), GenericResponse.class);
                     }
                     else{
-                        String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-                        _logger.debug(errorMessage);
+                        String errorMessage = "Service ID prefix is null!";
+                        _logger.error(errorMessage);
 
                         genericResponse.setMessage(errorMessage);
 
                         _logger.debug("<< uploadAssets()");
-                        return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                        return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
                     }
                 }
                 else{
-                    String errorMessage = "No users with username '" + authentication.getName() + " is found!";
-                    _logger.debug(errorMessage);
+                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    _logger.error(errorMessage);
 
                     genericResponse.setMessage(errorMessage);
 
@@ -298,40 +276,28 @@ public class AssetLoadbalancerController {
             RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
 
             if(assetSearchRequest != null){
-                List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-                if(!usersByUsername.isEmpty()){
-                    if(usersByUsername.size() == 1){
-                        HttpHeaders headers = getHeaders(session);
-                        String prefix = getPrefix();
+                if(isSessionValid(authentication)){
+                    HttpHeaders headers = getHeaders(session);
+                    String prefix = getPrefix();
 
-                        if(StringUtils.isNotBlank(prefix)){
-                            _logger.debug("<< retrieveAssets()");
-                            return restTemplate.exchange(prefix + assetServiceName + "/assets/search", HttpMethod.POST, new HttpEntity<>(assetSearchRequest, headers), RetrieveAssetsResults.class);
-                        }
-                        else{
-                            String errorMessage = "Service ID prefix is null!";
-
-                            _logger.error(errorMessage);
-
-                            retrieveAssetsResults.setMessage(errorMessage);
-
-                            _logger.debug("<< retrieveAssets()");
-                            return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.INTERNAL_SERVER_ERROR);
-                        }
+                    if(StringUtils.isNotBlank(prefix)){
+                        _logger.debug("<< retrieveAssets()");
+                        return restTemplate.exchange(prefix + assetServiceName + "/assets/search", HttpMethod.POST, new HttpEntity<>(assetSearchRequest, headers), RetrieveAssetsResults.class);
                     }
                     else{
-                        String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-                        _logger.debug(errorMessage);
+                        String errorMessage = "Service ID prefix is null!";
+
+                        _logger.error(errorMessage);
 
                         retrieveAssetsResults.setMessage(errorMessage);
 
                         _logger.debug("<< retrieveAssets()");
-                        return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.UNAUTHORIZED);
+                        return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.INTERNAL_SERVER_ERROR);
                     }
                 }
                 else{
-                    String errorMessage = "No users with username '" + authentication.getName() + " is found!";
-                    _logger.debug(errorMessage);
+                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    _logger.error(errorMessage);
 
                     retrieveAssetsResults.setMessage(errorMessage);
 
@@ -403,39 +369,27 @@ public class AssetLoadbalancerController {
             GenericResponse genericResponse = new GenericResponse();
 
             if(selectedAssets != null){
-                List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-                if(!usersByUsername.isEmpty()){
-                    if(usersByUsername.size() == 1){
-                        HttpHeaders headers = getHeaders(session);
-                        String prefix = getPrefix();
+                if(isSessionValid(authentication)){
+                    HttpHeaders headers = getHeaders(session);
+                    String prefix = getPrefix();
 
-                        if(StringUtils.isNotBlank(prefix)){
-                            _logger.debug("<< deleteAssets()");
-                            return restTemplate.exchange(prefix + assetServiceName + "/assets/delete", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
-                        }
-                        else{
-                            String errorMessage = "Service ID prefix is null!";
-                            _logger.error(errorMessage);
-
-                            genericResponse.setMessage(errorMessage);
-
-                            _logger.debug("<< deleteAssets()");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-                        }
+                    if(StringUtils.isNotBlank(prefix)){
+                        _logger.debug("<< deleteAssets()");
+                        return restTemplate.exchange(prefix + assetServiceName + "/assets/delete", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
                     }
                     else{
-                        String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-                        _logger.debug(errorMessage);
+                        String errorMessage = "Service ID prefix is null!";
+                        _logger.error(errorMessage);
 
                         genericResponse.setMessage(errorMessage);
 
                         _logger.debug("<< deleteAssets()");
-                        return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                        return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
                     }
                 }
                 else{
-                    String errorMessage = "No users with username '" + authentication.getName() + " is found!";
-                    _logger.debug(errorMessage);
+                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    _logger.error(errorMessage);
 
                     genericResponse.setMessage(errorMessage);
 
@@ -507,39 +461,27 @@ public class AssetLoadbalancerController {
             GenericResponse genericResponse = new GenericResponse();
 
             if(selectedAssets != null){
-                List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-                if(!usersByUsername.isEmpty()){
-                    if(usersByUsername.size() == 1){
-                        HttpHeaders headers = getHeaders(session);
-                        String prefix = getPrefix();
+                if(isSessionValid(authentication)){
+                    HttpHeaders headers = getHeaders(session);
+                    String prefix = getPrefix();
 
-                        if(StringUtils.isNotBlank(prefix)){
-                            _logger.debug("<< subscribeToAssets()");
-                            return restTemplate.exchange(prefix + assetServiceName + "/assets/subscribe", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
-                        }
-                        else{
-                            String errorMessage = "Service ID prefix is null!";
-                            _logger.error(errorMessage);
-
-                            genericResponse.setMessage(errorMessage);
-
-                            _logger.debug("<< subscribeToAssets()");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-                        }
+                    if(StringUtils.isNotBlank(prefix)){
+                        _logger.debug("<< subscribeToAssets()");
+                        return restTemplate.exchange(prefix + assetServiceName + "/assets/subscribe", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
                     }
                     else{
-                        String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-                        _logger.debug(errorMessage);
+                        String errorMessage = "Service ID prefix is null!";
+                        _logger.error(errorMessage);
 
                         genericResponse.setMessage(errorMessage);
 
                         _logger.debug("<< subscribeToAssets()");
-                        return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                        return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
                     }
                 }
                 else{
-                    String errorMessage = "No users with username '" + authentication.getName() + " is found!";
-                    _logger.debug(errorMessage);
+                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    _logger.error(errorMessage);
 
                     genericResponse.setMessage(errorMessage);
 
@@ -611,39 +553,27 @@ public class AssetLoadbalancerController {
             GenericResponse genericResponse = new GenericResponse();
 
             if(selectedAssets != null){
-                List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-                if(!usersByUsername.isEmpty()){
-                    if(usersByUsername.size() == 1){
-                        HttpHeaders headers = getHeaders(session);
-                        String prefix = getPrefix();
+                if(isSessionValid(authentication)){
+                    HttpHeaders headers = getHeaders(session);
+                    String prefix = getPrefix();
 
-                        if(StringUtils.isNotBlank(prefix)){
-                            _logger.debug("<< unsubscribeFromAssets()");
-                            return restTemplate.exchange(prefix + assetServiceName + "/assets/unsubscribe", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
-                        }
-                        else{
-                            String errorMessage = "Service ID prefix is null!";
-                            _logger.error(errorMessage);
-
-                            genericResponse.setMessage(errorMessage);
-
-                            _logger.debug("<< unsubscribeFromAssets()");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-                        }
+                    if(StringUtils.isNotBlank(prefix)){
+                        _logger.debug("<< unsubscribeFromAssets()");
+                        return restTemplate.exchange(prefix + assetServiceName + "/assets/unsubscribe", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
                     }
                     else{
-                        String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-                        _logger.debug(errorMessage);
+                        String errorMessage = "Service ID prefix is null!";
+                        _logger.error(errorMessage);
 
                         genericResponse.setMessage(errorMessage);
 
                         _logger.debug("<< unsubscribeFromAssets()");
-                        return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                        return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
                     }
                 }
                 else{
-                    String errorMessage = "No users with username '" + authentication.getName() + " is found!";
-                    _logger.debug(errorMessage);
+                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    _logger.error(errorMessage);
 
                     genericResponse.setMessage(errorMessage);
 
@@ -705,6 +635,25 @@ public class AssetLoadbalancerController {
             _logger.debug("<< unsubscribeFromAssetsErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
         }
+    }
+
+    private boolean isSessionValid(Authentication authentication){
+        String errorMessage;
+        List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
+        if(!usersByUsername.isEmpty()){
+            if(usersByUsername.size() == 1){
+                return true;
+            }
+            else{
+                errorMessage = "Username '" + authentication.getName() + "' is not unique!";
+            }
+        }
+        else{
+            errorMessage = "No users with username '" + authentication.getName() + " is found!";
+        }
+
+        _logger.error(errorMessage);
+        return false;
     }
 
     private HttpHeaders getHeaders(HttpSession session) throws Exception {
