@@ -41,59 +41,49 @@ public class RenditionController {
         _logger.debug("getUserAvatar() >>");
         try{
             if(StringUtils.isNotBlank(username)){
-                List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-                if(!usersByUsername.isEmpty()){
-                    if(usersByUsername.size() == 1){
-                        if(username.equalsIgnoreCase("me")){
-                            username = authentication.getName();
-                        }
+                if(isSessionValid(authentication)){
+                    if(username.equalsIgnoreCase("me")){
+                        username = authentication.getName();
+                    }
 
-                        List<User> users = usersRepository.findUsersByUsername(username);
-                        if(users != null){
-                            if(!users.isEmpty()){
-                                if(users.size() == 1){
-                                    User user = users.get(0);
-                                    ByteArrayResource resource;
-                                    if(StringUtils.isNotBlank(user.getAvatarPath())){
-                                        Path path = Paths.get(user.getAvatarPath());
-                                        resource = new ByteArrayResource(Files.readAllBytes(path));
-                                    }
-                                    else{
-                                        _logger.error("User avatar path is blank!");
-
-                                        _logger.debug("<< getUserAvatar()");
-                                        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-                                    }
-
-                                    _logger.debug("<< getUserAvatar()");
-                                    return new ResponseEntity<>(resource, HttpStatus.OK);
+                    List<User> users = usersRepository.findUsersByUsername(username);
+                    if(users != null){
+                        if(!users.isEmpty()){
+                            if(users.size() == 1){
+                                User user = users.get(0);
+                                ByteArrayResource resource;
+                                if(StringUtils.isNotBlank(user.getAvatarPath())){
+                                    Path path = Paths.get(user.getAvatarPath());
+                                    resource = new ByteArrayResource(Files.readAllBytes(path));
                                 }
                                 else{
-                                    throw new DuplicateKeyException("There are more than one asset with ID '" + username + "'");
+                                    _logger.error("User avatar path is blank!");
+
+                                    _logger.debug("<< getUserAvatar()");
+                                    return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                                 }
-                            }
-                            else{
-                                _logger.error("No user was found with username '" + username + "'");
 
                                 _logger.debug("<< getUserAvatar()");
-                                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                                return new ResponseEntity<>(resource, HttpStatus.OK);
+                            }
+                            else{
+                                throw new DuplicateKeyException("There are more than one asset with ID '" + username + "'");
                             }
                         }
                         else{
-                            throw new InvalidObjectException("Users is null!");
+                            _logger.error("No user was found with username '" + username + "'");
+
+                            _logger.debug("<< getUserAvatar()");
+                            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                         }
                     }
                     else{
-                        String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-                        _logger.debug(errorMessage);
-
-                        _logger.debug("<< getUserAvatar()");
-                        return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                        throw new InvalidObjectException("Users is null!");
                     }
                 }
                 else{
-                    String errorMessage = "No users with username '" + authentication.getName() + " is found!";
-                    _logger.debug(errorMessage);
+                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    _logger.error(errorMessage);
 
                     _logger.debug("<< getUserAvatar()");
                     return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
@@ -121,78 +111,68 @@ public class RenditionController {
         _logger.debug("getRendition() >>");
         try{
             if(StringUtils.isNotBlank(assetId) || StringUtils.isNotBlank(renditionType)){
-                List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-                if(!usersByUsername.isEmpty()){
-                    if(usersByUsername.size() == 1){
-                        List<Asset> assets = assetsRepository.getAssetsById(assetId);
-                        if(assets != null){
-                            if(!assets.isEmpty()){
-                                if(assets.size() == 1){
-                                    Asset asset = assets.get(0);
-                                    ByteArrayResource resource;
-                                    if(renditionType.equalsIgnoreCase("t")){
-                                        if(StringUtils.isNotBlank(asset.getThumbnailPath())){
-                                            Path path = Paths.get(asset.getThumbnailPath());
-                                            resource = new ByteArrayResource(Files.readAllBytes(path));
+                if(isSessionValid(authentication)){
+                    List<Asset> assets = assetsRepository.getAssetsById(assetId);
+                    if(assets != null){
+                        if(!assets.isEmpty()){
+                            if(assets.size() == 1){
+                                Asset asset = assets.get(0);
+                                ByteArrayResource resource;
+                                if(renditionType.equalsIgnoreCase("t")){
+                                    if(StringUtils.isNotBlank(asset.getThumbnailPath())){
+                                        Path path = Paths.get(asset.getThumbnailPath());
+                                        resource = new ByteArrayResource(Files.readAllBytes(path));
 
-                                            return new ResponseEntity<>(resource, HttpStatus.OK);
-                                        }
-                                        else{
-                                            _logger.error("Thumbnail path is blank!");
-
-                                            _logger.debug("<< getRendition()");
-                                            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-                                        }
+                                        return new ResponseEntity<>(resource, HttpStatus.OK);
                                     }
-                                    else if(renditionType.equalsIgnoreCase("p")){
-                                        if(StringUtils.isNotBlank(asset.getPreviewPath())){
-                                            Path path = Paths.get(asset.getPreviewPath());
-                                            resource = new ByteArrayResource(Files.readAllBytes(path));
+                                    else{
+                                        _logger.error("Thumbnail path is blank!");
 
-                                            if(asset.getPreviewPath().endsWith("pdf")){
-                                                return ResponseEntity.ok().header("Content-Disposition","inline; filename=" + new File(asset.getPreviewPath()).getName()).contentType(MediaType.APPLICATION_PDF).contentLength(resource.contentLength()).body(resource);
-                                            }
-                                            else{
-                                                return new ResponseEntity<>(resource, HttpStatus.OK);
-                                            }
+                                        _logger.debug("<< getRendition()");
+                                        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                                    }
+                                }
+                                else if(renditionType.equalsIgnoreCase("p")){
+                                    if(StringUtils.isNotBlank(asset.getPreviewPath())){
+                                        Path path = Paths.get(asset.getPreviewPath());
+                                        resource = new ByteArrayResource(Files.readAllBytes(path));
+
+                                        if(asset.getPreviewPath().endsWith("pdf")){
+                                            return ResponseEntity.ok().header("Content-Disposition","inline; filename=" + new File(asset.getPreviewPath()).getName()).contentType(MediaType.APPLICATION_PDF).contentLength(resource.contentLength()).body(resource);
                                         }
                                         else{
-                                            _logger.error("Preview path is blank!");
-
-                                            _logger.debug("<< getRendition()");
-                                            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                                            return new ResponseEntity<>(resource, HttpStatus.OK);
                                         }
                                     }
                                     else{
-                                        throw new IllegalArgumentException("Rendition type is not recognized!");
+                                        _logger.error("Preview path is blank!");
+
+                                        _logger.debug("<< getRendition()");
+                                        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                                     }
                                 }
                                 else{
-                                    throw new DuplicateKeyException("There are more than one asset with ID '" + assetId + "'");
+                                    throw new IllegalArgumentException("Rendition type is not recognized!");
                                 }
                             }
                             else{
-                                _logger.error("No asset was found with ID '" + assetId + "'");
-
-                                _logger.debug("<< getRendition()");
-                                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                                throw new DuplicateKeyException("There are more than one asset with ID '" + assetId + "'");
                             }
                         }
                         else{
-                            throw new InvalidObjectException("Assets is null!");
+                            _logger.error("No asset was found with ID '" + assetId + "'");
+
+                            _logger.debug("<< getRendition()");
+                            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                         }
                     }
                     else{
-                        String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-                        _logger.debug(errorMessage);
-
-                        _logger.debug("<< getRendition()");
-                        return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                        throw new InvalidObjectException("Assets is null!");
                     }
                 }
                 else{
-                    String errorMessage = "No users with username '" + authentication.getName() + " is found!";
-                    _logger.debug(errorMessage);
+                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    _logger.error(errorMessage);
 
                     _logger.debug("<< getRendition()");
                     return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
@@ -213,5 +193,24 @@ public class RenditionController {
             _logger.debug("<< getRendition()");
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private boolean isSessionValid(Authentication authentication){
+        String errorMessage;
+        List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
+        if(!usersByUsername.isEmpty()){
+            if(usersByUsername.size() == 1){
+                return true;
+            }
+            else{
+                errorMessage = "Username '" + authentication.getName() + "' is not unique!";
+            }
+        }
+        else{
+            errorMessage = "No users with username '" + authentication.getName() + " is found!";
+        }
+
+        _logger.error(errorMessage);
+        return false;
     }
 }

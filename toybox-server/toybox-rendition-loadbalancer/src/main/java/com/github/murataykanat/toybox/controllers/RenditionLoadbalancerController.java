@@ -55,31 +55,22 @@ public class RenditionLoadbalancerController {
         _logger.debug("getUserAvatar() >>");
         try{
             if(StringUtils.isNotBlank(username)){
-                List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-                if(!usersByUsername.isEmpty()){
-                    if(usersByUsername.size() == 1){
-                        HttpHeaders headers = getHeaders(session);
-                        String prefix = getPrefix();
-                        if(StringUtils.isNotBlank(prefix)){
-                            _logger.debug("<< getLoadBalancedUserAvatar()");
-                            return restTemplate.exchange(prefix + renditionServiceName + "/renditions/users/" + username, HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
-                        }
-                        else{
-                            _logger.debug("<< getUserAvatar()");
-                            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-                        }
+                if(isSessionValid(authentication)){
+                    HttpHeaders headers = getHeaders(session);
+                    String prefix = getPrefix();
+
+                    if(StringUtils.isNotBlank(prefix)){
+                        _logger.debug("<< getUserAvatar()");
+                        return restTemplate.exchange(prefix + renditionServiceName + "/renditions/users/" + username, HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
                     }
                     else{
-                        String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-                        _logger.debug(errorMessage);
-
                         _logger.debug("<< getUserAvatar()");
-                        return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
                     }
                 }
                 else{
-                    String errorMessage = "No users with username '" + authentication.getName() + " is found!";
-                    _logger.debug(errorMessage);
+                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    _logger.error(errorMessage);
 
                     _logger.debug("<< getUserAvatar()");
                     return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
@@ -124,37 +115,28 @@ public class RenditionLoadbalancerController {
     @HystrixCommand(fallbackMethod = "assetRenditionErrorFallback")
     @RequestMapping(value = "/renditions/assets/{assetId}/{renditionType}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> getAssetRendition(HttpSession session, Authentication authentication, @PathVariable String assetId, @PathVariable String renditionType){
-        _logger.debug("getLoadBalancedRendition() >>");
+        _logger.debug("getAssetRendition() >>");
         try{
             if(StringUtils.isNotBlank(assetId)){
                 if(StringUtils.isNotBlank(renditionType)){
-                    List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-                    if(!usersByUsername.isEmpty()){
-                        if(usersByUsername.size() == 1){
-                            HttpHeaders headers = getHeaders(session);
-                            String prefix = getPrefix();
-                            if(StringUtils.isNotBlank(prefix)){
-                                _logger.debug("<< getLoadBalancedRendition()");
-                                return restTemplate.exchange(prefix + renditionServiceName + "/renditions/assets/" + assetId + "/" + renditionType, HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
-                            }
-                            else{
-                                _logger.debug("<< getLoadBalancedRendition()");
-                                return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-                            }
+                    if(isSessionValid(authentication)){
+                        HttpHeaders headers = getHeaders(session);
+                        String prefix = getPrefix();
+
+                        if(StringUtils.isNotBlank(prefix)){
+                            _logger.debug("<< getLoadBalancedRendition()");
+                            return restTemplate.exchange(prefix + renditionServiceName + "/renditions/assets/" + assetId + "/" + renditionType, HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
                         }
                         else{
-                            String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-                            _logger.debug(errorMessage);
-
-                            _logger.debug("<< retrieveJobs()");
-                            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                            _logger.debug("<< getAssetRendition()");
+                            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
                         }
                     }
                     else{
-                        String errorMessage = "No users with username '" + authentication.getName() + " is found!";
-                        _logger.debug(errorMessage);
+                        String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                        _logger.error(errorMessage);
 
-                        _logger.debug("<< retrieveJobs()");
+                        _logger.debug("<< getAssetRendition()");
                         return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
                     }
                 }
@@ -162,7 +144,7 @@ public class RenditionLoadbalancerController {
                     String errorMessage = "Rendition type is blank!";
                     _logger.error(errorMessage);
 
-                    _logger.debug("<< getLoadBalancedRendition()");
+                    _logger.debug("<< getAssetRendition()");
                     return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
                 }
             }
@@ -170,7 +152,7 @@ public class RenditionLoadbalancerController {
                 String errorMessage = "Asset ID is blank!";
                 _logger.error(errorMessage);
 
-                _logger.debug("<< getLoadBalancedRendition()");
+                _logger.debug("<< getAssetRendition()");
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
         }
@@ -178,7 +160,7 @@ public class RenditionLoadbalancerController {
             String errorMessage = "An error occurred while retrieving the rendition of asset with id '" + assetId + "'. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
-            _logger.debug("<< getLoadBalancedRendition()");
+            _logger.debug("<< getAssetRendition()");
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -213,6 +195,25 @@ public class RenditionLoadbalancerController {
             _logger.debug("<< assetRenditionErrorFallback()");
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
+    }
+
+    private boolean isSessionValid(Authentication authentication){
+        String errorMessage;
+        List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
+        if(!usersByUsername.isEmpty()){
+            if(usersByUsername.size() == 1){
+                return true;
+            }
+            else{
+                errorMessage = "Username '" + authentication.getName() + "' is not unique!";
+            }
+        }
+        else{
+            errorMessage = "No users with username '" + authentication.getName() + " is found!";
+        }
+
+        _logger.error(errorMessage);
+        return false;
     }
 
     private HttpHeaders getHeaders(HttpSession session) throws Exception {
