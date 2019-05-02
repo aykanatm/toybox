@@ -32,3 +32,13 @@
     max-height: 300px;
     overflow-x: auto;
 }
+
+.mark-all-notifications-as-read-button{
+    text-align: right;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e4e4e4;
+}
+
+.mark-all-notifications-as-read-button > span{
+    cursor: pointer;
+}

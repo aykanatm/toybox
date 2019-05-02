@@ -6,6 +6,7 @@ import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.notification.SearchNotificationsRequest;
 import com.github.murataykanat.toybox.schema.notification.SearchNotificationsResponse;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
+import com.github.murataykanat.toybox.schema.notification.UpdateNotificationsRequest;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -198,6 +199,65 @@ public class NotificationLoadbalancerController {
 
             _logger.debug("<< searchNotificationsErrorFallback()");
             return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @HystrixCommand(fallbackMethod = "updateNotificationsErrorFallback")
+    @RequestMapping(value = "/notifications", method = RequestMethod.PATCH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<GenericResponse> updateNotifications(Authentication authentication, HttpSession session, @RequestBody UpdateNotificationsRequest updateNotificationsRequest){
+        _logger.debug("updateNotifications() >>");
+        GenericResponse genericResponse = new GenericResponse();
+
+        try{
+            if(updateNotificationsRequest != null){
+                HttpHeaders headers = getHeaders(session);
+                String prefix = getPrefix();
+
+                _logger.debug("<< updateNotifications()");
+                return restTemplate.exchange(prefix + notificationServiceName + "/notifications", HttpMethod.PATCH, new HttpEntity<>(updateNotificationsRequest, headers), GenericResponse.class);
+            }
+            else{
+                String errorMessage = "Update notifications request parameter is null.";
+                genericResponse.setMessage(errorMessage);
+
+                _logger.debug("<< updateNotifications()");
+                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while updating notifications. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            _logger.debug("<< updateNotifications()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public ResponseEntity<GenericResponse> updateNotificationsErrorFallback(Authentication authentication, HttpSession session, UpdateNotificationsRequest updateNotificationsRequest, Throwable e){
+        _logger.debug("updateNotificationsErrorFallback() >>");
+        GenericResponse genericResponse = new GenericResponse();
+        if(updateNotificationsRequest != null){
+            String errorMessage;
+            if(e.getLocalizedMessage() != null){
+                errorMessage = "Unable to update notifications. " + e.getLocalizedMessage();
+            }
+            else{
+                errorMessage = "Unable to get response from the notification service.";
+            }
+
+            _logger.error(errorMessage, e);
+            genericResponse.setMessage(errorMessage);
+            _logger.debug("<< updateNotificationsErrorFallback()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        else{
+            String errorMessage = "Update notifications request parameter is null.";
+            genericResponse.setMessage(errorMessage);
+
+            _logger.debug("<< updateNotificationsErrorFallback()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
         }
     }
 

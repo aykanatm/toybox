@@ -6,13 +6,18 @@
         <div class="content">
             <div class="summary">
                 <div class="content">
-                    <div class="date">
+                    <div class="date" v-show="!isDefaultNotification">
                         {{friendlyDate}}
                     </div>
                     <div class="summary">
                         {{ notification }}
                     </div>
                 </div>
+            </div>
+            <div class="meta" v-show="!isDefaultNotification">
+                <a class="mark-as-unread" v-on:click="markNotificationAsRead">
+                    <i class="bell slash icon"></i> Mark as read
+                </a>
             </div>
         </div>
     </div>

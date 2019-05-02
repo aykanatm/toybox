@@ -31,13 +31,18 @@
                 <i class="bell icon"></i>
                 <div class="floating ui red circular mini label toybox-notification-label" v-show="notifications.length != 0">{{ notifications.length }}</div>
                 <div class="left menu">
-                    <div class="ui feed toybox-notification-feed" v-if="notifications.length == 0">
+                    <div v-if="notifications.length == 0" class="ui feed toybox-notification-feed">
                         <notification v-bind:from-username="defaultNotification.fromUsername" v-bind:notification="defaultNotification.notification"
-                        v-bind:notification-date="defaultNotification.notificationDate" v-bind:is-read="defaultNotification.isRead" v-bind:key="defaultNotification.id"/>
+                        v-bind:notification-date="defaultNotification.notificationDate" v-bind:is-read="defaultNotification.isRead" v-bind:is-default-notification="true" v-bind:key="defaultNotification.id"/>
                     </div>
-                    <div class="ui feed toybox-notification-feed" v-else>
-                        <notification v-for="notification in notifications" v-bind:from-username="notification.fromUsername" v-bind:notification="notification.notification"
-                        v-bind:notification-date="notification.notificationDate" v-bind:is-read="notification.isRead" v-bind:key="notification.id"/>
+                    <div v-else class="ui feed toybox-notification-feed">
+                        <div class="mark-all-notifications-as-read-button">
+                            <span v-on:click="markAllNotificationAsRead">
+                                <i class="bell slash icon"></i> Mark all as read
+                            </span>
+                        </div>
+                        <notification v-for="notification in notifications" v-bind:id="notification.id"  v-bind:from-username="notification.fromUsername" v-bind:notification="notification.notification"
+                        v-bind:notification-date="notification.notificationDate" v-bind:is-read="notification.isRead" v-bind:is-default-notification="false" v-bind:key="notification.id"/>
                     </div>
                 </div>
             </div>

@@ -4,3 +4,6 @@
     width: 300px !important;
     white-space: normal;
 }
+.mark-as-unread{
+    cursor: pointer;
+}

@@ -10,6 +10,7 @@ import com.github.murataykanat.toybox.dbo.Notification;
 import com.github.murataykanat.toybox.schema.notification.SearchNotificationsRequest;
 import com.github.murataykanat.toybox.schema.notification.SearchNotificationsResponse;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
+import com.github.murataykanat.toybox.schema.notification.UpdateNotificationsRequest;
 import com.github.murataykanat.toybox.utilities.SortUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -147,12 +149,17 @@ public class NotificationController {
                 if(isSessionValid(authentication)){
                     List<Notification> notificationsByUsername = notificationsRepository.getNotificationsByUsername(authentication.getName());
 
-                    List<Notification> notifications = notificationsByUsername.stream().filter(notification ->
-                            searchNotificationsRequest.getFrom() == null || (StringUtils.isBlank(searchNotificationsRequest.getFrom()) ? true : notification.getFrom().equalsIgnoreCase(searchNotificationsRequest.getFrom()))
-                            || searchNotificationsRequest.getContent().equalsIgnoreCase("*") ? true : notification.getNotification().contains(searchNotificationsRequest.getContent())
-                            || searchNotificationsRequest.getDate() == null ? true : notification.getDate().before(searchNotificationsRequest.getDate())
-                            || StringUtils.isBlank(searchNotificationsRequest.getIsRead()) ? true : notification.getIsRead().equalsIgnoreCase(searchNotificationsRequest.getIsRead())
-                    ).collect(Collectors.toList());
+                    List<Notification> notifications = new ArrayList<>();
+                    for(Notification notification: notificationsByUsername){
+                        boolean fromUsernameMatch = searchNotificationsRequest.getFrom() == null || (StringUtils.isBlank(searchNotificationsRequest.getFrom()) ? true : notification.getFrom().equalsIgnoreCase(searchNotificationsRequest.getFrom()));
+                        boolean contentMatch = searchNotificationsRequest.getContent().equalsIgnoreCase("*") ? true : notification.getNotification().contains(searchNotificationsRequest.getContent());
+                        boolean dateMatch = searchNotificationsRequest.getDate() == null ? true : notification.getDate().before(searchNotificationsRequest.getDate());
+                        boolean isReadMatch = StringUtils.isBlank(searchNotificationsRequest.getIsRead()) ? true : notification.getIsRead().equalsIgnoreCase(searchNotificationsRequest.getIsRead());
+
+                        if(fromUsernameMatch && contentMatch && dateMatch && isReadMatch){
+                            notifications.add(notification);
+                        }
+                    }
 
                     List<Notification> sortedNotifications = SortUtils.getInstance().sortItems("des", notifications, Comparator.comparing(Notification::getDate, Comparator.nullsLast(Comparator.naturalOrder())));
 
@@ -190,6 +197,52 @@ public class NotificationController {
 
             _logger.debug("<< searchNotifications()");
             return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @RequestMapping(value = "/notifications", method = RequestMethod.PATCH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<GenericResponse> updateNotifications(Authentication authentication, @RequestBody UpdateNotificationsRequest updateNotificationsRequest){
+        _logger.debug("updateNotifications() >>");
+        GenericResponse genericResponse = new GenericResponse();
+
+        try{
+            if(updateNotificationsRequest != null){
+                if(isSessionValid(authentication)){
+                    notificationsRepository.updateNotifications(updateNotificationsRequest.getIsRead(), updateNotificationsRequest.getNotificationIds());
+
+                    genericResponse.setMessage("Notifications were updated successfully!");
+
+                    _logger.debug("<< updateNotifications()");
+                    return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                }
+                else{
+                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    _logger.error(errorMessage);
+
+                    genericResponse.setMessage(errorMessage);
+
+                    _logger.debug("<< updateNotifications()");
+                    return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                }
+            }
+            else{
+                String errorMessage = "Update notifications request is null.";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                _logger.debug("<< updateNotifications()");
+                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while updating notifications. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            _logger.debug("<< updateNotifications()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
