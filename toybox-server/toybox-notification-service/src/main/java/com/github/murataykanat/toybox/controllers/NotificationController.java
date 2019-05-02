@@ -92,13 +92,10 @@ public class NotificationController {
                         return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                     }
                     else{
-                        String errorMessage = "No users associated with asset with ID '" + sendNotificationRequest.getAsset().getId() + "' is found.";
-                        _logger.error(errorMessage);
-
-                        genericResponse.setMessage(errorMessage);
+                        _logger.debug("No users associated with asset with ID '" + sendNotificationRequest.getAsset().getId() + "' is found.");
 
                         _logger.debug("<< sendNotification()");
-                        return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                        return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                     }
                 }
                 else{
