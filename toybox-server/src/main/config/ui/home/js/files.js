@@ -86,20 +86,18 @@ const files = new Vue({
                             this.isLoading = false;
                             var errorMessage;
 
-                            if(error.response.status == 401){
-                                window.location = '/logout';
+                            if(error.response){
+                                errorMessage = error.response.data.message
+                                if(error.response.status == 401){
+                                    window.location = '/logout';
+                                }
                             }
                             else{
-                                if(error.response){
-                                    errorMessage = error.response.data.message
-                                }
-                                else{
-                                    errorMessage = error.message;
-                                }
-
-                                console.error(errorMessage);
-                                this.$root.$emit('message-sent', 'Error', errorMessage);
+                                errorMessage = error.message;
                             }
+
+                            console.error(errorMessage);
+                            this.$root.$emit('message-sent', 'Error', errorMessage);
                         });
                 }
             })
