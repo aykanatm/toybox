@@ -105,22 +105,24 @@ const files = new Vue({
                 console.log(response);
                 if(response){
                     this.isLoading = false;
-                    if(response.status != 204){
-                        this.assets = response.data.assets;
-                        this.facets = response.data.facets;
+
+                    this.assets = response.data.assets;
+                    this.facets = response.data.facets;
+
+                    if(response.status == 204){
+                        this.displayMessage('Information','There is no asset in the system');
+                        this.totalRecords = 0;
+                        this.totalPages = 0;
+                        this.currentPage = 0;
+                    }
+                    else{
                         this.totalRecords = response.data.totalRecords;
                         this.totalPages = Math.ceil(this.totalRecords / this.limit);
                         this.currentPage = Math.ceil((offset / limit) + 1);
                     }
-                    else{
-                        this.displayMessage('Information','There is no asset in the system');
-                    }
+
+                    this.updatePagination(this.currentPage, this.totalPages, offset, limit, this.totalRecords);
                 }
-            })
-            .then(response => {
-                console.log(response);
-                this.updatePagination(this.currentPage, this.totalPages, offset, limit, this.totalRecords);
-                // this.updateSortStatus(this.sortType, this.sortColumn)
             });
         },
         onAssetSelectionChanged:function(asset){

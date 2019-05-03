@@ -16,8 +16,14 @@ var paginationMixin = {
     },
     methods:{
         updatePagination:function(currentPage, totalPages, offset, limit, totalRecords){
-            this.startIndex = offset + 1;
-            this.endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
+            if(totalRecords == 0){
+                this.startIndex = 0;
+                this.endIndex = 0
+            }
+            else{
+                this.startIndex = offset + 1;
+                this.endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
+            }
 
             if(currentPage == 1){
                 if(totalPages != 1){
