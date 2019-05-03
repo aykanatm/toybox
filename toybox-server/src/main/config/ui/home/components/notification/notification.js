@@ -13,6 +13,7 @@ module.exports = {
         return  {
           componentName: 'Notification',
           avatarUrl: '',
+          avatarLoadedSuccessfully: true
         }
     },
     mounted: function(){
@@ -43,7 +44,27 @@ module.exports = {
             return moment(this.notificationDate).format('MMMM Do YYYY, hh:mm:ss');
         }
     },
+    watch:{
+        avatarUrl:function(val){
+            if(val !== ''){
+                var self = this;
+                $(self.$el).imagesLoaded()
+                    .done( function() {
+                        console.log('Notification avatar image loaded successfully!');
+                        self.avatarLoadedSuccessfully = true;
+                    })
+                    .fail( function() {
+                        console.log('Notification avatar image failed to load!');
+                        self.avatarLoadedSuccessfully = false;
+                    });
+            }
+        }
+    },
     methods:{
+        avatarFailedToLoad:function(){
+            console.log('boo!');
+            this.avatarLoadedSuccessfully = false;
+        },
         markNotificationAsRead:function(){
             this.getService("toybox-notification-loadbalancer")
                 .then(response => {

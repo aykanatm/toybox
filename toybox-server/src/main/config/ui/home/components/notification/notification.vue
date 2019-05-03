@@ -1,7 +1,12 @@
 <template>
     <div class="event toybox-notification">
         <div class="label">
-            <img class="ui avatar image" v-bind:src="avatarUrl"/>
+            <div v-if="avatarLoadedSuccessfully">
+                <img class="ui avatar image" v-bind:src="avatarUrl"/>
+            </div>
+            <div v-else>
+                <i class="user circle icon" style="font-size: 20pt;"></i>
+            </div>
         </div>
         <div class="content">
             <div class="summary">
