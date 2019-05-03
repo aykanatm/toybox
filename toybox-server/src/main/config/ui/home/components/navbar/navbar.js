@@ -30,11 +30,11 @@ module.exports = {
                     setTimeout(() => {
                         $('#toybox-profile-menu').imagesLoaded()
                         .done( function() {
-                            console.log('all images successfully loaded');
+                            console.log('User image loaded successfully!');
                             self.userInitialized = true;
                         })
                         .fail( function() {
-                            console.log('all images loaded, at least one is broken');
+                            console.log('User image failed to load!');
                             self.userInitialized = false;
                         });
                     }, 200);
