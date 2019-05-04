@@ -564,12 +564,32 @@ public class AssetController {
                         if(!users.isEmpty()){
                             if(users.size() == 1){
                                 User user = users.get(0);
-                                selectedAssets.getSelectedAssets().forEach(asset -> assetUserRepository.deleteSubscriber(asset.getId(), user.getId()));
 
-                                genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " asset(s) were unsubscribed successfully.");
+                                int assetCount = 0;
+                                for(Asset asset: selectedAssets.getSelectedAssets()){
+                                    if(isSubscribed(user, asset)){
+                                        assetUserRepository.deleteSubscriber(asset.getId(), user.getId());
+                                        assetCount++;
+                                    }
+                                }
 
-                                _logger.debug("<< unsubscribeFromAssets()");
-                                return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                if(assetCount > 0){
+                                    if(assetCount == selectedAssets.getSelectedAssets().size()){
+                                        genericResponse.setMessage(assetCount + " asset(s) were unsubscribed successfully.");
+                                    }
+                                    else{
+                                        genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " out of " + assetCount + " asset(s) were unsubscribed successfully. The rest of the assets were already subscribed.");
+                                    }
+
+                                    _logger.debug("<< unsubscribeFromAssets()");
+                                    return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                }
+                                else{
+                                    genericResponse.setMessage("Selected assets were already unsubscribed.");
+
+                                    _logger.debug("<< unsubscribeFromAssets()");
+                                    return new ResponseEntity<>(genericResponse, HttpStatus.NO_CONTENT);
+                                }
                             }
                             else{
                                 throw new Exception("Multiple users found with username '" + authentication.getName() + "'.");

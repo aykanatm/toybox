@@ -81,8 +81,13 @@ var assetActionsMixin = {
                     return axios.post(response.data.value + '/assets/unsubscribe', assets)
                         .then(response => {
                             console.log(response);
-                            this.$root.$emit('message-sent', 'Success', response.data.message);
-                            this.$root.$emit('refresh-assets');
+                            if(response.status != 204){
+                                this.$root.$emit('message-sent', 'Success', response.data.message);
+                                this.$root.$emit('refresh-assets');
+                            }
+                            else{
+                                this.$root.$emit('message-sent', 'Information', 'Selected assets were already unsubscribed.');
+                            }
                         })
                         .catch(error => {
                             var errorMessage;
