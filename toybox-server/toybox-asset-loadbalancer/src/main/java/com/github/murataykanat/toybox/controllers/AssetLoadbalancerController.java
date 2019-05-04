@@ -5,6 +5,7 @@ import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
 import com.github.murataykanat.toybox.schema.asset.RetrieveAssetsResults;
 import com.github.murataykanat.toybox.schema.asset.SelectedAssets;
+import com.github.murataykanat.toybox.schema.asset.UpdateAssetRequest;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.upload.UploadFile;
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
@@ -633,6 +634,122 @@ public class AssetLoadbalancerController {
             genericResponse.setMessage(errorMessage);
 
             _logger.debug("<< unsubscribeFromAssetsErrorFallback()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @HystrixCommand(fallbackMethod = "updateAssetErrorFallback")
+    @RequestMapping(value = "/assets/{assetId}", method = RequestMethod.PATCH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<GenericResponse> updateAsset(Authentication authentication, HttpSession session, @RequestBody UpdateAssetRequest updateAssetRequest, @PathVariable String assetId){
+        _logger.error("updateAsset()");
+        GenericResponse genericResponse = new GenericResponse();
+
+        try{
+            if(StringUtils.isNotBlank(assetId)){
+                if(updateAssetRequest != null){
+                    if(isSessionValid(authentication)){
+                        HttpHeaders headers = getHeaders(session);
+                        String prefix = getPrefix();
+
+                        if(StringUtils.isNotBlank(prefix)){
+                            _logger.debug("<< updateAsset()");
+                            return restTemplate.exchange(prefix + assetServiceName + "/assets/" + assetId, HttpMethod.PATCH, new HttpEntity<>(updateAssetRequest, headers), GenericResponse.class);
+                        }
+                        else{
+                            String errorMessage = "Service ID prefix is null!";
+                            _logger.error(errorMessage);
+
+                            genericResponse.setMessage(errorMessage);
+
+                            _logger.debug("<< updateAsset()");
+                            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                        }
+                    }
+                    else{
+                        String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                        _logger.error(errorMessage);
+
+                        genericResponse.setMessage(errorMessage);
+
+                        _logger.debug("<< updateAsset()");
+                        return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                    }
+                }
+                else{
+                    String errorMessage = "Update asset request is null!";
+
+                    _logger.error(errorMessage);
+
+                    genericResponse.setMessage(errorMessage);
+
+                    _logger.debug("<< updateAsset()");
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Asset ID is blank";
+
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                _logger.debug("<< updateAsset()");
+                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while updating assets. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            _logger.debug("<< updateAsset()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public ResponseEntity<GenericResponse> updateAssetErrorFallback(Authentication authentication, HttpSession session, UpdateAssetRequest updateAssetRequest, String assetId, Throwable e){
+        _logger.debug("unsubscribeFromAssetsErrorFallback() >>");
+
+        if(updateAssetRequest != null){
+            if(StringUtils.isNotBlank(assetId)){
+                String errorMessage;
+                if(e.getLocalizedMessage() != null){
+                    errorMessage = "Unable to update asset. " + e.getLocalizedMessage();
+                }
+                else{
+                    errorMessage = "Unable to get response from the asset service.";
+                }
+
+                _logger.error(errorMessage, e);
+
+                GenericResponse genericResponse = new GenericResponse();
+                genericResponse.setMessage(errorMessage);
+
+                _logger.debug("<< updateAssetErrorFallback()");
+                return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+            else{
+                String errorMessage = "Asset ID is blank!";
+
+                _logger.error(errorMessage);
+
+                GenericResponse genericResponse = new GenericResponse();
+                genericResponse.setMessage(errorMessage);
+
+                _logger.debug("<< updateAssetErrorFallback()");
+                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+            }
+        }
+        else{
+            String errorMessage = "Update asset request is null!";
+
+            _logger.error(errorMessage);
+
+            GenericResponse genericResponse = new GenericResponse();
+            genericResponse.setMessage(errorMessage);
+
+            _logger.debug("<< updateAssetErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
         }
     }

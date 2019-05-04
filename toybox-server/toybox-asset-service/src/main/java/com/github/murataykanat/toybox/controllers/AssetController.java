@@ -9,6 +9,7 @@ import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
 import com.github.murataykanat.toybox.schema.asset.RetrieveAssetsResults;
 import com.github.murataykanat.toybox.schema.asset.SelectedAssets;
+import com.github.murataykanat.toybox.schema.asset.UpdateAssetRequest;
 import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
@@ -18,6 +19,7 @@ import com.github.murataykanat.toybox.schema.notification.SendNotificationReques
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
 import com.github.murataykanat.toybox.utilities.FacetUtils;
 import com.github.murataykanat.toybox.utilities.SortUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -636,6 +638,97 @@ public class AssetController {
             genericResponse.setMessage(errorMessage);
 
             _logger.debug("<< unsubscribeFromAssets()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @RequestMapping(value = "/assets/{assetId}", method = RequestMethod.PATCH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<GenericResponse> updateAsset(Authentication authentication, @RequestBody UpdateAssetRequest updateAssetRequest, @PathVariable String assetId){
+        _logger.debug("updateAssets() >>");
+        GenericResponse genericResponse = new GenericResponse();
+
+        try {
+            if(StringUtils.isNotBlank(assetId)){
+                if(updateAssetRequest != null){
+                    if(isSessionValid(authentication)){
+                        List<Asset> assetsById = assetsRepository.getAssetsById(assetId);
+                        if(!assetsById.isEmpty()){
+                            if(assetsById.size() != 1){
+                                Asset asset = assetsById.get(0);
+                                String extension = asset.getExtension().toLowerCase();
+                                String newFileName = updateAssetRequest.getName() + "." + extension;
+                                File oldFile = new File(asset.getPath());
+                                if(oldFile.exists()){
+                                    String parentDirectoryPath = oldFile.getParentFile().getAbsolutePath();
+                                    String newFilePath = parentDirectoryPath + File.separator + newFileName;
+                                    File newFile = new File(newFilePath);
+                                    FileUtils.moveFile(oldFile, newFile);
+
+                                    assetsRepository.updateAssetName(newFileName, newFilePath, assetId);
+
+                                    String message = "File renamed successfully.";
+                                    _logger.debug(message);
+
+                                    genericResponse.setMessage(message);
+
+                                    _logger.debug("<< updateAssets()");
+                                    return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                }
+                                else{
+                                    throw new Exception("File path " + asset.getPath() + " is not a valid file!");
+                                }
+                            }
+                            else{
+                                throw new Exception("Multiple assets with ID '" + assetId + "' found!");
+                            }
+                        }
+                        else{
+                            String errorMessage = "Asset with ID '" + assetId + "' is not found!";
+                            _logger.error(errorMessage);
+
+                            genericResponse.setMessage(errorMessage);
+
+                            _logger.debug("<< updateAssets()");
+                            return new ResponseEntity<>(genericResponse, HttpStatus.NOT_FOUND);
+                        }
+                    }
+                    else{
+                        String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                        _logger.error(errorMessage);
+
+                        genericResponse.setMessage(errorMessage);
+
+                        _logger.debug("<< updateAssets()");
+                        return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                    }
+                }
+                else{
+                    String errorMessage = "Update asset request is null!";
+                    _logger.error(errorMessage);
+
+                    genericResponse.setMessage(errorMessage);
+
+                    _logger.debug("<< updateAssets()");
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Asset ID is blank!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                _logger.debug("<< updateAssets()");
+                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while updating from assets. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            _logger.debug("<< updateAssets()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
