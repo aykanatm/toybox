@@ -28,6 +28,7 @@ var notificationMixin = {
                                     this.totalRecords = 0;
                                     this.totalPages = 0;
                                     this.currentPage = 0;
+                                    this.$root.$emit('message-sent', 'Information', 'You do not have any notifications.');
                                 }
                             }
                             else{
@@ -111,11 +112,7 @@ var notificationMixin = {
                 .then(response => {
                     if(response){
                         console.log(response);
-                        var notificationIds =[];
-                        for(var i = 0; i < this.notifications.length; i++){
-                            var notification = this.notifications[i];
-                            notificationIds.push(notification.id);
-                        }
+                        var notificationIds = [0];
                         var notificationUpdateRequest = {
                             'notificationIds': notificationIds,
                             'isRead': 'Y'

@@ -26,4 +26,9 @@ public interface NotificationsRepository extends JpaRepository<Notification, Int
     @Modifying
     @Query(value = "UPDATE notifications SET is_read=:isRead WHERE id IN :notificationIds", nativeQuery = true)
     int updateNotifications(@Param("isRead") String isRead, @Param("notificationIds") List<Integer> notificationIds);
+
+    @Transactional
+    @Modifying
+    @Query(value = "UPDATE notifications SET is_read=:isRead", nativeQuery = true)
+    int updateAllNotifications(@Param("isRead") String isRead);
 }

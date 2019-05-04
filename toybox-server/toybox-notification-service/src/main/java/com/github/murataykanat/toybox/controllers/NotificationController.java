@@ -242,12 +242,28 @@ public class NotificationController {
         try{
             if(updateNotificationsRequest != null){
                 if(isSessionValid(authentication)){
-                    notificationsRepository.updateNotifications(updateNotificationsRequest.getIsRead(), updateNotificationsRequest.getNotificationIds());
+                    if(!updateNotificationsRequest.getNotificationIds().isEmpty()){
+                        if(updateNotificationsRequest.getNotificationIds().get(0) == 0){
+                            notificationsRepository.updateAllNotifications(updateNotificationsRequest.getIsRead());
+                        }
+                        else{
+                            notificationsRepository.updateNotifications(updateNotificationsRequest.getIsRead(), updateNotificationsRequest.getNotificationIds());
+                        }
 
-                    genericResponse.setMessage("Notifications were updated successfully!");
+                        genericResponse.setMessage("Notifications were updated successfully!");
 
-                    _logger.debug("<< updateNotifications()");
-                    return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                        _logger.debug("<< updateNotifications()");
+                        return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                    }
+                    else{
+                        String message = "There is no notifications to update.";
+                        _logger.debug(message);
+
+                        genericResponse.setMessage(message);
+
+                        _logger.debug("<< updateNotifications()");
+                        return new ResponseEntity<>(genericResponse, HttpStatus.NO_CONTENT);
+                    }
                 }
                 else{
                     String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
