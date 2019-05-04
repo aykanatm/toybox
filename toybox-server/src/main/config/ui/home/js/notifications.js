@@ -10,7 +10,7 @@ const files = new Vue({
         isRead: null,
         isLoading: false,
         // Overrides
-        limit: 7
+        limit: 10
     },
     mounted:function(){
         var csrfHeader = $("meta[name='_csrf_header']").attr("content");
