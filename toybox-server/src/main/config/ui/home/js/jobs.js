@@ -61,7 +61,7 @@ const jobs = new Vue({
                     this.facets = response.data.facets;
 
                     if(response.status == 204){
-                        this.displayMessage('Information','There is no jobs in the system');
+                        this.displayMessage('Information','You do not have any jobs.');
                         this.totalRecords = 0;
                         this.totalPages = 0;
                         this.currentPage = 0;
