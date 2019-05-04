@@ -465,7 +465,7 @@ public class AssetController {
     }
 
     @RequestMapping(value = "/assets/subscribe", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<GenericResponse> subscribeToAssets(HttpSession session, Authentication authentication, @RequestBody SelectedAssets selectedAssets){
+    public ResponseEntity<GenericResponse> subscribeToAssets(Authentication authentication, @RequestBody SelectedAssets selectedAssets){
         _logger.debug("subscribeToAssets() >>");
         GenericResponse genericResponse = new GenericResponse();
 
@@ -477,13 +477,32 @@ public class AssetController {
                         if(!users.isEmpty()){
                             if(users.size() == 1){
                                 User user = users.get(0);
-                                selectedAssets.getSelectedAssets().forEach(asset -> assetUserRepository.insertSubscriber(asset.getId(), user.getId()));
 
+                                int assetCount = 0;
+                                for(Asset asset: selectedAssets.getSelectedAssets()){
+                                    if(!isSubscribed(user, asset)){
+                                        assetUserRepository.insertSubscriber(asset.getId(), user.getId());
+                                        assetCount++;
+                                    }
+                                }
 
-                                genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " asset(s) were subscribed successfully.");
+                                if(assetCount > 0){
+                                    if(assetCount == selectedAssets.getSelectedAssets().size()){
+                                        genericResponse.setMessage(assetCount + " asset(s) were subscribed successfully.");
+                                    }
+                                    else{
+                                        genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " out of " + assetCount + " asset(s) were subscribed successfully. The rest of the assets were already subscribed.");
+                                    }
 
-                                _logger.debug("<< subscribeToAssets()");
-                                return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                    _logger.debug("<< subscribeToAssets()");
+                                    return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                }
+                                else{
+                                    genericResponse.setMessage("Selected assets were already subscribed.");
+
+                                    _logger.debug("<< subscribeToAssets()");
+                                    return new ResponseEntity<>(genericResponse, HttpStatus.NO_CONTENT);
+                                }
                             }
                             else{
                                 throw new Exception("Multiple users found with username '" + authentication.getName() + "'.");
@@ -692,6 +711,17 @@ public class AssetController {
         }
 
         _logger.error(errorMessage);
+        return false;
+    }
+
+    private boolean isSubscribed(User user, Asset asset){
+        List<AssetUser> assetUsersByUserId = assetUserRepository.findAssetUsersByUserId(user.getId());
+        for(AssetUser assetUser: assetUsersByUserId){
+            if(assetUser.getAssetId().equalsIgnoreCase(asset.getId())){
+                return true;
+            }
+        }
+
         return false;
     }
 
