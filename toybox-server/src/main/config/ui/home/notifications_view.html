@@ -43,7 +43,7 @@
                     </div>
                     <div class="thirteen wide column">
                         <div class="ui grid gallery-top-menu">
-                            <div class="ui basic buttons">
+                            <div class="ui basic buttons" v-show="notifications.length > 0">
                                 <!-- Top menu buttons -->
                                 <button class="ui button" v-on:click.stop="markAllNotificationAsRead">
                                     <i class="bell slash icon"></i> Mark all as read
