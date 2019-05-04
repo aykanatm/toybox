@@ -553,7 +553,7 @@ public class AssetController {
         }
     }
     @RequestMapping(value = "/assets/unsubscribe", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<GenericResponse> unsubscribeFromAssets(HttpSession session, Authentication authentication, @RequestBody SelectedAssets selectedAssets){
+    public ResponseEntity<GenericResponse> unsubscribeFromAssets(Authentication authentication, @RequestBody SelectedAssets selectedAssets){
         _logger.debug("unsubscribeFromAssets() >>");
         GenericResponse genericResponse = new GenericResponse();
         try{
