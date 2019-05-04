@@ -65,7 +65,8 @@ module.exports = {
             console.log('boo!');
             this.avatarLoadedSuccessfully = false;
         },
-        markNotificationAsRead:function(){
+        markNotificationAsRead:function(event){
+            console.log(event);
             this.getService("toybox-notification-loadbalancer")
                 .then(response => {
                     if(response){
@@ -79,7 +80,23 @@ module.exports = {
                             .then(response => {
                                 console.log(response);
                                 this.$root.$emit('message-sent', 'Success', response.data.message);
-                                this.$root.$emit('notifications-updated');
+
+                                var isNavbar = false;
+                                var paths = event.path;
+                                for(var i = 0; i < paths.length; i++){
+                                    var path = paths[i];
+                                    if(path.className === 'ui simple dropdown item toybox-navbar-item'){
+                                        isNavbar = true;
+                                        break;
+                                    }
+                                }
+
+                                if(isNavbar){
+                                    this.$root.$emit('notifications-updated', null, '*', new Date(), 'N', 0, 100, this.searchRequestFacetList, isNavbar);
+                                }
+                                else{
+                                    this.$root.$emit('refresh-notifications');
+                                }
                             })
                             .catch(error => {
                                 var errorMessage;

@@ -24,10 +24,10 @@
             <a class="item toybox-navbar-item" id="toybox-advsearch-menu">
                 <i class="search plus icon"></i>
             </a>
-            <a class="item toybox-navbar-item" v-on:click="showUploadModalWindow">
+            <a class="item toybox-navbar-item" v-on:click.stop="showUploadModalWindow">
                 <i class="cloud upload icon"></i>
             </a>
-            <div class="ui simple dropdown item toybox-navbar-item" id="toybox-notifications-menu">
+            <div class="ui simple dropdown item toybox-navbar-item" id="toybox-notifications-menu" v-on:click="navigateToNotificationsPage">
                 <i class="bell icon"></i>
                 <div class="floating ui red circular mini label toybox-notification-label" v-show="notifications.length != 0">{{ notifications.length }}</div>
                 <div class="left menu">
@@ -36,7 +36,7 @@
                         v-bind:notification-date="defaultNotification.notificationDate" v-bind:is-read="defaultNotification.isRead" v-bind:is-default-notification="true" v-bind:key="defaultNotification.id"/>
                     </div>
                     <div v-else class="ui feed toybox-notification-feed">
-                        <div class="mark-all-notifications-as-read-button">
+                        <div class="navbar-mark-all-notifications-as-read-button">
                             <span v-on:click="markAllNotificationAsRead">
                                 <i class="bell slash icon"></i> Mark all as read
                             </span>

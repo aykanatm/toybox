@@ -1,28 +1,31 @@
 package com.github.murataykanat.toybox.schema.notification;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 public class SearchNotificationsRequest implements Serializable {
     @JsonProperty("id")
     private int id;
-
     @JsonProperty("username")
     private String username;
-
     @JsonProperty("fromUsername")
     private String from;
-
     @JsonProperty("content")
     private String content;
-
     @JsonProperty("notificationDate")
     private Date date;
-
     @JsonProperty("isRead")
     private String isRead;
+    @JsonProperty("limit")
+    private int limit;
+    @JsonProperty("offset")
+    private int offset;
+    @JsonProperty("searchRequestFacetList")
+    private List<SearchRequestFacet> searchRequestFacetList;
 
     public String getUsername() {
         return username;
@@ -70,5 +73,29 @@ public class SearchNotificationsRequest implements Serializable {
 
     public void setIsRead(String isRead) {
         this.isRead = isRead;
+    }
+
+    public int getLimit() {
+        return limit;
+    }
+
+    public void setLimit(int limit) {
+        this.limit = limit;
+    }
+
+    public int getOffset() {
+        return offset;
+    }
+
+    public void setOffset(int offset) {
+        this.offset = offset;
+    }
+
+    public List<SearchRequestFacet> getSearchRequestFacetList() {
+        return searchRequestFacetList;
+    }
+
+    public void setSearchRequestFacetList(List<SearchRequestFacet> searchRequestFacetList) {
+        this.searchRequestFacetList = searchRequestFacetList;
     }
 }

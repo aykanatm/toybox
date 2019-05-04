@@ -1,5 +1,5 @@
 module.exports = {
-    mixins:[serviceMixin, notificationMixin],
+    mixins:[serviceMixin, notificationMixin, facetMixin],
     props:{
         user: Object
     },
@@ -17,7 +17,7 @@ module.exports = {
         }
     },
     mounted:function(){
-        this.getNotifications();
+        this.getNotifications(null, '*', new Date(), 'N', 0, 100, this.searchRequestFacetList, true);
         this.$root.$on('notifications-updated', this.getNotifications);
     },
     watch:{
@@ -45,6 +45,9 @@ module.exports = {
     methods:{
         showUploadModalWindow:function(){
             $('#toybox-import-modal-window').modal('show');
+        },
+        navigateToNotificationsPage:function(){
+            window.location = "/toybox/notifications";
         },
         logout:function(){
             window.location = "/logout";

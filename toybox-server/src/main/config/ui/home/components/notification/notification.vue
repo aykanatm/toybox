@@ -19,8 +19,8 @@
                     </div>
                 </div>
             </div>
-            <div class="meta" v-show="!isDefaultNotification">
-                <a class="mark-as-unread" v-on:click="markNotificationAsRead">
+            <div class="meta" v-show="!isDefaultNotification && isRead === 'N'">
+                <a class="mark-as-unread" v-on:click.stop="markNotificationAsRead">
                     <i class="bell slash icon"></i> Mark as read
                 </a>
             </div>

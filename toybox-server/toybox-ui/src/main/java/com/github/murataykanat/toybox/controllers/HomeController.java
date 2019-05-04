@@ -19,6 +19,9 @@ public class HomeController {
     @RequestMapping("/toybox/jobs")
     public String loadJobs(){ return "jobs_view"; }
 
+    @RequestMapping("/toybox/notifications")
+    public String loadNotifications(){ return "notifications_view"; }
+
     @RequestMapping("/exit")
     public String loadExit(){ return "logout_view"; }
 }

@@ -5,12 +5,15 @@ import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.AssetUserRepository;
 import com.github.murataykanat.toybox.repositories.NotificationsRepository;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
+import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.dbo.Notification;
+import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.notification.SearchNotificationsRequest;
 import com.github.murataykanat.toybox.schema.notification.SearchNotificationsResponse;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
 import com.github.murataykanat.toybox.schema.notification.UpdateNotificationsRequest;
+import com.github.murataykanat.toybox.utilities.FacetUtils;
 import com.github.murataykanat.toybox.utilities.SortUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -144,27 +147,61 @@ public class NotificationController {
         try{
             if(searchNotificationsRequest != null){
                 if(isSessionValid(authentication)){
+                    int offset = searchNotificationsRequest.getOffset();
+                    int limit = searchNotificationsRequest.getLimit();
+                    List<SearchRequestFacet> searchRequestFacetList = searchNotificationsRequest.getSearchRequestFacetList();
+
                     List<Notification> notificationsByUsername = notificationsRepository.getNotificationsByUsername(authentication.getName());
 
-                    List<Notification> notifications = new ArrayList<>();
-                    for(Notification notification: notificationsByUsername){
-                        boolean fromUsernameMatch = searchNotificationsRequest.getFrom() == null || (StringUtils.isBlank(searchNotificationsRequest.getFrom()) ? true : notification.getFrom().equalsIgnoreCase(searchNotificationsRequest.getFrom()));
-                        boolean contentMatch = searchNotificationsRequest.getContent().equalsIgnoreCase("*") ? true : notification.getNotification().contains(searchNotificationsRequest.getContent());
-                        boolean dateMatch = searchNotificationsRequest.getDate() == null ? true : notification.getDate().before(searchNotificationsRequest.getDate());
-                        boolean isReadMatch = StringUtils.isBlank(searchNotificationsRequest.getIsRead()) ? true : notification.getIsRead().equalsIgnoreCase(searchNotificationsRequest.getIsRead());
+                    if(!notificationsByUsername.isEmpty()){
+                        List<Notification> notifications = new ArrayList<>();
+                        for(Notification notification: notificationsByUsername){
+                            boolean fromUsernameMatch = searchNotificationsRequest.getFrom() == null || (StringUtils.isBlank(searchNotificationsRequest.getFrom()) ? true : notification.getFrom().equalsIgnoreCase(searchNotificationsRequest.getFrom()));
+                            boolean contentMatch = searchNotificationsRequest.getContent().equalsIgnoreCase("*") ? true : notification.getNotification().contains(searchNotificationsRequest.getContent());
+                            boolean dateMatch = searchNotificationsRequest.getDate() == null ? true : notification.getDate().before(searchNotificationsRequest.getDate());
+                            boolean isReadMatch = StringUtils.isBlank(searchNotificationsRequest.getIsRead()) ? true : notification.getIsRead().equalsIgnoreCase(searchNotificationsRequest.getIsRead());
 
-                        if(fromUsernameMatch && contentMatch && dateMatch && isReadMatch){
-                            notifications.add(notification);
+                            if(fromUsernameMatch && contentMatch && dateMatch && isReadMatch){
+                                notifications.add(notification);
+                            }
                         }
+
+                        List<Notification> facetedNotifications;
+                        if(searchRequestFacetList != null && !searchRequestFacetList.isEmpty()){
+                            facetedNotifications = notifications.stream().filter(notification -> FacetUtils.getInstance().hasFacetValue(notification, searchRequestFacetList)).collect(Collectors.toList());
+                        }
+                        else{
+                            facetedNotifications = notifications;
+                        }
+
+                        List<Facet> facets = FacetUtils.getInstance().getFacets(facetedNotifications);
+
+                        searchNotificationsResponse.setFacets(facets);
+
+                        SortUtils.getInstance().sortItems("des", facetedNotifications, Comparator.comparing(Notification::getDate, Comparator.nullsLast(Comparator.naturalOrder())));
+
+                        int totalRecords = facetedNotifications.size();
+                        int startIndex = offset;
+                        int endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
+
+                        List<Notification> notificationsOnPage = facetedNotifications.subList(startIndex, endIndex);
+
+                        searchNotificationsResponse.setTotalRecords(totalRecords);
+                        searchNotificationsResponse.setNotifications(notificationsOnPage);
+                        searchNotificationsResponse.setMessage("Notifications were retrieved successfully!");
+
+                        _logger.debug("<< searchNotifications()");
+                        return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.OK);
                     }
+                    else{
+                        String message = "There is no notifications to return.";
+                        _logger.debug(message);
 
-                    List<Notification> sortedNotifications = SortUtils.getInstance().sortItems("des", notifications, Comparator.comparing(Notification::getDate, Comparator.nullsLast(Comparator.naturalOrder())));
+                        searchNotificationsResponse.setMessage(message);
 
-                    searchNotificationsResponse.setNotifications(sortedNotifications);
-                    searchNotificationsResponse.setMessage("Notifications were retrieved successfully!");
-
-                    _logger.debug("<< searchNotifications()");
-                    return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.OK);
+                        _logger.debug("<< searchNotifications()");
+                        return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.NO_CONTENT);
+                    }
                 }
                 else{
                     String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";

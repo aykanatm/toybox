@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1"/>
+        <!-- CSRF Config -->
+        <meta th:name="_csrf" th:content="${_csrf.token}"/>
+        <meta th:name="_csrf_header" th:content="${_csrf.headerName}"/>
+        <!-- -->
+        <link rel="stylesheet" type="text/css" href="../frameworks/semantic/semantic.min.css"/>
+        <link rel="stylesheet" type="text/css" href="../css/toybox.css"/>
+
+        <script type="text/javascript" src="../frameworks/jquery/jquery-3.3.1.min.js"></script>
+        <script type="text/javascript" src="../frameworks/axios/axios.min.js"></script>
+        <script type="text/javascript" src="../frameworks/semantic/semantic.min.js"></script>
+        <script type="text/javascript" src="../frameworks/vue/vue.js"></script>
+        <!-- <script type="text/javascript" src="../frameworks/vue/vue.min.js"></script> -->
+        <script src="../frameworks/imagesloaded.pkgd.min.js"></script>
+        <script src="../frameworks/FileSaver.min.js"></script>
+        <script src="../frameworks/moment.min.js"></script>
+        <script type="text/javascript" src="../js/httpVueLoader.js"></script>
+    </head>
+    <body>
+        <div style="height: calc(100% - 68px); width: 100%;" id="toybox-notifications">
+            <navbar v-bind:user="user"/>
+            <div class="toybox-background">
+                <div id="toybox-files-container" class="ui grid toybox-asset-container">
+                    <div class="three wide column">
+                        <div class="ui grid" style="margin-top: 10px;">
+                            <div class="one column row toybox-filters-header-row">
+                                <div class="column">
+                                    <i class="filter icon"></i>
+                                    <span>Filters</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="ui grid">
+                            <div class="ui styled accordion">
+                                <facet v-for="facet in facets" v-bind:name="facet.name" v-bind:id="facet.id" v-bind:lookups="facet.lookups" v-bind:key="facet.id"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="thirteen wide column">
+                        <div class="ui grid gallery-top-menu">
+                            <div class="ui basic buttons">
+                                <!-- Top menu buttons -->
+                                <button class="ui button" v-on:click.stop="markAllNotificationAsRead">
+                                    <i class="bell slash icon"></i> Mark all as read
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="ui active dimmer" v-if="isLoading">
+                                <div class="ui massive text loader">Loading</div>
+                            </div>
+                            <notification v-for="notification in notifications" v-bind:id="notification.id"  v-bind:from-username="notification.fromUsername" v-bind:notification="notification.notification"
+                            v-bind:notification-date="notification.notificationDate" v-bind:is-read="notification.isRead" v-bind:is-default-notification="false" v-bind:key="notification.id"/>
+                        </div>
+                        <div class="ui right floated pagination menu toybox-pagination">
+                            <a v-bind:class="{icon:true, disabled:previousPageButtonDisabled, item:true}" v-on:click="previousPage">
+                                <i class="left chevron icon"></i>
+                            </a>
+                            <div class="item">
+                                {{ startIndex }} - {{ endIndex }} of {{ totalRecords }} Results
+                            </div>
+                            <div class="item">
+                                <span>{{ currentPage }} of {{ totalPages }} Pages</span>
+                            </div>
+                            <a v-bind:class="{icon:true, disabled:nextPageButtonDisabled, item:true}" v-on:click="nextPage">
+                                <i class="right chevron icon"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="messages">
+                <message v-for="message in messages" v-bind:id="message.id" v-bind:is-info="message.isInfo" v-bind:is-ok="message.isOk" v-bind:is-error="message.isError" v-bind:is-warning="message.isWarning" v-bind:header="message.header" v-bind:message="message.message" v-bind:key="message.id"/>
+            </div>
+        </div>
+        <script src="../components/mixins/service/service-mixin.js"></script>
+        <script src="../components/mixins/user/user-mixin.js"></script>
+        <script src="../components/mixins/facet/facet-mixin.js"></script>
+        <script src="../components/mixins/message/message-mixin.js"></script>
+        <script src="../components/mixins/pagination/pagination-mixin.js"></script>
+        <script src="../components/mixins/notification/notification-mixin.js"></script>
+        <script src="../js/notifications.js"></script>
+    </body>
+</html>

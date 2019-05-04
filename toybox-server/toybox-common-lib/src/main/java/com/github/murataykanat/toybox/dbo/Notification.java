@@ -1,6 +1,9 @@
 package com.github.murataykanat.toybox.dbo;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.murataykanat.toybox.models.annotations.FacetColumnName;
+import com.github.murataykanat.toybox.models.annotations.FacetDataType;
+import com.github.murataykanat.toybox.models.annotations.FacetDefaultLookup;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -21,6 +24,7 @@ public class Notification implements Serializable {
 
     @Column(name = "from_username")
     @JsonProperty("fromUsername")
+    @FacetColumnName("Username")
     private String from;
 
     @Column(name = "notification")
@@ -29,10 +33,14 @@ public class Notification implements Serializable {
 
     @Column(name = "notification_date")
     @JsonProperty("notificationDate")
+    @FacetColumnName("Date")
+    @FacetDataType(value = "Date")
+    @FacetDefaultLookup(values = {"Today","Past 7 days","Past 30 days"})
     private Date date;
 
     @Column(name = "is_read")
     @JsonProperty("isRead")
+    @FacetColumnName("Read")
     private String isRead;
 
     public String getUsername() {

@@ -48,10 +48,13 @@ var paginationMixin = {
             if(this.currentPage != 1){
                 this.offset -= this.limit;
                 if(this.view === 'jobs'){
-                    this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.jobSearchRequestFacetList);
+                    this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
                 }
                 else if(this.view === 'files'){
-                    this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.assetSearchRequestFacetList);
+                    this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
+                }
+                else if(this.view === 'notifications'){
+                    this.getNotifications(this.fromUsername, this.content, this.notificationDate, this.isRead, this.offset, this.limit, this.searchRequestFacetList, false);
                 }
             }
         },
@@ -59,10 +62,13 @@ var paginationMixin = {
             if(this.currentPage != this.totalPages){
                 this.offset += this.limit;
                 if(this.view === 'jobs'){
-                    this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.jobSearchRequestFacetList);
+                    this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
                 }
                 else if(this.view === 'files'){
-                    this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.assetSearchRequestFacetList);
+                    this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
+                }
+                else if(this.view === 'notifications'){
+                    this.getNotifications(this.fromUsername, this.content, this.notificationDate, this.isRead, this.offset, this.limit, this.searchRequestFacetList, false);
                 }
             }
         },
