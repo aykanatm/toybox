@@ -1,9 +1,16 @@
-.toybox-notification{
+.toybox-navbar-notification{
     margin-top: 10px !important;
     margin-bottom: 10px !important;
     width: 300px !important;
     white-space: normal;
 }
+
+.toybox-notification{
+    margin-top: 10px !important;
+    margin-bottom: 10px !important;
+    white-space: normal;
+}
+
 .mark-as-unread{
     cursor: pointer;
 }

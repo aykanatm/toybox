@@ -33,7 +33,7 @@
                 <div class="left menu">
                     <div v-if="notifications.length == 0" class="ui feed toybox-notification-feed">
                         <notification v-bind:from-username="defaultNotification.fromUsername" v-bind:notification="defaultNotification.notification"
-                        v-bind:notification-date="defaultNotification.notificationDate" v-bind:is-read="defaultNotification.isRead" v-bind:is-default-notification="true" v-bind:key="defaultNotification.id"/>
+                        v-bind:notification-date="defaultNotification.notificationDate" v-bind:is-read="defaultNotification.isRead" v-bind:is-default-notification="true" v-bind:in-navbar="true" v-bind:key="defaultNotification.id"/>
                     </div>
                     <div v-else class="ui feed toybox-notification-feed">
                         <div class="navbar-mark-all-notifications-as-read-button">
@@ -42,7 +42,7 @@
                             </span>
                         </div>
                         <notification v-for="notification in notifications" v-bind:id="notification.id"  v-bind:from-username="notification.fromUsername" v-bind:notification="notification.notification"
-                        v-bind:notification-date="notification.notificationDate" v-bind:is-read="notification.isRead" v-bind:is-default-notification="false" v-bind:key="notification.id"/>
+                        v-bind:notification-date="notification.notificationDate" v-bind:is-read="notification.isRead" v-bind:is-default-notification="false" v-bind:in-navbar="true" v-bind:key="notification.id"/>
                     </div>
                 </div>
             </div>

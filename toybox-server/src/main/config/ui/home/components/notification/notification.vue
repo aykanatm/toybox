@@ -1,5 +1,5 @@
 <template>
-    <div class="event toybox-notification">
+    <div v-bind:class="{'event':true, 'toybox-notification': !inNavbar, 'toybox-navbar-notification': inNavbar}">
         <div class="label">
             <div v-if="avatarLoadedSuccessfully">
                 <img class="ui avatar image" v-bind:src="avatarUrl"/>

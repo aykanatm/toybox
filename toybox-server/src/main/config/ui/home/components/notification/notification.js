@@ -7,7 +7,8 @@ module.exports = {
         notification: String,
         notificationDate: Number,
         isRead: String,
-        isDefaultNotification: Boolean
+        isDefaultNotification: Boolean,
+        inNavbar: Boolean
     },
     data: function() {
         return  {

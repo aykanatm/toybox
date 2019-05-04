@@ -54,8 +54,10 @@
                             <div class="ui active dimmer" v-if="isLoading">
                                 <div class="ui massive text loader">Loading</div>
                             </div>
-                            <notification v-for="notification in notifications" v-bind:id="notification.id"  v-bind:from-username="notification.fromUsername" v-bind:notification="notification.notification"
-                            v-bind:notification-date="notification.notificationDate" v-bind:is-read="notification.isRead" v-bind:is-default-notification="false" v-bind:key="notification.id"/>
+                            <div class="ui feed">
+                                <notification v-for="notification in notifications" v-bind:id="notification.id"  v-bind:from-username="notification.fromUsername" v-bind:notification="notification.notification"
+                                v-bind:notification-date="notification.notificationDate" v-bind:is-read="notification.isRead" v-bind:is-default-notification="false" v-bind:in-navbar="false" v-bind:key="notification.id"/>
+                            </div>
                         </div>
                         <div class="ui right floated pagination menu toybox-pagination">
                             <a v-bind:class="{icon:true, disabled:previousPageButtonDisabled, item:true}" v-on:click="previousPage">
