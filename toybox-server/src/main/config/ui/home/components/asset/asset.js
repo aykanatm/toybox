@@ -53,6 +53,8 @@ module.exports = {
                 this.$root.$emit('send-asset-to-preview', this);
             }
         });
+
+        this.$root.$on('deselect-asset', this.assetDeselect);
     },
     computed:{
 
@@ -78,6 +80,11 @@ module.exports = {
         },
         onThumbnailImgSrcNotFound:function(){
             this.hasThumbnail = false;
+        },
+        assetDeselect:function(assetId){
+            if(this.id === assetId){
+                this.isSelected = false;
+            }
         },
         assetShare:function(){
             console.log('Opening share modal window for asset with ID "' + this.id + '"');

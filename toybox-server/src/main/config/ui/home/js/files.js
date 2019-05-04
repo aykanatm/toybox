@@ -252,6 +252,12 @@ const files = new Vue({
             this.deleteAssets(selectedAssets);
         },
         refreshAssets:function(){
+            this.selectedAssets = [];
+            for(var i = 0; i < this.assets.length; i++){
+                var asset = this.assets[i];
+                this.$root.$emit('deselect-asset', asset.id);
+            }
+
             this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
         }
     },
