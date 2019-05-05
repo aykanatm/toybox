@@ -653,7 +653,7 @@ public class AssetController {
                     if(isSessionValid(authentication)){
                         List<Asset> assetsById = assetsRepository.getAssetsById(assetId);
                         if(!assetsById.isEmpty()){
-                            if(assetsById.size() != 1){
+                            if(assetsById.size() == 1){
                                 Asset asset = assetsById.get(0);
                                 String extension = asset.getExtension().toLowerCase();
                                 String newFileName = updateAssetRequest.getName() + "." + extension;
