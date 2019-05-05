@@ -290,11 +290,15 @@ public class AssetController {
                                 List<? extends GrantedAuthority> role_admin = authorities.stream().filter(authority -> authority.getAuthority().equalsIgnoreCase("ROLE_ADMIN")).collect(Collectors.toList());
                                 if(!role_admin.isEmpty()){
                                     _logger.debug("Retrieving all assets [Admin User]...");
-                                    assetsByCurrentUser = assets;
+                                    assetsByCurrentUser = assets.stream()
+                                            .filter(asset -> asset.getIsLatestVersion().equalsIgnoreCase("Y"))
+                                            .collect(Collectors.toList());
                                 }
                                 else{
                                     _logger.debug("Retrieving assets of the user '" + user.getUsername() + "'...");
-                                    assetsByCurrentUser = assets.stream().filter(a -> a.getImportedByUsername() != null && a.getImportedByUsername().equalsIgnoreCase(user.getUsername())).collect(Collectors.toList());
+                                    assetsByCurrentUser = assets.stream()
+                                            .filter(asset -> asset.getImportedByUsername() != null && asset.getImportedByUsername().equalsIgnoreCase(user.getUsername()) && asset.getIsLatestVersion().equalsIgnoreCase("Y"))
+                                            .collect(Collectors.toList());
                                 }
 
                                 // Set facets
