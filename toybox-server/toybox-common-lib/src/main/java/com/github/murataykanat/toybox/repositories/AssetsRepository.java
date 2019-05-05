@@ -25,6 +25,7 @@ public interface AssetsRepository extends JpaRepository<Asset, String> {
     @Query(value = "UPDATE assets SET asset_preview_path=?1 WHERE asset_id=?2", nativeQuery = true)
     int updateAssetPreviewPath(String previewPath, String assetId);
 
+    @Transactional
     @Modifying
     @Query(value = "UPDATE assets SET asset_name=?1, asset_path=?2 WHERE asset_id=?3", nativeQuery = true)
     int updateAssetName(String assetName, String assetPath, String assetId);
