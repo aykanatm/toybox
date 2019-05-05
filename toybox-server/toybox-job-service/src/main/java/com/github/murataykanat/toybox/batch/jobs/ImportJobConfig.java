@@ -4,6 +4,7 @@ import com.github.murataykanat.toybox.batch.utils.Constants;
 import com.github.murataykanat.toybox.models.RenditionProperties;
 import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
+import com.github.murataykanat.toybox.utilities.SortUtils;
 import org.apache.commons.exec.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -30,12 +31,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.FileSystemUtils;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InvalidObjectException;
+import java.io.*;
 import java.nio.file.Files;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RefreshScope
 @Configuration
@@ -146,6 +148,11 @@ public class ImportJobConfig {
                                         }
 
                                         // Generate database entry
+
+                                        String checksum = calculateChecksum(assetDestination.getAbsolutePath());
+                                        String originalAssetId = getOriginalAssetId(assetDestination.getName(), assetId);
+                                        int latestVersion = getLatestVersion(assetDestination.getName());
+
                                         Asset asset = new Asset();
                                         asset.setId(assetId);
                                         asset.setExtension(FilenameUtils.getExtension(assetDestination.getAbsolutePath()).toUpperCase(Locale.ENGLISH));
@@ -157,7 +164,12 @@ public class ImportJobConfig {
                                         asset.setThumbnailPath("");
                                         asset.setType(assetMimeType);
                                         asset.setDeleted("N");
+                                        asset.setChecksum(checksum);
+                                        asset.setIsLatestVersion("Y");
+                                        asset.setOriginalAssetId(originalAssetId);
+                                        asset.setVersion(latestVersion);
 
+                                        updateDuplicateAssets(assetDestination.getName(), assetId);
                                         insertAsset(asset);
                                         assets.add(asset);
                                     }
@@ -315,6 +327,57 @@ public class ImportJobConfig {
         _logger.debug("<< updateAsset()");
     }
 
+    private String calculateChecksum(String filepath) throws NoSuchAlgorithmException, IOException {
+        _logger.debug("calculateChecksum() >>");
+        MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+        try(FileInputStream fis = new FileInputStream(filepath)){
+            try(DigestInputStream dis = new DigestInputStream(fis, messageDigest)){
+                while(dis.read() != -1);
+                messageDigest = dis.getMessageDigest();
+            }
+        }
+
+        StringBuilder result = new StringBuilder();
+        for(byte b: messageDigest.digest()){
+            result.append(String.format("%02x", b));
+        }
+
+        _logger.debug("<< calculateChecksum()");
+        return result.toString();
+    }
+
+    private String getOriginalAssetId(String assetName, String assetId){
+        _logger.debug("getOriginalAssetId() >>");
+        List<Asset> duplicateAssetsByAssetName = assetsRepository.getDuplicateAssetsByAssetName(assetName);
+        if(duplicateAssetsByAssetName.isEmpty()){
+            _logger.debug("<< getOriginalAssetId()");
+            return assetId;
+        }
+        else{
+            if(duplicateAssetsByAssetName.size() == 1){
+                _logger.debug("<< getOriginalAssetId()");
+                return duplicateAssetsByAssetName.get(0).getId();
+            }
+            else{
+                _logger.debug("<< getOriginalAssetId()");
+                return duplicateAssetsByAssetName.get(0).getOriginalAssetId();
+            }
+        }
+    }
+
+    private int getLatestVersion(String assetName){
+        _logger.debug("getLatestVersion() >>");
+        List<Asset> duplicateAssetsByAssetName = assetsRepository.getDuplicateAssetsByAssetName(assetName);
+        if(duplicateAssetsByAssetName.isEmpty()){
+            return 1;
+        }
+        else{
+            SortUtils.getInstance().sortItems("des", duplicateAssetsByAssetName, Comparator.comparing(Asset::getVersion, Comparator.nullsLast(Comparator.naturalOrder())));
+            List<Integer> assetVersions = duplicateAssetsByAssetName.stream().map(asset -> asset.getVersion()).collect(Collectors.toList());
+            return assetVersions.get(0) + 1;
+        }
+    }
+
     private void insertAsset(Asset asset){
         _logger.debug("insertAsset() >>");
 
@@ -328,14 +391,30 @@ public class ImportJobConfig {
         _logger.debug("Asset Thumbnail Path: " + asset.getThumbnailPath());
         _logger.debug("Asset Type: " + asset.getType());
         _logger.debug("Asset Import Date: " + asset.getImportDate());
-        _logger.debug("Deleted" + asset.getDeleted());
+        _logger.debug("Deleted: " + asset.getDeleted());
+        _logger.debug("Checksum: " + asset.getChecksum());
+        _logger.debug("Is latest version: " + asset.getIsLatestVersion());
+        _logger.debug("Original Asset ID: " + asset.getOriginalAssetId());
+        _logger.debug("Version: " + asset.getVersion());
 
         _logger.debug("Inserting asset into the database...");
 
         assetsRepository.insertAsset(asset.getId(), asset.getExtension(), asset.getImportedByUsername(), asset.getName(), asset.getPath(),
-                asset.getPreviewPath(), asset.getThumbnailPath(), asset.getType(), asset.getImportDate(), asset.getDeleted());
+                asset.getPreviewPath(), asset.getThumbnailPath(), asset.getType(), asset.getImportDate(), asset.getDeleted(), asset.getChecksum(),
+                asset.getIsLatestVersion(), asset.getOriginalAssetId(), asset.getVersion());
 
         _logger.debug("<< insertAsset()");
+    }
+
+    private void updateDuplicateAssets(String assetName, String assetId){
+        List<Asset> duplicateAssetsByAssetName= assetsRepository.getDuplicateAssetsByAssetName(assetName);
+        if(!duplicateAssetsByAssetName.isEmpty()){
+            List<String> assetIds = duplicateAssetsByAssetName.stream()
+                    .filter(asset -> !asset.getId().equalsIgnoreCase(assetId))
+                    .map(asset -> asset.getId())
+                    .collect(Collectors.toList());
+            assetsRepository.updateAssetsLatestVersion("N", assetIds);
+        }
     }
 
     private String generateAssetId(){

@@ -11,11 +11,14 @@ import java.util.Date;
 import java.util.List;
 
 public interface AssetsRepository extends JpaRepository<Asset, String> {
-    @Query(value = "SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted FROM assets WHERE deleted='N'", nativeQuery = true)
+    @Query(value = "SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted, checksum, is_latest_version, original_asset_id, version FROM assets WHERE deleted='N'", nativeQuery = true)
     List<Asset> getNonDeletedAssets();
 
-    @Query(value = "SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted FROM assets WHERE asset_id=?1", nativeQuery = true)
+    @Query(value = "SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted, checksum, is_latest_version, original_asset_id, version FROM assets WHERE asset_id=?1", nativeQuery = true)
     List<Asset> getAssetsById(String assetId);
+
+    @Query(value = "SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted, checksum, is_latest_version, original_asset_id, version FROM assets WHERE asset_name=?1", nativeQuery = true)
+    List<Asset> getDuplicateAssetsByAssetName(String assetName);
 
     @Modifying
     @Query(value = "UPDATE assets SET asset_thumbnail_path=?1 WHERE asset_id=?2", nativeQuery = true)
@@ -30,13 +33,20 @@ public interface AssetsRepository extends JpaRepository<Asset, String> {
     @Query(value = "UPDATE assets SET asset_name=?1, asset_path=?2 WHERE asset_id=?3", nativeQuery = true)
     int updateAssetName(String assetName, String assetPath, String assetId);
 
+    @Transactional
+    @Modifying
+    @Query(value = "UPDATE assets SET is_latest_version=:isLatestVersion WHERE asset_id IN :assetIds", nativeQuery = true)
+    int updateAssetsLatestVersion(@Param("isLatestVersion") String isLatestVersion, @Param("assetIds")List<String> assetIds);
+
     @Modifying
     @Query(value = "INSERT INTO assets(asset_id, asset_extension, asset_imported_by_username, asset_name, asset_path, " +
-            "asset_preview_path, asset_thumbnail_path, asset_type, asset_import_date, deleted) VALUES (:asset_id, :asset_extension, " +
-            ":asset_imported_by_username, :asset_name, :asset_path, :asset_preview_path, :asset_thumbnail_path, :asset_type, :asset_import_date, :deleted)", nativeQuery = true)
+            "asset_preview_path, asset_thumbnail_path, asset_type, asset_import_date, deleted, checksum, is_latest_version, original_asset_id, version) VALUES (:asset_id, :asset_extension, " +
+            ":asset_imported_by_username, :asset_name, :asset_path, :asset_preview_path, :asset_thumbnail_path, :asset_type, :asset_import_date, :deleted, :checksum, :is_latest_version, :original_asset_id, :version)", nativeQuery = true)
     int insertAsset(@Param("asset_id") String assetId, @Param("asset_extension") String extension, @Param("asset_imported_by_username") String username,
-                    @Param("asset_name") String name, @Param("asset_path") String path, @Param("asset_preview_path") String previewPath, @Param("asset_thumbnail_path") String thumbnailPath,
-                    @Param("asset_type") String mimeType, @Param("asset_import_date") Date importDate, @Param("deleted") String deleted);
+                    @Param("asset_name") String name, @Param("asset_path") String path, @Param("asset_preview_path") String previewPath,
+                    @Param("asset_thumbnail_path") String thumbnailPath, @Param("asset_type") String mimeType, @Param("asset_import_date") Date importDate,
+                    @Param("deleted") String deleted, @Param("checksum") String checksum, @Param("is_latest_version") String isLatestVersion,
+                    @Param("original_asset_id") String originalAssetId, @Param("version") int version);
 
     @Transactional
     @Modifying

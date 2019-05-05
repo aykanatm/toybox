@@ -64,6 +64,22 @@ public class Asset implements Serializable {
     @Transient
     private String subscribed;
 
+    @Column(name = "checksum")
+    @JsonProperty("checksum")
+    private String checksum;
+
+    @Column(name = "is_latest_version")
+    @JsonProperty("isLatestVersion")
+    private String isLatestVersion;
+
+    @Column(name = "original_asset_id")
+    @JsonProperty("originalAssetId")
+    private String originalAssetId;
+
+    @Column(name = "version")
+    @JsonProperty("version")
+    private int version;
+
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, targetEntity = User.class)
     @JoinTable(name = "asset_user", joinColumns = @JoinColumn(name = "asset_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
     @JsonIgnore
@@ -171,5 +187,37 @@ public class Asset implements Serializable {
 
     public void setSubscribed(String subscribed) {
         this.subscribed = subscribed;
+    }
+
+    public String getChecksum() {
+        return checksum;
+    }
+
+    public void setChecksum(String checksum) {
+        this.checksum = checksum;
+    }
+
+    public String getIsLatestVersion() {
+        return isLatestVersion;
+    }
+
+    public void setIsLatestVersion(String isLatestVersion) {
+        this.isLatestVersion = isLatestVersion;
+    }
+
+    public String getOriginalAssetId() {
+        return originalAssetId;
+    }
+
+    public void setOriginalAssetId(String originalAssetId) {
+        this.originalAssetId = originalAssetId;
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
+    public void setVersion(int version) {
+        this.version = version;
     }
 }
