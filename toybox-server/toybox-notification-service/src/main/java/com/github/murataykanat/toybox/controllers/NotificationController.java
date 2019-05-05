@@ -66,19 +66,23 @@ public class NotificationController {
                             if(!toUsersByUserId.isEmpty()){
                                 if(toUsersByUserId.size() == 1){
                                     User toUser = toUsersByUserId.get(0);
+                                    if(!authentication.getName().equalsIgnoreCase(toUser.getUsername())){
+                                        String toUsername = toUser.getUsername();
+                                        String fromUsername = sendNotificationRequest.getFromUser().getUsername();
 
-                                    String toUsername = toUser.getUsername();
-                                    String fromUsername = sendNotificationRequest.getFromUser().getUsername();
+                                        Notification notification = new Notification();
+                                        notification.setUsername(toUsername);
+                                        notification.setNotification(sendNotificationRequest.getMessage());
+                                        notification.setIsRead("N");
+                                        notification.setDate(new Date());
+                                        notification.setFrom(fromUsername);
 
-                                    Notification notification = new Notification();
-                                    notification.setUsername(toUsername);
-                                    notification.setNotification(sendNotificationRequest.getMessage());
-                                    notification.setIsRead("N");
-                                    notification.setDate(new Date());
-                                    notification.setFrom(fromUsername);
-
-                                    rabbitTemplate.convertAndSend(topicExchangeName,"toybox.notification." + System.currentTimeMillis(), notification);
-                                    notificationCount++;
+                                        rabbitTemplate.convertAndSend(topicExchangeName,"toybox.notification." + System.currentTimeMillis(), notification);
+                                        notificationCount++;
+                                    }
+                                    else{
+                                        _logger.debug("Users cannot send notification to themselves. Skipping...");
+                                    }
                                 }
                                 else{
                                     throw new Exception("There are more than one user with ID '" + assetUser.getUserId() + "'.");
@@ -89,7 +93,12 @@ public class NotificationController {
                             }
                         }
 
-                        genericResponse.setMessage(notificationCount + " notification(s) were sent successfully!");
+                        if(notificationCount > 0){
+                            genericResponse.setMessage(notificationCount + " notification(s) were sent successfully!");
+                        }
+                        else{
+                            genericResponse.setMessage("No notifications were sent.");
+                        }
 
                         _logger.debug("<< sendNotification()");
                         return new ResponseEntity<>(genericResponse, HttpStatus.OK);
