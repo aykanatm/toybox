@@ -394,44 +394,38 @@ public class AssetController {
 
             if(selectedAssets != null){
                 if(isSessionValid(authentication)){
-                    List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-                    if(!usersByUsername.isEmpty()){
-                        if(usersByUsername.size() == 1){
-                            User user = usersByUsername.get(0);
-                            if(!selectedAssets.getSelectedAssets().isEmpty()){
-                                for(Asset asset: selectedAssets.getSelectedAssets()){
-                                    assetsRepository.deleteAssetById("Y", asset.getId());
+                    User user = getUser(authentication);
+                    if(user != null){
+                        if(!selectedAssets.getSelectedAssets().isEmpty()){
+                            for(Asset asset: selectedAssets.getSelectedAssets()){
+                                assetsRepository.deleteAssetById("Y", asset.getId());
 
-                                    // Send notification
-                                    String message = "Asset '" + asset.getName() + "' is deleted by '" + user.getUsername() + "'";
-                                    SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                                    sendNotificationRequest.setAsset(asset);
-                                    sendNotificationRequest.setFromUser(user);
-                                    sendNotificationRequest.setMessage(message);
-                                    sendNotification(sendNotificationRequest, session);
-                                }
-
-                                genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " asset(s) deleted successfully.");
-
-                                _logger.debug("<< deleteAssets()");
-                                return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                // Send notification
+                                String message = "Asset '" + asset.getName() + "' is deleted by '" + user.getUsername() + "'";
+                                SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                sendNotificationRequest.setAsset(asset);
+                                sendNotificationRequest.setFromUser(user);
+                                sendNotificationRequest.setMessage(message);
+                                sendNotification(sendNotificationRequest, session);
                             }
-                            else{
-                                String warningMessage = "No assets were selected!";
-                                _logger.warn(warningMessage);
 
-                                genericResponse.setMessage(warningMessage);
+                            genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " asset(s) deleted successfully.");
 
-                                _logger.debug("<< deleteAssets()");
-                                return new ResponseEntity<>(genericResponse, HttpStatus.NOT_FOUND);
-                            }
+                            _logger.debug("<< deleteAssets()");
+                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                         }
                         else{
-                            throw new Exception("Username '" + authentication.getName() + "' is not unique!");
+                            String warningMessage = "No assets were selected!";
+                            _logger.warn(warningMessage);
+
+                            genericResponse.setMessage(warningMessage);
+
+                            _logger.debug("<< deleteAssets()");
+                            return new ResponseEntity<>(genericResponse, HttpStatus.NOT_FOUND);
                         }
                     }
                     else{
-                        throw new Exception("No users with username '" + authentication.getName() + " is found!");
+                        throw new Exception("User is null!");
                     }
                 }
                 else{
@@ -643,7 +637,7 @@ public class AssetController {
     }
 
     @RequestMapping(value = "/assets/{assetId}", method = RequestMethod.PATCH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<GenericResponse> updateAsset(Authentication authentication, @RequestBody UpdateAssetRequest updateAssetRequest, @PathVariable String assetId){
+    public ResponseEntity<GenericResponse> updateAsset(Authentication authentication, HttpSession session, @RequestBody UpdateAssetRequest updateAssetRequest, @PathVariable String assetId){
         _logger.debug("updateAssets() >>");
         GenericResponse genericResponse = new GenericResponse();
 
@@ -651,45 +645,59 @@ public class AssetController {
             if(StringUtils.isNotBlank(assetId)){
                 if(updateAssetRequest != null){
                     if(isSessionValid(authentication)){
-                        List<Asset> assetsById = assetsRepository.getAssetsById(assetId);
-                        if(!assetsById.isEmpty()){
-                            if(assetsById.size() == 1){
-                                Asset asset = assetsById.get(0);
-                                String extension = asset.getExtension().toLowerCase();
-                                String newFileName = updateAssetRequest.getName() + "." + extension;
-                                File oldFile = new File(asset.getPath());
-                                if(oldFile.exists()){
-                                    String parentDirectoryPath = oldFile.getParentFile().getAbsolutePath();
-                                    String newFilePath = parentDirectoryPath + File.separator + newFileName;
-                                    File newFile = new File(newFilePath);
-                                    FileUtils.moveFile(oldFile, newFile);
+                        User user = getUser(authentication);
+                        if(user != null){
+                            List<Asset> assetsById = assetsRepository.getAssetsById(assetId);
+                            if(!assetsById.isEmpty()){
+                                if(assetsById.size() == 1){
+                                    Asset asset = assetsById.get(0);
+                                    String extension = asset.getExtension().toLowerCase();
+                                    String newFileName = updateAssetRequest.getName() + "." + extension;
+                                    File oldFile = new File(asset.getPath());
+                                    if(oldFile.exists()){
+                                        String parentDirectoryPath = oldFile.getParentFile().getAbsolutePath();
+                                        String newFilePath = parentDirectoryPath + File.separator + newFileName;
+                                        File newFile = new File(newFilePath);
+                                        FileUtils.moveFile(oldFile, newFile);
 
-                                    assetsRepository.updateAssetName(newFileName, newFilePath, assetId);
+                                        assetsRepository.updateAssetName(newFileName, newFilePath, assetId);
 
-                                    String message = "File renamed successfully.";
-                                    _logger.debug(message);
+                                        // Send notification
+                                        String notification = "Asset '" + asset.getName() + "' is updated by '" + user.getUsername() + "'";
+                                        SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                        sendNotificationRequest.setAsset(asset);
+                                        sendNotificationRequest.setFromUser(user);
+                                        sendNotificationRequest.setMessage(notification);
+                                        sendNotification(sendNotificationRequest, session);
 
-                                    genericResponse.setMessage(message);
+                                        String message = "Asset updated successfully.";
+                                        _logger.debug(message);
 
-                                    _logger.debug("<< updateAssets()");
-                                    return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                        genericResponse.setMessage(message);
+
+                                        _logger.debug("<< updateAssets()");
+                                        return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                    }
+                                    else{
+                                        throw new Exception("File path " + asset.getPath() + " is not a valid file!");
+                                    }
                                 }
                                 else{
-                                    throw new Exception("File path " + asset.getPath() + " is not a valid file!");
+                                    throw new Exception("Multiple assets with ID '" + assetId + "' found!");
                                 }
                             }
                             else{
-                                throw new Exception("Multiple assets with ID '" + assetId + "' found!");
+                                String errorMessage = "Asset with ID '" + assetId + "' is not found!";
+                                _logger.error(errorMessage);
+
+                                genericResponse.setMessage(errorMessage);
+
+                                _logger.debug("<< updateAssets()");
+                                return new ResponseEntity<>(genericResponse, HttpStatus.NOT_FOUND);
                             }
                         }
                         else{
-                            String errorMessage = "Asset with ID '" + assetId + "' is not found!";
-                            _logger.error(errorMessage);
-
-                            genericResponse.setMessage(errorMessage);
-
-                            _logger.debug("<< updateAssets()");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.NOT_FOUND);
+                            throw new Exception("User is null!");
                         }
                     }
                     else{
@@ -825,6 +833,24 @@ public class AssetController {
 
         _logger.error(errorMessage);
         return false;
+    }
+
+    private User getUser(Authentication authentication){
+        String errorMessage;
+        List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
+        if(!usersByUsername.isEmpty()){
+            if(usersByUsername.size() == 1){
+                return usersByUsername.get(0);
+            }
+            else{
+                errorMessage = "Username '" + authentication.getName() + "' is not unique!";
+            }
+        }
+        else{
+            errorMessage = "No users with username '" + authentication.getName() + " is found!";
+        }
+        _logger.error(errorMessage);
+        return null;
     }
 
     private boolean isSubscribed(User user, Asset asset){
