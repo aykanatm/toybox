@@ -42,6 +42,7 @@ import javax.servlet.http.HttpSession;
 import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @RefreshScope
 @RestController
@@ -283,21 +284,11 @@ public class AssetController {
                                     assets = allAssets;
                                 }
 
-                                List<Facet> facets = FacetUtils.getInstance().getFacets(assets);
-
-                                retrieveAssetsResults.setFacets(facets);
-
-                                if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_import_date")){
-                                    SortUtils.getInstance().sortItems(sortType, assets, Comparator.comparing(Asset::getImportDate, Comparator.nullsLast(Comparator.naturalOrder())));
-                                }
-                                else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_name")){
-                                    SortUtils.getInstance().sortItems(sortType, assets, Comparator.comparing(Asset::getName, Comparator.nullsLast(Comparator.naturalOrder())));
-                                }
-
                                 Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
 
                                 List<Asset> assetsByCurrentUser;
-                                if(authorities.contains("ROLE_ADMIN")){
+                                List<? extends GrantedAuthority> role_admin = authorities.stream().filter(authority -> authority.getAuthority().equalsIgnoreCase("ROLE_ADMIN")).collect(Collectors.toList());
+                                if(!role_admin.isEmpty()){
                                     _logger.debug("Retrieving all assets [Admin User]...");
                                     assetsByCurrentUser = assets;
                                 }
@@ -306,7 +297,20 @@ public class AssetController {
                                     assetsByCurrentUser = assets.stream().filter(a -> a.getImportedByUsername() != null && a.getImportedByUsername().equalsIgnoreCase(user.getUsername())).collect(Collectors.toList());
                                 }
 
-                                int totalRecords = assets.size();
+                                // Set facets
+                                List<Facet> facets = FacetUtils.getInstance().getFacets(assetsByCurrentUser);
+                                retrieveAssetsResults.setFacets(facets);
+
+                                // Sort assets
+                                if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_import_date")){
+                                    SortUtils.getInstance().sortItems(sortType, assetsByCurrentUser, Comparator.comparing(Asset::getImportDate, Comparator.nullsLast(Comparator.naturalOrder())));
+                                }
+                                else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_name")){
+                                    SortUtils.getInstance().sortItems(sortType, assetsByCurrentUser, Comparator.comparing(Asset::getName, Comparator.nullsLast(Comparator.naturalOrder())));
+                                }
+
+                                // Paginate assets
+                                int totalRecords = assetsByCurrentUser.size();
                                 int startIndex = offset;
                                 int endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
 
@@ -314,6 +318,7 @@ public class AssetController {
 
                                 List<AssetUser> assetUsersByUserId = assetUserRepository.findAssetUsersByUserId(user.getId());
 
+                                // Set subscription status
                                 for(Asset assetOnPage: assetsOnPage){
                                     if(!assetUsersByUserId.isEmpty()){
                                         for(AssetUser assetUser: assetUsersByUserId){
