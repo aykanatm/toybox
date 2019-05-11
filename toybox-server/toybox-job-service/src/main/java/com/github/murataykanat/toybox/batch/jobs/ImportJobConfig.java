@@ -150,8 +150,8 @@ public class ImportJobConfig {
                                         // Generate database entry
 
                                         String checksum = calculateChecksum(assetDestination.getAbsolutePath());
-                                        String originalAssetId = getOriginalAssetId(assetDestination.getName(), assetId);
-                                        int latestVersion = getLatestVersion(assetDestination.getName());
+                                        String originalAssetId = getOriginalAssetId(assetDestination.getName(), assetId, username);
+                                        int latestVersion = getLatestVersion(assetDestination.getName(), username);
 
                                         Asset asset = new Asset();
                                         asset.setId(assetId);
@@ -169,7 +169,7 @@ public class ImportJobConfig {
                                         asset.setOriginalAssetId(originalAssetId);
                                         asset.setVersion(latestVersion);
 
-                                        updateDuplicateAssets(assetDestination.getName(), assetId);
+                                        updateDuplicateAssets(assetDestination.getName(), assetId, username);
                                         insertAsset(asset);
                                         assets.add(asset);
                                     }
@@ -346,9 +346,9 @@ public class ImportJobConfig {
         return result.toString();
     }
 
-    private String getOriginalAssetId(String assetName, String assetId){
+    private String getOriginalAssetId(String assetName, String assetId, String username){
         _logger.debug("getOriginalAssetId() >>");
-        List<Asset> duplicateAssetsByAssetName = assetsRepository.getDuplicateAssetsByAssetName(assetName);
+        List<Asset> duplicateAssetsByAssetName = assetsRepository.getDuplicateAssetsByAssetNameAndUsername(assetName, username);
         if(duplicateAssetsByAssetName.isEmpty()){
             _logger.debug("<< getOriginalAssetId()");
             return assetId;
@@ -365,9 +365,9 @@ public class ImportJobConfig {
         }
     }
 
-    private int getLatestVersion(String assetName){
+    private int getLatestVersion(String assetName, String username){
         _logger.debug("getLatestVersion() >>");
-        List<Asset> duplicateAssetsByAssetName = assetsRepository.getDuplicateAssetsByAssetName(assetName);
+        List<Asset> duplicateAssetsByAssetName = assetsRepository.getDuplicateAssetsByAssetNameAndUsername(assetName, username);
         if(duplicateAssetsByAssetName.isEmpty()){
             return 1;
         }
@@ -406,8 +406,8 @@ public class ImportJobConfig {
         _logger.debug("<< insertAsset()");
     }
 
-    private void updateDuplicateAssets(String assetName, String assetId){
-        List<Asset> duplicateAssetsByAssetName= assetsRepository.getDuplicateAssetsByAssetName(assetName);
+    private void updateDuplicateAssets(String assetName, String assetId, String username){
+        List<Asset> duplicateAssetsByAssetName= assetsRepository.getDuplicateAssetsByAssetNameAndUsername(assetName, username);
         if(!duplicateAssetsByAssetName.isEmpty()){
             List<String> assetIds = duplicateAssetsByAssetName.stream()
                     .filter(asset -> !asset.getId().equalsIgnoreCase(assetId))
