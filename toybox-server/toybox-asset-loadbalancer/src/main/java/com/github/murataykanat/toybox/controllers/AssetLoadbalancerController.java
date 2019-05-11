@@ -2,10 +2,7 @@ package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
-import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
-import com.github.murataykanat.toybox.schema.asset.RetrieveAssetsResults;
-import com.github.murataykanat.toybox.schema.asset.SelectedAssets;
-import com.github.murataykanat.toybox.schema.asset.UpdateAssetRequest;
+import com.github.murataykanat.toybox.schema.asset.*;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.upload.UploadFile;
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
@@ -751,6 +748,95 @@ public class AssetLoadbalancerController {
 
             _logger.debug("<< updateAssetErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @HystrixCommand(fallbackMethod = "getVersionHistoryErrorFallback")
+    @RequestMapping(value = "/assets/{assetId}/versions", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<AssetVersionResponse> getVersionHistory(Authentication authentication, HttpSession session, @PathVariable String assetId){
+        _logger.debug("getVersionHistory() >>");
+        AssetVersionResponse assetVersionResponse = new AssetVersionResponse();
+
+        try {
+            if(StringUtils.isNotBlank(assetId)){
+                if(isSessionValid(authentication)){
+                    HttpHeaders headers = getHeaders(session);
+                    String prefix = getPrefix();
+
+                    if(StringUtils.isNotBlank(prefix)){
+                        _logger.debug("<< updateAsset()");
+                        return restTemplate.exchange(prefix + assetServiceName + "/assets/" + assetId + "/versions", HttpMethod.GET, new HttpEntity<>(headers), AssetVersionResponse.class);
+                    }
+                    else{
+                        String errorMessage = "Service ID prefix is null!";
+                        _logger.error(errorMessage);
+
+                        assetVersionResponse.setMessage(errorMessage);
+
+                        _logger.debug("<< getVersionHistory()");
+                        return new ResponseEntity<>(assetVersionResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                    }
+                }
+                else{
+                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    _logger.error(errorMessage);
+
+                    assetVersionResponse.setMessage(errorMessage);
+
+                    _logger.debug("<< updateAssets()");
+                    return new ResponseEntity<>(assetVersionResponse, HttpStatus.UNAUTHORIZED);
+                }
+            }
+            else{
+                String errorMessage = "Asset ID is blank!";
+                _logger.error(errorMessage);
+
+                assetVersionResponse.setMessage(errorMessage);
+
+                _logger.debug("<< getVersionHistory()");
+                return new ResponseEntity<>(assetVersionResponse, HttpStatus.BAD_REQUEST);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while retrieving asset version history for asset with ID '" + assetId + "'. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            assetVersionResponse.setMessage(errorMessage);
+
+            _logger.debug("<< getVersionHistory()");
+            return new ResponseEntity<>(assetVersionResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public ResponseEntity<AssetVersionResponse> getVersionHistoryErrorFallback(Authentication authentication, HttpSession session, String assetId, Throwable e){
+        _logger.debug("getVersionHistoryErrorFallback() >>");
+
+        AssetVersionResponse assetVersionResponse = new AssetVersionResponse();
+        if(StringUtils.isNotBlank(assetId)){
+            String errorMessage;
+            if(e.getLocalizedMessage() != null){
+                errorMessage = "Unable to retrieve the asset version history. " + e.getLocalizedMessage();
+            }
+            else{
+                errorMessage = "Unable to get response from the asset service.";
+            }
+
+            _logger.error(errorMessage, e);
+
+            assetVersionResponse.setMessage(errorMessage);
+
+            _logger.debug("<< getVersionHistoryErrorFallback()");
+            return new ResponseEntity<>(assetVersionResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        else{
+            String errorMessage = "Asset ID is blank!";
+
+            _logger.error(errorMessage);
+
+            assetVersionResponse.setMessage(errorMessage);
+
+            _logger.debug("<< getVersionHistoryErrorFallback()");
+            return new ResponseEntity<>(assetVersionResponse, HttpStatus.BAD_REQUEST);
         }
     }
 

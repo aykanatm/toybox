@@ -20,6 +20,9 @@ public interface AssetsRepository extends JpaRepository<Asset, String> {
     @Query(value = "SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted, checksum, is_latest_version, original_asset_id, version FROM assets WHERE asset_name=?1 AND asset_imported_by_username=?2", nativeQuery = true)
     List<Asset> getDuplicateAssetsByAssetNameAndUsername(String assetName, String username);
 
+    @Query(value = "SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted, checksum, is_latest_version, original_asset_id, version FROM assets WHERE original_asset_id=?1", nativeQuery = true)
+    List<Asset> getAssetsByOriginalAssetId(String originalAssetId);
+
     @Modifying
     @Query(value = "UPDATE assets SET asset_thumbnail_path=?1 WHERE asset_id=?2", nativeQuery = true)
     int updateAssetThumbnailPath(String thumbnailPath, String assetId);

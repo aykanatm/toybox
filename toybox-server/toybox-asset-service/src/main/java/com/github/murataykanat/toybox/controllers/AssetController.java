@@ -6,10 +6,7 @@ import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.AssetUserRepository;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
-import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
-import com.github.murataykanat.toybox.schema.asset.RetrieveAssetsResults;
-import com.github.murataykanat.toybox.schema.asset.SelectedAssets;
-import com.github.murataykanat.toybox.schema.asset.UpdateAssetRequest;
+import com.github.murataykanat.toybox.schema.asset.*;
 import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
@@ -750,7 +747,85 @@ public class AssetController {
         }
     }
 
-    private File getArchiveFile(long jobId, HttpHeaders headers, String jobServiceUrl) throws Exception {
+    @RequestMapping(value = "/assets/{assetId}/versions", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<AssetVersionResponse> getVersionHistory(Authentication authentication, @PathVariable String assetId){
+        _logger.debug("getVersionHistory() >>");
+        AssetVersionResponse assetVersionResponse = new AssetVersionResponse();
+
+        try{
+            if(StringUtils.isNotBlank(assetId)){
+                if(isSessionValid(authentication)){
+                    User user = getUser(authentication);
+                    if(user != null){
+                        List<Asset> assetsById = assetsRepository.getAssetsById(assetId);
+                        if(!assetsById.isEmpty()){
+                            if(assetsById.size() == 1){
+                                Asset asset = assetsById.get(0);
+
+                                List<Asset> assetsByOriginalAssetId = assetsRepository.getAssetsByOriginalAssetId(asset.getOriginalAssetId());
+                                if(!assetsByOriginalAssetId.isEmpty()){
+                                    SortUtils.getInstance().sortItems("des", assetsByOriginalAssetId, Comparator.comparing(Asset::getVersion));
+
+                                    assetVersionResponse.setAssets(assetsByOriginalAssetId);
+                                    assetVersionResponse.setMessage("Asset version history retrieved successfully.");
+
+                                    _logger.debug("<< getVersionHistory()");
+                                    return new ResponseEntity<>(assetVersionResponse, HttpStatus.OK);
+                                }
+                                else{
+                                    throw new Exception("No assets found with original asset ID '" + asset.getOriginalAssetId() + "'!");
+                                }
+                            }
+                            else{
+                                throw new Exception("There are multiple assets with ID '" + assetId + "'!");
+                            }
+                        }
+                        else{
+                            String errorMessage = "No assets found with ID '" + assetId + "'.";
+                            _logger.error(errorMessage);
+
+                            assetVersionResponse.setMessage(errorMessage);
+
+                            _logger.debug("<< getVersionHistory()");
+                            return new ResponseEntity<>(assetVersionResponse, HttpStatus.NOT_FOUND);
+                        }
+                    }
+                    else{
+                        throw new Exception("User is null!");
+                    }
+                }
+                else{
+                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    _logger.error(errorMessage);
+
+                    assetVersionResponse.setMessage(errorMessage);
+
+                    _logger.debug("<< updateAssets()");
+                    return new ResponseEntity<>(assetVersionResponse, HttpStatus.UNAUTHORIZED);
+                }
+            }
+            else{
+                String errorMessage = "Asset ID is blank!";
+                _logger.error(errorMessage);
+
+                assetVersionResponse.setMessage(errorMessage);
+
+                _logger.debug("<< getVersionHistory()");
+                return new ResponseEntity<>(assetVersionResponse, HttpStatus.BAD_REQUEST);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while retrieving asset version history for asset with ID '" + assetId + "'. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            assetVersionResponse.setMessage(errorMessage);
+
+            _logger.debug("<< getVersionHistory()");
+            return new ResponseEntity<>(assetVersionResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private File getArchiveFile(long jobId, HttpHeaders headers, String jobServiceUrl) {
         _logger.debug("getArchiveFile() >>");
 
         RestTemplate restTemplate = new RestTemplate();
