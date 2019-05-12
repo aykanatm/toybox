@@ -1,0 +1,15 @@
+.toybox-asset-history-row{
+    padding-left: 20px !important;
+    height: 100px;
+    margin-left: 0px;
+}
+.toybox-asset-history-icon-container{
+    height: 100%;
+    width: 100%;
+    position: relative;
+}
+.toybox-asset-history-icon{
+    position: absolute;
+    font-size: 4em !important;
+    left: 25%;
+}

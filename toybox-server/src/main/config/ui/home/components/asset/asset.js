@@ -152,6 +152,7 @@ module.exports = {
         },
         assetShowVersionHistory:function(){
             console.log('Showing version history of asset with ID "' + this.id + '"');
+            this.showVersionHistory(this.id, this.renditionUrl);
             this.contextMenuOpen = false;
         }
     }

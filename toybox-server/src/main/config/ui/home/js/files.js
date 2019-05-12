@@ -266,6 +266,7 @@ const files = new Vue({
         'asset' : httpVueLoader('../components/asset/asset.vue'),
         'asset-preview-modal-window' : httpVueLoader('../components/asset-preview-modal-window/asset-preview-modal-window.vue'),
         'asset-rename-modal-window' : httpVueLoader('../components/asset-rename-modal-window/asset-rename-modal-window.vue'),
+        'asset-version-history-modal-window' : httpVueLoader('../components/asset-version-history-modal-window/asset-version-history-modal-window.vue'),
         'facet' : httpVueLoader('../components/facet/facet.vue'),
         'message' : httpVueLoader('../components/message/message.vue'),
     }
