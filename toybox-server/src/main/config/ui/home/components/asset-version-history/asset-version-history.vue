@@ -25,8 +25,11 @@
                 <i v-else class="file icon"></i>
             </div>
         </div>
-        <div class="seven wide column">
+        <div class="six wide column">
             {{ name }}
+        </div>
+        <div class="one wide column">
+            {{ size }}
         </div>
         <div class="one wide column">
             <button class="ui icon button" v-show="isHovered && isLatestVersion === 'N'" v-on:click="revert">

@@ -5,6 +5,7 @@ module.exports = {
         version: Number,
         date: Number,
         type: String,
+        size: String,
         username: String,
         renditionUrl: String,
         isLatestVersion: String
