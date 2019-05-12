@@ -11,16 +11,16 @@ import java.util.Date;
 import java.util.List;
 
 public interface AssetsRepository extends JpaRepository<Asset, String> {
-    @Query(value = "SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted, checksum, is_latest_version, original_asset_id, version FROM assets WHERE deleted='N'", nativeQuery = true)
+    @Query(value = "SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted, checksum, is_latest_version, original_asset_id, version, file_size FROM assets WHERE deleted='N'", nativeQuery = true)
     List<Asset> getNonDeletedAssets();
 
-    @Query(value = "SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted, checksum, is_latest_version, original_asset_id, version FROM assets WHERE asset_id=?1", nativeQuery = true)
+    @Query(value = "SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted, checksum, is_latest_version, original_asset_id, version, file_size FROM assets WHERE asset_id=?1", nativeQuery = true)
     List<Asset> getAssetsById(String assetId);
 
-    @Query(value = "SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted, checksum, is_latest_version, original_asset_id, version FROM assets WHERE asset_name=?1 AND asset_imported_by_username=?2", nativeQuery = true)
+    @Query(value = "SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted, checksum, is_latest_version, original_asset_id, version, file_size FROM assets WHERE asset_name=?1 AND asset_imported_by_username=?2", nativeQuery = true)
     List<Asset> getDuplicateAssetsByAssetNameAndUsername(String assetName, String username);
 
-    @Query(value = "SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted, checksum, is_latest_version, original_asset_id, version FROM assets WHERE original_asset_id=?1", nativeQuery = true)
+    @Query(value = "SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted, checksum, is_latest_version, original_asset_id, version, file_size FROM assets WHERE original_asset_id=?1", nativeQuery = true)
     List<Asset> getAssetsByOriginalAssetId(String originalAssetId);
 
     @Modifying
@@ -43,13 +43,13 @@ public interface AssetsRepository extends JpaRepository<Asset, String> {
 
     @Modifying
     @Query(value = "INSERT INTO assets(asset_id, asset_extension, asset_imported_by_username, asset_name, asset_path, " +
-            "asset_preview_path, asset_thumbnail_path, asset_type, asset_import_date, deleted, checksum, is_latest_version, original_asset_id, version) VALUES (:asset_id, :asset_extension, " +
-            ":asset_imported_by_username, :asset_name, :asset_path, :asset_preview_path, :asset_thumbnail_path, :asset_type, :asset_import_date, :deleted, :checksum, :is_latest_version, :original_asset_id, :version)", nativeQuery = true)
+            "asset_preview_path, asset_thumbnail_path, asset_type, asset_import_date, deleted, checksum, is_latest_version, original_asset_id, version, file_size) VALUES (:asset_id, :asset_extension, " +
+            ":asset_imported_by_username, :asset_name, :asset_path, :asset_preview_path, :asset_thumbnail_path, :asset_type, :asset_import_date, :deleted, :checksum, :is_latest_version, :original_asset_id, :version, :file_size)", nativeQuery = true)
     int insertAsset(@Param("asset_id") String assetId, @Param("asset_extension") String extension, @Param("asset_imported_by_username") String username,
                     @Param("asset_name") String name, @Param("asset_path") String path, @Param("asset_preview_path") String previewPath,
                     @Param("asset_thumbnail_path") String thumbnailPath, @Param("asset_type") String mimeType, @Param("asset_import_date") Date importDate,
                     @Param("deleted") String deleted, @Param("checksum") String checksum, @Param("is_latest_version") String isLatestVersion,
-                    @Param("original_asset_id") String originalAssetId, @Param("version") int version);
+                    @Param("original_asset_id") String originalAssetId, @Param("version") int version, @Param("file_size") String fileSize);
 
     @Transactional
     @Modifying

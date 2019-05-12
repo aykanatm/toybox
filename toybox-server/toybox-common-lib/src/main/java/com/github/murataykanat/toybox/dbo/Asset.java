@@ -80,6 +80,10 @@ public class Asset implements Serializable {
     @JsonProperty("version")
     private int version;
 
+    @Column(name = "file_size")
+    @JsonProperty("fileSize")
+    private String fileSize;
+
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, targetEntity = User.class)
     @JoinTable(name = "asset_user", joinColumns = @JoinColumn(name = "asset_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
     @JsonIgnore
@@ -219,5 +223,13 @@ public class Asset implements Serializable {
 
     public void setVersion(int version) {
         this.version = version;
+    }
+
+    public String getFileSize() {
+        return fileSize;
+    }
+
+    public void setFileSize(String fileSize) {
+        this.fileSize = fileSize;
     }
 }

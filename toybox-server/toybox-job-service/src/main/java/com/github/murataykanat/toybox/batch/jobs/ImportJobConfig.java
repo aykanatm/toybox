@@ -168,6 +168,7 @@ public class ImportJobConfig {
                                         asset.setIsLatestVersion("Y");
                                         asset.setOriginalAssetId(originalAssetId);
                                         asset.setVersion(latestVersion);
+                                        asset.setFileSize(FileUtils.byteCountToDisplaySize(assetSource.length()));
 
                                         updateDuplicateAssets(assetDestination.getName(), assetId, username);
                                         insertAsset(asset);
@@ -396,12 +397,13 @@ public class ImportJobConfig {
         _logger.debug("Is latest version: " + asset.getIsLatestVersion());
         _logger.debug("Original Asset ID: " + asset.getOriginalAssetId());
         _logger.debug("Version: " + asset.getVersion());
+        _logger.debug("File Size: " + asset.getFileSize());
 
         _logger.debug("Inserting asset into the database...");
 
         assetsRepository.insertAsset(asset.getId(), asset.getExtension(), asset.getImportedByUsername(), asset.getName(), asset.getPath(),
                 asset.getPreviewPath(), asset.getThumbnailPath(), asset.getType(), asset.getImportDate(), asset.getDeleted(), asset.getChecksum(),
-                asset.getIsLatestVersion(), asset.getOriginalAssetId(), asset.getVersion());
+                asset.getIsLatestVersion(), asset.getOriginalAssetId(), asset.getVersion(), asset.getFileSize());
 
         _logger.debug("<< insertAsset()");
     }
