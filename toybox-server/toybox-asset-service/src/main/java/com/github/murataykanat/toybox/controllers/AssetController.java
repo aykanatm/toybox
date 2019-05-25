@@ -423,6 +423,22 @@ public class AssetController {
                                     sendNotification(sendNotificationRequest, session);
                                 }
 
+                                for(Asset asset: assetsAndVersions){
+                                    List<User> usersByUsername = usersRepository.findUsersByUsername(asset.getImportedByUsername());
+                                    if(!usersByUsername.isEmpty()){
+                                        if(usersByUsername.size() == 1){
+                                            User importUser = usersByUsername.get(0);
+                                            assetUserRepository.deleteSubscriber(asset.getId(), importUser.getId());
+                                        }
+                                        else{
+                                            throw new Exception("There are multiple instances of the username '" + asset.getImportedByUsername() + "'!");
+                                        }
+                                    }
+                                    else{
+                                        throw new Exception("Username '" + asset.getImportedByUsername() + "' cannot be found in the system!");
+                                    }
+                                }
+
                                 genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " asset(s) deleted successfully.");
 
                                 _logger.debug("<< deleteAssets()");
@@ -588,14 +604,6 @@ public class AssetController {
                                         assetCount++;
                                     }
                                 }
-
-//                                int assetCount = 0;
-//                                for(Asset asset: selectedAssets.getSelectedAssets()){
-//                                    if(isSubscribed(user, asset)){
-//                                        assetUserRepository.deleteSubscriber(asset.getId(), user.getId());
-//                                        assetCount++;
-//                                    }
-//                                }
 
                                 if(assetCount > 0){
                                     if(assetCount == selectedAssets.getSelectedAssets().size()){
