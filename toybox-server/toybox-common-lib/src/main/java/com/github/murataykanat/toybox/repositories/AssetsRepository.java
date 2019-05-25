@@ -53,6 +53,6 @@ public interface AssetsRepository extends JpaRepository<Asset, String> {
 
     @Transactional
     @Modifying
-    @Query(value = "UPDATE assets SET deleted=?1 WHERE asset_id=?2", nativeQuery = true)
-    int deleteAssetById(String deleted, String assetId);
+    @Query(value = "UPDATE assets SET deleted=:deleted WHERE asset_id IN :assetIds", nativeQuery = true)
+    int deleteAssetById(@Param("deleted") String deleted, @Param("assetIds") List<String> assetIds);
 }

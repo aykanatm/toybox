@@ -404,22 +404,46 @@ public class AssetController {
                     User user = getUser(authentication);
                     if(user != null){
                         if(!selectedAssets.getSelectedAssets().isEmpty()){
-                            for(Asset asset: selectedAssets.getSelectedAssets()){
-                                assetsRepository.deleteAssetById("Y", asset.getId());
+                            List<Asset> assetsAndVersions = new ArrayList<>();
 
-                                // Send notification
-                                String message = "Asset '" + asset.getName() + "' is deleted by '" + user.getUsername() + "'";
-                                SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                                sendNotificationRequest.setAsset(asset);
-                                sendNotificationRequest.setFromUser(user);
-                                sendNotificationRequest.setMessage(message);
-                                sendNotification(sendNotificationRequest, session);
+                            for(Asset selectedAsset: selectedAssets.getSelectedAssets()){
+                                List<Asset> assetsById = assetsRepository.getAssetsById(selectedAsset.getId());
+                                if(!assetsById.isEmpty()){
+                                    if(assetsById.size() == 1){
+                                        Asset actualAsset = assetsById.get(0);
+                                        List<Asset> assetsByOriginalAssetId = assetsRepository.getAssetsByOriginalAssetId(actualAsset.getOriginalAssetId());
+                                        assetsAndVersions.addAll(assetsByOriginalAssetId);
+                                    }
+                                    else{
+                                        throw new Exception("There are multiple assets with ID '" + selectedAsset.getId() + "'!");
+                                    }
+                                }
+                                else{
+                                    throw new Exception("Asset with ID '" + selectedAsset.getId() + "' is not found!");
+                                }
                             }
 
-                            genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " asset(s) deleted successfully.");
+                            if(!assetsAndVersions.isEmpty()){
+                                assetsRepository.deleteAssetById("Y",assetsAndVersions.stream().map(a -> a.getId()).collect(Collectors.toList()));
 
-                            _logger.debug("<< deleteAssets()");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                for(Asset asset: selectedAssets.getSelectedAssets()){
+                                    // Send notification
+                                    String message = "Asset '" + asset.getName() + "' is deleted by '" + user.getUsername() + "'";
+                                    SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                    sendNotificationRequest.setAsset(asset);
+                                    sendNotificationRequest.setFromUser(user);
+                                    sendNotificationRequest.setMessage(message);
+                                    sendNotification(sendNotificationRequest, session);
+                                }
+
+                                genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " asset(s) deleted successfully.");
+
+                                _logger.debug("<< deleteAssets()");
+                                return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                            }
+                            else{
+                                throw new Exception("There are no assets to set as deleted!");
+                            }
                         }
                         else{
                             String warningMessage = "No assets were selected!";
