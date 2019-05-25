@@ -495,7 +495,8 @@ public class AssetController {
                                 int assetCount = 0;
                                 for(Asset selectedAsset: selectedAssets.getSelectedAssets()){
                                     if(!isSubscribed(user, selectedAsset)){
-                                        assetUserRepository.insertSubscriber(selectedAsset.getId(), user.getId());
+                                        List<Asset> assetsByOriginalAssetId = assetsRepository.getAssetsByOriginalAssetId(selectedAsset.getOriginalAssetId());
+                                        assetsByOriginalAssetId.forEach(asset -> assetUserRepository.insertSubscriber(asset.getId(), user.getId()));
                                         assetCount++;
                                     }
                                 }
@@ -580,12 +581,21 @@ public class AssetController {
                                 User user = users.get(0);
 
                                 int assetCount = 0;
-                                for(Asset asset: selectedAssets.getSelectedAssets()){
-                                    if(isSubscribed(user, asset)){
-                                        assetUserRepository.deleteSubscriber(asset.getId(), user.getId());
+                                for(Asset selectedAsset: selectedAssets.getSelectedAssets()){
+                                    if(isSubscribed(user, selectedAsset)){
+                                        List<Asset> assetsByOriginalAssetId = assetsRepository.getAssetsByOriginalAssetId(selectedAsset.getOriginalAssetId());
+                                        assetsByOriginalAssetId.forEach(asset -> assetUserRepository.deleteSubscriber(asset.getId(), user.getId()));
                                         assetCount++;
                                     }
                                 }
+
+//                                int assetCount = 0;
+//                                for(Asset asset: selectedAssets.getSelectedAssets()){
+//                                    if(isSubscribed(user, asset)){
+//                                        assetUserRepository.deleteSubscriber(asset.getId(), user.getId());
+//                                        assetCount++;
+//                                    }
+//                                }
 
                                 if(assetCount > 0){
                                     if(assetCount == selectedAssets.getSelectedAssets().size()){
