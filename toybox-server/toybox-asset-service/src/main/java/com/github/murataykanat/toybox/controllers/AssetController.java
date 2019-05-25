@@ -39,7 +39,6 @@ import javax.servlet.http.HttpSession;
 import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @RefreshScope
 @RestController
@@ -411,7 +410,7 @@ public class AssetController {
                                 if(!assetsById.isEmpty()){
                                     if(assetsById.size() == 1){
                                         Asset actualAsset = assetsById.get(0);
-                                        List<Asset> assetsByOriginalAssetId = assetsRepository.getAssetsByOriginalAssetId(actualAsset.getOriginalAssetId());
+                                        List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(actualAsset.getOriginalAssetId());
                                         assetsAndVersions.addAll(assetsByOriginalAssetId);
                                     }
                                     else{
@@ -506,9 +505,9 @@ public class AssetController {
                                 User user = users.get(0);
 
                                 int assetCount = 0;
-                                for(Asset asset: selectedAssets.getSelectedAssets()){
-                                    if(!isSubscribed(user, asset)){
-                                        assetUserRepository.insertSubscriber(asset.getId(), user.getId());
+                                for(Asset selectedAsset: selectedAssets.getSelectedAssets()){
+                                    if(!isSubscribed(user, selectedAsset)){
+                                        assetUserRepository.insertSubscriber(selectedAsset.getId(), user.getId());
                                         assetCount++;
                                     }
                                 }
@@ -787,7 +786,7 @@ public class AssetController {
                             if(assetsById.size() == 1){
                                 Asset asset = assetsById.get(0);
 
-                                List<Asset> assetsByOriginalAssetId = assetsRepository.getAssetsByOriginalAssetId(asset.getOriginalAssetId());
+                                List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(asset.getOriginalAssetId());
                                 if(!assetsByOriginalAssetId.isEmpty()){
                                     SortUtils.getInstance().sortItems("des", assetsByOriginalAssetId, Comparator.comparing(Asset::getVersion));
 
@@ -863,7 +862,7 @@ public class AssetController {
                         if(!assetsById.isEmpty()){
                             if(assetsById.size() == 1){
                                 Asset asset = assetsById.get(0);
-                                List<Asset> assetsByOriginalAssetId = assetsRepository.getAssetsByOriginalAssetId(asset.getOriginalAssetId());
+                                List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(asset.getOriginalAssetId());
                                 if(!assetsByOriginalAssetId.isEmpty()){
                                     SortUtils.getInstance().sortItems("des", assetsByOriginalAssetId, Comparator.comparing(Asset::getVersion));
                                     List<Asset> assetsToDelete = new ArrayList<>();
