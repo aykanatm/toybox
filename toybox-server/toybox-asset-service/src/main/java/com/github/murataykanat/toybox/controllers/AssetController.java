@@ -47,6 +47,7 @@ public class AssetController {
     private static final Log _logger = LogFactory.getLog(AssetController.class);
 
     private static final String jobServiceLoadBalancerServiceName = "toybox-job-loadbalancer";
+    private static final String assetServiceLoadBalancerServiceName = "toybox-asset-loadbalancer";
     private static final String notificationServiceLoadBalancerServiceName = "toybox-notification-loadbalancer";
 
     @Autowired
@@ -822,6 +823,131 @@ public class AssetController {
 
             _logger.debug("<< getVersionHistory()");
             return new ResponseEntity<>(assetVersionResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @RequestMapping(value = "/assets/{assetId}/revert", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<GenericResponse> revertAssetToVersion(Authentication authentication, HttpSession session, @PathVariable String assetId, @RequestBody RevertAssetVersionRequest revertAssetVersionRequest){
+        _logger.debug("revertAssetToVersion() >>");
+        GenericResponse genericResponse = new GenericResponse();
+
+        try{
+            if(StringUtils.isNotBlank(assetId)){
+                if(revertAssetVersionRequest != null){
+                    if(isSessionValid(authentication)){
+                        List<Asset> assetsById = assetsRepository.getAssetsById(assetId);
+                        if(!assetsById.isEmpty()){
+                            if(assetsById.size() == 1){
+                                Asset asset = assetsById.get(0);
+                                List<Asset> assetsByOriginalAssetId = assetsRepository.getAssetsByOriginalAssetId(asset.getOriginalAssetId());
+                                if(!assetsByOriginalAssetId.isEmpty()){
+                                    SortUtils.getInstance().sortItems("des", assetsByOriginalAssetId, Comparator.comparing(Asset::getVersion));
+                                    List<Asset> assetsToDelete = new ArrayList<>();
+                                    for(Asset versionAsset: assetsByOriginalAssetId){
+                                        if(versionAsset.getVersion() > revertAssetVersionRequest.getVersion()){
+                                            assetsToDelete.add(versionAsset);
+                                        }
+                                        else if(versionAsset.getVersion() == revertAssetVersionRequest.getVersion()){
+                                            List<String> assetIds = new ArrayList<>();
+                                            assetIds.add(versionAsset.getId());
+
+                                            assetsRepository.updateAssetsLatestVersion("Y", assetIds);
+                                        }
+                                    }
+
+                                    if(!assetsToDelete.isEmpty()){
+                                        assetsRepository.updateAssetsLatestVersion("N", assetsToDelete.stream().map(a -> a.getId()).collect(Collectors.toList()));
+
+                                        SelectedAssets selectedAssets = new SelectedAssets();
+                                        selectedAssets.setSelectedAssets(assetsToDelete);
+
+                                        RestTemplate restTemplate = new RestTemplate();
+
+                                        HttpHeaders headers = getHeaders(session);
+                                        HttpEntity<SelectedAssets> selectedAssetsEntity = new HttpEntity<>(selectedAssets, headers);
+
+                                        List<ServiceInstance> instances = discoveryClient.getInstances(assetServiceLoadBalancerServiceName);
+
+                                        if(!instances.isEmpty()){
+                                            ServiceInstance serviceInstance = instances.get(0);
+                                            String assetServiceUrl = serviceInstance.getUri().toString();
+                                            ResponseEntity<GenericResponse> genericResponseResponseEntity = restTemplate.postForEntity(assetServiceUrl + "/assets/delete", selectedAssetsEntity, GenericResponse.class);
+                                            boolean successful = genericResponseResponseEntity.getStatusCode().is2xxSuccessful();
+
+                                            if(successful){
+                                                genericResponse.setMessage("Asset was successfully reverted to version " + revertAssetVersionRequest.getVersion() + ".");
+
+                                                _logger.debug("<< revertAssetToVersion()");
+                                                return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                            }
+                                            else{
+                                                throw new Exception("Higher version assets failed to be set as deleted. " + genericResponseResponseEntity.getBody().getMessage());
+                                            }
+                                        }
+                                        else{
+                                            throw new Exception("There is no asset load balancer instance!");
+                                        }
+                                    }
+                                    else{
+                                        String errorMessage = "There were no related assets with version higher than '" + revertAssetVersionRequest.getVersion() + "'.";
+                                        _logger.error(errorMessage);
+
+                                        genericResponse.setMessage(errorMessage);
+
+                                        _logger.debug("<< revertAssetToVersion()");
+                                        return new ResponseEntity<>(genericResponse, HttpStatus.NOT_FOUND);
+                                    }
+                                }
+                                else{
+                                    throw new Exception("No assets with original asset ID '" + asset.getOriginalAssetId() + "' found!");
+                                }
+                            }
+                            else{
+                                throw new Exception("Multiple assets with ID '" + assetId + "' found!");
+                            }
+                        }
+                        else{
+                            throw new Exception("No assets with ID '" + assetId + "' found!");
+                        }
+                    }
+                    else{
+                        String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                        _logger.error(errorMessage);
+
+                        genericResponse.setMessage(errorMessage);
+
+                        _logger.debug("<< revertAssetToVersion()");
+                        return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                    }
+                }
+                else{
+                    String errorMessage = "Revert asset version request is null!";
+                    _logger.error(errorMessage);
+
+                    genericResponse.setMessage(errorMessage);
+
+                    _logger.debug("<< revertAssetToVersion()");
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Asset ID is blank!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                _logger.debug("<< revertAssetToVersion()");
+                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while reverting the asset with ID '" + assetId + "' to version " + revertAssetVersionRequest.getVersion() + ". " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            _logger.debug("<< revertAssetToVersion()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

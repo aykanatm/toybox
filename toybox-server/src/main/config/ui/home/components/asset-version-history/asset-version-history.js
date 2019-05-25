@@ -8,7 +8,8 @@ module.exports = {
         size: String,
         username: String,
         renditionUrl: String,
-        isLatestVersion: String
+        isLatestVersion: String,
+        assetUrl: String
     },
     data:function(){
         return{
@@ -56,6 +57,31 @@ module.exports = {
         },
         revert:function(){
             console.log('Reverting to version ' + this.version + '...');
+            var revertToVersionRequest = {
+                'version': this.version
+            }
+            axios.post(this.assetUrl + '/assets/' + this.id + '/revert', revertToVersionRequest)
+                .then(response => {
+                    console.log(response.data);
+                    this.$root.$emit('message-sent', 'Success', response.data.message);
+                    this.$root.$emit('refresh-asset-version-history');
+                })
+                .catch(error => {
+                    var errorMessage;
+
+                    if(error.response){
+                        errorMessage = error.response.data.message
+                        if(error.response.status == 401){
+                            window.location = '/logout';
+                        }
+                    }
+                    else{
+                        errorMessage = error.message;
+                    }
+
+                    console.error(errorMessage);
+                    this.$root.$emit('message-sent', 'Error', errorMessage);
+                });
         }
     }
 }

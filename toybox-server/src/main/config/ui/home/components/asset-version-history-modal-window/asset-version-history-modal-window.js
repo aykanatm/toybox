@@ -9,6 +9,7 @@ module.exports = {
         }
     },
     mounted:function(){
+        this.$root.$on('refresh-asset-version-history', this.retrieveVersionHistory);
         this.$root.$on('open-asset-version-history-modal-window', (assetId, renditionUrl, assetUrl) => {
             this.assetId = assetId;
             this.assetUrl = assetUrl;

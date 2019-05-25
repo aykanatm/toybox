@@ -34,7 +34,7 @@
                         <asset-version-history v-for="versionHistoryAsset in versionHistoryAssets" v-bind:id="versionHistoryAsset.id"
                         v-bind:name="versionHistoryAsset.name" v-bind:username="versionHistoryAsset.importedByUsername" v-bind:date="versionHistoryAsset.importDate"
                         v-bind:is-latest-version="versionHistoryAsset.isLatestVersion" v-bind:version="versionHistoryAsset.version" v-bind:rendition-url="renditionUrl"
-                         v-bind:type="versionHistoryAsset.type" v-bind:size="versionHistoryAsset.fileSize" v-bind:key="versionHistoryAsset.id"></asset-version-history>
+                         v-bind:type="versionHistoryAsset.type" v-bind:size="versionHistoryAsset.fileSize" v-bind:asset-url="assetUrl" v-bind:key="versionHistoryAsset.id"></asset-version-history>
                     </div>
                 </div>
             </div>

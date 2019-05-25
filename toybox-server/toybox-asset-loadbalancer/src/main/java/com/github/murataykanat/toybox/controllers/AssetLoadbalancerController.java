@@ -840,6 +840,116 @@ public class AssetLoadbalancerController {
         }
     }
 
+    @HystrixCommand(fallbackMethod = "revertAssetToVersionErrorFallback")
+    @RequestMapping(value = "/assets/{assetId}/revert", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<GenericResponse> revertAssetToVersion(Authentication authentication, HttpSession session, @PathVariable String assetId, @RequestBody RevertAssetVersionRequest revertAssetVersionRequest){
+        _logger.debug("revertAssetToVersion() >>");
+        GenericResponse genericResponse = new GenericResponse();
+
+        try{
+            if(StringUtils.isNotBlank(assetId)){
+                if(revertAssetVersionRequest != null){
+                    if(isSessionValid(authentication)){
+                        HttpHeaders headers = getHeaders(session);
+                        String prefix = getPrefix();
+                        if(StringUtils.isNotBlank(prefix)){
+                            _logger.debug("<< revertAssetToVersion()");
+                            return restTemplate.exchange(prefix + assetServiceName + "/assets/" + assetId + "/revert", HttpMethod.POST, new HttpEntity<>(revertAssetVersionRequest, headers), GenericResponse.class);
+                        }
+                        else{
+                            String errorMessage = "Service ID prefix is null!";
+                            _logger.error(errorMessage);
+
+                            genericResponse.setMessage(errorMessage);
+
+                            _logger.debug("<< revertAssetToVersion()");
+                            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                        }
+                    }
+                    else{
+                        String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                        _logger.error(errorMessage);
+
+                        genericResponse.setMessage(errorMessage);
+
+                        _logger.debug("<< revertAssetToVersion()");
+                        return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                    }
+                }
+                else{
+                    String errorMessage = "Revert asset version request is null!";
+                    _logger.error(errorMessage);
+
+                    genericResponse.setMessage(errorMessage);
+
+                    _logger.debug("<< revertAssetToVersion()");
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Asset ID is blank!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                _logger.debug("<< revertAssetToVersion()");
+                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while reverting the asset with ID '" + assetId + "' to version " + revertAssetVersionRequest.getVersion() + ". " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            _logger.debug("<< revertAssetToVersion()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public ResponseEntity<GenericResponse> revertAssetToVersionErrorFallback(Authentication authentication, HttpSession session, String assetId, RevertAssetVersionRequest revertAssetVersionRequest, Throwable e){
+        _logger.debug("revertAssetToVersionErrorFallback() >>");
+
+        GenericResponse genericResponse = new GenericResponse();
+        if(StringUtils.isNotBlank(assetId)){
+            if(revertAssetVersionRequest != null){
+                String errorMessage;
+                if(e.getLocalizedMessage() != null){
+                    errorMessage = "Unable to revert the asset to a previous version. " + e.getLocalizedMessage();
+                }
+                else{
+                    errorMessage = "Unable to get response from the asset service.";
+                }
+
+                _logger.error(errorMessage, e);
+
+                genericResponse.setMessage(errorMessage);
+
+                _logger.debug("<< revertAssetToVersionErrorFallback()");
+                return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+            else{
+                String errorMessage = "Revert asset version request is null!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                _logger.debug("<< revertAssetToVersionErrorFallback()");
+                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+            }
+        }
+        else{
+            String errorMessage = "Asset ID is blank!";
+
+            _logger.error(errorMessage);
+
+            genericResponse.setMessage(errorMessage);
+
+            _logger.debug("<< revertAssetToVersionErrorFallback()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
+
     private boolean isSessionValid(Authentication authentication){
         String errorMessage;
         List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
