@@ -687,16 +687,24 @@ public class AssetController {
                             if(!assetsById.isEmpty()){
                                 if(assetsById.size() == 1){
                                     Asset asset = assetsById.get(0);
-                                    String extension = asset.getExtension().toLowerCase();
-                                    String newFileName = updateAssetRequest.getName() + "." + extension;
-                                    File oldFile = new File(asset.getPath());
-                                    if(oldFile.exists()){
-                                        String parentDirectoryPath = oldFile.getParentFile().getAbsolutePath();
-                                        String newFilePath = parentDirectoryPath + File.separator + newFileName;
-                                        File newFile = new File(newFilePath);
-                                        FileUtils.moveFile(oldFile, newFile);
+                                    List<Asset> assetsByOriginalAssetId = assetsRepository.getAssetsByOriginalAssetId(asset.getOriginalAssetId());
+                                    if(!assetsByOriginalAssetId.isEmpty()){
+                                        for(Asset versionedAsset: assetsByOriginalAssetId){
+                                            String extension = versionedAsset.getExtension().toLowerCase();
+                                            String newFileName = updateAssetRequest.getName() + "." + extension;
+                                            File oldFile = new File(versionedAsset.getPath());
+                                            if(oldFile.exists()){
+                                                String parentDirectoryPath = oldFile.getParentFile().getAbsolutePath();
+                                                String newFilePath = parentDirectoryPath + File.separator + newFileName;
+                                                File newFile = new File(newFilePath);
+                                                FileUtils.moveFile(oldFile, newFile);
 
-                                        assetsRepository.updateAssetName(newFileName, newFilePath, assetId);
+                                                assetsRepository.updateAssetName(newFileName, newFilePath, versionedAsset.getId());
+                                            }
+                                            else{
+                                                throw new Exception("File path " + versionedAsset.getPath() + " is not a valid file!");
+                                            }
+                                        }
 
                                         // Send notification
                                         String notification = "Asset '" + asset.getName() + "' is updated by '" + user.getUsername() + "'";
@@ -715,7 +723,7 @@ public class AssetController {
                                         return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                                     }
                                     else{
-                                        throw new Exception("File path " + asset.getPath() + " is not a valid file!");
+                                        throw new Exception("There are not assets with the original asset ID '" + asset.getOriginalAssetId() + "'!");
                                     }
                                 }
                                 else{
