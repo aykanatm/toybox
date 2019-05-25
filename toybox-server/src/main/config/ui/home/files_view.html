@@ -84,7 +84,8 @@
                                 <div class="ui massive text loader">Loading</div>
                             </div>
                             <asset v-for="asset in assets" v-bind:id="asset.id" v-bind:name="asset.name" v-bind:imported-by-username="asset.importedByUsername"
-                            v-bind:extension="asset.extension" v-bind:type="asset.type" v-bind:rendition-url="renditionUrl" v-bind:subscribed="asset.subscribed" v-bind:key="asset.id"/>
+                            v-bind:extension="asset.extension" v-bind:type="asset.type" v-bind:rendition-url="renditionUrl" v-bind:subscribed="asset.subscribed"
+                            v-bind:original-asset-id="asset.originalAssetId" v-bind:key="asset.id"/>
                         </div>
                         <div class="ui right floated pagination menu toybox-pagination">
                             <a v-bind:class="{icon:true, disabled:previousPageButtonDisabled, item:true}" v-on:click="previousPage">
@@ -104,7 +105,9 @@
                 </div>
             </div>
             <div id="messages">
-                <message v-for="message in messages" v-bind:id="message.id" v-bind:is-info="message.isInfo" v-bind:is-ok="message.isOk" v-bind:is-error="message.isError" v-bind:is-warning="message.isWarning" v-bind:header="message.header" v-bind:message="message.message" v-bind:key="message.id"></message>
+                <message v-for="message in messages" v-bind:id="message.id" v-bind:is-info="message.isInfo" v-bind:is-ok="message.isOk"
+                v-bind:is-error="message.isError" v-bind:is-warning="message.isWarning" v-bind:header="message.header"
+                v-bind:message="message.message" v-bind:key="message.id"></message>
             </div>
             <asset-preview-modal-window v-bind:rendition-url="renditionUrl"></asset-preview-modal-window>
             <asset-rename-modal-window></asset-rename-modal-window>

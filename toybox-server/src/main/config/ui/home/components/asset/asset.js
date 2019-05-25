@@ -2,6 +2,7 @@ module.exports = {
     mixins:[assetActionsMixin, serviceMixin],
     props:{
         id: String,
+        originalAssetId: String,
         name: String,
         importedByUsername: String,
         extension: String,
@@ -95,7 +96,8 @@ module.exports = {
             var asset = {
                 id: this.id,
                 name: this.name,
-                type: this.type
+                type: this.type,
+                originalAssetId: this.originalAssetId
             }
             var selectedAssets= [asset];
             this.downloadAssets(selectedAssets);
@@ -121,7 +123,8 @@ module.exports = {
             var asset = {
                 id: this.id,
                 name: this.name,
-                type: this.type
+                type: this.type,
+                originalAssetId: this.originalAssetId
             }
             var selectedAssets= [asset];
             this.subscribeToAssets(selectedAssets);
@@ -133,7 +136,8 @@ module.exports = {
             var asset = {
                 id: this.id,
                 name: this.name,
-                type: this.type
+                type: this.type,
+                originalAssetId: this.originalAssetId
             }
             var selectedAssets= [asset];
             this.unsubscribeFromAssets(selectedAssets);
@@ -144,7 +148,8 @@ module.exports = {
             var asset = {
                 id: this.id,
                 name: this.name,
-                type: this.type
+                type: this.type,
+                originalAssetId: this.originalAssetId
             }
             var selectedAssets= [asset];
             this.deleteAssets(selectedAssets);

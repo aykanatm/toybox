@@ -406,20 +406,8 @@ public class AssetController {
                             List<Asset> assetsAndVersions = new ArrayList<>();
 
                             for(Asset selectedAsset: selectedAssets.getSelectedAssets()){
-                                List<Asset> assetsById = assetsRepository.getAssetsById(selectedAsset.getId());
-                                if(!assetsById.isEmpty()){
-                                    if(assetsById.size() == 1){
-                                        Asset actualAsset = assetsById.get(0);
-                                        List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(actualAsset.getOriginalAssetId());
-                                        assetsAndVersions.addAll(assetsByOriginalAssetId);
-                                    }
-                                    else{
-                                        throw new Exception("There are multiple assets with ID '" + selectedAsset.getId() + "'!");
-                                    }
-                                }
-                                else{
-                                    throw new Exception("Asset with ID '" + selectedAsset.getId() + "' is not found!");
-                                }
+                                List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(selectedAsset.getOriginalAssetId());
+                                assetsAndVersions.addAll(assetsByOriginalAssetId);
                             }
 
                             if(!assetsAndVersions.isEmpty()){
