@@ -8,12 +8,15 @@
         </a>
         <a class="item toybox-navbar-item" id="toybox-files-menu" href="/toybox/files">
             <i class="file alternate icon"></i>
+            <span>Files</span>
         </a>
         <a class="item toybox-navbar-item" id="toybox-folders-menu" href="/toybox/folders">
             <i class="folder icon"></i>
+            <span>Folders</span>
         </a>
         <a class="item toybox-navbar-item" id="toybox-folders-menu" href="/toybox/jobs">
             <i class="cogs icon"></i>
+            <span>Jobs</span>
         </a>
 
         <div class="ui icon right menu">

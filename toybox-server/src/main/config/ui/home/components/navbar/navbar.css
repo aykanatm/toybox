@@ -8,6 +8,11 @@
     padding-left: 25px !important;
 }
 
+.toybox-navbar-item > span{
+    margin-left: 5px;
+    font-weight: bold;
+}
+
 #toybox-notifications-menu{
     cursor: pointer;
 }
