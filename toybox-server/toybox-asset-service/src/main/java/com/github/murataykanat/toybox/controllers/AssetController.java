@@ -283,6 +283,7 @@ public class AssetController {
 
                                 Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
 
+                                // TODO: Change the logic to search folders service
                                 List<Asset> assetsByCurrentUser;
                                 List<? extends GrantedAuthority> role_admin = authorities.stream().filter(authority -> authority.getAuthority().equalsIgnoreCase("ROLE_ADMIN")).collect(Collectors.toList());
                                 if(!role_admin.isEmpty()){
@@ -320,6 +321,7 @@ public class AssetController {
                                 List<AssetUser> assetUsersByUserId = assetUserRepository.findAssetUsersByUserId(user.getId());
 
                                 // Set subscription status
+                                // TODO: Change the logic to search folders service
                                 for(Asset assetOnPage: assetsOnPage){
                                     if(!assetUsersByUserId.isEmpty()){
                                         for(AssetUser assetUser: assetUsersByUserId){
@@ -343,7 +345,7 @@ public class AssetController {
                                 return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.OK);
                             }
                             else{
-                                String message = "There is no asset to return.";
+                                String message = "There are no assets to return.";
                                 _logger.debug(message);
 
                                 retrieveAssetsResults.setMessage(message);
