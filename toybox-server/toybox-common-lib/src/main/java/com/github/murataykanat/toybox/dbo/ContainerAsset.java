@@ -12,7 +12,7 @@ public class ContainerAsset {
     @Column(name = "container_id")
     private String containerId;
     @Column(name = "asset_id")
-    private int assetId;
+    private String assetId;
 
     public String getContainerId() {
         return containerId;
@@ -22,11 +22,11 @@ public class ContainerAsset {
         this.containerId = containerId;
     }
 
-    public int getAssetId() {
+    public String getAssetId() {
         return assetId;
     }
 
-    public void setAssetId(int assetId) {
+    public void setAssetId(String assetId) {
         this.assetId = assetId;
     }
 }
