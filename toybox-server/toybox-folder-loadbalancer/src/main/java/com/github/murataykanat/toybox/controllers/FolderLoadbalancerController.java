@@ -1,6 +1,11 @@
 package com.github.murataykanat.toybox.controllers;
 
+import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
+import com.github.murataykanat.toybox.schema.container.ContainerSearchRequest;
+import com.github.murataykanat.toybox.schema.container.RetrieveContainersResults;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,8 +15,12 @@ import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.cloud.netflix.ribbon.RibbonClient;
 import org.springframework.context.annotation.Bean;
-import org.springframework.http.HttpHeaders;
+import org.springframework.http.*;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
@@ -41,7 +50,95 @@ public class FolderLoadbalancerController {
     @Autowired
     private RestTemplate restTemplate;
 
-    // TODO: Add services
+    @HystrixCommand(fallbackMethod = "retrieveContainersErrorFallback")
+    @RequestMapping(value = "/containers/search", method = RequestMethod.POST)
+    public ResponseEntity<RetrieveContainersResults> retrieveContainers(Authentication authentication, HttpSession session, @RequestBody ContainerSearchRequest containerSearchRequest){
+        _logger.debug("retrieveContainers() >>");
+        RetrieveContainersResults retrieveContainersResults = new RetrieveContainersResults();
+        try {
+            if(isSessionValid(authentication)){
+                if(containerSearchRequest != null){
+                    HttpHeaders headers = getHeaders(session);
+                    String prefix = getPrefix();
+
+                    if(StringUtils.isNotBlank(prefix)){
+                        _logger.debug("<< retrieveContainers()");
+                        return restTemplate.exchange(prefix + folderServiceName + "/containers/search", HttpMethod.POST, new HttpEntity<>(containerSearchRequest, headers), RetrieveContainersResults.class);
+                    }
+                    else{
+                        String errorMessage = "Service ID prefix is null!";
+
+                        _logger.error(errorMessage);
+
+                        retrieveContainersResults.setMessage(errorMessage);
+
+                        _logger.debug("<< retrieveContainers()");
+                        return new ResponseEntity<>(retrieveContainersResults, HttpStatus.INTERNAL_SERVER_ERROR);
+                    }
+                }
+                else{
+                    String errorMessage = "Container search request is null!";
+
+                    _logger.error(errorMessage);
+
+                    retrieveContainersResults.setMessage(errorMessage);
+
+                    _logger.debug("<< retrieveContainers()");
+                    return new ResponseEntity<>(retrieveContainersResults, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                retrieveContainersResults.setMessage(errorMessage);
+
+                _logger.debug("<< retrieveContainers()");
+                return new ResponseEntity<>(retrieveContainersResults, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while searching for containers. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            retrieveContainersResults.setMessage(errorMessage);
+
+            _logger.debug("<< retrieveContainers()");
+            return new ResponseEntity<>(retrieveContainersResults, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public ResponseEntity<RetrieveContainersResults> retrieveContainersErrorFallback(Authentication authentication, HttpSession session, ContainerSearchRequest containerSearchRequest, Throwable e){
+        _logger.debug("retrieveContainersErrorFallback() >>");
+        RetrieveContainersResults retrieveContainersResults = new RetrieveContainersResults();
+
+        if(containerSearchRequest != null){
+            String errorMessage;
+            if(e.getLocalizedMessage() != null){
+                errorMessage = "Unable to retrieve containers. " + e.getLocalizedMessage();
+            }
+            else{
+                errorMessage = "Unable to get response from the container service.";
+            }
+
+            _logger.error(errorMessage, e);
+
+            retrieveContainersResults.setMessage(errorMessage);
+
+            _logger.debug("<< retrieveContainersErrorFallback()");
+            return new ResponseEntity<>(retrieveContainersResults, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        else{
+            String errorMessage = "Asset search request is null!";
+
+            _logger.error(errorMessage);
+
+            retrieveContainersResults.setMessage(errorMessage);
+
+            _logger.debug("<< retrieveContainersErrorFallback()");
+            return new ResponseEntity<>(retrieveContainersResults, HttpStatus.BAD_REQUEST);
+        }
+    }
 
     private HttpHeaders getHeaders(HttpSession session) throws Exception {
         _logger.debug("getHeaders() >>");
@@ -97,5 +194,24 @@ public class FolderLoadbalancerController {
 
             throw new Exception(errorMessage);
         }
+    }
+
+    private boolean isSessionValid(Authentication authentication){
+        String errorMessage;
+        List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
+        if(!usersByUsername.isEmpty()){
+            if(usersByUsername.size() == 1){
+                return true;
+            }
+            else{
+                errorMessage = "Username '" + authentication.getName() + "' is not unique!";
+            }
+        }
+        else{
+            errorMessage = "No users with username '" + authentication.getName() + " is found!";
+        }
+
+        _logger.error(errorMessage);
+        return false;
     }
 }

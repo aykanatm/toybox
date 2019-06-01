@@ -53,6 +53,16 @@
     border-top-right-radius: 5px;
 }
 
+/* Folders Tab */
+.toybox-folder-container{
+    height: calc(100% - 40px);
+    background-color: white;
+    border-radius: 5px;
+    margin-top: 20px !important;
+    margin-left: 10px !important;
+    margin-right: 10px !important;
+}
+
 .toybox-pagination{
     position: absolute;
     right: 20px;

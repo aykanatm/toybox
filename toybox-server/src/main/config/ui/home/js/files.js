@@ -56,6 +56,7 @@ const files = new Vue({
                 this.searchRequestFacetList.splice(index, 1);
             }
 
+            // TODO: username is not necessary?
             this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
         });
         this.$root.$on('asset-selection-changed', this.onAssetSelectionChanged);

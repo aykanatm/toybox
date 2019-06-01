@@ -15,6 +15,10 @@ public class Container {
     @JsonProperty("id")
     private String id;
 
+    @Column(name = "parent_container_id")
+    @JsonProperty("parentId")
+    private String parentId;
+
     @Column(name = "container_name")
     @JsonProperty("name")
     private String name;
@@ -106,5 +110,13 @@ public class Container {
 
     public void setSubscribers(Set<User> subscribers) {
         this.subscribers = subscribers;
+    }
+
+    public String getParentId() {
+        return parentId;
+    }
+
+    public void setParentId(String parentId) {
+        this.parentId = parentId;
     }
 }

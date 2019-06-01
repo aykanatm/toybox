@@ -1,0 +1,27 @@
+.toybox-card{
+    width: 200px !important;
+    height: 300px;
+    min-width: 200px !important;
+    min-height: 300px !important;
+    max-width: 200px !important;
+    max-height: 300px;
+}
+
+.toybox-card-img{
+    height: 200px;
+    max-height: 200px;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+}
+
+.toybox-card-selected{
+    box-shadow: 0 1px 3px 0 #3a7dc8, 0 0 0 1px #3a7dc8 !important;
+}
+
+.toybox-folder-context-menu{
+    position: absolute;
+    top: 120px;
+    left: 100px;
+    z-index: 10;
+}
