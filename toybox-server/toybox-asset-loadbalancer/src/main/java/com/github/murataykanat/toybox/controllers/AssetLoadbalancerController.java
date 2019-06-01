@@ -344,7 +344,7 @@ public class AssetLoadbalancerController {
             retrieveAssetsResults.setMessage(errorMessage);
 
             _logger.debug("<< retrieveAssetsErrorFallback()");
-            return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         else{
             String errorMessage = "Asset search request is null!";
