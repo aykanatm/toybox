@@ -11,19 +11,19 @@ import java.util.Date;
 import java.util.List;
 
 public interface ContainersRepository extends JpaRepository<Container, String> {
-    @Query(value = "SELECT container_id, parent_container_id, container_name, container_created_by_username, container_creation_date, deleted FROM containers WHERE deleted='N' AND parent_container_id IS NULL", nativeQuery = true)
+    @Query(value = "SELECT container_id, parent_container_id, container_name, container_created_by_username, container_creation_date, deleted, is_system FROM containers WHERE deleted='N' AND parent_container_id IS NULL", nativeQuery = true)
     List<Container> getTopLevelNonDeletedContainers();
 
-    @Query(value = "SELECT container_id, parent_container_id, container_name, container_created_by_username, container_creation_date, deleted FROM containers WHERE deleted='N' AND container_created_by_username=?1 AND parent_container_id=?2", nativeQuery = true)
+    @Query(value = "SELECT container_id, parent_container_id, container_name, container_created_by_username, container_creation_date, deleted, is_system FROM containers WHERE deleted='N' AND container_created_by_username=?1 AND parent_container_id=?2", nativeQuery = true)
     List<Container> getNonDeletedContainersByUsernameAndParentContainerId(String username, String parentContainerId);
 
-    @Query(value = "SELECT container_id, parent_container_id, container_name, container_created_by_username, container_creation_date, deleted FROM containers WHERE container_id=?1", nativeQuery = true)
+    @Query(value = "SELECT container_id, parent_container_id, container_name, container_created_by_username, container_creation_date, deleted, is_system FROM containers WHERE container_id=?1", nativeQuery = true)
     List<Container> getContainersById(String containerId);
 
-    @Query(value = "SELECT container_id, parent_container_id, container_name, container_created_by_username, container_creation_date, deleted FROM containers WHERE container_name=?1", nativeQuery = true)
-    List<Container> getContainersByName(String name);
+    @Query(value = "SELECT container_id, parent_container_id, container_name, container_created_by_username, container_creation_date, deleted, is_system FROM containers WHERE container_name=?1 AND is_system='Y'", nativeQuery = true)
+    List<Container> getSystemContainersByName(String name);
 
-    @Query(value = "SELECT container_id, parent_container_id, container_name, container_created_by_username, container_creation_date, deleted FROM containers WHERE container_name=?1 AND container_created_by_username=?2", nativeQuery = true)
+    @Query(value = "SELECT container_id, parent_container_id, container_name, container_created_by_username, container_creation_date, deleted, is_system FROM containers WHERE container_name=?1 AND container_created_by_username=?2", nativeQuery = true)
     List<Container> getDuplicateContainersByContainerNameAndUsername(String containerName, String username);
 
     @Transactional
@@ -33,11 +33,11 @@ public interface ContainersRepository extends JpaRepository<Container, String> {
 
     @Transactional
     @Modifying
-    @Query(value = "INSERT INTO containers(container_id, parent_container_id, container_name, container_created_by_username, container_creation_date, deleted) " +
-            "VALUES (:container_id, :parent_container_id, :container_name, :container_created_by_username, :container_creation_date, :deleted)", nativeQuery = true)
+    @Query(value = "INSERT INTO containers(container_id, parent_container_id, container_name, container_created_by_username, container_creation_date, deleted, is_system) " +
+            "VALUES (:container_id, :parent_container_id, :container_name, :container_created_by_username, :container_creation_date, :deleted, :is_system)", nativeQuery = true)
     int insertContainer(@Param("container_id") String containerId, @Param("container_name") String containerName,
                         @Param("parent_container_id") String parentContainerId, @Param("container_created_by_username") String username,
-                        @Param("container_creation_date") Date creationDate, @Param("deleted") String deleted);
+                        @Param("container_creation_date") Date creationDate, @Param("deleted") String deleted, @Param("is_system") String system);
 
     @Transactional
     @Modifying

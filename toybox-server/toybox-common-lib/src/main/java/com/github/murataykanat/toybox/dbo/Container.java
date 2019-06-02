@@ -35,6 +35,10 @@ public class Container {
     @JsonProperty("deleted")
     private String deleted;
 
+    @Column(name = "is_system")
+    @JsonProperty("isSystem")
+    private String isSystem;
+
     @Transient
     private String subscribed;
 
@@ -118,5 +122,13 @@ public class Container {
 
     public void setParentId(String parentId) {
         this.parentId = parentId;
+    }
+
+    public String getSystem() {
+        return isSystem;
+    }
+
+    public void setSystem(String isSystem) {
+        this.isSystem = isSystem;
     }
 }

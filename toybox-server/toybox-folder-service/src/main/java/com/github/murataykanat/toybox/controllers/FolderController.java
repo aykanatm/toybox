@@ -90,6 +90,7 @@ public class FolderController {
                             container.setCreatedByUsername(authentication.getName());
                             container.setCreationDate(Calendar.getInstance().getTime());
                             container.setDeleted("N");
+                            container.setSystem("N");
 
                             createContainer(container);
 
@@ -179,7 +180,7 @@ public class FolderController {
                             }
                             else{
                                 _logger.debug("Retrieving the top level containers of the user '" + user.getUsername() + "'...");
-                                List<Container> containersByName = containersRepository.getContainersByName(authentication.getName());
+                                List<Container> containersByName = containersRepository.getSystemContainersByName(user.getUsername());
                                 if(!containersByName.isEmpty()){
                                     if(containersByName.size() == 1){
                                         Container userContainer = containersByName.get(0);
@@ -418,6 +419,7 @@ public class FolderController {
         _logger.debug("Container creation date: " + container.getCreationDate());
 
         containersRepository.insertContainer(container.getId(), container.getName(), container.getParentId(),
-                container.getCreatedByUsername(), container.getCreationDate(), container.getDeleted());
+                container.getCreatedByUsername(), container.getCreationDate(), container.getDeleted(),
+                container.getSystem());
     }
 }
