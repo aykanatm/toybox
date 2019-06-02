@@ -5,7 +5,8 @@ var userMixin = {
                 username: '',
                 name: '',
                 lastname: '',
-                avatarUrl: ''
+                avatarUrl: '',
+                isAdmin: false
             },
         }
     },
@@ -21,6 +22,15 @@ var userMixin = {
                     this.user.name = userResponse.data.user.name;
                     this.user.lastname = userResponse.data.user.lastname;
                     this.user.avatarUrl = renditionUrl + '/renditions/users/me';
+
+                    var roles = userResponse.data.user.roles;
+                    for(var i = 0; i < roles.length; i++){
+                        var role = roles[i];
+                        if(role.roleId == 2){
+                            this.user.isAdmin = true;
+                        }
+                    }
+
                 });
             })
             .catch(error => {
