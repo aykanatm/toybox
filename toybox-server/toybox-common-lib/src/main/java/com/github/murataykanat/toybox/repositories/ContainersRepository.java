@@ -31,6 +31,7 @@ public interface ContainersRepository extends JpaRepository<Container, String> {
     @Query(value = "UPDATE containers SET container_name=?1 WHERE container_id=?3", nativeQuery = true)
     int updateContainerName(String containerName, String containerId);
 
+    @Transactional
     @Modifying
     @Query(value = "INSERT INTO containers(container_id, parent_container_id, container_name, container_created_by_username, container_creation_date, deleted) " +
             "VALUES (:container_id, :parent_container_id, :container_name, :container_created_by_username, :container_creation_date, :deleted)", nativeQuery = true)

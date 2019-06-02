@@ -9,9 +9,13 @@ import com.github.murataykanat.toybox.repositories.ContainersRepository;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.container.ContainerSearchRequest;
+import com.github.murataykanat.toybox.schema.container.CreateContainerRequest;
 import com.github.murataykanat.toybox.schema.container.RetrieveContainersResults;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
 import com.github.murataykanat.toybox.utilities.SortUtils;
+import com.github.murataykanat.toybox.utils.Constants;
+import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpSession;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -55,6 +60,99 @@ public class FolderController {
     private ContainerAssetsRepository containerAssetsRepository;
     @Autowired
     private ContainerUsersRepository containerUsersRepository;
+
+    @RequestMapping(value = "/containers", method = RequestMethod.POST)
+    public ResponseEntity<GenericResponse> createContainer(Authentication authentication, @RequestBody CreateContainerRequest createContainerRequest){
+        _logger.debug("createContainer() >>");
+        GenericResponse genericResponse = new GenericResponse();
+        try {
+            if(isSessionValid(authentication)){
+                if(createContainerRequest != null){
+                    if(StringUtils.isNotBlank(createContainerRequest.getContainerName())){
+                        boolean canCreateFolder = false;
+                        if(StringUtils.isBlank(createContainerRequest.getParentContainerId())){
+                            if(isAdminUser(authentication)){
+                                canCreateFolder = true;
+                            }
+                            else{
+                                canCreateFolder = false;
+                            }
+                        }
+                        else{
+                            canCreateFolder = true;
+                        }
+
+                        if(canCreateFolder){
+                            Container container = new Container();
+                            container.setId(generateFolderId());
+                            container.setName(createContainerRequest.getContainerName());
+                            container.setParentId(createContainerRequest.getParentContainerId());
+                            container.setCreatedByUsername(authentication.getName());
+                            container.setCreationDate(Calendar.getInstance().getTime());
+                            container.setDeleted("N");
+
+                            createContainer(container);
+
+                            genericResponse.setMessage("Folder created successfully!");
+                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                        }
+                        else{
+                            String errorMessage;
+                            if(StringUtils.isBlank(createContainerRequest.getParentContainerId())){
+                                errorMessage = "The user '" + authentication.getName() + "' is not allowed to create a folder under the root!";
+                            }
+                            else{
+                                errorMessage = "The user '" + authentication.getName() + "' is not allowed to create a folder under the folder with ID '" + createContainerRequest.getParentContainerId() + "'";
+                            }
+
+                            _logger.error(errorMessage);
+
+                            genericResponse.setMessage(errorMessage);
+
+                            _logger.debug("<< createContainer()");
+                            return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                        }
+                    }
+                    else{
+                        String errorMessage = "Container name is blank!";
+                        _logger.debug(errorMessage);
+
+                        genericResponse.setMessage(errorMessage);
+
+                        _logger.debug("<< createContainer()");
+                        return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                    }
+                }
+                else{
+                    String errorMessage = "Create container request is null!";
+                    _logger.debug(errorMessage);
+
+                    genericResponse.setMessage(errorMessage);
+
+                    _logger.debug("<< createContainer()");
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                _logger.debug("<< createContainer()");
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while creating the container. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            _logger.debug("<< createContainer()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
     @RequestMapping(value = "/containers/search", method = RequestMethod.POST)
     public ResponseEntity<RetrieveContainersResults> retrieveContainers(Authentication authentication, @RequestBody ContainerSearchRequest containerSearchRequest){
@@ -268,5 +366,56 @@ public class FolderController {
         }
         _logger.error(errorMessage);
         return null;
+    }
+
+    private boolean isAdminUser(Authentication authentication){
+        Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+        List<? extends GrantedAuthority> roleAdmin = authorities.stream().filter(authority -> authority.getAuthority().equalsIgnoreCase("ROLE_ADMIN")).collect(Collectors.toList());
+        if(!roleAdmin.isEmpty()){
+            return true;
+        }
+
+        return false;
+    }
+
+    private String generateFolderId(){
+        _logger.debug("generateFolderId() >>");
+        String containerId = RandomStringUtils.randomAlphanumeric(Constants.FOLDER_ID_LENGTH);
+        if(isContainerIdValid(containerId)){
+            _logger.debug("<< generateFolderId() [" + containerId + "]");
+            return containerId;
+        }
+        return generateFolderId();
+    }
+
+    private boolean isContainerIdValid(String containerId){
+        _logger.debug("isContainerIdValid() >> [" + containerId + "]");
+        boolean result = false;
+
+        List<Container> containers = containersRepository.getContainersById(containerId);
+        if(containers != null){
+            if(!containers.isEmpty()){
+                _logger.debug("<< isContainerIdValid() [" + false + "]");
+                result = false;
+            }
+            else{
+                _logger.debug("<< isContainerIdValid() [" + true + "]");
+                result = true;
+            }
+        }
+
+        _logger.debug("<< isContainerIdValid() [" + true + "]");
+        return result;
+    }
+
+    private void createContainer(Container container){
+        _logger.debug("Container ID: " + container.getId());
+        _logger.debug("Container name: " + container.getName());
+        _logger.debug("Container parent ID: " + container.getParentId());
+        _logger.debug("Container created by username: " + container.getCreatedByUsername());
+        _logger.debug("Container creation date: " + container.getCreationDate());
+
+        containersRepository.insertContainer(container.getId(), container.getName(), container.getParentId(),
+                container.getCreatedByUsername(), container.getCreationDate(), container.getDeleted());
     }
 }

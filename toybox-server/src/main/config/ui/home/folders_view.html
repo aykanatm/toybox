@@ -45,6 +45,12 @@
                         <div class="ui grid gallery-top-menu">
                             <div class="ui basic buttons">
                                 <!-- Top menu buttons -->
+                                <button class="ui button" v-on:click.stop="createNewFolder" v-bind:disabled="!canCreateFolder">
+                                    <i class="folder icon"></i> New Folder
+                                </button>
+                                <button class="ui button" v-on:click.stop="uploadNewFile" v-bind:disabled="!canUploadFile">
+                                    <i class="cloud upload icon"></i> New File
+                                </button>
                                 <button class="ui button" v-on:click.stop="itemsShare" v-bind:disabled="selectedItems.length == 0">
                                     <i class="share alternate icon"></i> Share
                                 </button>
@@ -102,6 +108,7 @@
                 v-bind:is-error="message.isError" v-bind:is-warning="message.isWarning" v-bind:header="message.header"
                 v-bind:message="message.message" v-bind:key="message.id"></message>
             </div>
+            <create-container-modal-window></create-container-modal-window>
         </div>
     </body>
     <script src="../components/mixins/user/user-mixin.js"></script>

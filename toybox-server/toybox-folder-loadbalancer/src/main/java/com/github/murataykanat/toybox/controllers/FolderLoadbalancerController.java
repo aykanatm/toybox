@@ -2,7 +2,9 @@ package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
+import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.container.ContainerSearchRequest;
+import com.github.murataykanat.toybox.schema.container.CreateContainerRequest;
 import com.github.murataykanat.toybox.schema.container.RetrieveContainersResults;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import org.apache.commons.lang.StringUtils;
@@ -49,6 +51,96 @@ public class FolderLoadbalancerController {
 
     @Autowired
     private RestTemplate restTemplate;
+
+    @HystrixCommand(fallbackMethod = "createContainerErrorFallback")
+    @RequestMapping(value = "/containers", method = RequestMethod.POST)
+    public ResponseEntity<GenericResponse> createContainer(Authentication authentication,  HttpSession session, @RequestBody CreateContainerRequest createContainerRequest){
+        _logger.debug("createContainer() >>");
+        GenericResponse genericResponse = new GenericResponse();
+        try {
+            if(isSessionValid(authentication)){
+                if(createContainerRequest != null){
+                    HttpHeaders headers = getHeaders(session);
+                    String prefix = getPrefix();
+
+                    if(StringUtils.isNotBlank(prefix)){
+                        _logger.debug("<< createContainer()");
+                        return restTemplate.exchange(prefix + folderServiceName + "/containers", HttpMethod.POST, new HttpEntity<>(createContainerRequest, headers), GenericResponse.class);
+                    }
+                    else{
+                        String errorMessage = "Service ID prefix is null!";
+
+                        _logger.error(errorMessage);
+
+                        genericResponse.setMessage(errorMessage);
+
+                        _logger.debug("<< createContainer()");
+                        return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                    }
+                }
+                else{
+                    String errorMessage = "Create container request is null!";
+
+                    _logger.error(errorMessage);
+
+                    genericResponse.setMessage(errorMessage);
+
+                    _logger.debug("<< createContainer()");
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                _logger.debug("<< createContainer()");
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while creating the container. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            _logger.debug("<< createContainer()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public ResponseEntity<GenericResponse> createContainerErrorFallback(Authentication authentication, HttpSession session, CreateContainerRequest createContainerRequest, Throwable e){
+        _logger.debug("createContainerErrorFallback() >>");
+        GenericResponse genericResponse = new GenericResponse();
+
+        if(createContainerRequest != null){
+            String errorMessage;
+            if(e.getLocalizedMessage() != null){
+                errorMessage = "Unable to create the container. " + e.getLocalizedMessage();
+            }
+            else{
+                errorMessage = "Unable to get response from the container service.";
+            }
+
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            _logger.debug("<< createContainerErrorFallback()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        else{
+            String errorMessage = "Create container request is null!";
+
+            _logger.error(errorMessage);
+
+            genericResponse.setMessage(errorMessage);
+
+            _logger.debug("<< createContainerErrorFallback()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
 
     @HystrixCommand(fallbackMethod = "retrieveContainersErrorFallback")
     @RequestMapping(value = "/containers/search", method = RequestMethod.POST)
@@ -129,7 +221,7 @@ public class FolderLoadbalancerController {
             return new ResponseEntity<>(retrieveContainersResults, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         else{
-            String errorMessage = "Asset search request is null!";
+            String errorMessage = "Container search request is null!";
 
             _logger.error(errorMessage);
 
