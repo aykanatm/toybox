@@ -45,6 +45,7 @@ module.exports = {
         },
         onDoubleClick:function(){
             this.$root.$emit('open-folder', this);
+            // TODO: Implement open folder logic
         },
         folderDeselect:function(folderId){
             if(this.id === assetId){
@@ -57,64 +58,55 @@ module.exports = {
         },
         folderDownload:function(){
             console.log('Downloading the folder with ID "' + this.id + '"');
-            // var asset = {
-            //     id: this.id,
-            //     name: this.name,
-            //     type: this.type,
-            //     originalAssetId: this.originalAssetId
-            // }
-            // var selectedAssets= [asset];
-            // this.downloadAssets(selectedAssets);
+            var folder = {
+                id: this.id,
+                name: this.name,
+            }
+            var selectedFolders = [folder];
+            this.downloadItems(selectedFolders);
             this.contextMenuOpen = false;
         },
         folderRename:function(){
             console.log('Renaming the folder with ID "' + this.id + '"');
-            // var filename = this.name.substr(0, this.name.lastIndexOf('.')) || this.name;
-            // this.renameAsset(this.id, filename);
+            this.renameItem(this.id, this.name);
             this.contextMenuOpen = false;
         },
         folderCopy:function(){
-            console.log('Opening copy modal window for asset with ID "' + this.id + '"');
+            console.log('Opening copy modal window for folder with ID "' + this.id + '"');
             this.contextMenuOpen = false;
         },
         folderMove:function(){
-            console.log('Opening move modal window for asset with ID "' + this.id + '"');
+            console.log('Opening move modal window for folder with ID "' + this.id + '"');
             this.contextMenuOpen = false;
         },
         folderSubscribe:function(){
-            console.log('Subscribing to the asset with ID "' + this.id + '"');
-            // var asset = {
-            //     id: this.id,
-            //     name: this.name,
-            //     type: this.type,
-            //     originalAssetId: this.originalAssetId
-            // }
-            // var selectedAssets= [asset];
-            // this.subscribeToAssets(selectedAssets);
+            console.log('Subscribing to the folder with ID "' + this.id + '"');
+            var folder = {
+                id: this.id,
+                name: this.name,
+            }
+            var selectedFolders = [folder];
+            this.subscribeToItems(selectedFolders);
             this.contextMenuOpen = false;
         },
         folderUnsubscribe:function(){
             console.log('Unsubscribing from the folder with ID "' + this.id + '"');
-            // var asset = {
-            //     id: this.id,
-            //     name: this.name,
-            //     type: this.type,
-            //     originalAssetId: this.originalAssetId
-            // }
-            // var selectedAssets= [asset];
-            // this.unsubscribeFromAssets(selectedAssets);
+            var folder = {
+                id: this.id,
+                name: this.name,
+            }
+            var selectedFolders = [folder];
+            this.unsubscribeFromItems(selectedFolders);
             this.contextMenuOpen = false;
         },
         folderDelete:function(){
-            console.log('Deleting asset with ID "' + this.id + '"');
-            // var asset = {
-            //     id: this.id,
-            //     name: this.name,
-            //     type: this.type,
-            //     originalAssetId: this.originalAssetId
-            // }
-            // var selectedAssets= [asset];
-            // this.deleteAssets(selectedAssets);
+            console.log('Deleting folder with ID "' + this.id + '"');
+            var folder = {
+                id: this.id,
+                name: this.name,
+            }
+            var selectedFolders = [folder];
+            this.deleteItems(selectedFolders);
             this.contextMenuOpen = false;
         }
     }
