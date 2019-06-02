@@ -259,6 +259,7 @@ public class AssetController {
             RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
             if(assetSearchRequest != null){
                 if(isSessionValid(authentication)){
+                    // TODO: Use getUser method here instead
                     List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
                     if(!usersByUsername.isEmpty()){
                         if(usersByUsername.size() == 1){
