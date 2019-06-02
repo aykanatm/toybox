@@ -9,6 +9,8 @@ import java.util.List;
 public class RetrieveContainersResults implements Serializable {
     @JsonProperty("containers")
     private List<Container> containers;
+    @JsonProperty("containerId")
+    private String containerId;
     @JsonProperty("totalRecords")
     private int totalRecords;
     @JsonProperty("message")
@@ -36,5 +38,13 @@ public class RetrieveContainersResults implements Serializable {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public String getContainerId() {
+        return containerId;
+    }
+
+    public void setContainerId(String containerId) {
+        this.containerId = containerId;
     }
 }

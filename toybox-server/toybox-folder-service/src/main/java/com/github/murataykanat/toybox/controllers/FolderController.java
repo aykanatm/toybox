@@ -184,6 +184,8 @@ public class FolderController {
                                     if(containersByName.size() == 1){
                                         Container userContainer = containersByName.get(0);
                                         containersByCurrentUser = containersRepository.getNonDeletedContainersByUsernameAndParentContainerId(user.getUsername(), userContainer.getId());
+
+                                        retrieveContainersResults.setContainerId(userContainer.getId());
                                     }
                                     else{
                                         throw new Exception("There are multiple user containers with name '" + user.getUsername() + "'!");
@@ -236,7 +238,7 @@ public class FolderController {
                                 retrieveContainersResults.setMessage(message);
 
                                 _logger.debug("<< retrieveContainers()");
-                                return new ResponseEntity<>(retrieveContainersResults, HttpStatus.NO_CONTENT);
+                                return new ResponseEntity<>(retrieveContainersResults, HttpStatus.OK);
                             }
                         }
                         else{

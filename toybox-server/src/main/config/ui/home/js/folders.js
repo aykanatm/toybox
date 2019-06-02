@@ -74,10 +74,10 @@ const folders = new Vue({
 
                     this.items = response.data.containers;
 
-                    this.currentFolderId = '';
+                    this.currentFolderId = response.data.containerId;
                     this.updateButtons();
 
-                    if(response.status == 204){
+                    if(this.items == null){
                         this.displayMessage('Information','You do not have any folders.');
                         this.totalRecords = 0;
                         this.totalPages = 0;
@@ -151,7 +151,7 @@ const folders = new Vue({
             this.getService("toybox-folder-loadbalancer")
             .then(response => {
                 if(response){
-                    this.$root.$emit('open-create-container-modal-window', this.parentContainerId, response.data.value);
+                    this.$root.$emit('open-create-container-modal-window', this.currentFolderId, response.data.value);
                 }
             })
             .catch(error => {
@@ -186,7 +186,7 @@ const folders = new Vue({
             return selectedItems;
         },
         updateButtons:function(){
-            if(this.currentFolderId !== ''){
+            if(this.currentFolderId && this.currentFolderId !== ''){
                 this.canCreateFolder = true;
                 this.canUploadFile = true;
             }
