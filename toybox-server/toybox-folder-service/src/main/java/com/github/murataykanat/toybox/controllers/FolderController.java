@@ -1,17 +1,17 @@
 package com.github.murataykanat.toybox.controllers;
 
-import com.github.murataykanat.toybox.dbo.Container;
-import com.github.murataykanat.toybox.dbo.ContainerUser;
-import com.github.murataykanat.toybox.dbo.User;
-import com.github.murataykanat.toybox.repositories.ContainerAssetsRepository;
-import com.github.murataykanat.toybox.repositories.ContainerUsersRepository;
-import com.github.murataykanat.toybox.repositories.ContainersRepository;
-import com.github.murataykanat.toybox.repositories.UsersRepository;
+import com.github.murataykanat.toybox.dbo.*;
+import com.github.murataykanat.toybox.repositories.*;
+import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
+import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
+import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.container.ContainerSearchRequest;
 import com.github.murataykanat.toybox.schema.container.CreateContainerRequest;
+import com.github.murataykanat.toybox.schema.container.RetrieveContainerContentsResult;
 import com.github.murataykanat.toybox.schema.container.RetrieveContainersResults;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
+import com.github.murataykanat.toybox.utilities.FacetUtils;
 import com.github.murataykanat.toybox.utilities.SortUtils;
 import com.github.murataykanat.toybox.utils.Constants;
 import org.apache.commons.lang.RandomStringUtils;
@@ -29,17 +29,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.csrf.CsrfToken;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpSession;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RefreshScope
@@ -60,6 +54,10 @@ public class FolderController {
     private ContainerAssetsRepository containerAssetsRepository;
     @Autowired
     private ContainerUsersRepository containerUsersRepository;
+    @Autowired
+    private AssetsRepository assetsRepository;
+    @Autowired
+    private AssetUserRepository assetUserRepository;
 
     @RequestMapping(value = "/containers", method = RequestMethod.POST)
     public ResponseEntity<GenericResponse> createContainer(Authentication authentication, @RequestBody CreateContainerRequest createContainerRequest){
@@ -155,6 +153,173 @@ public class FolderController {
         }
     }
 
+    @RequestMapping(value = "/containers/{containerId}/search", method = RequestMethod.POST)
+    public ResponseEntity<RetrieveContainerContentsResult> retrieveContainerContents(Authentication authentication, @PathVariable String containerId, @RequestBody AssetSearchRequest assetSearchRequest){
+        _logger.debug("retrieveContainerContents() >>");
+        RetrieveContainerContentsResult retrieveContainerContentsResult = new RetrieveContainerContentsResult();
+        try{
+            if(isSessionValid(authentication)){
+                if(StringUtils.isNotBlank(containerId)){
+                    if(assetSearchRequest != null){
+                        User user = getUser(authentication);
+
+                        String sortColumn = assetSearchRequest.getSortColumn();
+                        String sortType = assetSearchRequest.getSortType();
+                        int offset = assetSearchRequest.getOffset();
+                        int limit = assetSearchRequest.getLimit();
+                        List<SearchRequestFacet> searchRequestFacetList = assetSearchRequest.getAssetSearchRequestFacetList();
+
+                        List<Container> containersByCurrentUser;
+                        List<Asset> assetsByCurrentUser;
+
+                        List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(containerId);
+                        List<String> containerAssetIdsByContainerId = containerAssetsByContainerId.stream().map(containerAsset -> new String(containerAsset.getAssetId())).collect(Collectors.toList());
+
+                        List<Asset> allAssets;
+                        if(!containerAssetIdsByContainerId.isEmpty()){
+                            allAssets = assetsRepository.getAssetsIds(containerAssetIdsByContainerId);
+                        }
+                        else{
+                            allAssets = new ArrayList<>();
+                        }
+
+                        List<Asset> assets;
+                        if(searchRequestFacetList != null && !searchRequestFacetList.isEmpty()){
+                            assets = allAssets.stream().filter(asset -> FacetUtils.getInstance().hasFacetValue(asset, searchRequestFacetList)).collect(Collectors.toList());
+                        }
+                        else{
+                            assets = allAssets;
+                        }
+
+                        if(isAdminUser(authentication)){
+                            _logger.debug("Retrieving all the items in the container [Admin User]...");
+                            containersByCurrentUser = containersRepository.getNonDeletedContainersByParentContainerId(containerId);
+                            assetsByCurrentUser = assets.stream()
+                                    .filter(asset -> asset.getIsLatestVersion().equalsIgnoreCase("Y"))
+                                    .collect(Collectors.toList());
+                        }
+                        else{
+                            _logger.debug("Retrieving the items of the user '" + user.getUsername() + "'...");
+                            containersByCurrentUser = containersRepository.getNonDeletedContainersByUsernameAndParentContainerId(user.getUsername(), containerId);
+                            assetsByCurrentUser = assets.stream()
+                                    .filter(asset -> asset.getImportedByUsername() != null && asset.getImportedByUsername().equalsIgnoreCase(user.getUsername()) && asset.getIsLatestVersion().equalsIgnoreCase("Y"))
+                                    .collect(Collectors.toList());
+                        }
+
+                        if(assetsByCurrentUser.isEmpty() && containersByCurrentUser.isEmpty()){
+                            String message = "There are no folder contents to return.";
+                            _logger.debug(message);
+
+                            retrieveContainerContentsResult.setMessage(message);
+
+                            _logger.debug("<< retrieveContainerContents()");
+                            return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.NO_CONTENT);
+                        }
+                        else{
+                            // Set facets
+                            List<Facet> facets = FacetUtils.getInstance().getFacets(assetsByCurrentUser);
+                            retrieveContainerContentsResult.setFacets(facets);
+
+                            // Sort containers
+                            SortUtils.getInstance().sortItems("des", containersByCurrentUser, Comparator.comparing(Container::getName, Comparator.nullsLast(Comparator.naturalOrder())));
+                            // Sort assets
+                            if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_import_date")){
+                                SortUtils.getInstance().sortItems(sortType, assetsByCurrentUser, Comparator.comparing(Asset::getImportDate, Comparator.nullsLast(Comparator.naturalOrder())));
+                            }
+                            else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_name")){
+                                SortUtils.getInstance().sortItems(sortType, assetsByCurrentUser, Comparator.comparing(Asset::getName, Comparator.nullsLast(Comparator.naturalOrder())));
+                            }
+
+                            // Merge containers and assets
+                            List<ContainerItem> containerItems = new ArrayList<>(containersByCurrentUser);
+                            containerItems.addAll(assetsByCurrentUser);
+
+                            // Paginate results
+                            int totalRecords = containerItems.size();
+                            int startIndex = offset;
+                            int endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
+
+                            List<ContainerItem> containerItemsOnPage = containerItems.subList(startIndex, endIndex);
+
+                            // Set subscription status
+                            List<ContainerUser> containerUsersByUserId = containerUsersRepository.findContainerUsersByUserId(user.getId());
+                            List<AssetUser> assetUsersByUserId = assetUserRepository.findAssetUsersByUserId(user.getId());
+
+                            for(ContainerItem containerItem: containerItemsOnPage){
+                                if(containerItem.getClass().isInstance(Container.class)){
+                                    Container containerOnPage = (Container) containerItem;
+
+                                    containerOnPage.setSubscribed("N");
+                                    for(ContainerUser containerUser: containerUsersByUserId){
+                                        if(containerOnPage.getId().equalsIgnoreCase(containerUser.getContainerId())){
+                                            containerOnPage.setSubscribed("Y");
+                                            break;
+                                        }
+                                    }
+                                }
+                                else if(containerItem.getClass().isInstance(Asset.class)){
+                                    Asset assetOnPage = (Asset) containerItem;
+
+                                    assetOnPage.setSubscribed("N");
+                                    for(AssetUser assetUser: assetUsersByUserId){
+                                        if(assetOnPage.getId().equalsIgnoreCase(assetUser.getAssetId())){
+                                            assetOnPage.setSubscribed("Y");
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Finalize
+                            retrieveContainerContentsResult.setTotalRecords(totalRecords);
+                            retrieveContainerContentsResult.setContainerItems(containerItemsOnPage);
+                            retrieveContainerContentsResult.setMessage("Container contents retrieved successfully!");
+
+                            _logger.debug("<< retrieveContainerContents()");
+                            return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.OK);
+                        }
+                    }
+                    else{
+                        String errorMessage = "Asset search request is null!";
+                        _logger.debug(errorMessage);
+
+                        retrieveContainerContentsResult.setMessage(errorMessage);
+
+                        _logger.debug("<< retrieveContainerContents()");
+                        return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.BAD_REQUEST);
+                    }
+                }
+                else{
+                    String errorMessage = "Container ID is blank!";
+                    _logger.debug(errorMessage);
+
+                    retrieveContainerContentsResult.setMessage(errorMessage);
+
+                    _logger.debug("<< retrieveContainerContents()");
+                    return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                retrieveContainerContentsResult.setMessage(errorMessage);
+
+                _logger.debug("<< retrieveContainerContents()");
+                return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while retrieving items inside the container with ID '" + containerId + "'. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            retrieveContainerContentsResult.setMessage(errorMessage);
+
+            _logger.debug("<< retrieveContainerContents()");
+            return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @RequestMapping(value = "/containers/search", method = RequestMethod.POST)
     public ResponseEntity<RetrieveContainersResults> retrieveContainers(Authentication authentication, @RequestBody ContainerSearchRequest containerSearchRequest){
         _logger.debug("retrieveContainers() >>");
@@ -162,6 +327,7 @@ public class FolderController {
         try {
             if(isSessionValid(authentication)){
                 if(containerSearchRequest != null){
+                    // TODO: Use getUser method
                     List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
                     if(!usersByUsername.isEmpty()){
                         if(usersByUsername.size() == 1){
@@ -170,6 +336,7 @@ public class FolderController {
                             int offset = containerSearchRequest.getOffset();
                             int limit = containerSearchRequest.getLimit();
 
+                            // TODO: Use isAdmin method
                             Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
 
                             List<Container> containersByCurrentUser;

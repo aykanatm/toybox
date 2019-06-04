@@ -2,9 +2,11 @@ package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
+import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.container.ContainerSearchRequest;
 import com.github.murataykanat.toybox.schema.container.CreateContainerRequest;
+import com.github.murataykanat.toybox.schema.container.RetrieveContainerContentsResult;
 import com.github.murataykanat.toybox.schema.container.RetrieveContainersResults;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import org.apache.commons.lang.StringUtils;
@@ -20,10 +22,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.csrf.CsrfToken;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpSession;
@@ -139,6 +138,118 @@ public class FolderLoadbalancerController {
 
             _logger.debug("<< createContainerErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @HystrixCommand(fallbackMethod = "retrieveContainerContentsErrorFallback")
+    @RequestMapping(value = "/containers/{containerId}/search", method = RequestMethod.POST)
+    public ResponseEntity<RetrieveContainerContentsResult> retrieveContainerContents(Authentication authentication, HttpSession session, @PathVariable String containerId, @RequestBody AssetSearchRequest assetSearchRequest){
+        _logger.debug("retrieveContainerContents()");
+        RetrieveContainerContentsResult retrieveContainerContentsResult = new RetrieveContainerContentsResult();
+        try{
+            if(isSessionValid(authentication)){
+                if(StringUtils.isNotBlank(containerId)){
+                    if(assetSearchRequest != null){
+                        HttpHeaders headers = getHeaders(session);
+                        String prefix = getPrefix();
+
+                        if(StringUtils.isNotBlank(prefix)){
+                            _logger.debug("<< retrieveContainerContents()");
+                            return restTemplate.exchange(prefix + folderServiceName + "/containers/" + containerId + "/search", HttpMethod.POST, new HttpEntity<>(assetSearchRequest, headers), RetrieveContainerContentsResult.class);
+                        }
+                        else{
+                            String errorMessage = "Service ID prefix is null!";
+
+                            _logger.error(errorMessage);
+
+                            retrieveContainerContentsResult.setMessage(errorMessage);
+
+                            _logger.debug("<< retrieveContainerContents()");
+                            return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.INTERNAL_SERVER_ERROR);
+                        }
+                    }
+                    else{
+                        String errorMessage = "Asset search request is null!";
+                        _logger.debug(errorMessage);
+
+                        retrieveContainerContentsResult.setMessage(errorMessage);
+
+                        _logger.debug("<< retrieveContainerContents()");
+                        return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.BAD_REQUEST);
+                    }
+                }
+                else{
+                    String errorMessage = "Container ID is blank!";
+                    _logger.debug(errorMessage);
+
+                    retrieveContainerContentsResult.setMessage(errorMessage);
+
+                    _logger.debug("<< retrieveContainerContents()");
+                    return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                retrieveContainerContentsResult.setMessage(errorMessage);
+
+                _logger.debug("<< retrieveContainerContents()");
+                return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while retrieving items inside the container with ID '" + containerId + "'. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            retrieveContainerContentsResult.setMessage(errorMessage);
+
+            _logger.debug("<< retrieveContainerContents()");
+            return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public ResponseEntity<RetrieveContainerContentsResult> retrieveContainerContentsErrorFallback(Authentication authentication, HttpSession session, @PathVariable String containerId, @RequestBody AssetSearchRequest assetSearchRequest, Throwable e){
+        _logger.debug("retrieveContainerContentsErrorFallback() >>");
+        RetrieveContainerContentsResult retrieveContainerContentsResult = new RetrieveContainerContentsResult();
+
+        if(StringUtils.isNotBlank(containerId)){
+            if(assetSearchRequest != null){
+                String errorMessage;
+                if(e.getLocalizedMessage() != null){
+                    errorMessage = "Unable to retrieve items in the container with ID '" + containerId + "'. " + e.getLocalizedMessage();
+                }
+                else{
+                    errorMessage = "Unable to get response from the container service.";
+                }
+
+                _logger.error(errorMessage, e);
+
+                retrieveContainerContentsResult.setMessage(errorMessage);
+
+                _logger.debug("<< retrieveContainerContentsErrorFallback()");
+                return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+            else{
+                String errorMessage = "Asset search request is null!";
+
+                _logger.error(errorMessage);
+
+                retrieveContainerContentsResult.setMessage(errorMessage);
+
+                _logger.debug("<< retrieveContainerContentsErrorFallback()");
+                return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.BAD_REQUEST);
+            }
+        }
+        else{
+            String errorMessage = "Container ID is blank!";
+
+            _logger.error(errorMessage);
+
+            retrieveContainerContentsResult.setMessage(errorMessage);
+
+            _logger.debug("<< retrieveContainerContentsErrorFallback()");
+            return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.BAD_REQUEST);
         }
     }
 

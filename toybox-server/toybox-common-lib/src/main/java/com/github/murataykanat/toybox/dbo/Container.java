@@ -4,12 +4,13 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.util.Date;
 import java.util.Set;
 
 @Entity
 @Table(name = "containers")
-public class Container {
+public class Container implements Serializable, ContainerItem {
     @Id
     @Column(name = "container_id")
     @JsonProperty("id")

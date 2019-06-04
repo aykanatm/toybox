@@ -14,7 +14,7 @@ import java.util.Set;
 
 @Entity
 @Table(name = "assets")
-public class Asset implements Serializable {
+public class Asset implements Serializable, ContainerItem {
     @Id
     @Column(name = "asset_id")
     @JsonProperty("id")
