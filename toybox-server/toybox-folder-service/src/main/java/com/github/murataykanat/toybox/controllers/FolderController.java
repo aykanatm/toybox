@@ -173,11 +173,11 @@ public class FolderController {
                         List<Asset> assetsByCurrentUser;
 
                         List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(containerId);
-                        List<String> containerAssetIdsByContainerId = containerAssetsByContainerId.stream().map(containerAsset -> new String(containerAsset.getAssetId())).collect(Collectors.toList());
+                        List<String> containerAssetIdsByContainerId = containerAssetsByContainerId.stream().map(ContainerAsset::getAssetId).collect(Collectors.toList());
 
                         List<Asset> allAssets;
                         if(!containerAssetIdsByContainerId.isEmpty()){
-                            allAssets = assetsRepository.getAssetsIds(containerAssetIdsByContainerId);
+                            allAssets = assetsRepository.getNonDeletedLastVersionAssetsByAssetIds(containerAssetIdsByContainerId);
                         }
                         else{
                             allAssets = new ArrayList<>();
@@ -221,7 +221,7 @@ public class FolderController {
                             retrieveContainerContentsResult.setFacets(facets);
 
                             // Sort containers
-                            SortUtils.getInstance().sortItems("des", containersByCurrentUser, Comparator.comparing(Container::getName, Comparator.nullsLast(Comparator.naturalOrder())));
+                            SortUtils.getInstance().sortItems("asc", containersByCurrentUser, Comparator.comparing(Container::getName, Comparator.nullsLast(Comparator.naturalOrder())));
                             // Sort assets
                             if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_import_date")){
                                 SortUtils.getInstance().sortItems(sortType, assetsByCurrentUser, Comparator.comparing(Asset::getImportDate, Comparator.nullsLast(Comparator.naturalOrder())));

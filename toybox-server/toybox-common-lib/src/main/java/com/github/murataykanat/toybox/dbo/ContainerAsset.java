@@ -1,16 +1,14 @@
 package com.github.murataykanat.toybox.dbo;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 
 @Entity
 @Table(name = "container_asset")
 public class ContainerAsset {
-    @Id
     @Column(name = "container_id")
     private String containerId;
+
+    @Id
     @Column(name = "asset_id")
     private String assetId;
 
