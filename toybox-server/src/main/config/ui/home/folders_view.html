@@ -83,8 +83,12 @@
                             <div class="ui active dimmer" v-if="isLoading">
                                 <div class="ui massive text loader">Loading</div>
                             </div>
-                            <folder v-for="item in items" v-bind:id="item.id" v-bind:name="item.name" v-bind:created-by-username="item.createdByUsername"
-                             v-bind:subscribed="item.subscribed" v-bind:rendition-url="renditionUrl" v-bind:key="item.id"/>
+                            <component v-bind:is="item['@class'] === 'com.github.murataykanat.toybox.dbo.Asset' ? 'asset' : 'folder'"
+                                        v-for="item in items"
+                                        v-bind:id="item.id" v-bind:name="item.name" v-bind:created-by-username="item.createdByUsername"
+                                        v-bind:subscribed="item.subscribed" v-bind:rendition-url="renditionUrl" v-bind:imported-by-username="item.importedByUsername"
+                                        v-bind:extension="item.extension" v-bind:type="item.type" v-bind:original-asset-id="item.originalAssetId"
+                                        v-bind:key="item.id"></component>
                         </div>
                         <div class="ui right floated pagination menu toybox-pagination">
                             <a v-bind:class="{icon:true, disabled:previousPageButtonDisabled, item:true}" v-on:click="previousPage">
@@ -109,6 +113,9 @@
                 v-bind:message="message.message" v-bind:key="message.id"></message>
             </div>
             <create-container-modal-window></create-container-modal-window>
+            <asset-preview-modal-window v-bind:rendition-url="renditionUrl"></asset-preview-modal-window>
+            <asset-rename-modal-window></asset-rename-modal-window>
+            <asset-version-history-modal-window></asset-version-history-modal-window>
         </div>
     </body>
     <script src="../components/mixins/user/user-mixin.js"></script>
@@ -118,5 +125,7 @@
     <script src="../components/mixins/message/message-mixin.js"></script>
     <script src="../components/mixins/notification/notification-mixin.js"></script>
     <script src="../components/mixins/item-actions/item-actions-mixin.js"></script>
+    <script src="../components/mixins/asset-actions/asset-actions-mixin.js"></script>
+    <script src="../js/utilities.js"></script>
     <script src="../js/folders.js"></script>
 </html>

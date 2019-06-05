@@ -3,14 +3,22 @@ const folders = new Vue({
     mixins:[paginationMixin, facetMixin, messageMixin, userMixin, serviceMixin, itemActionsMixin],
     data:{
         view: 'folders',
-        facets:[],
         items:[],
         selectedItems: [],
         isLoading: false,
         renditionUrl:'',
         canCreateFolder: false,
         canUploadFile: false,
-        currentFolderId: ''
+        currentFolderId: '',
+        // Sorting
+        defaultSortType: 'des',
+        defaultSortColumn: 'asset_import_date',
+        sortType: 'des',
+        sortColumn: 'asset_import_date',
+        sortedAscByAssetName: false,
+        sortedDesByAssetName: false,
+        sortedAscByAssetImportDate: false,
+        sortedDesByAssetImportDate: false,
     },
     mounted:function(){
         var csrfHeader = $("meta[name='_csrf_header']").attr("content");
@@ -31,11 +39,41 @@ const folders = new Vue({
         // Initialize accordions
         $('.ui.accordion').accordion();
 
+        // Initialize event listeners
+        this.$root.$on('perform-faceted-search', (facet, isAdd) => {
+            if(isAdd){
+                console.log('Adding facet ' + facet.fieldName + ' and its value ' + facet.fieldValue + ' to search');
+                this.searchRequestFacetList.push(facet);
+            }
+            else{
+                console.log('Removing facet ' + facet.fieldName + ' and its value ' + facet.fieldValue + ' from search');
+                var index;
+                for(var i = 0; i < this.searchRequestFacetList.length; i++){
+                    var assetRequestFacet = this.searchRequestFacetList[i];
+                    if(assetRequestFacet.fieldName === facet.fieldName && assetRequestFacet.fieldValue === facet.fieldValue){
+                        index = i;
+                        break;
+                    }
+                }
+                this.searchRequestFacetList.splice(index, 1);
+            }
+
+            this.getItems(this.currentFolderId, this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList);
+        });
+
         this.$root.$on('item-selection-changed', this.onItemSelectionChanged);
         this.$root.$on('message-sent', this.displayMessage);
         this.$root.$on('refresh-items', this.refreshItems);
+        this.$root.$on('open-folder', this.openFolder)
 
-        this.getTopLevelFolders(this.offset, this.limit);
+        setTimeout(() => {
+            if(this.user.isAdmin){
+                this.getTopLevelFolders(this.offset, this.limit);
+            }
+            else{
+                this.getItems(this.currentFolderId, this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList)
+            }
+        }, 200);
     },
     methods:{
         getTopLevelFolders:function(offset, limit){
@@ -72,11 +110,6 @@ const folders = new Vue({
                 if(response){
                     this.isLoading = false;
 
-                    this.items = response.data.containers;
-
-                    this.currentFolderId = response.data.containerId;
-                    this.updateButtons();
-
                     if(this.items == null){
                         this.displayMessage('Information','You do not have any folders.');
                         this.totalRecords = 0;
@@ -84,17 +117,83 @@ const folders = new Vue({
                         this.currentPage = 0;
                     }
                     else{
+                        this.items = response.data.containers;
                         this.totalRecords = response.data.totalRecords;
                         this.totalPages = Math.ceil(this.totalRecords / this.limit);
                         this.currentPage = Math.ceil((offset / limit) + 1);
                     }
 
+                    this.currentFolderId = response.data.containerId;
+
+                    this.updateButtons();
                     this.updatePagination(this.currentPage, this.totalPages, offset, limit, this.totalRecords);
                 }
             });
         },
-        getItems:function(offset, limit, sortType, sortColumn, searchRequestFacetList){
+        openFolder:function(folder){
+            this.currentFolderId = folder.id;
+            this.searchRequestFacetList = [];
 
+            this.getItems(this.currentFolderId, this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList)
+        },
+        getItems:function(containerId, offset, limit, sortType, sortColumn, searchRequestFacetList){
+            this.isLoading = true;
+            this.getService("toybox-folder-loadbalancer")
+            .then(response => {
+                if(response){
+                    var searchRequest = {};
+                    searchRequest.limit = limit;
+                    searchRequest.offset = offset;
+                    searchRequest.sortType = sortType;
+                    searchRequest.sortColumn = sortColumn;
+                    searchRequest.assetSearchRequestFacetList = searchRequestFacetList;
+
+                    return axios.post(response.data.value + '/containers/' + containerId + '/search', searchRequest)
+                        .catch(error => {
+                            this.isLoading = false;
+                            var errorMessage;
+
+                            if(error.response){
+                                errorMessage = error.response.data.message
+                                if(error.response.status == 401){
+                                    window.location = '/logout';
+                                }
+                            }
+                            else{
+                                errorMessage = error.message;
+                            }
+
+                            console.error(errorMessage);
+                            this.$root.$emit('message-sent', 'Error', errorMessage);
+                        });
+                }
+            })
+            .then(response => {
+                console.log(response);
+                if(response){
+                    this.isLoading = false;
+
+                    if(this.items == null){
+                        this.displayMessage('Information','You do not have any files or folders.');
+                        this.totalRecords = 0;
+                        this.totalPages = 0;
+                        this.currentPage = 0;
+                    }
+                    else{
+                        this.items = response.data.containerItems;
+                        this.facets = response.data.facets;
+
+                        this.totalRecords = response.data.totalRecords;
+                        this.totalPages = Math.ceil(this.totalRecords / this.limit);
+                        this.currentPage = Math.ceil((offset / limit) + 1);
+                    }
+
+                    this.currentFolderId = containerId;
+
+                    this.updateButtons();
+                    this.updatePagination(this.currentPage, this.totalPages, offset, limit, this.totalRecords);
+                }
+            });
         },
         onItemSelectionChanged:function(item){
             if(item.isSelected){
@@ -172,7 +271,7 @@ const folders = new Vue({
             });
         },
         uploadNewFile:function(){
-
+            this.$root.$emit('open-import-modal-window', this.currentFolderId);
         },
         getSelectedItems:function(){
             var selectedItems = []
@@ -191,21 +290,20 @@ const folders = new Vue({
                 this.canUploadFile = true;
             }
             else{
-                if(this.user.isAdmin){
-                    this.canCreateFolder = true;
-                    this.canUploadFile = true;
-                }
-                else{
-                    this.canCreateFolder = false;
-                    this.canUploadFile = false;
-                }
+                this.canCreateFolder = false;
+                this.canUploadFile = false;
             }
         }
     },
     components:{
         'navbar' : httpVueLoader('../components/navbar/navbar.vue'),
         'folder' : httpVueLoader('../components/folder/folder.vue'),
+        'asset' : httpVueLoader('../components/asset/asset.vue'),
         'create-container-modal-window' : httpVueLoader('../components/create-container-modal-window/create-container-modal-window.vue'),
-        'message' : httpVueLoader('../components/message/message.vue')
+        'message' : httpVueLoader('../components/message/message.vue'),
+        'asset-preview-modal-window' : httpVueLoader('../components/asset-preview-modal-window/asset-preview-modal-window.vue'),
+        'asset-rename-modal-window' : httpVueLoader('../components/asset-rename-modal-window/asset-rename-modal-window.vue'),
+        'asset-version-history-modal-window' : httpVueLoader('../components/asset-version-history-modal-window/asset-version-history-modal-window.vue'),
+        'facet' : httpVueLoader('../components/facet/facet.vue'),
     }
 });
