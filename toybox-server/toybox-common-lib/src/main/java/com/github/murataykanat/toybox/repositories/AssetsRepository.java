@@ -17,8 +17,8 @@ public interface AssetsRepository extends JpaRepository<Asset, String> {
     @Query(value = "SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted, checksum, is_latest_version, original_asset_id, version, file_size FROM assets WHERE asset_id=?1", nativeQuery = true)
     List<Asset> getAssetsById(String assetId);
 
-    @Query(value = "SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted, checksum, is_latest_version, original_asset_id, version, file_size FROM assets WHERE asset_id IN :assetIds", nativeQuery = true)
-    List<Asset> getAssetsIds(@Param("assetIds")List<String> assetIds);
+    @Query(value = "SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted, checksum, is_latest_version, original_asset_id, version, file_size FROM assets WHERE deleted='N' AND is_latest_version='Y' AND asset_id IN :assetIds", nativeQuery = true)
+    List<Asset> getNonDeletedLastVersionAssetsByAssetIds(@Param("assetIds")List<String> assetIds);
 
     @Query(value = "SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted, checksum, is_latest_version, original_asset_id, version, file_size FROM assets WHERE asset_name=?1 AND asset_imported_by_username=?2", nativeQuery = true)
     List<Asset> getDuplicateAssetsByAssetNameAndUsername(String assetName, String username);
