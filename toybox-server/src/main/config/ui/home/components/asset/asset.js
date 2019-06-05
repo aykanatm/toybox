@@ -97,7 +97,8 @@ module.exports = {
                 id: this.id,
                 name: this.name,
                 type: this.type,
-                originalAssetId: this.originalAssetId
+                originalAssetId: this.originalAssetId,
+                '@class': 'com.github.murataykanat.toybox.dbo.Asset'
             }
             var selectedAssets= [asset];
             this.downloadAssets(selectedAssets);
@@ -124,7 +125,8 @@ module.exports = {
                 id: this.id,
                 name: this.name,
                 type: this.type,
-                originalAssetId: this.originalAssetId
+                originalAssetId: this.originalAssetId,
+                '@class': 'com.github.murataykanat.toybox.dbo.Asset'
             }
             var selectedAssets= [asset];
             this.subscribeToAssets(selectedAssets);
@@ -137,7 +139,8 @@ module.exports = {
                 id: this.id,
                 name: this.name,
                 type: this.type,
-                originalAssetId: this.originalAssetId
+                originalAssetId: this.originalAssetId,
+                '@class': 'com.github.murataykanat.toybox.dbo.Asset'
             }
             var selectedAssets= [asset];
             this.unsubscribeFromAssets(selectedAssets);
@@ -149,7 +152,8 @@ module.exports = {
                 id: this.id,
                 name: this.name,
                 type: this.type,
-                originalAssetId: this.originalAssetId
+                originalAssetId: this.originalAssetId,
+                '@class': 'com.github.murataykanat.toybox.dbo.Asset'
             }
             var selectedAssets= [asset];
             this.deleteAssets(selectedAssets);

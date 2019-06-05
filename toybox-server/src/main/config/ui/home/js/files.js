@@ -199,7 +199,7 @@ const files = new Vue({
             {
                 var asset = this.selectedAssets[i];
                 console.log(asset.name + ' / ' +  asset.id);
-                selectedAssets.push({id:asset.id, name:asset.name, type:asset.type, originalAssetId:asset.originalAssetId});
+                selectedAssets.push({id:asset.id, name:asset.name, type:asset.type, originalAssetId:asset.originalAssetId, '@class': 'com.github.murataykanat.toybox.dbo.Asset'});
             }
             this.downloadAssets(selectedAssets);
         },
@@ -226,7 +226,7 @@ const files = new Vue({
             {
                 var asset = this.selectedAssets[i];
                 console.log(asset.name + ' / ' +  asset.id);
-                selectedAssets.push({id:asset.id, name:asset.name, type:asset.type, originalAssetId: asset.originalAssetId});
+                selectedAssets.push({id:asset.id, name:asset.name, type:asset.type, originalAssetId: asset.originalAssetId, '@class': 'com.github.murataykanat.toybox.dbo.Asset'});
             }
             this.subscribeToAssets(selectedAssets);
         },
@@ -237,7 +237,7 @@ const files = new Vue({
             {
                 var asset = this.selectedAssets[i];
                 console.log(asset.name + ' / ' +  asset.id);
-                selectedAssets.push({id:asset.id, name:asset.name, type:asset.type, originalAssetId:asset.originalAssetId});
+                selectedAssets.push({id:asset.id, name:asset.name, type:asset.type, originalAssetId:asset.originalAssetId, '@class': 'com.github.murataykanat.toybox.dbo.Asset'});
             }
             this.unsubscribeFromAssets(selectedAssets);
         },
@@ -248,7 +248,7 @@ const files = new Vue({
             {
                 var asset = this.selectedAssets[i];
                 console.log(asset.name + ' / ' +  asset.id);
-                selectedAssets.push({id:asset.id, name:asset.name, type:asset.type, originalAssetId:asset.originalAssetId});
+                selectedAssets.push({id:asset.id, name:asset.name, type:asset.type, originalAssetId:asset.originalAssetId, '@class': 'com.github.murataykanat.toybox.dbo.Asset'});
             }
             this.deleteAssets(selectedAssets);
         },
