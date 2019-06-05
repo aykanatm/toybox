@@ -9,12 +9,18 @@ module.exports = {
           currentStatus: null,
           uploadError: null,
           uploadFieldName: 'upload',
-          numberOfFiles: 0
+          numberOfFiles: 0,
+          containerId:''
         }
     },
     mounted:function(){
-        this.reset();
-        $('#import-modal-window-upload-progress-bar').progress();
+        this.$root.$on('open-import-modal-window', (containerId) => {
+            this.containerId = containerId;
+            this.reset();
+            $('#import-modal-window-upload-progress-bar').progress();
+
+            $(this.$el).modal('show');
+        });
     },
     computed:{
         isInitial(){

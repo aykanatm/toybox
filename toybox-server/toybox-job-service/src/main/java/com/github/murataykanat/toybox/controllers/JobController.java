@@ -164,6 +164,7 @@ public class JobController {
                             builder.addString(Constants.JOB_PARAM_UPLOADED_FILE+ "_" + i, uploadedFile.getPath());
                         }
                         builder.addString(Constants.JOB_PARAM_USERNAME, uploadedFiles.get(0).getUsername());
+                        builder.addString(Constants.JOB_PARAM_CONTAINER_ID, uploadFileLst.getContainerId());
                         builder.addString(Constants.JOB_PARAM_SYSTEM_MILLIS, String.valueOf(System.currentTimeMillis()));
 
                         _logger.debug("Launching job [" + importJob.getName() + "]...");

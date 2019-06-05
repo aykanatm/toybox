@@ -1,9 +1,12 @@
 package com.github.murataykanat.toybox.batch.jobs;
 
 import com.github.murataykanat.toybox.batch.utils.Constants;
+import com.github.murataykanat.toybox.dbo.Container;
 import com.github.murataykanat.toybox.models.RenditionProperties;
 import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
+import com.github.murataykanat.toybox.repositories.ContainerAssetsRepository;
+import com.github.murataykanat.toybox.repositories.ContainersRepository;
 import com.github.murataykanat.toybox.utilities.SortUtils;
 import org.apache.commons.exec.*;
 import org.apache.commons.io.FileUtils;
@@ -47,6 +50,10 @@ public class ImportJobConfig {
 
     @Autowired
     private AssetsRepository assetsRepository;
+    @Autowired
+    private ContainersRepository containersRepository;
+    @Autowired
+    private ContainerAssetsRepository containerAssetsRepository;
 
     @Value("${imageThumbnailFormat}")
     private String imageThumbnailFormat;
@@ -120,6 +127,7 @@ public class ImportJobConfig {
 
                         Map<String, Object> jobParameters = chunkContext.getStepContext().getJobParameters();
                         String username = (String) jobParameters.get(Constants.JOB_PARAM_USERNAME);
+                        String containerId = (String) jobParameters.get(Constants.JOB_PARAM_CONTAINER_ID);
 
                         for(Map.Entry<String, Object> jobParameter: jobParameters.entrySet()){
                             if(jobParameter.getKey().startsWith(Constants.JOB_PARAM_UPLOADED_FILE)){
@@ -148,7 +156,6 @@ public class ImportJobConfig {
                                         }
 
                                         // Generate database entry
-
                                         String checksum = calculateChecksum(assetDestination.getAbsolutePath());
                                         String originalAssetId = getOriginalAssetId(assetDestination.getName(), assetId, username);
                                         int latestVersion = getLatestVersion(assetDestination.getName(), username);
@@ -170,9 +177,33 @@ public class ImportJobConfig {
                                         asset.setVersion(latestVersion);
                                         asset.setFileSize(FileUtils.byteCountToDisplaySize(assetSource.length()));
 
+                                        // Update previous versions of the asset
                                         updateDuplicateAssets(assetDestination.getName(), assetId, username);
+
+                                        // Add the asset to the database
                                         insertAsset(asset);
+
+                                        // Add the asset to a list to move it to the next step of the job
                                         assets.add(asset);
+
+                                        // Attach the asset to a folder
+                                        if(StringUtils.isNotBlank(containerId)){
+                                            containerAssetsRepository.attachAsset(containerId, assetId);
+                                        }
+                                        else{
+                                            List<Container> systemContainersByName = containersRepository.getSystemContainersByName(username);
+                                            if(!systemContainersByName.isEmpty()){
+                                                if(systemContainersByName.size() == 1){
+                                                    containerAssetsRepository.attachAsset(systemContainersByName.get(0).getId(), assetId);
+                                                }
+                                                else{
+                                                    throw new Exception("There are more than one system container for user '" + username + "'!");
+                                                }
+                                            }
+                                            else{
+                                                throw new Exception("There is no system container for the user '" + username + "'!");
+                                            }
+                                        }
                                     }
                                     else{
                                         throw new IOException("File " + filePath + " is not a file!");

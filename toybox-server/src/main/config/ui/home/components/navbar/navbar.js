@@ -44,7 +44,7 @@ module.exports = {
     },
     methods:{
         showUploadModalWindow:function(){
-            $('#toybox-import-modal-window').modal('show');
+            this.$root.$emit('open-import-modal-window', '');
         },
         navigateToNotificationsPage:function(){
             window.location = "/toybox/notifications";

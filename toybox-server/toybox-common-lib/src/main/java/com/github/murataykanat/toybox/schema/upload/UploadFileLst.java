@@ -8,6 +8,8 @@ import java.util.List;
 public class UploadFileLst implements Serializable {
     @JsonProperty("uploadFiles")
     private List<UploadFile> uploadFiles;
+    @JsonProperty("containerId")
+    private String containerId;
     @JsonProperty("message")
     private String message;
 
@@ -25,5 +27,13 @@ public class UploadFileLst implements Serializable {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public String getContainerId() {
+        return containerId;
+    }
+
+    public void setContainerId(String containerId) {
+        this.containerId = containerId;
     }
 }
