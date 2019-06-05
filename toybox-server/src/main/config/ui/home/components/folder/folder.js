@@ -45,7 +45,6 @@ module.exports = {
         },
         onDoubleClick:function(){
             this.$root.$emit('open-folder', this);
-            // TODO: Implement open folder logic
         },
         folderDeselect:function(folderId){
             if(this.id === assetId){
