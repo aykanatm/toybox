@@ -384,7 +384,7 @@ public class FolderLoadbalancerController {
                 return prefix;
             }
             else{
-                String errorMessage = "Not all asset services have the same transfer protocol!";
+                String errorMessage = "Not all container services have the same transfer protocol!";
                 _logger.error(errorMessage);
 
                 throw new Exception(errorMessage);
@@ -392,7 +392,7 @@ public class FolderLoadbalancerController {
             }
         }
         else{
-            String errorMessage = "No asset services are running!";
+            String errorMessage = "No container services are running!";
             _logger.error(errorMessage);
 
             throw new Exception(errorMessage);
