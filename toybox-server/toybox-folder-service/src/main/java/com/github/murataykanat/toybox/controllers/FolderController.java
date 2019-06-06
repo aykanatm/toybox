@@ -321,96 +321,85 @@ public class FolderController {
         try {
             if(isSessionValid(authentication)){
                 if(containerSearchRequest != null){
-                    // TODO: Use getUser method
-                    List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-                    if(!usersByUsername.isEmpty()){
-                        if(usersByUsername.size() == 1){
-                            User user = usersByUsername.get(0);
+                    User user = getUser(authentication);
+                    if(user != null){
+                        int offset = containerSearchRequest.getOffset();
+                        int limit = containerSearchRequest.getLimit();
 
-                            int offset = containerSearchRequest.getOffset();
-                            int limit = containerSearchRequest.getLimit();
+                        List<Container> containersByCurrentUser;
 
-                            // TODO: Use isAdmin method
-                            Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+                        if(isAdminUser(authentication)){
+                            _logger.debug("Retrieving the top level containers [Admin User]...");
+                            containersByCurrentUser = containersRepository.getTopLevelNonDeletedContainers();
+                        }
+                        else{
+                            _logger.debug("Retrieving the top level containers of the user '" + user.getUsername() + "'...");
+                            List<Container> containersByName = containersRepository.getSystemContainersByName(user.getUsername());
+                            if(!containersByName.isEmpty()){
+                                if(containersByName.size() == 1){
+                                    Container userContainer = containersByName.get(0);
+                                    containersByCurrentUser = containersRepository.getNonDeletedContainersByUsernameAndParentContainerId(user.getUsername(), userContainer.getId());
 
-                            List<Container> containersByCurrentUser;
-                            List<? extends GrantedAuthority> roleAdmin = authorities.stream().filter(authority -> authority.getAuthority().equalsIgnoreCase("ROLE_ADMIN")).collect(Collectors.toList());
-                            if(!roleAdmin.isEmpty()){
-                                _logger.debug("Retrieving the top level containers [Admin User]...");
-                                containersByCurrentUser = containersRepository.getTopLevelNonDeletedContainers();
+                                    retrieveContainersResults.setContainerId(userContainer.getId());
+                                }
+                                else{
+                                    throw new Exception("There are multiple user containers with name '" + user.getUsername() + "'!");
+                                }
                             }
                             else{
-                                _logger.debug("Retrieving the top level containers of the user '" + user.getUsername() + "'...");
-                                List<Container> containersByName = containersRepository.getSystemContainersByName(user.getUsername());
-                                if(!containersByName.isEmpty()){
-                                    if(containersByName.size() == 1){
-                                        Container userContainer = containersByName.get(0);
-                                        containersByCurrentUser = containersRepository.getNonDeletedContainersByUsernameAndParentContainerId(user.getUsername(), userContainer.getId());
-
-                                        retrieveContainersResults.setContainerId(userContainer.getId());
-                                    }
-                                    else{
-                                        throw new Exception("There are multiple user containers with name '" + user.getUsername() + "'!");
-                                    }
-                                }
-                                else{
-                                    throw new Exception("There is no user container with name '" + user.getUsername() + "'!");
-                                }
+                                throw new Exception("There is no user container with name '" + user.getUsername() + "'!");
                             }
+                        }
 
-                            if(!containersByCurrentUser.isEmpty()){
-                                SortUtils.getInstance().sortItems("des", containersByCurrentUser, Comparator.comparing(Container::getName, Comparator.nullsLast(Comparator.naturalOrder())));
+                        if(!containersByCurrentUser.isEmpty()){
+                            SortUtils.getInstance().sortItems("des", containersByCurrentUser, Comparator.comparing(Container::getName, Comparator.nullsLast(Comparator.naturalOrder())));
 
-                                int totalRecords = containersByCurrentUser.size();
-                                int startIndex = offset;
-                                int endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
+                            int totalRecords = containersByCurrentUser.size();
+                            int startIndex = offset;
+                            int endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
 
-                                List<Container> containersOnPage = containersByCurrentUser.subList(startIndex, endIndex);
+                            List<Container> containersOnPage = containersByCurrentUser.subList(startIndex, endIndex);
 
-                                List<ContainerUser> containerUsersByUserId = containerUsersRepository.findContainerUsersByUserId(user.getId());
+                            List<ContainerUser> containerUsersByUserId = containerUsersRepository.findContainerUsersByUserId(user.getId());
 
-                                if(!containerUsersByUserId.isEmpty()){
-                                    for(Container containerOnPage: containersOnPage){
-                                        for(ContainerUser containerUser: containerUsersByUserId){
-                                            if(containerOnPage.getId().equalsIgnoreCase(containerUser.getContainerId())){
-                                                containerOnPage.setSubscribed("Y");
-                                                break;
-                                            }
-                                            containerOnPage.setSubscribed("N");
+                            if(!containerUsersByUserId.isEmpty()){
+                                for(Container containerOnPage: containersOnPage){
+                                    for(ContainerUser containerUser: containerUsersByUserId){
+                                        if(containerOnPage.getId().equalsIgnoreCase(containerUser.getContainerId())){
+                                            containerOnPage.setSubscribed("Y");
+                                            break;
                                         }
-                                    }
-                                }
-                                else{
-                                    for(Container containerOnPage: containersOnPage){
                                         containerOnPage.setSubscribed("N");
                                     }
                                 }
-
-                                retrieveContainersResults.setBreadcrumbs(generateContainerPath(null));
-
-                                retrieveContainersResults.setTotalRecords(totalRecords);
-                                retrieveContainersResults.setContainers(containersOnPage);
-
-                                _logger.debug("<< retrieveContainers()");
-                                retrieveContainersResults.setMessage("Assets retrieved successfully!");
-                                return new ResponseEntity<>(retrieveContainersResults, HttpStatus.OK);
                             }
                             else{
-                                String message = "There are no containers to return.";
-                                _logger.debug(message);
-
-                                retrieveContainersResults.setMessage(message);
-
-                                _logger.debug("<< retrieveContainers()");
-                                return new ResponseEntity<>(retrieveContainersResults, HttpStatus.OK);
+                                for(Container containerOnPage: containersOnPage){
+                                    containerOnPage.setSubscribed("N");
+                                }
                             }
+
+                            retrieveContainersResults.setBreadcrumbs(generateContainerPath(null));
+
+                            retrieveContainersResults.setTotalRecords(totalRecords);
+                            retrieveContainersResults.setContainers(containersOnPage);
+
+                            _logger.debug("<< retrieveContainers()");
+                            retrieveContainersResults.setMessage("Assets retrieved successfully!");
+                            return new ResponseEntity<>(retrieveContainersResults, HttpStatus.OK);
                         }
                         else{
-                            throw new Exception("Username '" + authentication.getName() + "' is not unique!");
+                            String message = "There are no containers to return.";
+                            _logger.debug(message);
+
+                            retrieveContainersResults.setMessage(message);
+
+                            _logger.debug("<< retrieveContainers()");
+                            return new ResponseEntity<>(retrieveContainersResults, HttpStatus.OK);
                         }
                     }
                     else{
-                        throw new Exception("No users with username '" + authentication.getName() + " is found!");
+                        throw new Exception("User is null!");
                     }
                 }
                 else{
