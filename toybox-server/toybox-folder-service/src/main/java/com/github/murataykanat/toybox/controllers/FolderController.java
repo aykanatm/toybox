@@ -328,27 +328,42 @@ public class FolderController {
 
                         List<Container> containersByCurrentUser;
 
-                        if(isAdminUser(authentication)){
-                            _logger.debug("Retrieving the top level containers [Admin User]...");
-                            containersByCurrentUser = containersRepository.getTopLevelNonDeletedContainers();
-                        }
-                        else{
-                            _logger.debug("Retrieving the top level containers of the user '" + user.getUsername() + "'...");
-                            List<Container> containersByName = containersRepository.getSystemContainersByName(user.getUsername());
-                            if(!containersByName.isEmpty()){
-                                if(containersByName.size() == 1){
-                                    Container userContainer = containersByName.get(0);
-                                    containersByCurrentUser = containersRepository.getNonDeletedContainersByUsernameAndParentContainerId(user.getUsername(), userContainer.getId());
-
-                                    retrieveContainersResults.setContainerId(userContainer.getId());
-                                }
-                                else{
-                                    throw new Exception("There are multiple user containers with name '" + user.getUsername() + "'!");
-                                }
+                        if(containerSearchRequest.getRetrieveTopLevelContainers() != null && containerSearchRequest.getRetrieveTopLevelContainers().equalsIgnoreCase("Y")){
+                            if(isAdminUser(authentication)){
+                                _logger.debug("Retrieving the top level containers [Admin User]...");
+                                containersByCurrentUser = containersRepository.getTopLevelNonDeletedContainers();
                             }
                             else{
-                                throw new Exception("There is no user container with name '" + user.getUsername() + "'!");
+                                String errorMessage = "The user '" + user.getUsername() + "' does not have permissions to retrieve the top level containers!";
+                                _logger.error(errorMessage);
+
+                                retrieveContainersResults.setMessage(errorMessage);
+
+                                _logger.debug("<< retrieveContainers()");
+                                return new ResponseEntity<>(retrieveContainersResults, HttpStatus.UNAUTHORIZED);
                             }
+                        }
+                        else{
+                            containersByCurrentUser = containersRepository.getUserFolders(user.getUsername());
+                            Container filterByContainer = containerSearchRequest.getContainer();
+                            boolean filterById = StringUtils.isNotBlank(filterByContainer.getId());
+                            boolean filterByParentId = StringUtils.isNotBlank(filterByContainer.getParentId());
+                            boolean filterByName = StringUtils.isNotBlank(filterByContainer.getName());
+                            boolean filterByCreatedByUsername = StringUtils.isNotBlank(filterByContainer.getCreatedByUsername());
+                            boolean filterByCreationDate = filterByContainer.getCreationDate() != null;
+                            boolean filterByDeleted = StringUtils.isNotBlank(filterByContainer.getDeleted());
+                            boolean filterByIsSystem = StringUtils.isNotBlank(filterByContainer.getSystem());
+
+                            containersByCurrentUser = containersByCurrentUser.stream()
+                                    .filter(container ->
+                                    (!filterById || container.getId().contains(filterByContainer.getId()))
+                                    && (!filterByParentId || container.getParentId().contains(filterByContainer.getParentId()))
+                                    && (!filterByName || container.getName().contains(filterByContainer.getName()))
+                                    && (!filterByCreatedByUsername || container.getCreatedByUsername().contains(filterByContainer.getCreatedByUsername()))
+                                    && (!filterByCreationDate || container.getCreationDate().equals(filterByContainer.getCreationDate()))
+                                    && (!filterByDeleted || container.getDeleted().equalsIgnoreCase(filterByContainer.getDeleted()))
+                                    && (!filterByIsSystem || container.getSystem().equalsIgnoreCase(filterByContainer.getSystem()))
+                                    ).collect(Collectors.toList());
                         }
 
                         if(!containersByCurrentUser.isEmpty()){

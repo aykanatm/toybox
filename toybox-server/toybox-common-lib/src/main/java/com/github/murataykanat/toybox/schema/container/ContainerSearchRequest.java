@@ -1,6 +1,7 @@
 package com.github.murataykanat.toybox.schema.container;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.murataykanat.toybox.dbo.Container;
 
 import java.io.Serializable;
 
@@ -9,6 +10,10 @@ public class ContainerSearchRequest implements Serializable {
     private int limit;
     @JsonProperty("offset")
     private int offset;
+    @JsonProperty("container")
+    private Container container;
+    @JsonProperty("retrieveTopLevelContainers")
+    private String retrieveTopLevelContainers;
 
     public int getLimit() {
         return limit;
@@ -24,5 +29,21 @@ public class ContainerSearchRequest implements Serializable {
 
     public void setOffset(int offset) {
         this.offset = offset;
+    }
+
+    public Container getContainer() {
+        return container;
+    }
+
+    public void setContainer(Container container) {
+        this.container = container;
+    }
+
+    public String getRetrieveTopLevelContainers() {
+        return retrieveTopLevelContainers;
+    }
+
+    public void setRetrieveTopLevelContainers(String retrieveTopLevelContainers) {
+        this.retrieveTopLevelContainers = retrieveTopLevelContainers;
     }
 }
