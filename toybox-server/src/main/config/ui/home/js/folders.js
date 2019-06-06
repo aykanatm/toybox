@@ -85,6 +85,7 @@ const folders = new Vue({
                     var searchRequest = {};
                     searchRequest.limit = limit;
                     searchRequest.offset = offset;
+                    searchRequest.retrieveTopLevelContainers = 'Y';
 
                     return axios.post(response.data.value + "/containers/search", searchRequest)
                         .catch(error => {
@@ -145,62 +146,171 @@ const folders = new Vue({
         },
         getItems:function(containerId, offset, limit, sortType, sortColumn, searchRequestFacetList){
             this.isLoading = true;
-            this.getService("toybox-folder-loadbalancer")
-            .then(response => {
-                if(response){
-                    var searchRequest = {};
-                    searchRequest.limit = limit;
-                    searchRequest.offset = offset;
-                    searchRequest.sortType = sortType;
-                    searchRequest.sortColumn = sortColumn;
-                    searchRequest.assetSearchRequestFacetList = searchRequestFacetList;
+            if(containerId){
+                this.getService("toybox-folder-loadbalancer")
+                .then(response => {
+                    if(response){
+                        var searchRequest = {};
+                        searchRequest.limit = limit;
+                        searchRequest.offset = offset;
+                        searchRequest.sortType = sortType;
+                        searchRequest.sortColumn = sortColumn;
+                        searchRequest.assetSearchRequestFacetList = searchRequestFacetList;
 
-                    return axios.post(response.data.value + '/containers/' + containerId + '/search', searchRequest)
-                        .catch(error => {
-                            this.isLoading = false;
-                            var errorMessage;
+                        return axios.post(response.data.value + '/containers/' + containerId + '/search', searchRequest)
+                            .catch(error => {
+                                this.isLoading = false;
+                                var errorMessage;
 
-                            if(error.response){
-                                errorMessage = error.response.data.message
-                                if(error.response.status == 401){
-                                    window.location = '/logout';
+                                if(error.response){
+                                    errorMessage = error.response.data.message
+                                    if(error.response.status == 401){
+                                        window.location = '/logout';
+                                    }
                                 }
-                            }
-                            else{
-                                errorMessage = error.message;
-                            }
+                                else{
+                                    errorMessage = error.message;
+                                }
 
-                            console.error(errorMessage);
-                            this.$root.$emit('message-sent', 'Error', errorMessage);
-                        });
-                }
-            })
-            .then(response => {
-                console.log(response);
-                if(response){
-                    this.isLoading = false;
-                    this.items = response.data.containerItems;
-                    this.facets = response.data.facets;
-                    this.updateBreadcrumbs(response.data.breadcrumbs);
-
-                    if(this.items == null || this.items.length == 0){
-                        this.displayMessage('Information','You do not have any files or folders.');
-                        this.totalRecords = 0;
-                        this.totalPages = 0;
-                        this.currentPage = 0;
+                                console.error(errorMessage);
+                                this.$root.$emit('message-sent', 'Error', errorMessage);
+                            });
                     }
-                    else{
-                        this.totalRecords = response.data.totalRecords;
-                        this.totalPages = Math.ceil(this.totalRecords / this.limit);
-                        this.currentPage = Math.ceil((offset / limit) + 1);
+                })
+                .then(response => {
+                    console.log(response);
+                    if(response){
+                        this.isLoading = false;
+                        this.items = response.data.containerItems;
+                        this.facets = response.data.facets;
+                        this.updateBreadcrumbs(response.data.breadcrumbs);
+
+                        if(this.items == null || this.items.length == 0){
+                            this.displayMessage('Information','You do not have any files or folders.');
+                            this.totalRecords = 0;
+                            this.totalPages = 0;
+                            this.currentPage = 0;
+                        }
+                        else{
+                            this.totalRecords = response.data.totalRecords;
+                            this.totalPages = Math.ceil(this.totalRecords / this.limit);
+                            this.currentPage = Math.ceil((offset / limit) + 1);
+                        }
+
+                        this.currentFolderId = containerId;
+
+                        this.updateButtons();
+                        this.updatePagination(this.currentPage, this.totalPages, offset, limit, this.totalRecords);
                     }
+                });
+            }
+            else{
+                this.getService("toybox-folder-loadbalancer")
+                    .then(response => {
+                        var container ={
+                            '@class': 'com.github.murataykanat.toybox.dbo.Container',
+                            'name': this.user.username,
+                            'isSystem': 'Y'
+                        }
 
-                    this.currentFolderId = containerId;
+                        var searchRequest = {
+                            'limit': limit,
+                            'offset': offset,
+                            'container': container
+                        }
 
-                    this.updateButtons();
-                    this.updatePagination(this.currentPage, this.totalPages, offset, limit, this.totalRecords);
-                }
-            });
+                        var containerServiceUrl = response.data.value
+
+                        axios.post(containerServiceUrl + "/containers/search", searchRequest)
+                            .then(response => {
+                                var containers = response.data.containers;
+                                if(containers.length > 0){
+                                    if(containers.length == 1){
+                                        var userContainer = containers[0];
+                                        var searchRequest = {
+                                            'limit': limit,
+                                            'offset': offset,
+                                            'sortType': sortType,
+                                            'sortColumn': sortColumn,
+                                            'assetSearchRequestFacetList': searchRequestFacetList
+                                        };
+
+                                        axios.post(containerServiceUrl + '/containers/' + userContainer.id + '/search', searchRequest)
+                                            .then(response => {
+                                                console.log(response);
+                                                if(response){
+                                                    this.isLoading = false;
+                                                    this.items = response.data.containerItems;
+                                                    this.facets = response.data.facets;
+                                                    this.updateBreadcrumbs(response.data.breadcrumbs);
+
+                                                    if(this.items == null || this.items.length == 0){
+                                                        this.displayMessage('Information','You do not have any files or folders.');
+                                                        this.totalRecords = 0;
+                                                        this.totalPages = 0;
+                                                        this.currentPage = 0;
+                                                    }
+                                                    else{
+                                                        this.totalRecords = response.data.totalRecords;
+                                                        this.totalPages = Math.ceil(this.totalRecords / this.limit);
+                                                        this.currentPage = Math.ceil((offset / limit) + 1);
+                                                    }
+
+                                                    this.currentFolderId = userContainer.id;
+
+                                                    this.updateButtons();
+                                                    this.updatePagination(this.currentPage, this.totalPages, offset, limit, this.totalRecords);
+                                                }
+                                            })
+                                            .catch(error => {
+                                                this.isLoading = false;
+                                                var errorMessage;
+
+                                                if(error.response){
+                                                    errorMessage = error.response.data.message
+                                                    if(error.response.status == 401){
+                                                        window.location = '/logout';
+                                                    }
+                                                }
+                                                else{
+                                                    errorMessage = error.message;
+                                                }
+
+                                                console.error(errorMessage);
+                                                this.$root.$emit('message-sent', 'Error', errorMessage);
+                                            });
+                                    }
+                                    else{
+                                        this.isLoading = false;
+                                        var errorMessage = 'There are multiple root folders for user "' + user.username + '"';
+                                        this.$root.$emit('message-sent', 'Error', errorMessage);
+                                    }
+                                }
+                                else{
+                                    this.isLoading = false;
+                                    var errorMessage = 'There is no root folder for user "' + user.username + '"';
+                                    this.$root.$emit('message-sent', 'Error', errorMessage);
+                                }
+                            })
+                            .catch(error => {
+                                this.isLoading = false;
+                                var errorMessage;
+
+                                if(error.response){
+                                    errorMessage = error.response.data.message
+                                    if(error.response.status == 401){
+                                        window.location = '/logout';
+                                    }
+                                }
+                                else{
+                                    errorMessage = error.message;
+                                }
+
+                                console.error(errorMessage);
+                                this.$root.$emit('message-sent', 'Error', errorMessage);
+                            });
+                        })
+            }
         },
         onItemSelectionChanged:function(item){
             if(item.isSelected){
