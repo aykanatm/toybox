@@ -14,6 +14,8 @@ public class RetrieveContainerContentsResult implements Serializable {
     private int totalRecords;
     @JsonProperty("facets")
     private List<Facet> facets;
+    @JsonProperty("breadcrumbs")
+    private List<Breadcrumb> breadcrumbs;
     @JsonProperty("message")
     private String message;
 
@@ -47,5 +49,13 @@ public class RetrieveContainerContentsResult implements Serializable {
 
     public void setFacets(List<Facet> facets) {
         this.facets = facets;
+    }
+
+    public List<Breadcrumb> getBreadcrumbs() {
+        return breadcrumbs;
+    }
+
+    public void setBreadcrumbs(List<Breadcrumb> breadcrumbs) {
+        this.breadcrumbs = breadcrumbs;
     }
 }

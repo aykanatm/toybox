@@ -6,10 +6,7 @@ import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
 import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
-import com.github.murataykanat.toybox.schema.container.ContainerSearchRequest;
-import com.github.murataykanat.toybox.schema.container.CreateContainerRequest;
-import com.github.murataykanat.toybox.schema.container.RetrieveContainerContentsResult;
-import com.github.murataykanat.toybox.schema.container.RetrieveContainersResults;
+import com.github.murataykanat.toybox.schema.container.*;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
 import com.github.murataykanat.toybox.utilities.FacetUtils;
 import com.github.murataykanat.toybox.utilities.SortUtils;
@@ -161,61 +158,52 @@ public class FolderController {
             if(isSessionValid(authentication)){
                 if(StringUtils.isNotBlank(containerId)){
                     if(assetSearchRequest != null){
+                        Container container = getContainer(containerId);
                         User user = getUser(authentication);
+                        if(user != null){
+                            String sortColumn = assetSearchRequest.getSortColumn();
+                            String sortType = assetSearchRequest.getSortType();
+                            int offset = assetSearchRequest.getOffset();
+                            int limit = assetSearchRequest.getLimit();
+                            List<SearchRequestFacet> searchRequestFacetList = assetSearchRequest.getAssetSearchRequestFacetList();
 
-                        String sortColumn = assetSearchRequest.getSortColumn();
-                        String sortType = assetSearchRequest.getSortType();
-                        int offset = assetSearchRequest.getOffset();
-                        int limit = assetSearchRequest.getLimit();
-                        List<SearchRequestFacet> searchRequestFacetList = assetSearchRequest.getAssetSearchRequestFacetList();
+                            List<Container> containersByCurrentUser;
+                            List<Asset> assetsByCurrentUser;
 
-                        List<Container> containersByCurrentUser;
-                        List<Asset> assetsByCurrentUser;
+                            List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(container.getId());
+                            List<String> containerAssetIdsByContainerId = containerAssetsByContainerId.stream().map(ContainerAsset::getAssetId).collect(Collectors.toList());
 
-                        List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(containerId);
-                        List<String> containerAssetIdsByContainerId = containerAssetsByContainerId.stream().map(ContainerAsset::getAssetId).collect(Collectors.toList());
+                            List<Asset> allAssets;
+                            if(!containerAssetIdsByContainerId.isEmpty()){
+                                allAssets = assetsRepository.getNonDeletedLastVersionAssetsByAssetIds(containerAssetIdsByContainerId);
+                            }
+                            else{
+                                allAssets = new ArrayList<>();
+                            }
 
-                        List<Asset> allAssets;
-                        if(!containerAssetIdsByContainerId.isEmpty()){
-                            allAssets = assetsRepository.getNonDeletedLastVersionAssetsByAssetIds(containerAssetIdsByContainerId);
-                        }
-                        else{
-                            allAssets = new ArrayList<>();
-                        }
+                            List<Asset> assets;
+                            if(searchRequestFacetList != null && !searchRequestFacetList.isEmpty()){
+                                assets = allAssets.stream().filter(asset -> FacetUtils.getInstance().hasFacetValue(asset, searchRequestFacetList)).collect(Collectors.toList());
+                            }
+                            else{
+                                assets = allAssets;
+                            }
 
-                        List<Asset> assets;
-                        if(searchRequestFacetList != null && !searchRequestFacetList.isEmpty()){
-                            assets = allAssets.stream().filter(asset -> FacetUtils.getInstance().hasFacetValue(asset, searchRequestFacetList)).collect(Collectors.toList());
-                        }
-                        else{
-                            assets = allAssets;
-                        }
+                            if(isAdminUser(authentication)){
+                                _logger.debug("Retrieving all the items in the container [Admin User]...");
+                                containersByCurrentUser = containersRepository.getNonDeletedContainersByParentContainerId(container.getId());
+                                assetsByCurrentUser = assets.stream()
+                                        .filter(asset -> asset.getIsLatestVersion().equalsIgnoreCase("Y"))
+                                        .collect(Collectors.toList());
+                            }
+                            else{
+                                _logger.debug("Retrieving the items of the user '" + user.getUsername() + "'...");
+                                containersByCurrentUser = containersRepository.getNonDeletedContainersByUsernameAndParentContainerId(user.getUsername(), container.getId());
+                                assetsByCurrentUser = assets.stream()
+                                        .filter(asset -> asset.getImportedByUsername() != null && asset.getImportedByUsername().equalsIgnoreCase(user.getUsername()) && asset.getIsLatestVersion().equalsIgnoreCase("Y"))
+                                        .collect(Collectors.toList());
+                            }
 
-                        if(isAdminUser(authentication)){
-                            _logger.debug("Retrieving all the items in the container [Admin User]...");
-                            containersByCurrentUser = containersRepository.getNonDeletedContainersByParentContainerId(containerId);
-                            assetsByCurrentUser = assets.stream()
-                                    .filter(asset -> asset.getIsLatestVersion().equalsIgnoreCase("Y"))
-                                    .collect(Collectors.toList());
-                        }
-                        else{
-                            _logger.debug("Retrieving the items of the user '" + user.getUsername() + "'...");
-                            containersByCurrentUser = containersRepository.getNonDeletedContainersByUsernameAndParentContainerId(user.getUsername(), containerId);
-                            assetsByCurrentUser = assets.stream()
-                                    .filter(asset -> asset.getImportedByUsername() != null && asset.getImportedByUsername().equalsIgnoreCase(user.getUsername()) && asset.getIsLatestVersion().equalsIgnoreCase("Y"))
-                                    .collect(Collectors.toList());
-                        }
-
-                        if(assetsByCurrentUser.isEmpty() && containersByCurrentUser.isEmpty()){
-                            String message = "There are no folder contents to return.";
-                            _logger.debug(message);
-
-                            retrieveContainerContentsResult.setMessage(message);
-
-                            _logger.debug("<< retrieveContainerContents()");
-                            return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.NO_CONTENT);
-                        }
-                        else{
                             // Set facets
                             List<Facet> facets = FacetUtils.getInstance().getFacets(assetsByCurrentUser);
                             retrieveContainerContentsResult.setFacets(facets);
@@ -270,6 +258,9 @@ public class FolderController {
                                 }
                             }
 
+                            // Set breadcrumbs
+                            retrieveContainerContentsResult.setBreadcrumbs(generateContainerPath(container.getId()));
+
                             // Finalize
                             retrieveContainerContentsResult.setTotalRecords(totalRecords);
                             retrieveContainerContentsResult.setContainerItems(containerItemsOnPage);
@@ -277,6 +268,9 @@ public class FolderController {
 
                             _logger.debug("<< retrieveContainerContents()");
                             return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.OK);
+                        }
+                        else{
+                            throw new Exception("User is null!");
                         }
                     }
                     else{
@@ -391,6 +385,8 @@ public class FolderController {
                                         containerOnPage.setSubscribed("N");
                                     }
                                 }
+
+                                retrieveContainersResults.setBreadcrumbs(generateContainerPath(null));
 
                                 retrieveContainersResults.setTotalRecords(totalRecords);
                                 retrieveContainersResults.setContainers(containersOnPage);
@@ -602,5 +598,60 @@ public class FolderController {
                 container.getSystem());
 
         _logger.debug("<< createContainer()");
+    }
+
+    private List<Breadcrumb> generateContainerPath(String containerId) throws Exception {
+        _logger.debug("generateContainerPath() >>");
+        List<Breadcrumb> breadcrumbs = new ArrayList<>();
+        Container container;
+        Breadcrumb breadcrumb = new Breadcrumb();
+
+        if(StringUtils.isNotBlank(containerId) && !containerId.equalsIgnoreCase("null")){
+            container = getContainer(containerId);
+            breadcrumb.setContainerId(container.getId());
+            breadcrumb.setContainerName(container.getName());
+            breadcrumbs.add(breadcrumb);
+
+            while (StringUtils.isNotBlank(container.getParentId())){
+                container = getContainer(container.getParentId());
+
+                breadcrumb = new Breadcrumb();
+                breadcrumb.setContainerId(container.getId());
+                breadcrumb.setContainerName(container.getName());
+
+                breadcrumbs.add(breadcrumb);
+            }
+
+            breadcrumb = new Breadcrumb();
+            breadcrumb.setContainerId(null);
+            breadcrumb.setContainerName("Root");
+
+            breadcrumbs.add(breadcrumb);
+        }
+        else{
+            breadcrumb = new Breadcrumb();
+            breadcrumb.setContainerId(null);
+            breadcrumb.setContainerName("Root");
+
+            breadcrumbs.add(breadcrumb);
+        }
+
+        _logger.debug("<< generateContainerPath()");
+        return breadcrumbs;
+    }
+
+    private Container getContainer(String containerId) throws Exception {
+        List<Container> containersById = containersRepository.getContainersById(containerId);
+        if(!containersById.isEmpty()){
+            if(containersById.size() == 1){
+                return containersById.get(0);
+            }
+            else{
+                throw new Exception("There are multiple containers with ID '" + containerId + "'!");
+            }
+        }
+        else{
+            throw new Exception("There is no container with ID '" + containerId + "'!");
+        }
     }
 }

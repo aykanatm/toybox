@@ -13,6 +13,8 @@ public class RetrieveContainersResults implements Serializable {
     private String containerId;
     @JsonProperty("totalRecords")
     private int totalRecords;
+    @JsonProperty("breadcrumbs")
+    private List<Breadcrumb> breadcrumbs;
     @JsonProperty("message")
     private String message;
 
@@ -46,5 +48,13 @@ public class RetrieveContainersResults implements Serializable {
 
     public void setContainerId(String containerId) {
         this.containerId = containerId;
+    }
+
+    public List<Breadcrumb> getBreadcrumbs() {
+        return breadcrumbs;
+    }
+
+    public void setBreadcrumbs(List<Breadcrumb> breadcrumbs) {
+        this.breadcrumbs = breadcrumbs;
     }
 }

@@ -4,6 +4,7 @@ const folders = new Vue({
     data:{
         view: 'folders',
         items:[],
+        breadcrumbs:[],
         selectedItems: [],
         isLoading: false,
         renditionUrl:'',
@@ -109,15 +110,16 @@ const folders = new Vue({
                 console.log(response);
                 if(response){
                     this.isLoading = false;
+                    this.items = response.data.containers;
+                    this.updateBreadcrumbs(response.data.breadcrumbs);
 
-                    if(this.items == null){
+                    if(this.items == null || this.items.length == 0){
                         this.displayMessage('Information','You do not have any folders.');
                         this.totalRecords = 0;
                         this.totalPages = 0;
                         this.currentPage = 0;
                     }
                     else{
-                        this.items = response.data.containers;
                         this.totalRecords = response.data.totalRecords;
                         this.totalPages = Math.ceil(this.totalRecords / this.limit);
                         this.currentPage = Math.ceil((offset / limit) + 1);
@@ -134,7 +136,12 @@ const folders = new Vue({
             this.currentFolderId = folder.id;
             this.searchRequestFacetList = [];
 
-            this.getItems(this.currentFolderId, this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList)
+            if(this.currentFolderId === undefined || this.currentFolderId === '' || this.currentFolderId === 'null' || this.currentFolderId === null){
+                this.getTopLevelFolders(this.offset, this.limit);
+            }
+            else{
+                this.getItems(this.currentFolderId, this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList)
+            }
         },
         getItems:function(containerId, offset, limit, sortType, sortColumn, searchRequestFacetList){
             this.isLoading = true;
@@ -172,17 +179,17 @@ const folders = new Vue({
                 console.log(response);
                 if(response){
                     this.isLoading = false;
+                    this.items = response.data.containerItems;
+                    this.facets = response.data.facets;
+                    this.updateBreadcrumbs(response.data.breadcrumbs);
 
-                    if(this.items == null){
+                    if(this.items == null || this.items.length == 0){
                         this.displayMessage('Information','You do not have any files or folders.');
                         this.totalRecords = 0;
                         this.totalPages = 0;
                         this.currentPage = 0;
                     }
                     else{
-                        this.items = response.data.containerItems;
-                        this.facets = response.data.facets;
-
                         this.totalRecords = response.data.totalRecords;
                         this.totalPages = Math.ceil(this.totalRecords / this.limit);
                         this.currentPage = Math.ceil((offset / limit) + 1);
@@ -293,6 +300,34 @@ const folders = new Vue({
                 this.canCreateFolder = false;
                 this.canUploadFile = false;
             }
+        },
+        updateBreadcrumbs:function(breadcrumbs){
+            var displayedBreadcrumbs = [];
+            for(var i = breadcrumbs.length - 1; i >= 0 ; i--){
+                var breadcrumb = breadcrumbs[i];
+                if(i == 0){
+                    breadcrumb.isSection = true;
+                    breadcrumb.isActive = true;
+
+                    displayedBreadcrumbs.push(breadcrumb);
+                }
+                else{
+                    breadcrumb.isSection = true;
+                    breadcrumb.isActive = false;
+                    displayedBreadcrumbs.push(breadcrumb);
+
+                    var dividerBreadcrumb = {
+                        'id': '' + i,
+                        'name': 'divider',
+                        'isActive': false,
+                        'isSection': false,
+                        'isRoot': false
+                    }
+                    displayedBreadcrumbs.push(dividerBreadcrumb);
+                }
+            }
+
+            this.breadcrumbs = displayedBreadcrumbs;
         }
     },
     components:{
@@ -305,5 +340,6 @@ const folders = new Vue({
         'asset-rename-modal-window' : httpVueLoader('../components/asset-rename-modal-window/asset-rename-modal-window.vue'),
         'asset-version-history-modal-window' : httpVueLoader('../components/asset-version-history-modal-window/asset-version-history-modal-window.vue'),
         'facet' : httpVueLoader('../components/facet/facet.vue'),
+        'breadcrumb' : httpVueLoader('../components/breadcrumb/breadcrumb.vue'),
     }
 });
