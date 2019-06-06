@@ -502,10 +502,12 @@ public class FolderController {
     }
 
     private boolean isSessionValid(Authentication authentication){
+        _logger.debug("isSessionValid() >>");
         String errorMessage;
         List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
         if(!usersByUsername.isEmpty()){
             if(usersByUsername.size() == 1){
+                _logger.debug("<< isSessionValid() [true]");
                 return true;
             }
             else{
@@ -517,14 +519,17 @@ public class FolderController {
         }
 
         _logger.error(errorMessage);
+        _logger.debug("<< isSessionValid() [false]");
         return false;
     }
 
     private User getUser(Authentication authentication){
+        _logger.debug("getUser() >>");
         String errorMessage;
         List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
         if(!usersByUsername.isEmpty()){
             if(usersByUsername.size() == 1){
+                _logger.debug("<< getUser()");
                 return usersByUsername.get(0);
             }
             else{
@@ -534,17 +539,22 @@ public class FolderController {
         else{
             errorMessage = "No users with username '" + authentication.getName() + " is found!";
         }
+
         _logger.error(errorMessage);
+        _logger.debug("<< getUser()");
         return null;
     }
 
     private boolean isAdminUser(Authentication authentication){
+        _logger.debug("isAdminUser() >>");
         Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
         List<? extends GrantedAuthority> roleAdmin = authorities.stream().filter(authority -> authority.getAuthority().equalsIgnoreCase("ROLE_ADMIN")).collect(Collectors.toList());
         if(!roleAdmin.isEmpty()){
+            _logger.debug("<< isAdminUser() [false]");
             return true;
         }
 
+        _logger.debug("<< isAdminUser() [false]");
         return false;
     }
 
@@ -579,6 +589,8 @@ public class FolderController {
     }
 
     private void createContainer(Container container){
+        _logger.debug("createContainer() >>");
+
         _logger.debug("Container ID: " + container.getId());
         _logger.debug("Container name: " + container.getName());
         _logger.debug("Container parent ID: " + container.getParentId());
@@ -588,5 +600,7 @@ public class FolderController {
         containersRepository.insertContainer(container.getId(), container.getName(), container.getParentId(),
                 container.getCreatedByUsername(), container.getCreationDate(), container.getDeleted(),
                 container.getSystem());
+
+        _logger.debug("<< createContainer()");
     }
 }
