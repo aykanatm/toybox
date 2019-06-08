@@ -64,6 +64,9 @@ const folders = new Vue({
 
         this.$root.$on('item-selection-changed', this.onItemSelectionChanged);
         this.$root.$on('message-sent', this.displayMessage);
+        this.$root.$on('navigate-to-next-asset', this.onNavigateToNextAsset);
+        this.$root.$on('navigate-to-previous-asset', this.onNavigateToPreviousAsset);
+        this.$root.$on('update-arrows-request', this.updateArrows);
         this.$root.$on('refresh-items', this.refreshItems);
         this.$root.$on('open-folder', this.openFolder)
 
@@ -321,6 +324,54 @@ const folders = new Vue({
             }
 
             console.log(this.selectedAssets);
+        },
+        onNavigateToNextAsset:function(item){
+            if(item){
+                var itemId = item.id;
+                var index = this.items.map(function(a){
+                    return a.id;
+                }).indexOf(itemId);
+                if(index < this.items.length - 1){
+                    this.$root.$emit('display-asset-in-preview', this.items[index + 1].id);
+                }
+
+                this.updateArrows(this.items[index + 1]);
+            }
+        },
+        onNavigateToPreviousAsset(item){
+            if(item){
+                var itemId = item.id;
+                var index = this.items.map(function(a){
+                    return a.id;
+                }).indexOf(itemId);
+                if(index > 0){
+                    this.$root.$emit('display-asset-in-preview', this.items[index - 1].id);
+                }
+
+                this.updateArrows(this.items[index - 1]);
+            }
+        },
+        updateArrows:function(item){
+            if(item){
+                var itemId = item.id;
+                var index = this.items.map(function(a){
+                    return a.id;
+                }).indexOf(itemId);
+
+                var canNavigateToNextAsset = false;
+                var canNavigateToPreviousAsset = false;
+
+                if(this.items.length > 1){
+                    if(index > 0 && this.items[index + -1]['@class'] == 'com.github.murataykanat.toybox.dbo.Asset'){
+                        canNavigateToPreviousAsset = true;
+                    }
+                    if(index < this.items.length - 1 && this.items[index + 1]['@class'] == 'com.github.murataykanat.toybox.dbo.Asset'){
+                        canNavigateToNextAsset = true;
+                    }
+                }
+
+                this.$root.$emit('update-arrows', canNavigateToNextAsset, canNavigateToPreviousAsset);
+            }
         },
         itemsShare:function(){
             console.log('Sharing the following assets:');
