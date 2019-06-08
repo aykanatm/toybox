@@ -20,7 +20,7 @@ module.exports = {
             else{
                 hasPermission = true;
                 if(this.currentContainerId !== this.containerId){
-                    canNavigate = false;
+                    canNavigate = true;
                 }
             }
 
