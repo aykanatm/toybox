@@ -234,7 +234,9 @@ public class FolderController {
                             List<AssetUser> assetUsersByUserId = assetUserRepository.findAssetUsersByUserId(user.getId());
 
                             for(ContainerItem containerItem: containerItemsOnPage){
-                                if(containerItem.getClass().isInstance(Container.class)){
+                                Class<? extends ContainerItem> containerItemClass = containerItem.getClass();
+
+                                if(containerItemClass.getName().equalsIgnoreCase("com.github.murataykanat.toybox.dbo.Container")){
                                     Container containerOnPage = (Container) containerItem;
 
                                     containerOnPage.setSubscribed("N");
@@ -245,7 +247,7 @@ public class FolderController {
                                         }
                                     }
                                 }
-                                else if(containerItem.getClass().isInstance(Asset.class)){
+                                else if(containerItemClass.getName().equalsIgnoreCase("com.github.murataykanat.toybox.dbo.Asset")){
                                     Asset assetOnPage = (Asset) containerItem;
 
                                     assetOnPage.setSubscribed("N");
