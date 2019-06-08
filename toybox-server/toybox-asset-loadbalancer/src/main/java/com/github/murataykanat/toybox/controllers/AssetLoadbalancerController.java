@@ -132,7 +132,7 @@ public class AssetLoadbalancerController {
     // The name "upload" must match the "name" attribute of the input in UI
     @HystrixCommand(fallbackMethod = "uploadAssetsErrorFallback")
     @RequestMapping(value = "/assets/upload", method = RequestMethod.POST)
-    public ResponseEntity<GenericResponse> uploadAssets(Authentication authentication, HttpSession session, @RequestParam("upload") MultipartFile[] files) {
+    public ResponseEntity<GenericResponse> uploadAssets(Authentication authentication, HttpSession session, @RequestHeader(value="container-id") String containerId, @RequestParam("upload") MultipartFile[] files) {
         _logger.debug("uploadAssets() >>");
         String tempFolderName = Long.toString(System.currentTimeMillis());
         String tempImportStagingPath = importStagingPath + File.separator + tempFolderName;
@@ -173,6 +173,7 @@ public class AssetLoadbalancerController {
                             uploadFiles.add(uploadFile);
                         }
 
+                        uploadFileLst.setContainerId(containerId);
                         uploadFileLst.setUploadFiles(uploadFiles);
                         uploadFileLst.setMessage("Files uploaded successfully!");
 
@@ -233,7 +234,7 @@ public class AssetLoadbalancerController {
         }
     }
 
-    public ResponseEntity<GenericResponse> uploadAssetsErrorFallback(Authentication authentication, HttpSession session, MultipartFile[] files, Throwable e){
+    public ResponseEntity<GenericResponse> uploadAssetsErrorFallback(Authentication authentication, HttpSession session, String containerId, MultipartFile[] files, Throwable e){
         _logger.debug("uploadAssetsErrorFallback() >>");
 
         if(files != null){

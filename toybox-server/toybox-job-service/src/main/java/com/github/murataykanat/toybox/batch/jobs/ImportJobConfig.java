@@ -2,6 +2,7 @@ package com.github.murataykanat.toybox.batch.jobs;
 
 import com.github.murataykanat.toybox.batch.utils.Constants;
 import com.github.murataykanat.toybox.dbo.Container;
+import com.github.murataykanat.toybox.dbo.ContainerAsset;
 import com.github.murataykanat.toybox.models.RenditionProperties;
 import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
@@ -157,8 +158,8 @@ public class ImportJobConfig {
 
                                         // Generate database entry
                                         String checksum = calculateChecksum(assetDestination.getAbsolutePath());
-                                        String originalAssetId = getOriginalAssetId(assetDestination.getName(), assetId, username);
-                                        int latestVersion = getLatestVersion(assetDestination.getName(), username);
+                                        String originalAssetId = getOriginalAssetId(assetDestination.getName(), assetId, username, containerId);
+                                        int latestVersion = getLatestVersion(assetDestination.getName(), username, containerId);
 
                                         Asset asset = new Asset();
                                         asset.setId(assetId);
@@ -178,7 +179,7 @@ public class ImportJobConfig {
                                         asset.setFileSize(FileUtils.byteCountToDisplaySize(assetSource.length()));
 
                                         // Update previous versions of the asset
-                                        updateDuplicateAssets(assetDestination.getName(), assetId, username);
+                                        updateDuplicateAssets(assetDestination.getName(), assetId, username, containerId);
 
                                         // Add the asset to the database
                                         insertAsset(asset);
@@ -378,9 +379,9 @@ public class ImportJobConfig {
         return result.toString();
     }
 
-    private String getOriginalAssetId(String assetName, String assetId, String username){
+    private String getOriginalAssetId(String assetName, String assetId, String username, String containerId){
         _logger.debug("getOriginalAssetId() >>");
-        List<Asset> duplicateAssetsByAssetName = assetsRepository.getDuplicateAssetsByAssetNameAndUsername(assetName, username);
+        List<Asset> duplicateAssetsByAssetName = getDuplicateAssets(assetName, username, containerId);
         if(duplicateAssetsByAssetName.isEmpty()){
             _logger.debug("<< getOriginalAssetId()");
             return assetId;
@@ -397,9 +398,10 @@ public class ImportJobConfig {
         }
     }
 
-    private int getLatestVersion(String assetName, String username){
+    private int getLatestVersion(String assetName, String username, String containerId){
         _logger.debug("getLatestVersion() >>");
-        List<Asset> duplicateAssetsByAssetName = assetsRepository.getDuplicateAssetsByAssetNameAndUsername(assetName, username);
+        List<Asset> duplicateAssetsByAssetName = getDuplicateAssets(assetName, username, containerId);
+
         if(duplicateAssetsByAssetName.isEmpty()){
             return 1;
         }
@@ -439,15 +441,39 @@ public class ImportJobConfig {
         _logger.debug("<< insertAsset()");
     }
 
-    private void updateDuplicateAssets(String assetName, String assetId, String username){
-        List<Asset> duplicateAssetsByAssetName= assetsRepository.getDuplicateAssetsByAssetNameAndUsername(assetName, username);
+    private void updateDuplicateAssets(String assetName, String assetId, String username, String containerId){
+        _logger.debug("updateDuplicateAssets() >>");
+        List<Asset> duplicateAssetsByAssetName = getDuplicateAssets(assetName, username, containerId);
+
         if(!duplicateAssetsByAssetName.isEmpty()){
             List<String> assetIds = duplicateAssetsByAssetName.stream()
                     .filter(asset -> !asset.getId().equalsIgnoreCase(assetId))
-                    .map(asset -> asset.getId())
+                    .map(Asset::getId)
                     .collect(Collectors.toList());
             assetsRepository.updateAssetsLatestVersion("N", assetIds);
         }
+
+        _logger.debug("<< updateDuplicateAssets()");
+    }
+
+    private List<Asset> getDuplicateAssets(String assetName, String username, String containerId){
+        _logger.debug("getDuplicateAssets() >>");
+        List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(containerId);
+        if(!containerAssetsByContainerId.isEmpty()){
+            List<Asset> assetsInContainer = assetsRepository.getAssetsByAssetIds(containerAssetsByContainerId.stream()
+                    .map(ContainerAsset::getAssetId)
+                    .collect(Collectors.toList()));
+
+            List<Asset> duplicateAssetsByAssetName = assetsInContainer.stream()
+                    .filter(asset -> asset.getName().equalsIgnoreCase(assetName) && asset.getImportedByUsername().equalsIgnoreCase(username))
+                    .collect(Collectors.toList());
+
+            _logger.debug("<< getDuplicateAssets");
+            return duplicateAssetsByAssetName;
+        }
+
+        _logger.debug("<< getDuplicateAssets");
+        return new ArrayList<>();
     }
 
     private String generateAssetId(){

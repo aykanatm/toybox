@@ -102,6 +102,9 @@ module.exports = {
         },
         upload(formData, onProgress){
             var config = {
+                headers: {
+                    'container-id': this.containerId
+                },
                 onUploadProgress(progressEvent) {
                     var percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
                     onProgress(percentCompleted);
