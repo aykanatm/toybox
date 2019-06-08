@@ -11,6 +11,7 @@ module.exports = {
         this.$root.$on('open-create-container-modal-window', (parentContainerId, containerUrl) => {
             this.parentContainerId = parentContainerId;
             this.containerUrl = containerUrl;
+            this.containerName = '';
 
             $(this.$el).modal('setting', 'closable', false).modal('show');
         });
