@@ -462,22 +462,17 @@ public class ImportJobConfig {
 
     private boolean isAssetIdValid(String assetId){
         _logger.debug("isAssetIdValid() >> [" + assetId + "]");
-        boolean result = false;
 
+        List<Container> containers = containersRepository.getContainersById(assetId);
         List<Asset> assets = assetsRepository.getAssetsById(assetId);
-        if(assets != null){
-            if(!assets.isEmpty()){
-                _logger.debug("<< isAssetIdValid() [" + false + "]");
-                result = false;
-            }
-            else{
-                _logger.debug("<< isAssetIdValid() [" + true + "]");
-                result = true;
-            }
+        if(containers.isEmpty() && assets.isEmpty()){
+            _logger.debug("<< isAssetIdValid() [" + true + "]");
+            return true;
         }
-
-        _logger.debug("<< isAssetIdValid() [" + true + "]");
-        return result;
+        else{
+            _logger.debug("<< isAssetIdValid() [" + false + "]");
+            return false;
+        }
     }
 
     private RenditionProperties getRenditionProperties(Asset asset, String assetRenditionPath, RenditionTypes renditionType) {

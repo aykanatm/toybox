@@ -572,22 +572,17 @@ public class FolderController {
 
     private boolean isContainerIdValid(String containerId){
         _logger.debug("isContainerIdValid() >> [" + containerId + "]");
-        boolean result = false;
 
         List<Container> containers = containersRepository.getContainersById(containerId);
-        if(containers != null){
-            if(!containers.isEmpty()){
-                _logger.debug("<< isContainerIdValid() [" + false + "]");
-                result = false;
-            }
-            else{
-                _logger.debug("<< isContainerIdValid() [" + true + "]");
-                result = true;
-            }
+        List<Asset> assets = assetsRepository.getAssetsById(containerId);
+        if(containers.isEmpty() && assets.isEmpty()){
+            _logger.debug("<< isContainerIdValid() [" + true + "]");
+            return true;
         }
-
-        _logger.debug("<< isContainerIdValid() [" + true + "]");
-        return result;
+        else{
+            _logger.debug("<< isContainerIdValid() [" + false + "]");
+            return false;
+        }
     }
 
     private void createContainer(Container container){
