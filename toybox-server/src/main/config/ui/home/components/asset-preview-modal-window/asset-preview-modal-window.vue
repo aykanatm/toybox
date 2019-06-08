@@ -1,14 +1,22 @@
 <template>
     <div class="ui modal" id="toybox-asset-preview-modal-window">
-        <i class="share alternate icon asset-preview-modal-window-menu-icon" v-on:click="assetShare"></i>
-        <i class="download icon asset-preview-modal-window-menu-icon" v-on:click="assetDownload"></i>
-        <i class="i cursor icon asset-preview-modal-window-menu-icon" v-on:click="assetRename"></i>
-        <i class="copy icon asset-preview-modal-window-menu-icon" v-on:click="assetCopy"></i>
-        <i class="external alternate icon asset-preview-modal-window-menu-icon" v-on:click="assetMove"></i>
-        <i class="rss icon asset-preview-modal-window-menu-icon" v-on:click="assetSubscribe"></i>
-        <i class="list alternate outline icon asset-preview-modal-window-menu-icon" v-on:click="assetShowVersionHistory"></i>
-        <i class="trash alternate outline icon asset-preview-modal-window-menu-icon" v-on:click="assetDelete"></i>
-
+        <div class="ui buttons" style="margin-left: 100px;">
+            <div class="ui primary button">Actions</div>
+            <div class="ui combo top right pointing dropdown primary icon button">
+                <i class="dropdown icon"></i>
+                <div class="menu">
+                    <div class="item" v-on:click="asset.assetShare"><i class="share alternate icon"></i> Share</div>
+                    <div class="item" v-on:click="asset.assetDownload"><i class="download icon"></i> Download</div>
+                    <div class="item" v-on:click="asset.assetRename"><i class="i cursor icon"></i> Rename</div>
+                    <div class="item" v-on:click="asset.assetCopy"><i class="copy icon"></i> Copy</div>
+                    <div class="item" v-on:click="asset.assetMove"><i class="external alternate icon"></i> Move</div>
+                    <div class="item" v-on:click="asset.assetSubscribe" v-show="!(asset.subscribed === 'Y')"><i class="eye icon"></i> Subscribe</div>
+                    <div class="item" v-on:click="asset.assetUnsubscribe" v-show="asset.subscribed === 'Y'"><i class="eye slash icon"></i> Unsubscribe</div>
+                    <div class="item" v-on:click="asset.assetShowVersionHistory"><i class="list alternate icon"></i> Show Version History</div>
+                    <div class="item" v-on:click="asset.assetDelete"><i class="trash alternate icon"></i> Delete</div>
+                </div>
+            </div>
+        </div>
         <i class="close icon" style="right: 0px !important; color: white;"></i>
         <div class="content">
             <div style="height: 100%; width: 100%;">
