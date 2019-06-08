@@ -56,6 +56,7 @@ module.exports = {
         });
 
         this.$root.$on('deselect-asset', this.assetDeselect);
+        this.$root.$on('deselect-item', this.assetDeselect);
     },
     computed:{
 

@@ -355,13 +355,13 @@ const folders = new Vue({
             this.deleteItems(selectedItems);
         },
         refreshItems:function(){
-            this.selectedAssets = [];
-            for(var i = 0; i < this.assets.length; i++){
-                var asset = this.assets[i];
-                this.$root.$emit('deselect-asset', asset.id);
+            this.selectedItems = [];
+            for(var i = 0; i < this.items.length; i++){
+                var item = this.items[i];
+                this.$root.$emit('deselect-item', item.id);
             }
 
-            this.getItems(this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList);
+            this.getItems(this.currentFolderId, this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList);
         },
         createNewFolder:function(){
             this.getService("toybox-folder-loadbalancer")
