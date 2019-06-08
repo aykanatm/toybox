@@ -83,6 +83,9 @@
                             <breadcrumb v-for="breadcrumb in breadcrumbs" v-bind:container-id="breadcrumb.containerId" v-bind:container-name="breadcrumb.containerName"
                             v-bind:is-active="breadcrumb.isActive" v-bind:is-section="breadcrumb.isSection" v-bind:user="user"
                             v-bind:current-container-id="currentFolderId" v-bind:key="breadcrumb.containerId"></breadcrumb>
+                            <button class="ui icon button" style="margin-left: 30px;" v-on:click.stop="refresh">
+                                <i class="sync icon"></i>
+                            </button>
                         </div>
                         <div class="ui four doubling stackable cards">
                             <div class="ui active dimmer" v-if="isLoading">

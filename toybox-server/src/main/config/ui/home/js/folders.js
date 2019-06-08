@@ -80,6 +80,14 @@ const folders = new Vue({
         }, 200);
     },
     methods:{
+        refresh:function(){
+            if(this.currentFolderId === undefined || this.currentFolderId === '' || this.currentFolderId === 'null' || this.currentFolderId === null){
+                this.getTopLevelFolders(this.offset, this.limit);
+            }
+            else{
+                this.getItems(this.currentFolderId, this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList)
+            }
+        },
         getTopLevelFolders:function(offset, limit){
             this.isLoading = true;
             this.getService("toybox-folder-loadbalancer")
