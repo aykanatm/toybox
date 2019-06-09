@@ -64,8 +64,8 @@ public class AssetLoadbalancerController {
     public ResponseEntity<Resource> downloadAssets(Authentication authentication, HttpSession session, @RequestBody SelectedAssets selectedAssets){
         _logger.debug("downloadAssets() >>");
         try {
-            if(selectedAssets != null){
-                if(isSessionValid(authentication)){
+            if(isSessionValid(authentication)){
+                if(selectedAssets != null){
                     HttpHeaders headers = getHeaders(session);
                     String prefix = getPrefix();
 
@@ -79,26 +79,26 @@ public class AssetLoadbalancerController {
                     }
                 }
                 else{
-                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    String errorMessage = "Selected assets are null!";
                     _logger.error(errorMessage);
 
-                    _logger.debug("<< updateNotifications()");
-                    return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                    _logger.debug("<< downloadAssets()");
+                    return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
                 }
             }
             else{
-                String errorMessage = "Selected assets are null!";
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
                 _logger.debug("<< downloadAssets()");
-                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){
             String errorMessage = "An error occurred while downloading the assets. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
-            _logger.debug("<< getLoadBalancedRendition()");
+            _logger.debug("<< downloadAssets()");
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -138,11 +138,10 @@ public class AssetLoadbalancerController {
         String tempImportStagingPath = importStagingPath + File.separator + tempFolderName;
         _logger.debug("Import staging path: " + tempImportStagingPath);
 
+        GenericResponse genericResponse = new GenericResponse();
         try{
-            GenericResponse genericResponse = new GenericResponse();
-
-            if(files != null){
-                if(isSessionValid(authentication)){
+            if(isSessionValid(authentication)){
+                if(files != null){
                     String prefix = getPrefix();
                     HttpHeaders headers = getHeaders(session);
 
@@ -191,24 +190,24 @@ public class AssetLoadbalancerController {
                     }
                 }
                 else{
-                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    String errorMessage = "Files are null!";
+
                     _logger.error(errorMessage);
 
                     genericResponse.setMessage(errorMessage);
 
                     _logger.debug("<< uploadAssets()");
-                    return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
             else{
-                String errorMessage = "Files are null!";
-
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
                 genericResponse.setMessage(errorMessage);
 
                 _logger.debug("<< uploadAssets()");
-                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){
@@ -226,7 +225,6 @@ public class AssetLoadbalancerController {
                 errorMessage += ioErrorMessage;
             }
 
-            GenericResponse genericResponse = new GenericResponse();
             genericResponse.setMessage(errorMessage);
 
             _logger.debug("<< uploadAssets()");
@@ -262,7 +260,7 @@ public class AssetLoadbalancerController {
             GenericResponse genericResponse = new GenericResponse();
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< downloadAssetsErrorFallback()");
+            _logger.debug("<< uploadAssetsErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
         }
     }
@@ -274,8 +272,8 @@ public class AssetLoadbalancerController {
         try{
             RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
 
-            if(assetSearchRequest != null){
-                if(isSessionValid(authentication)){
+            if(isSessionValid(authentication)){
+                if(assetSearchRequest != null){
                     HttpHeaders headers = getHeaders(session);
                     String prefix = getPrefix();
 
@@ -295,24 +293,24 @@ public class AssetLoadbalancerController {
                     }
                 }
                 else{
-                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    String errorMessage = "Asset search request is null!";
+
                     _logger.error(errorMessage);
 
                     retrieveAssetsResults.setMessage(errorMessage);
 
                     _logger.debug("<< retrieveAssets()");
-                    return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.UNAUTHORIZED);
+                    return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.BAD_REQUEST);
                 }
             }
             else{
-                String errorMessage = "Asset search request is null!";
-
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
                 retrieveAssetsResults.setMessage(errorMessage);
 
                 _logger.debug("<< retrieveAssets()");
-                return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){
@@ -367,8 +365,8 @@ public class AssetLoadbalancerController {
         try {
             GenericResponse genericResponse = new GenericResponse();
 
-            if(selectedAssets != null){
-                if(isSessionValid(authentication)){
+            if(isSessionValid(authentication)){
+                if(selectedAssets != null){
                     HttpHeaders headers = getHeaders(session);
                     String prefix = getPrefix();
 
@@ -387,24 +385,24 @@ public class AssetLoadbalancerController {
                     }
                 }
                 else{
-                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    String errorMessage = "Selected assets are null!";
+
                     _logger.error(errorMessage);
 
                     genericResponse.setMessage(errorMessage);
 
                     _logger.debug("<< deleteAssets()");
-                    return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
             else{
-                String errorMessage = "Selected assets are null!";
-
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
                 genericResponse.setMessage(errorMessage);
 
                 _logger.debug("<< deleteAssets()");
-                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){
@@ -420,7 +418,7 @@ public class AssetLoadbalancerController {
     }
 
     public ResponseEntity<GenericResponse> deleteAssetsErrorFallback(Authentication authentication, HttpSession session, SelectedAssets selectedAssets, Throwable e){
-        _logger.debug("downloadAssetsErrorFallback() >>");
+        _logger.debug("deleteAssetsErrorFallback() >>");
 
         if(selectedAssets != null){
             String errorMessage;
@@ -436,7 +434,7 @@ public class AssetLoadbalancerController {
             GenericResponse genericResponse = new GenericResponse();
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< downloadAssetsErrorFallback()");
+            _logger.debug("<< deleteAssetsErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         else{
@@ -447,7 +445,7 @@ public class AssetLoadbalancerController {
             GenericResponse genericResponse = new GenericResponse();
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< downloadAssetsErrorFallback()");
+            _logger.debug("<< deleteAssetsErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
         }
     }
@@ -459,8 +457,8 @@ public class AssetLoadbalancerController {
         try{
             GenericResponse genericResponse = new GenericResponse();
 
-            if(selectedAssets != null){
-                if(isSessionValid(authentication)){
+            if(isSessionValid(authentication)){
+                if(selectedAssets != null){
                     HttpHeaders headers = getHeaders(session);
                     String prefix = getPrefix();
 
@@ -479,24 +477,24 @@ public class AssetLoadbalancerController {
                     }
                 }
                 else{
-                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    String errorMessage = "Selected assets are null!";
+
                     _logger.error(errorMessage);
 
                     genericResponse.setMessage(errorMessage);
 
                     _logger.debug("<< subscribeToAssets()");
-                    return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
             else{
-                String errorMessage = "Selected assets are null!";
-
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
                 genericResponse.setMessage(errorMessage);
 
                 _logger.debug("<< subscribeToAssets()");
-                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){
@@ -551,8 +549,8 @@ public class AssetLoadbalancerController {
         try {
             GenericResponse genericResponse = new GenericResponse();
 
-            if(selectedAssets != null){
-                if(isSessionValid(authentication)){
+            if(isSessionValid(authentication)){
+                if(selectedAssets != null){
                     HttpHeaders headers = getHeaders(session);
                     String prefix = getPrefix();
 
@@ -571,24 +569,24 @@ public class AssetLoadbalancerController {
                     }
                 }
                 else{
-                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    String errorMessage = "Selected assets are null!";
                     _logger.error(errorMessage);
+
 
                     genericResponse.setMessage(errorMessage);
 
                     _logger.debug("<< unsubscribeFromAssets()");
-                    return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
             else{
-                String errorMessage = "Selected assets are null!";
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
-
 
                 genericResponse.setMessage(errorMessage);
 
                 _logger.debug("<< unsubscribeFromAssets()");
-                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){
@@ -643,9 +641,9 @@ public class AssetLoadbalancerController {
         GenericResponse genericResponse = new GenericResponse();
 
         try{
-            if(StringUtils.isNotBlank(assetId)){
-                if(updateAssetRequest != null){
-                    if(isSessionValid(authentication)){
+            if(isSessionValid(authentication)){
+                if(StringUtils.isNotBlank(assetId)){
+                    if(updateAssetRequest != null){
                         HttpHeaders headers = getHeaders(session);
                         String prefix = getPrefix();
 
@@ -664,17 +662,18 @@ public class AssetLoadbalancerController {
                         }
                     }
                     else{
-                        String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                        String errorMessage = "Update asset request is null!";
+
                         _logger.error(errorMessage);
 
                         genericResponse.setMessage(errorMessage);
 
                         _logger.debug("<< updateAsset()");
-                        return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                        return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                     }
                 }
                 else{
-                    String errorMessage = "Update asset request is null!";
+                    String errorMessage = "Asset ID is blank";
 
                     _logger.error(errorMessage);
 
@@ -685,14 +684,13 @@ public class AssetLoadbalancerController {
                 }
             }
             else{
-                String errorMessage = "Asset ID is blank";
-
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
                 genericResponse.setMessage(errorMessage);
 
                 _logger.debug("<< updateAsset()");
-                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){
@@ -707,7 +705,7 @@ public class AssetLoadbalancerController {
     }
 
     public ResponseEntity<GenericResponse> updateAssetErrorFallback(Authentication authentication, HttpSession session, UpdateAssetRequest updateAssetRequest, String assetId, Throwable e){
-        _logger.debug("unsubscribeFromAssetsErrorFallback() >>");
+        _logger.debug("updateAssetErrorFallback() >>");
 
         if(updateAssetRequest != null){
             if(StringUtils.isNotBlank(assetId)){
@@ -759,8 +757,8 @@ public class AssetLoadbalancerController {
         AssetVersionResponse assetVersionResponse = new AssetVersionResponse();
 
         try {
-            if(StringUtils.isNotBlank(assetId)){
-                if(isSessionValid(authentication)){
+            if(isSessionValid(authentication)){
+                if(StringUtils.isNotBlank(assetId)){
                     HttpHeaders headers = getHeaders(session);
                     String prefix = getPrefix();
 
@@ -779,23 +777,23 @@ public class AssetLoadbalancerController {
                     }
                 }
                 else{
-                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    String errorMessage = "Asset ID is blank!";
                     _logger.error(errorMessage);
 
                     assetVersionResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< updateAssets()");
-                    return new ResponseEntity<>(assetVersionResponse, HttpStatus.UNAUTHORIZED);
+                    _logger.debug("<< getVersionHistory()");
+                    return new ResponseEntity<>(assetVersionResponse, HttpStatus.BAD_REQUEST);
                 }
             }
             else{
-                String errorMessage = "Asset ID is blank!";
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
                 assetVersionResponse.setMessage(errorMessage);
 
-                _logger.debug("<< getVersionHistory()");
-                return new ResponseEntity<>(assetVersionResponse, HttpStatus.BAD_REQUEST);
+                _logger.debug("<< updateAssets()");
+                return new ResponseEntity<>(assetVersionResponse, HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){
@@ -848,9 +846,9 @@ public class AssetLoadbalancerController {
         GenericResponse genericResponse = new GenericResponse();
 
         try{
-            if(StringUtils.isNotBlank(assetId)){
-                if(revertAssetVersionRequest != null){
-                    if(isSessionValid(authentication)){
+            if(isSessionValid(authentication)){
+                if(StringUtils.isNotBlank(assetId)){
+                    if(revertAssetVersionRequest != null){
                         HttpHeaders headers = getHeaders(session);
                         String prefix = getPrefix();
                         if(StringUtils.isNotBlank(prefix)){
@@ -868,17 +866,17 @@ public class AssetLoadbalancerController {
                         }
                     }
                     else{
-                        String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                        String errorMessage = "Revert asset version request is null!";
                         _logger.error(errorMessage);
 
                         genericResponse.setMessage(errorMessage);
 
                         _logger.debug("<< revertAssetToVersion()");
-                        return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                        return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                     }
                 }
                 else{
-                    String errorMessage = "Revert asset version request is null!";
+                    String errorMessage = "Asset ID is blank!";
                     _logger.error(errorMessage);
 
                     genericResponse.setMessage(errorMessage);
@@ -888,17 +886,25 @@ public class AssetLoadbalancerController {
                 }
             }
             else{
-                String errorMessage = "Asset ID is blank!";
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
                 genericResponse.setMessage(errorMessage);
 
                 _logger.debug("<< revertAssetToVersion()");
-                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){
-            String errorMessage = "An error occurred while reverting the asset with ID '" + assetId + "' to version " + revertAssetVersionRequest.getVersion() + ". " + e.getLocalizedMessage();
+            String errorMessage;
+
+            if(revertAssetVersionRequest != null){
+                errorMessage = "An error occurred while reverting the asset with ID '" + assetId + "' to version " + revertAssetVersionRequest.getVersion() + ". " + e.getLocalizedMessage();
+            }
+            else{
+                errorMessage = "An error occurred while reverting the asset with ID '" + assetId + ". " + e.getLocalizedMessage();
+            }
+
             _logger.error(errorMessage, e);
 
             genericResponse.setMessage(errorMessage);
