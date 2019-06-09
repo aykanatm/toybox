@@ -56,11 +56,11 @@ public class JobLoadbalancerController {
     @RequestMapping(value = "/jobs/package", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<JobResponse> packageAssets(Authentication authentication, HttpSession session, @RequestBody SelectedAssets selectedAssets){
         _logger.debug("packageAssets() >>");
-        try {
-            JobResponse jobResponse = new JobResponse();
+        JobResponse jobResponse = new JobResponse();
 
-            if(selectedAssets != null){
-                if(isSessionValid(authentication)){
+        try {
+            if(isSessionValid(authentication)){
+                if(selectedAssets != null){
                     HttpHeaders headers = getHeaders(session);
                     String prefix = getPrefix();
 
@@ -79,30 +79,29 @@ public class JobLoadbalancerController {
                     }
                 }
                 else{
-                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    String errorMessage = "Selected assets are null!";
                     _logger.error(errorMessage);
 
                     jobResponse.setMessage(errorMessage);
 
                     _logger.debug("<< packageAssets()");
-                    return new ResponseEntity<>(jobResponse, HttpStatus.UNAUTHORIZED);
+                    return new ResponseEntity<>(jobResponse, HttpStatus.BAD_REQUEST);
                 }
             }
             else{
-                String errorMessage = "Selected assets are null!";
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
                 jobResponse.setMessage(errorMessage);
 
                 _logger.debug("<< packageAssets()");
-                return new ResponseEntity<>(jobResponse, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(jobResponse, HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){
             String errorMessage = "An error occurred while initiating the package job. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
-            JobResponse jobResponse = new JobResponse();
             jobResponse.setMessage(errorMessage);
 
             _logger.debug("<< packageAssets()");
@@ -112,6 +111,7 @@ public class JobLoadbalancerController {
 
     public ResponseEntity<JobResponse> packageAssetsErrorFallback(Authentication authentication, HttpSession session, SelectedAssets selectedAssets, Throwable e){
         _logger.debug("packageAssetsErrorFallback() >>");
+        JobResponse jobResponse = new JobResponse();
 
         if(selectedAssets != null){
             String errorMessage;
@@ -123,7 +123,7 @@ public class JobLoadbalancerController {
             }
 
             _logger.error(errorMessage, e);
-            JobResponse jobResponse = new JobResponse();
+
             jobResponse.setMessage(errorMessage);
 
             _logger.debug("<< packageAssetsErrorFallback()");
@@ -132,7 +132,7 @@ public class JobLoadbalancerController {
         else{
             String errorMessage = "Selected assets are null!";
             _logger.error(errorMessage);
-            JobResponse jobResponse = new JobResponse();
+
             jobResponse.setMessage(errorMessage);
 
             _logger.debug("<< packageAssetsErrorFallback()");
@@ -144,11 +144,11 @@ public class JobLoadbalancerController {
     @RequestMapping(value = "/jobs/import", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<JobResponse> importAsset(Authentication authentication, HttpSession session, @RequestBody UploadFileLst uploadFileLst) {
         _logger.debug("importAsset() >>");
-        try{
-            JobResponse jobResponse = new JobResponse();
+        JobResponse jobResponse = new JobResponse();
 
-            if(uploadFileLst != null){
-                if(isSessionValid(authentication)){
+        try{
+            if(isSessionValid(authentication)){
+                if(uploadFileLst != null){
                     HttpHeaders headers = getHeaders(session);
                     String prefix = getPrefix();
 
@@ -167,30 +167,29 @@ public class JobLoadbalancerController {
                     }
                 }
                 else{
-                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    String errorMessage = "Upload file list is null!";
                     _logger.error(errorMessage);
 
                     jobResponse.setMessage(errorMessage);
 
                     _logger.debug("<< importAsset()");
-                    return new ResponseEntity<>(jobResponse, HttpStatus.UNAUTHORIZED);
+                    return new ResponseEntity<>(jobResponse, HttpStatus.BAD_REQUEST);
                 }
             }
             else{
-                String errorMessage = "Upload file list is null!";
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
                 jobResponse.setMessage(errorMessage);
 
                 _logger.debug("<< importAsset()");
-                return new ResponseEntity<>(jobResponse, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(jobResponse, HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){
             String errorMessage = "An error occurred while initiating the import job. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
-            JobResponse jobResponse = new JobResponse();
             jobResponse.setMessage(errorMessage);
 
             _logger.debug("<< importAsset()");
@@ -200,6 +199,7 @@ public class JobLoadbalancerController {
 
     public ResponseEntity<JobResponse> importAssetErrorFallback(Authentication authentication, HttpSession session, UploadFileLst uploadFileLst, Throwable e){
         _logger.debug("importAssetErrorFallback() >>");
+        JobResponse jobResponse = new JobResponse();
 
         if(uploadFileLst != null){
             String errorMessage;
@@ -211,7 +211,7 @@ public class JobLoadbalancerController {
             }
 
             _logger.error(errorMessage, e);
-            JobResponse jobResponse = new JobResponse();
+
             jobResponse.setMessage(errorMessage);
 
             _logger.debug("<< importAssetErrorFallback()");
@@ -220,7 +220,7 @@ public class JobLoadbalancerController {
         else{
             String errorMessage = "Upload file list is null!";
             _logger.error(errorMessage);
-            JobResponse jobResponse = new JobResponse();
+
             jobResponse.setMessage(errorMessage);
 
             _logger.debug("<< importAssetErrorFallback()");
@@ -232,11 +232,11 @@ public class JobLoadbalancerController {
     @RequestMapping(value = "/jobs/search", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<RetrieveToyboxJobsResult> retrieveJobs(Authentication authentication, HttpSession session, @RequestBody JobSearchRequest jobSearchRequest) {
         _logger.debug("retrieveJobs() >>");
-        try{
-            RetrieveToyboxJobsResult retrieveToyboxJobsResult = new RetrieveToyboxJobsResult();
+        RetrieveToyboxJobsResult retrieveToyboxJobsResult = new RetrieveToyboxJobsResult();
 
-            if(jobSearchRequest != null){
-                if(isSessionValid(authentication)){
+        try{
+            if(isSessionValid(authentication)){
+                if(jobSearchRequest != null){
                     HttpHeaders headers = getHeaders(session);
                     String prefix = getPrefix();
 
@@ -255,30 +255,29 @@ public class JobLoadbalancerController {
                     }
                 }
                 else{
-                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    String errorMessage = "Job search request is null!";
                     _logger.error(errorMessage);
 
                     retrieveToyboxJobsResult.setMessage(errorMessage);
 
-                    _logger.debug("<< updateNotifications()");
-                    return new ResponseEntity<>(retrieveToyboxJobsResult, HttpStatus.UNAUTHORIZED);
+                    _logger.debug("<< retrieveJobs()");
+                    return new ResponseEntity<>(retrieveToyboxJobsResult, HttpStatus.BAD_REQUEST);
                 }
             }
             else{
-                String errorMessage = "Job search request is null!";
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
                 retrieveToyboxJobsResult.setMessage(errorMessage);
 
-                _logger.debug("<< retrieveJobs()");
-                return new ResponseEntity<>(retrieveToyboxJobsResult, HttpStatus.BAD_REQUEST);
+                _logger.debug("<< updateNotifications()");
+                return new ResponseEntity<>(retrieveToyboxJobsResult, HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){
             String errorMessage = "An error occurred while retrieving jobs. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
-            RetrieveToyboxJobsResult retrieveToyboxJobsResult = new RetrieveToyboxJobsResult();
             retrieveToyboxJobsResult.setMessage(errorMessage);
 
             _logger.debug("<< retrieveJobs()");
@@ -288,6 +287,7 @@ public class JobLoadbalancerController {
 
     public ResponseEntity<RetrieveToyboxJobsResult> retrieveJobsErrorFallback(Authentication authentication, HttpSession session, JobSearchRequest jobSearchRequest, Throwable e){
         _logger.debug("retrieveJobsErrorFallback() >>");
+        RetrieveToyboxJobsResult retrieveToyboxJobsResult = new RetrieveToyboxJobsResult();
 
         if(jobSearchRequest != null){
             String errorMessage;
@@ -299,7 +299,7 @@ public class JobLoadbalancerController {
             }
 
             _logger.error(errorMessage, e);
-            RetrieveToyboxJobsResult retrieveToyboxJobsResult = new RetrieveToyboxJobsResult();
+
             retrieveToyboxJobsResult.setMessage(errorMessage);
 
             _logger.debug("<< retrieveJobsErrorFallback()");
@@ -308,7 +308,7 @@ public class JobLoadbalancerController {
         else{
             String errorMessage = "Job search request is null!";
             _logger.error(errorMessage);
-            RetrieveToyboxJobsResult retrieveToyboxJobsResult = new RetrieveToyboxJobsResult();
+
             retrieveToyboxJobsResult.setMessage(errorMessage);
 
             _logger.debug("<< retrieveJobsErrorFallback()");
@@ -320,11 +320,11 @@ public class JobLoadbalancerController {
     @RequestMapping(value = "/jobs/{jobInstanceId}", method = RequestMethod.GET)
     public ResponseEntity<RetrieveToyboxJobResult> retrieveJob(Authentication authentication, HttpSession session,@PathVariable String jobInstanceId){
         _logger.debug("retrieveJob() >>");
-        try{
-            RetrieveToyboxJobResult retrieveToyboxJobResult = new RetrieveToyboxJobResult();
+        RetrieveToyboxJobResult retrieveToyboxJobResult = new RetrieveToyboxJobResult();
 
-            if(StringUtils.isNotBlank(jobInstanceId)){
-                if(isSessionValid(authentication)){
+        try{
+            if(isSessionValid(authentication)){
+                if(StringUtils.isNotBlank(jobInstanceId)){
                     HttpHeaders headers = getHeaders(session);
                     String prefix = getPrefix();
 
@@ -343,30 +343,29 @@ public class JobLoadbalancerController {
                     }
                 }
                 else{
-                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    String errorMessage = "Job instance id is blank!";
                     _logger.error(errorMessage);
 
                     retrieveToyboxJobResult.setMessage(errorMessage);
 
                     _logger.debug("<< retrieveJob()");
-                    return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.UNAUTHORIZED);
+                    return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.BAD_REQUEST);
                 }
             }
             else{
-                String errorMessage = "Job instance id is blank!";
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
                 retrieveToyboxJobResult.setMessage(errorMessage);
 
                 _logger.debug("<< retrieveJob()");
-                return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){
             String errorMessage = "An error occurred while jobs with instance ID '" + jobInstanceId + ". " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
-            RetrieveToyboxJobResult retrieveToyboxJobResult = new RetrieveToyboxJobResult();
             retrieveToyboxJobResult.setMessage(errorMessage);
 
             _logger.debug("<< retrieveJob()");
@@ -376,6 +375,7 @@ public class JobLoadbalancerController {
 
     public ResponseEntity<RetrieveToyboxJobResult> retrieveJobErrorFallback(Authentication authentication, HttpSession session, String jobInstanceId, Throwable e){
         _logger.debug("retrieveJobErrorFallback() >>");
+        RetrieveToyboxJobResult retrieveToyboxJobResult = new RetrieveToyboxJobResult();
 
         if(StringUtils.isNotBlank(jobInstanceId)){
             String errorMessage;
@@ -387,7 +387,7 @@ public class JobLoadbalancerController {
             }
 
             _logger.error(errorMessage, e);
-            RetrieveToyboxJobResult retrieveToyboxJobResult = new RetrieveToyboxJobResult();
+
             retrieveToyboxJobResult.setMessage(errorMessage);
 
             _logger.debug("<< retrieveJobErrorFallback()");
@@ -396,7 +396,7 @@ public class JobLoadbalancerController {
         else{
             String errorMessage = "Job instance id is blank!";
             _logger.error(errorMessage);
-            RetrieveToyboxJobResult retrieveToyboxJobResult = new RetrieveToyboxJobResult();
+
             retrieveToyboxJobResult.setMessage(errorMessage);
 
             _logger.debug("<< retrieveJobErrorFallback()");
@@ -409,8 +409,8 @@ public class JobLoadbalancerController {
     public ResponseEntity<Resource> downloadJobResult(Authentication authentication, HttpSession session, @PathVariable String jobInstanceId){
         _logger.debug("downloadJobResult() >>");
         try{
-            if(StringUtils.isNotBlank(jobInstanceId)){
-                if(isSessionValid(authentication)){
+            if(isSessionValid(authentication)){
+                if(StringUtils.isNotBlank(jobInstanceId)){
                     HttpHeaders headers = getHeaders(session);
                     String prefix = getPrefix();
 
@@ -427,19 +427,19 @@ public class JobLoadbalancerController {
                     }
                 }
                 else{
-                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    String errorMessage = "Job instance id is blank!";
                     _logger.error(errorMessage);
 
                     _logger.debug("<< downloadJobResult()");
-                    return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                    return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
                 }
             }
             else{
-                String errorMessage = "Job instance id is blank!";
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
                 _logger.debug("<< downloadJobResult()");
-                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){
@@ -481,11 +481,10 @@ public class JobLoadbalancerController {
     @RequestMapping(value = "/jobs/stop/{jobInstanceId}", method = RequestMethod.POST)
     public ResponseEntity<JobResponse> stopJob(Authentication authentication, HttpSession session, @PathVariable String jobInstanceId) {
         _logger.debug("stopJob() >>");
+        JobResponse jobResponse = new JobResponse();
         try {
-            JobResponse jobResponse = new JobResponse();
-
-            if(StringUtils.isNotBlank(jobInstanceId)){
-                if(isSessionValid(authentication)){
+            if(isSessionValid(authentication)){
+                if(StringUtils.isNotBlank(jobInstanceId)){
                     HttpHeaders headers = getHeaders(session);
                     String prefix = getPrefix();
 
@@ -504,30 +503,29 @@ public class JobLoadbalancerController {
                     }
                 }
                 else{
-                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    String errorMessage = "Job instance id is blank!";
                     _logger.error(errorMessage);
 
                     jobResponse.setMessage(errorMessage);
 
                     _logger.debug("<< stopJob()");
-                    return new ResponseEntity<>(jobResponse, HttpStatus.UNAUTHORIZED);
+                    return new ResponseEntity<>(jobResponse, HttpStatus.BAD_REQUEST);
                 }
             }
             else{
-                String errorMessage = "Job instance id is blank!";
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
                 jobResponse.setMessage(errorMessage);
 
                 _logger.debug("<< stopJob()");
-                return new ResponseEntity<>(jobResponse, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(jobResponse, HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){
             String errorMessage = "An error occurred while stopping the job with instance ID '" + jobInstanceId + ". " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
-            JobResponse jobResponse = new JobResponse();
             jobResponse.setMessage(errorMessage);
 
             _logger.debug("<< stopJob()");
@@ -537,6 +535,7 @@ public class JobLoadbalancerController {
 
     public ResponseEntity<JobResponse> stopJobErrorFallback(Authentication authentication, HttpSession session, String jobInstanceId, Throwable e){
         _logger.debug("stopJobErrorFallback() >>");
+        JobResponse jobResponse = new JobResponse();
 
         if(StringUtils.isNotBlank(jobInstanceId)){
             String errorMessage;
@@ -549,7 +548,6 @@ public class JobLoadbalancerController {
 
             _logger.error(errorMessage, e);
 
-            JobResponse jobResponse = new JobResponse();
             jobResponse.setMessage(errorMessage);
 
             _logger.debug("<< stopJobErrorFallback()");
@@ -559,7 +557,6 @@ public class JobLoadbalancerController {
             String errorMessage = "Job instance id is blank!";
             _logger.error(errorMessage);
 
-            JobResponse jobResponse = new JobResponse();
             jobResponse.setMessage(errorMessage);
 
             _logger.debug("<< stopJobErrorFallback()");
