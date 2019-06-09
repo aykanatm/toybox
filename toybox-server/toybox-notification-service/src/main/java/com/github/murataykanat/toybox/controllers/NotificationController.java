@@ -56,9 +56,10 @@ public class NotificationController {
         _logger.debug("sendNotification() >>");
         GenericResponse genericResponse = new GenericResponse();
         int notificationCount = 0;
+
         try{
-            if(sendNotificationRequest != null){
-                if(isSessionValid(authentication)){
+            if(isSessionValid(authentication)){
+                if(sendNotificationRequest != null){
                     List<AssetUser> assetUsersByAssetId = assetUserRepository.findAssetUsersByAssetId(sendNotificationRequest.getAsset().getId());
                     if(assetUsersByAssetId != null && !assetUsersByAssetId.isEmpty()){
                         for(AssetUser assetUser: assetUsersByAssetId){
@@ -111,23 +112,23 @@ public class NotificationController {
                     }
                 }
                 else{
-                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    String errorMessage = "Notification request parameter is null!";
                     _logger.error(errorMessage);
 
                     genericResponse.setMessage(errorMessage);
 
                     _logger.debug("<< sendNotification()");
-                    return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
             else{
-                String errorMessage = "Notification request parameter is null!";
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
                 genericResponse.setMessage(errorMessage);
 
                 _logger.debug("<< sendNotification()");
-                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){
@@ -154,8 +155,8 @@ public class NotificationController {
         SearchNotificationsResponse searchNotificationsResponse = new SearchNotificationsResponse();
 
         try{
-            if(searchNotificationsRequest != null){
-                if(isSessionValid(authentication)){
+            if(isSessionValid(authentication)){
+                if(searchNotificationsRequest != null){
                     int offset = searchNotificationsRequest.getOffset();
                     int limit = searchNotificationsRequest.getLimit();
                     List<SearchRequestFacet> searchRequestFacetList = searchNotificationsRequest.getSearchRequestFacetList();
@@ -213,23 +214,23 @@ public class NotificationController {
                     }
                 }
                 else{
-                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    String errorMessage = "Search notifications request is null!";
                     _logger.error(errorMessage);
 
                     searchNotificationsResponse.setMessage(errorMessage);
 
                     _logger.debug("<< searchNotifications()");
-                    return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.UNAUTHORIZED);
+                    return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.BAD_REQUEST);
                 }
             }
             else{
-                String errorMessage = "Search notifications request is null!";
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
                 searchNotificationsResponse.setMessage(errorMessage);
 
                 _logger.debug("<< searchNotifications()");
-                return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){
@@ -249,8 +250,8 @@ public class NotificationController {
         GenericResponse genericResponse = new GenericResponse();
 
         try{
-            if(updateNotificationsRequest != null){
-                if(isSessionValid(authentication)){
+            if(isSessionValid(authentication)){
+                if(updateNotificationsRequest != null){
                     if(!updateNotificationsRequest.getNotificationIds().isEmpty()){
                         if(updateNotificationsRequest.getNotificationIds().get(0) == 0){
                             notificationsRepository.updateAllNotifications(updateNotificationsRequest.getIsRead());
@@ -275,23 +276,23 @@ public class NotificationController {
                     }
                 }
                 else{
-                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    String errorMessage = "Update notifications request is null.";
                     _logger.error(errorMessage);
 
                     genericResponse.setMessage(errorMessage);
 
                     _logger.debug("<< updateNotifications()");
-                    return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
             else{
-                String errorMessage = "Update notifications request is null.";
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
                 genericResponse.setMessage(errorMessage);
 
                 _logger.debug("<< updateNotifications()");
-                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){

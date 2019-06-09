@@ -58,42 +58,30 @@ public class NotificationLoadbalancerController {
         _logger.debug("sendNotification() >>");
         GenericResponse genericResponse = new GenericResponse();
         try{
-            if(sendNotificationRequest != null){
-                List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-                if(!usersByUsername.isEmpty()){
-                    if(usersByUsername.size() == 1){
-                        HttpHeaders headers = getHeaders(session);
-                        String prefix = getPrefix();
+            if(isSessionValid(authentication)){
+                if(sendNotificationRequest != null){
+                    HttpHeaders headers = getHeaders(session);
+                    String prefix = getPrefix();
 
-                        _logger.debug("<< sendNotification()");
-                        return restTemplate.exchange(prefix + notificationServiceName + "/notifications", HttpMethod.POST, new HttpEntity<>(sendNotificationRequest, headers), GenericResponse.class);
-                    }
-                    else{
-                        String errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-                        _logger.error(errorMessage);
-
-                        genericResponse.setMessage(errorMessage);
-
-                        _logger.debug("<< sendNotification()");
-                        return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
-                    }
+                    _logger.debug("<< sendNotification()");
+                    return restTemplate.exchange(prefix + notificationServiceName + "/notifications", HttpMethod.POST, new HttpEntity<>(sendNotificationRequest, headers), GenericResponse.class);
                 }
                 else{
-                    String errorMessage = "No users with username '" + authentication.getName() + " is found!";
-                    _logger.error(errorMessage);
-
+                    String errorMessage = "Send notification request parameter is null.";
                     genericResponse.setMessage(errorMessage);
 
                     _logger.debug("<< sendNotification()");
-                    return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
             else{
-                String errorMessage = "Send notification request parameter is null.";
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< sendNotificationErrorFallback()");
-                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                _logger.debug("<< sendNotification()");
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){
@@ -102,7 +90,7 @@ public class NotificationLoadbalancerController {
 
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< getUserAvatar()");
+            _logger.debug("<< sendNotification()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -138,9 +126,10 @@ public class NotificationLoadbalancerController {
     public ResponseEntity<SearchNotificationsResponse> searchNotifications(Authentication authentication, HttpSession session, @RequestBody SearchNotificationsRequest searchNotificationsRequest){
         _logger.debug("searchNotifications() >>");
         SearchNotificationsResponse searchNotificationsResponse = new SearchNotificationsResponse();
+
         try{
-            if(searchNotificationsRequest != null){
-                if(isSessionValid(authentication)){
+            if(isSessionValid(authentication)){
+                if(searchNotificationsRequest != null){
                     HttpHeaders headers = getHeaders(session);
                     String prefix = getPrefix();
 
@@ -148,21 +137,21 @@ public class NotificationLoadbalancerController {
                     return restTemplate.exchange(prefix + notificationServiceName + "/notifications/search", HttpMethod.POST, new HttpEntity<>(searchNotificationsRequest, headers), SearchNotificationsResponse.class);
                 }
                 else{
-                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
-                    _logger.error(errorMessage);
-
+                    String errorMessage = "Search notifications request parameter is null.";
                     searchNotificationsResponse.setMessage(errorMessage);
 
                     _logger.debug("<< searchNotifications()");
-                    return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.UNAUTHORIZED);
+                    return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.BAD_REQUEST);
                 }
             }
             else{
-                String errorMessage = "Search notifications request parameter is null.";
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
                 searchNotificationsResponse.setMessage(errorMessage);
 
-                _logger.debug("<< searchNotificationsErrorFallback()");
-                return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.BAD_REQUEST);
+                _logger.debug("<< searchNotifications()");
+                return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){
@@ -171,7 +160,7 @@ public class NotificationLoadbalancerController {
 
             searchNotificationsResponse.setMessage(errorMessage);
 
-            _logger.debug("<< getUserAvatar()");
+            _logger.debug("<< searchNotifications()");
             return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -179,6 +168,7 @@ public class NotificationLoadbalancerController {
     public ResponseEntity<SearchNotificationsResponse> searchNotificationsErrorFallback(Authentication authentication, HttpSession session, SearchNotificationsRequest searchNotificationsRequest, Throwable e){
         _logger.debug("searchNotificationsErrorFallback() >>");
         SearchNotificationsResponse searchNotificationsResponse = new SearchNotificationsResponse();
+
         if(searchNotificationsRequest != null){
             String errorMessage;
             if(e.getLocalizedMessage() != null){
@@ -209,19 +199,30 @@ public class NotificationLoadbalancerController {
         GenericResponse genericResponse = new GenericResponse();
 
         try{
-            if(updateNotificationsRequest != null){
-                HttpHeaders headers = getHeaders(session);
-                String prefix = getPrefix();
+            if(isSessionValid(authentication)){
+                if(updateNotificationsRequest != null){
+                    HttpHeaders headers = getHeaders(session);
+                    String prefix = getPrefix();
 
-                _logger.debug("<< updateNotifications()");
-                return restTemplate.exchange(prefix + notificationServiceName + "/notifications", HttpMethod.PATCH, new HttpEntity<>(updateNotificationsRequest, headers), GenericResponse.class);
+                    _logger.debug("<< updateNotifications()");
+                    return restTemplate.exchange(prefix + notificationServiceName + "/notifications", HttpMethod.PATCH, new HttpEntity<>(updateNotificationsRequest, headers), GenericResponse.class);
+                }
+                else{
+                    String errorMessage = "Update notifications request parameter is null.";
+                    genericResponse.setMessage(errorMessage);
+
+                    _logger.debug("<< updateNotifications()");
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                }
             }
             else{
-                String errorMessage = "Update notifications request parameter is null.";
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
                 genericResponse.setMessage(errorMessage);
 
                 _logger.debug("<< updateNotifications()");
-                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){
