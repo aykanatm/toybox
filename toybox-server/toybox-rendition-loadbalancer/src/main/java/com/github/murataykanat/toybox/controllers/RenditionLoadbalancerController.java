@@ -54,8 +54,8 @@ public class RenditionLoadbalancerController {
     public ResponseEntity<Resource> getUserAvatar(HttpSession session, Authentication authentication, @PathVariable String username) {
         _logger.debug("getUserAvatar() >>");
         try{
-            if(StringUtils.isNotBlank(username)){
-                if(isSessionValid(authentication)){
+            if(isSessionValid(authentication)){
+                if(StringUtils.isNotBlank(username)){
                     HttpHeaders headers = getHeaders(session);
                     String prefix = getPrefix();
 
@@ -69,19 +69,19 @@ public class RenditionLoadbalancerController {
                     }
                 }
                 else{
-                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    String errorMessage = "Username parameter is blank!";
                     _logger.error(errorMessage);
 
                     _logger.debug("<< getUserAvatar()");
-                    return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                    return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
                 }
             }
             else{
-                String errorMessage = "Username parameter is blank!";
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
                 _logger.debug("<< getUserAvatar()");
-                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){
@@ -94,7 +94,7 @@ public class RenditionLoadbalancerController {
     }
 
     public ResponseEntity<Resource> getUserAvatarErrorFallback(HttpSession session, Authentication authentication, String username, Throwable e){
-        _logger.debug("userRenditionErrorFallback() >>");
+        _logger.debug("getUserAvatarErrorFallback() >>");
         if(StringUtils.isNotBlank(username)){
             if(e.getLocalizedMessage() != null){
                 _logger.error("Unable to retrieve rendition for the current user. " + e.getLocalizedMessage(), e);
@@ -103,11 +103,11 @@ public class RenditionLoadbalancerController {
                 _logger.error("Unable to get response from the rendition service.", e);
             }
 
-            _logger.debug("<< userRenditionErrorFallback()");
+            _logger.debug("<< getUserAvatarErrorFallback()");
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
         else{
-            _logger.debug("<< userRenditionErrorFallback()");
+            _logger.debug("<< getUserAvatarErrorFallback()");
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
     }
@@ -117,14 +117,14 @@ public class RenditionLoadbalancerController {
     public ResponseEntity<Resource> getAssetRendition(HttpSession session, Authentication authentication, @PathVariable String assetId, @PathVariable String renditionType){
         _logger.debug("getAssetRendition() >>");
         try{
-            if(StringUtils.isNotBlank(assetId)){
-                if(StringUtils.isNotBlank(renditionType)){
-                    if(isSessionValid(authentication)){
+            if(isSessionValid(authentication)){
+                if(StringUtils.isNotBlank(assetId)){
+                    if(StringUtils.isNotBlank(renditionType)){
                         HttpHeaders headers = getHeaders(session);
                         String prefix = getPrefix();
 
                         if(StringUtils.isNotBlank(prefix)){
-                            _logger.debug("<< getLoadBalancedRendition()");
+                            _logger.debug("<< getAssetRendition()");
                             return restTemplate.exchange(prefix + renditionServiceName + "/renditions/assets/" + assetId + "/" + renditionType, HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
                         }
                         else{
@@ -133,15 +133,15 @@ public class RenditionLoadbalancerController {
                         }
                     }
                     else{
-                        String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                        String errorMessage = "Rendition type is blank!";
                         _logger.error(errorMessage);
 
                         _logger.debug("<< getAssetRendition()");
-                        return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
                     }
                 }
                 else{
-                    String errorMessage = "Rendition type is blank!";
+                    String errorMessage = "Asset ID is blank!";
                     _logger.error(errorMessage);
 
                     _logger.debug("<< getAssetRendition()");
@@ -149,11 +149,11 @@ public class RenditionLoadbalancerController {
                 }
             }
             else{
-                String errorMessage = "Asset ID is blank!";
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
                 _logger.debug("<< getAssetRendition()");
-                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){

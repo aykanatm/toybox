@@ -40,8 +40,8 @@ public class RenditionController {
     public ResponseEntity<Resource> getUserAvatar(Authentication authentication, @PathVariable String username){
         _logger.debug("getUserAvatar() >>");
         try{
-            if(StringUtils.isNotBlank(username)){
-                if(isSessionValid(authentication)){
+            if(isSessionValid(authentication)){
+                if(StringUtils.isNotBlank(username)){
                     if(username.equalsIgnoreCase("me")){
                         username = authentication.getName();
                     }
@@ -82,19 +82,19 @@ public class RenditionController {
                     }
                 }
                 else{
-                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    String errorMessage = "Username parameter is blank!";
                     _logger.error(errorMessage);
 
                     _logger.debug("<< getUserAvatar()");
-                    return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                    return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
                 }
             }
             else{
-                String errorMessage = "Username parameter is blank!";
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
                 _logger.debug("<< getUserAvatar()");
-                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){
@@ -110,8 +110,8 @@ public class RenditionController {
     public ResponseEntity<Resource> getRendition(Authentication authentication, @PathVariable String assetId, @PathVariable String renditionType){
         _logger.debug("getRendition() >>");
         try{
-            if(StringUtils.isNotBlank(assetId) || StringUtils.isNotBlank(renditionType)){
-                if(isSessionValid(authentication)){
+            if(isSessionValid(authentication)){
+                if(StringUtils.isNotBlank(assetId) || StringUtils.isNotBlank(renditionType)){
                     List<Asset> assets = assetsRepository.getAssetsById(assetId);
                     if(assets != null){
                         if(!assets.isEmpty()){
@@ -171,19 +171,19 @@ public class RenditionController {
                     }
                 }
                 else{
-                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    String errorMessage = "Parameters are invalid!";
                     _logger.error(errorMessage);
 
                     _logger.debug("<< getRendition()");
-                    return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                    return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
                 }
             }
             else{
-                String errorMessage = "Parameters are invalid!";
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
                 _logger.debug("<< getRendition()");
-                return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){
