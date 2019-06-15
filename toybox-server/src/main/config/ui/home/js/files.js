@@ -194,13 +194,7 @@ const files = new Vue({
         },
         assetsDownload:function(){
             console.log('Downloading the following assets:');
-            var selectedAssets = []
-            for(var i = 0; i < this.selectedAssets.length; i++)
-            {
-                var asset = this.selectedAssets[i];
-                console.log(asset.name + ' / ' +  asset.id);
-                selectedAssets.push({id:asset.id, name:asset.name, type:asset.type, originalAssetId:asset.originalAssetId, '@class': 'com.github.murataykanat.toybox.dbo.Asset'});
-            }
+            var selectedAssets = this.getSelectedAssets();
             this.downloadAssets(selectedAssets);
         },
         assetsCopy:function(){
@@ -221,35 +215,17 @@ const files = new Vue({
         },
         assetsSubscribe:function(){
             console.log('Subscribing to the following assets:');
-            var selectedAssets = []
-            for(var i = 0; i < this.selectedAssets.length; i++)
-            {
-                var asset = this.selectedAssets[i];
-                console.log(asset.name + ' / ' +  asset.id);
-                selectedAssets.push({id:asset.id, name:asset.name, type:asset.type, originalAssetId: asset.originalAssetId, '@class': 'com.github.murataykanat.toybox.dbo.Asset'});
-            }
+            var selectedAssets = this.getSelectedAssets();
             this.subscribeToAssets(selectedAssets);
         },
         assetsUnsubscribe:function(){
             console.log('Unsubscribing from the following assets:');
-            var selectedAssets = []
-            for(var i = 0; i < this.selectedAssets.length; i++)
-            {
-                var asset = this.selectedAssets[i];
-                console.log(asset.name + ' / ' +  asset.id);
-                selectedAssets.push({id:asset.id, name:asset.name, type:asset.type, originalAssetId:asset.originalAssetId, '@class': 'com.github.murataykanat.toybox.dbo.Asset'});
-            }
+            var selectedAssets = this.getSelectedAssets();
             this.unsubscribeFromAssets(selectedAssets);
         },
         assetsDelete:function(){
             console.log('Deleting the following assets:');
-            var selectedAssets = []
-            for(var i = 0; i < this.selectedAssets.length; i++)
-            {
-                var asset = this.selectedAssets[i];
-                console.log(asset.name + ' / ' +  asset.id);
-                selectedAssets.push({id:asset.id, name:asset.name, type:asset.type, originalAssetId:asset.originalAssetId, '@class': 'com.github.murataykanat.toybox.dbo.Asset'});
-            }
+            var selectedAssets = this.getSelectedAssets();
             this.deleteAssets(selectedAssets);
         },
         refreshAssets:function(){
@@ -260,7 +236,18 @@ const files = new Vue({
             }
 
             this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
-        }
+        },
+        getSelectedAssets:function(){
+            var selectedAssets = []
+            for(var i = 0; i < this.selectedAssets.length; i++)
+            {
+                var asset = this.selectedAssets[i];
+                console.log(asset.name + ' / ' +  asset.id);
+                selectedAssets.push({id:asset.id, name:asset.name, type:asset.type, originalAssetId:asset.originalAssetId, '@class': 'com.github.murataykanat.toybox.dbo.Asset'});
+            }
+
+            return selectedAssets;
+        },
     },
     components:{
         'navbar' : httpVueLoader('../components/navbar/navbar.vue'),
