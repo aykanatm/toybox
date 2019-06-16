@@ -9,9 +9,9 @@
             <div class="ui input" style="width: 100%;">
                 <input type="text" name="file-name" placeholder="File name" id="toybox-file-name" v-on:keyup.enter="renameAsset" v-model="assetName">
             </div>
-            <div class="center" style="margin-top: 20px;">
-                <button class="ui primary button" v-on:click="renameAsset">Submit</button>
-            </div>
+        </div>
+        <div class="actions">
+            <button class="ui primary button" v-on:click="renameAsset">Submit</button>
         </div>
     </div>
 </template>
