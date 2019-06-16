@@ -5,6 +5,7 @@ import com.github.murataykanat.toybox.dbo.AssetUser;
 import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.AssetUserRepository;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
+import com.github.murataykanat.toybox.repositories.ContainerAssetsRepository;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.asset.*;
 import com.github.murataykanat.toybox.schema.common.Facet;
@@ -58,6 +59,8 @@ public class AssetController {
     private AssetUserRepository assetUserRepository;
     @Autowired
     private UsersRepository usersRepository;
+    @Autowired
+    private ContainerAssetsRepository containerAssetsRepository;
 
     @Value("${exportStagingPath}")
     private String exportStagingPath;
@@ -951,6 +954,68 @@ public class AssetController {
             genericResponse.setMessage(errorMessage);
 
             _logger.debug("<< revertAssetToVersion()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @RequestMapping(value = "/assets/move", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<GenericResponse> moveAsset(Authentication authentication, @RequestBody MoveAssetRequest moveAssetRequest){
+        _logger.debug("moveAsset() >>");
+        GenericResponse genericResponse = new GenericResponse();
+
+        try{
+            if(isSessionValid(authentication)){
+                if(moveAssetRequest != null){
+                    for(String assetId: moveAssetRequest.getAssetIds()){
+                        List<Asset> assetsById = assetsRepository.getAssetsById(assetId);
+                        if(!assetsById.isEmpty()){
+                            if(assetsById.size() == 1){
+                                Asset asset = assetsById.get(0);
+
+                                List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(asset.getOriginalAssetId());
+                                containerAssetsRepository.moveAssets(moveAssetRequest.getContainerId(), assetsByOriginalAssetId.stream().map(Asset::getId).collect(Collectors.toList()));
+                            }
+                            else{
+                                throw new Exception("There are multiple assets with ID '" + assetId + "'!");
+                            }
+                        }
+                        else{
+                            throw new Exception("No assets found with ID '" + assetId + "'.");
+                        }
+                    }
+
+                    genericResponse.setMessage("Assets were successfully moved to the folder with ID '" + moveAssetRequest.getContainerId()+ "'.");
+
+                    _logger.debug("<< moveAsset()");
+                    return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                }
+                else{
+                    String errorMessage = "Asset move request is null!";
+                    _logger.error(errorMessage);
+
+                    genericResponse.setMessage(errorMessage);
+
+                    _logger.debug("<< moveAsset()");
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                _logger.debug("<< moveAsset()");
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while moving assets. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            _logger.debug("<< moveAsset()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
