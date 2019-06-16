@@ -199,19 +199,13 @@ const files = new Vue({
         },
         assetsCopy:function(){
             console.log('Copying the following assets:');
-            for(var i = 0; i < this.selectedAssets.length; i++)
-            {
-                var asset = this.selectedAssets[i];
-                console.log(asset.name + ' / ' +  asset.id);
-            }
+            var selectedAssets = this.getSelectedAssets();
+            this.copyAssets(selectedAssets);
         },
         assetsMove:function(){
             console.log('Moving the following assets:');
-            for(var i = 0; i < this.selectedAssets.length; i++)
-            {
-                var asset = this.selectedAssets[i];
-                console.log(asset.name + ' / ' +  asset.id);
-            }
+            var selectedAssets = this.getSelectedAssets();
+            this.moveAssets(selectedAssets);
         },
         assetsSubscribe:function(){
             console.log('Subscribing to the following assets:');
@@ -250,12 +244,13 @@ const files = new Vue({
         },
     },
     components:{
-        'navbar' : httpVueLoader('../components/navbar/navbar.vue'),
-        'asset' : httpVueLoader('../components/asset/asset.vue'),
-        'asset-preview-modal-window' : httpVueLoader('../components/asset-preview-modal-window/asset-preview-modal-window.vue'),
-        'asset-rename-modal-window' : httpVueLoader('../components/asset-rename-modal-window/asset-rename-modal-window.vue'),
-        'asset-version-history-modal-window' : httpVueLoader('../components/asset-version-history-modal-window/asset-version-history-modal-window.vue'),
-        'facet' : httpVueLoader('../components/facet/facet.vue'),
-        'message' : httpVueLoader('../components/message/message.vue'),
+        'navbar': httpVueLoader('../components/navbar/navbar.vue'),
+        'asset': httpVueLoader('../components/asset/asset.vue'),
+        'asset-preview-modal-window': httpVueLoader('../components/asset-preview-modal-window/asset-preview-modal-window.vue'),
+        'asset-rename-modal-window': httpVueLoader('../components/asset-rename-modal-window/asset-rename-modal-window.vue'),
+        'asset-version-history-modal-window': httpVueLoader('../components/asset-version-history-modal-window/asset-version-history-modal-window.vue'),
+        'copy-move-asset-modal-window': httpVueLoader('../components/copy-move-asset-modal-window/copy-move-asset-modal-window.vue'),
+        'facet': httpVueLoader('../components/facet/facet.vue'),
+        'message': httpVueLoader('../components/message/message.vue'),
     }
 });

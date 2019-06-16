@@ -113,10 +113,28 @@ module.exports = {
         },
         assetCopy:function(){
             console.log('Opening copy modal window for asset with ID "' + this.id + '"');
+            var asset = {
+                id: this.id,
+                name: this.name,
+                type: this.type,
+                originalAssetId: this.originalAssetId,
+                '@class': 'com.github.murataykanat.toybox.dbo.Asset'
+            }
+            var selectedAssets= [asset];
+            this.copyAssets(selectedAssets);
             this.contextMenuOpen = false;
         },
         assetMove:function(){
             console.log('Opening move modal window for asset with ID "' + this.id + '"');
+            var asset = {
+                id: this.id,
+                name: this.name,
+                type: this.type,
+                originalAssetId: this.originalAssetId,
+                '@class': 'com.github.murataykanat.toybox.dbo.Asset'
+            }
+            var selectedAssets= [asset];
+            this.moveAssets(selectedAssets);
             this.contextMenuOpen = false;
         },
         assetSubscribe:function(){

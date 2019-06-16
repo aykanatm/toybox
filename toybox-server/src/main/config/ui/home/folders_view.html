@@ -9,6 +9,8 @@
         <meta th:name="_csrf_header" th:content="${_csrf.headerName}"/>
         <!-- -->
         <link rel="stylesheet" type="text/css" href="../frameworks/semantic/semantic.min.css"/>
+        <link rel="stylesheet" href="../frameworks/fontello/css/fontello.css"/>
+        <link rel="stylesheet" type="text/css" href="../frameworks/fancytree/skin-bootstrap/ui.fancytree.min.css"/>
         <link rel="stylesheet" type="text/css" href="../css/toybox.css"/>
 
         <script type="text/javascript" src="../frameworks/jquery/jquery-3.3.1.min.js"></script>
@@ -19,6 +21,7 @@
         <script src="../frameworks/imagesloaded.pkgd.min.js"></script>
         <script src="../frameworks/FileSaver.min.js"></script>
         <script src="../frameworks/moment.min.js"></script>
+        <script type="text/javascript" src="../frameworks/fancytree/jquery.fancytree-all-deps.min.js"></script>
         <script type="text/javascript" src="../js/httpVueLoader.js"></script>
     </head>
     <body>
@@ -124,6 +127,7 @@
             <asset-preview-modal-window v-bind:rendition-url="renditionUrl"></asset-preview-modal-window>
             <asset-rename-modal-window></asset-rename-modal-window>
             <asset-version-history-modal-window></asset-version-history-modal-window>
+            <copy-move-asset-modal-window></copy-move-asset-modal-window>
         </div>
     </body>
     <script src="../components/mixins/user/user-mixin.js"></script>

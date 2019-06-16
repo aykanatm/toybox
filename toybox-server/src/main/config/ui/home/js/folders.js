@@ -508,6 +508,7 @@ const folders = new Vue({
         'asset-preview-modal-window' : httpVueLoader('../components/asset-preview-modal-window/asset-preview-modal-window.vue'),
         'asset-rename-modal-window' : httpVueLoader('../components/asset-rename-modal-window/asset-rename-modal-window.vue'),
         'asset-version-history-modal-window' : httpVueLoader('../components/asset-version-history-modal-window/asset-version-history-modal-window.vue'),
+        'copy-move-asset-modal-window': httpVueLoader('../components/copy-move-asset-modal-window/copy-move-asset-modal-window.vue'),
         'facet' : httpVueLoader('../components/facet/facet.vue'),
         'breadcrumb' : httpVueLoader('../components/breadcrumb/breadcrumb.vue'),
     }
