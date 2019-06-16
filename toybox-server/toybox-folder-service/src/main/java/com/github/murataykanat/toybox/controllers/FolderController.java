@@ -373,7 +373,15 @@ public class FolderController {
 
                             int totalRecords = containersByCurrentUser.size();
                             int startIndex = offset;
-                            int endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
+
+                            int endIndex;
+                            if(limit != -1){
+                                 endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
+                            }
+                            else{
+                                endIndex = totalRecords;
+                            }
+
 
                             List<Container> containersOnPage = containersByCurrentUser.subList(startIndex, endIndex);
 
