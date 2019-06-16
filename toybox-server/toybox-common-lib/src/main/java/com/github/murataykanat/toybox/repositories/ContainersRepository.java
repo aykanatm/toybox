@@ -26,7 +26,7 @@ public interface ContainersRepository extends JpaRepository<Container, String> {
     @Query(value = "SELECT container_id, parent_container_id, container_name, container_created_by_username, container_creation_date, deleted, is_system FROM containers WHERE container_name=?1 AND is_system='Y'", nativeQuery = true)
     List<Container> getSystemContainersByName(String name);
 
-    @Query(value = "SELECT container_id, parent_container_id, container_name, container_created_by_username, container_creation_date, deleted, is_system FROM containers WHERE (container_name=?1 AND is_system='Y') OR container_created_by_username='Y'", nativeQuery = true)
+    @Query(value = "SELECT container_id, parent_container_id, container_name, container_created_by_username, container_creation_date, deleted, is_system FROM containers WHERE (container_name=?1 AND is_system='Y') OR container_created_by_username=?1", nativeQuery = true)
     List<Container> getUserFolders(String username);
 
     @Transactional
