@@ -2,6 +2,7 @@ package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.dbo.AssetUser;
+import com.github.murataykanat.toybox.dbo.ContainerAsset;
 import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.AssetUserRepository;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
@@ -972,8 +973,51 @@ public class AssetController {
                             if(assetsById.size() == 1){
                                 Asset asset = assetsById.get(0);
 
-                                List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(asset.getOriginalAssetId());
-                                containerAssetsRepository.moveAssets(moveAssetRequest.getContainerId(), assetsByOriginalAssetId.stream().map(Asset::getId).collect(Collectors.toList()));
+                                boolean containerHasDuplicateAsset = false;
+                                Asset duplicateAsset = null;
+                                List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(moveAssetRequest.getContainerId());
+                                for(ContainerAsset containerAsset: containerAssetsByContainerId){
+                                    List<Asset> assetsInContainer = assetsRepository.getAssetsById(containerAsset.getAssetId());
+                                    List<Asset> duplicateAssets = assetsInContainer.stream().filter(a -> a.getName().equalsIgnoreCase(asset.getName()) && a.getIsLatestVersion().equalsIgnoreCase("Y")).collect(Collectors.toList());
+                                    if(!duplicateAssets.isEmpty()){
+                                        containerHasDuplicateAsset = true;
+                                        if(duplicateAssets.size() == 1){
+                                            duplicateAsset = duplicateAssets.get(0);
+                                        }
+                                        else{
+                                            throw new Exception("There are more than one duplicate assets with same name!");
+                                        }
+                                    }
+                                }
+
+                                if(containerHasDuplicateAsset){
+                                    _logger.debug("Container has a duplicate asset, adding the new asset and its versions as new versions of the duplicate asset...");
+                                    if(duplicateAsset != null){
+                                        List<Asset> duplicateAssetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(duplicateAsset.getOriginalAssetId());
+                                        assetsRepository.updateAssetsLatestVersion("N", duplicateAssetsByOriginalAssetId.stream().map(Asset::getId).collect(Collectors.toList()));
+
+                                        List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(asset.getOriginalAssetId());
+                                        containerAssetsRepository.moveAssets(moveAssetRequest.getContainerId(), assetsByOriginalAssetId.stream().map(Asset::getId).collect(Collectors.toList()));
+
+                                        assetsRepository.updateAssetsOriginalAssetId(duplicateAsset.getOriginalAssetId(), assetsByOriginalAssetId.stream().map(Asset::getId).collect(Collectors.toList()));
+
+                                        int latestVersionOfDuplicate = duplicateAsset.getVersion();
+
+                                        SortUtils.getInstance().sortItems("asc", assetsByOriginalAssetId, Comparator.comparing(Asset::getVersion));
+                                        for(Asset movedAsset : assetsByOriginalAssetId){
+                                            latestVersionOfDuplicate++;
+                                            assetsRepository.updateAssetVersion(latestVersionOfDuplicate, movedAsset.getId());
+                                        }
+                                    }
+                                    else{
+                                        throw new Exception("Duplicate asset is null!");
+                                    }
+                                }
+                                else{
+                                    _logger.debug("Container does not have duplicate assets. Moving...");
+                                    List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(asset.getOriginalAssetId());
+                                    containerAssetsRepository.moveAssets(moveAssetRequest.getContainerId(), assetsByOriginalAssetId.stream().map(Asset::getId).collect(Collectors.toList()));
+                                }
                             }
                             else{
                                 throw new Exception("There are multiple assets with ID '" + assetId + "'!");

@@ -44,8 +44,18 @@ public interface AssetsRepository extends JpaRepository<Asset, String> {
 
     @Transactional
     @Modifying
+    @Query(value = "UPDATE assets SET version=?1 WHERE asset_id=?2", nativeQuery = true)
+    int updateAssetVersion(int version, String assetId);
+
+    @Transactional
+    @Modifying
     @Query(value = "UPDATE assets SET is_latest_version=:isLatestVersion WHERE asset_id IN :assetIds", nativeQuery = true)
     int updateAssetsLatestVersion(@Param("isLatestVersion") String isLatestVersion, @Param("assetIds")List<String> assetIds);
+
+    @Transactional
+    @Modifying
+    @Query(value = "UPDATE assets SET original_asset_id=:originalAssetId WHERE asset_id IN :assetIds", nativeQuery = true)
+    int updateAssetsOriginalAssetId(@Param("originalAssetId") String originalAssetId, @Param("assetIds")List<String> assetIds);
 
     @Modifying
     @Query(value = "INSERT INTO assets(asset_id, asset_extension, asset_imported_by_username, asset_name, asset_path, " +
