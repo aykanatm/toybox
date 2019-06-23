@@ -168,7 +168,7 @@ public class FolderController {
                             List<SearchRequestFacet> searchRequestFacetList = assetSearchRequest.getAssetSearchRequestFacetList();
 
                             List<Container> containersByCurrentUser;
-                            List<Asset> assetsByCurrentUser;
+                            List<Asset> assetsByCurrentUser = new ArrayList<>();
 
                             List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(container.getId());
                             List<String> containerAssetIdsByContainerId = containerAssetsByContainerId.stream().map(ContainerAsset::getAssetId).collect(Collectors.toList());
@@ -199,9 +199,31 @@ public class FolderController {
                             else{
                                 _logger.debug("Retrieving the items of the user '" + user.getUsername() + "'...");
                                 containersByCurrentUser = containersRepository.getNonDeletedContainersByUsernameAndParentContainerId(user.getUsername(), container.getId());
-                                assetsByCurrentUser = assets.stream()
-                                        .filter(asset -> asset.getImportedByUsername() != null && asset.getImportedByUsername().equalsIgnoreCase(user.getUsername()) && asset.getIsLatestVersion().equalsIgnoreCase("Y"))
-                                        .collect(Collectors.toList());
+
+                                for(Asset asset: assets){
+                                    if(StringUtils.isNotBlank(asset.getImportedByUsername()) && asset.getIsLatestVersion().equalsIgnoreCase("Y")){
+                                        if(asset.getImportedByUsername().equalsIgnoreCase(user.getUsername())){
+                                            assetsByCurrentUser.add(asset);
+                                        }
+                                        else{
+                                            List<Asset> assetsById = assetsRepository.getAssetsById(asset.getOriginalAssetId());
+                                            if(!assetsById.isEmpty()){
+                                                if(assetsById.size() == 1){
+                                                    Asset originalAsset = assetsById.get(0);
+                                                    if(originalAsset.getImportedByUsername().equalsIgnoreCase(user.getUsername())){
+                                                        assetsByCurrentUser.add(asset);
+                                                    }
+                                                }
+                                                else{
+                                                    throw new Exception("Asset with ID '" + asset.getId() + " has multiple original assets!");
+                                                }
+                                            }
+                                            else{
+                                                throw new Exception("Asset with ID '" + asset.getId() + " does not have a original asset!");
+                                            }
+                                        }
+                                    }
+                                }
                             }
 
                             // Set facets

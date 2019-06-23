@@ -280,7 +280,7 @@ public class AssetController {
                                 assets = allAssets;
                             }
 
-                            List<Asset> assetsByCurrentUser;
+                            List<Asset> assetsByCurrentUser = new ArrayList<>();
                             if(isAdminUser(authentication)){
                                 _logger.debug("Retrieving all assets [Admin User]...");
                                 assetsByCurrentUser = assets.stream()
@@ -289,9 +289,31 @@ public class AssetController {
                             }
                             else{
                                 _logger.debug("Retrieving assets of the user '" + user.getUsername() + "'...");
-                                assetsByCurrentUser = assets.stream()
-                                        .filter(asset -> asset.getImportedByUsername() != null && asset.getImportedByUsername().equalsIgnoreCase(user.getUsername()) && asset.getIsLatestVersion().equalsIgnoreCase("Y"))
-                                        .collect(Collectors.toList());
+
+                                for(Asset asset: assets){
+                                    if(StringUtils.isNotBlank(asset.getImportedByUsername()) && asset.getIsLatestVersion().equalsIgnoreCase("Y")){
+                                        if(asset.getImportedByUsername().equalsIgnoreCase(user.getUsername())){
+                                            assetsByCurrentUser.add(asset);
+                                        }
+                                        else{
+                                            List<Asset> assetsById = assetsRepository.getAssetsById(asset.getOriginalAssetId());
+                                            if(!assetsById.isEmpty()){
+                                                if(assetsById.size() == 1){
+                                                    Asset originalAsset = assetsById.get(0);
+                                                    if(originalAsset.getImportedByUsername().equalsIgnoreCase(user.getUsername())){
+                                                        assetsByCurrentUser.add(asset);
+                                                    }
+                                                }
+                                                else{
+                                                    throw new Exception("Asset with ID '" + asset.getId() + " has multiple original assets!");
+                                                }
+                                            }
+                                            else{
+                                                throw new Exception("Asset with ID '" + asset.getId() + " does not have a original asset!");
+                                            }
+                                        }
+                                    }
+                                }
                             }
 
                             // Set facets
