@@ -1045,6 +1045,94 @@ public class AssetLoadbalancerController {
         }
     }
 
+    @HystrixCommand(fallbackMethod = "copyAssetErrorFallback")
+    @RequestMapping(value = "/assets/copy", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<GenericResponse> copyAsset(Authentication authentication, HttpSession session, @RequestBody CopyAssetRequest copyAssetRequest){
+        _logger.debug("copyAsset() >>");
+        GenericResponse genericResponse = new GenericResponse();
+
+        try{
+            if(isSessionValid(authentication)){
+                if(copyAssetRequest != null){
+                    HttpHeaders headers = getHeaders(session);
+                    String prefix = getPrefix();
+                    if(StringUtils.isNotBlank(prefix)){
+                        _logger.debug("<< copyAsset()");
+                        return restTemplate.exchange(prefix + assetServiceName + "/assets/copy", HttpMethod.POST, new HttpEntity<>(copyAssetRequest, headers), GenericResponse.class);
+                    }
+                    else{
+                        String errorMessage = "Service ID prefix is null!";
+                        _logger.error(errorMessage);
+
+                        genericResponse.setMessage(errorMessage);
+
+                        _logger.debug("<< copyAsset()");
+                        return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                    }
+                }
+                else{
+                    String errorMessage = "Copy move request is null!";
+                    _logger.error(errorMessage);
+
+                    genericResponse.setMessage(errorMessage);
+
+                    _logger.debug("<< moveAsset()");
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                _logger.debug("<< copyAsset()");
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while moving assets. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            _logger.debug("<< copyAsset()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public ResponseEntity<GenericResponse> copyAssetErrorFallback(Authentication authentication, HttpSession session, CopyAssetRequest copyAssetRequest, Throwable e){
+        _logger.debug("copyAssetErrorFallback() >>");
+
+        GenericResponse genericResponse = new GenericResponse();
+
+        if(copyAssetRequest != null){
+            String errorMessage;
+            if(e.getLocalizedMessage() != null){
+                errorMessage = "Unable to move the selected assets. " + e.getLocalizedMessage();
+            }
+            else{
+                errorMessage = "Unable to get response from the asset service.";
+            }
+
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            _logger.debug("<< copyAssetErrorFallback()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        else{
+            String errorMessage = "Copy asset request is null!";
+            _logger.error(errorMessage);
+
+            genericResponse.setMessage(errorMessage);
+
+            _logger.debug("<< copyAssetErrorFallback()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
+
     private boolean isSessionValid(Authentication authentication){
         String errorMessage;
         List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());

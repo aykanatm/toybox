@@ -15,6 +15,7 @@ import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
 import com.github.murataykanat.toybox.schema.job.RetrieveToyboxJobResult;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
+import com.github.murataykanat.toybox.schema.upload.UploadFile;
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
 import com.github.murataykanat.toybox.utilities.FacetUtils;
 import com.github.murataykanat.toybox.utilities.SortUtils;
@@ -39,6 +40,7 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpSession;
 import java.io.*;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -65,6 +67,9 @@ public class AssetController {
 
     @Value("${exportStagingPath}")
     private String exportStagingPath;
+
+    @Value("${importStagingPath}")
+    private String importStagingPath;
 
     @RequestMapping(value = "/assets/download", method = RequestMethod.POST, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> downloadAssets(Authentication authentication, HttpSession session, @RequestBody SelectedAssets selectedAssets){
@@ -1082,6 +1087,134 @@ public class AssetController {
             genericResponse.setMessage(errorMessage);
 
             _logger.debug("<< moveAsset()");
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @RequestMapping(value = "/assets/copy", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<GenericResponse> copyAsset(Authentication authentication, HttpSession session, @RequestBody CopyAssetRequest copyAssetRequest){
+        _logger.debug("copyAsset() >>");
+        GenericResponse genericResponse = new GenericResponse();
+        try{
+            if(isSessionValid(authentication)){
+                if(copyAssetRequest != null){
+                    User user = getUser(authentication);
+                    if(user != null){
+                        List<ServiceInstance> instances = discoveryClient.getInstances(jobServiceLoadBalancerServiceName);
+
+                        if(instances.isEmpty()){
+                            throw new Exception("There is no job load balancer instance!");
+                        }
+
+                        List<UploadFileLst> uploadLists = new ArrayList<>();
+
+                        for(String containerId : copyAssetRequest.getContainerIds()){
+                            UploadFileLst uploadFileLst = new UploadFileLst();
+                            uploadFileLst.setContainerId(containerId);
+                            List<UploadFile> uploadFiles = new ArrayList<>();
+
+                            for(String assetId: copyAssetRequest.getAssetIds()){
+                                List<Asset> assetsById = assetsRepository.getAssetsById(assetId);
+                                if(!assetsById.isEmpty()){
+                                    if(assetsById.size() == 1){
+                                        Asset asset = assetsById.get(0);
+                                        File currentFile = new File(asset.getPath());
+
+                                        String tempFolderName = Long.toString(System.currentTimeMillis());
+                                        String tempImportStagingPath = importStagingPath + File.separator + tempFolderName;
+                                        _logger.debug("Import staging path: " + tempImportStagingPath);
+
+                                        File tempFolder = new File(tempImportStagingPath);
+                                        if(!tempFolder.exists()){
+                                            tempFolder.mkdir();
+                                        }
+
+                                        String destinationPath;
+                                        if(tempFolder.exists()){
+                                            destinationPath = tempFolder.getAbsolutePath() + File.separator + asset.getName();
+                                        }
+                                        else{
+                                            throw new FileNotFoundException("The temp folder " + tempFolder.getAbsolutePath() + " does not exist!");
+                                        }
+
+                                        Files.copy(currentFile.toPath(), new File(destinationPath).toPath());
+
+                                        UploadFile uploadFile = new UploadFile();
+                                        uploadFile.setUsername(user.getUsername());
+                                        uploadFile.setPath(destinationPath);
+
+                                        uploadFiles.add(uploadFile);
+                                    }
+                                    else{
+                                        _logger.warn("There are multiple assets with ID '" + assetId + "! Skipping...");
+                                    }
+                                }
+                                else{
+                                    _logger.warn("There is no asset with ID '" + assetId + "'! Skipping...");
+                                    throw new Exception();
+                                }
+                            }
+
+                            uploadFileLst.setUploadFiles(uploadFiles);
+                            uploadLists.add(uploadFileLst);
+                        }
+
+                        ServiceInstance serviceInstance = instances.get(0);
+                        String jobServiceUrl = serviceInstance.getUri().toString();
+
+                        RestTemplate restTemplate = new RestTemplate();
+                        HttpHeaders headers = getHeaders(session);
+
+                        int successfulJobs = 0;
+                        for(UploadFileLst uploadFileLst: uploadLists){
+                            HttpEntity<UploadFileLst> selectedAssetsEntity = new HttpEntity<>(uploadFileLst, headers);
+                            ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/import", selectedAssetsEntity, JobResponse.class);
+                            boolean successful = jobResponseResponseEntity.getStatusCode().is2xxSuccessful();
+
+                            if(successful){
+                                _logger.debug("Asset duplication job successfully started!");
+                                successfulJobs++;
+                            }
+                            else{
+                                _logger.warn("Asset duplication job failed to start. " + jobResponseResponseEntity.getBody().getMessage());
+                            }
+                        }
+
+                        genericResponse.setMessage(successfulJobs + " out of" + uploadLists.size() + " asset duplication jobs started successfully. You can follow the progress of the jobs in 'Jobs' section.");
+                        _logger.debug("<< copyAsset()");
+                        return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                    }
+                    else{
+                        throw new Exception("User is null!");
+                    }
+                }
+                else{
+                    String errorMessage = "Copy move request is null!";
+                    _logger.error(errorMessage);
+
+                    genericResponse.setMessage(errorMessage);
+
+                    _logger.debug("<< copyAsset()");
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                _logger.debug("<< copyAsset()");
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while copying assets. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            _logger.debug("<< copyAsset()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

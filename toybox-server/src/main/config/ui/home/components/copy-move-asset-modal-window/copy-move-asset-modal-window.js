@@ -126,13 +126,69 @@ module.exports = {
             var selectedFolders = $('#folder-tree').fancytree('getTree').getSelectedNodes();
 
             console.log('Copying the following assets:');
+            var assetIds = [];
             for(var i = 0; i < this.selectedAssets.length; i++){
                 console.log(this.selectedAssets[i]);
+                assetIds.push(this.selectedAssets[i].id);
             }
             console.log('To the following folders:')
+            var containerIds = [];
             for(var i = 0; i < selectedFolders.length; i++){
                 console.log(selectedFolders[i]);
+                containerIds.push(selectedFolders[i].key);
             }
+
+            this.getService("toybox-asset-loadbalancer")
+                .then(response =>{
+                    var assetServiceUrl = response.data.value;
+
+                    var copyRequest = {
+                        'assetIds': assetIds,
+                        'containerIds': containerIds
+                    }
+
+                    axios.post(assetServiceUrl + "/assets/copy", copyRequest)
+                    .then(response =>{
+                        this.$root.$emit('message-sent', 'Success', response.data.message);
+                        this.$root.$emit('refresh-assets');
+                        this.$root.$emit('refresh-items');
+                        $(this.$el).modal('hide');
+                    })
+                    .catch(error => {
+                        this.isLoading = false;
+                        var errorMessage;
+
+                        if(error.response){
+                            errorMessage = error.response.data.message
+                            if(error.response.status == 401){
+                                window.location = '/logout';
+                            }
+                        }
+                        else{
+                            errorMessage = error.message;
+                        }
+
+                        console.error(errorMessage);
+                        this.$root.$emit('message-sent', 'Error', errorMessage);
+                    });
+                })
+                .catch(error => {
+                    this.isLoading = false;
+                    var errorMessage;
+
+                    if(error.response){
+                        errorMessage = error.response.data.message
+                        if(error.response.status == 401){
+                            window.location = '/logout';
+                        }
+                    }
+                    else{
+                        errorMessage = error.message;
+                    }
+
+                    console.error(errorMessage);
+                    this.$root.$emit('message-sent', 'Error', errorMessage);
+                });
         },
         moveAsset(){
             var selectedFolders = $('#folder-tree').fancytree('getTree').getSelectedNodes();
