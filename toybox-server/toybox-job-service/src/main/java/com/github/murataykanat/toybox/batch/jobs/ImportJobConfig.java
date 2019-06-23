@@ -465,7 +465,7 @@ public class ImportJobConfig {
                     .collect(Collectors.toList()));
 
             List<Asset> duplicateAssetsByAssetName = assetsInContainer.stream()
-                    .filter(asset -> asset.getName().equalsIgnoreCase(assetName) && asset.getImportedByUsername().equalsIgnoreCase(username))
+                    .filter(asset -> asset.getName().equalsIgnoreCase(assetName))
                     .collect(Collectors.toList());
 
             _logger.debug("<< getDuplicateAssets");
