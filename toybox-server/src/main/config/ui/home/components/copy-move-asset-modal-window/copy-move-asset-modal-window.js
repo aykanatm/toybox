@@ -5,7 +5,8 @@ module.exports = {
             componentName: 'Copy Move Asset Modal Window',
             selectedAssets:[],
             isMove: false,
-            isCopy: false
+            isCopy: false,
+            parentContainerId: ''
         }
     },
     mounted:function(){
@@ -13,6 +14,7 @@ module.exports = {
             this.selectedAssets = selectedAssets;
             this.isMove = isMove;
             this.isCopy = isCopy;
+            this.parentContainerId = this.selectedAssets[0].parentContainerId;
 
             this.getService("toybox-folder-loadbalancer")
                 .then(response => {
@@ -105,7 +107,7 @@ module.exports = {
             for(var i = 0; i < containers.length; i++){
                 var container = containers[i];
                 if(!container.parentId){
-                    folderSource.push({title: container.name, key: container.id, folder: true, children: this.getChildContainers(containers, container.id)});
+                    folderSource.push({title: container.name, key: container.id, folder: true, unselectable: (this.parentContainerId === container.id), children: this.getChildContainers(containers, container.id)});
                 }
             }
 
@@ -116,7 +118,7 @@ module.exports = {
             for(var i = 0; i < containers.length; i++){
                 var container = containers[i]
                 if(container.parentId === containerId){
-                    children.push({title: container.name, key: container.id, folder: true, children: this.getChildContainers(containers, container.id)});
+                    children.push({title: container.name, key: container.id, folder: true, unselectable: (this.parentContainerId === container.id), children: this.getChildContainers(containers, container.id)});
                 }
             }
 

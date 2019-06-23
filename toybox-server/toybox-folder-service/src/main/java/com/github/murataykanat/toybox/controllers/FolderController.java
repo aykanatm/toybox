@@ -279,6 +279,21 @@ public class FolderController {
                                             break;
                                         }
                                     }
+
+                                    // Set parent container ID
+                                    List<ContainerAsset> containerAssetsByAssetId = containerAssetsRepository.findContainerAssetsByAssetId(assetOnPage.getId());
+                                    if(!containerAssetsByAssetId.isEmpty()){
+                                        if(containerAssetsByAssetId.size() == 1){
+                                            ContainerAsset containerAsset = containerAssetsByAssetId.get(0);
+                                            assetOnPage.setParentContainerId(containerAsset.getContainerId());
+                                        }
+                                        else{
+                                            throw new Exception("Asset is in multiple folders!");
+                                        }
+                                    }
+                                    else{
+                                        throw new Exception("Asset is not in any folder!");
+                                    }
                                 }
                             }
 

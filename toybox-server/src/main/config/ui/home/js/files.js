@@ -237,7 +237,7 @@ const files = new Vue({
             {
                 var asset = this.selectedAssets[i];
                 console.log(asset.name + ' / ' +  asset.id);
-                selectedAssets.push({id:asset.id, name:asset.name, type:asset.type, originalAssetId:asset.originalAssetId, '@class': 'com.github.murataykanat.toybox.dbo.Asset'});
+                selectedAssets.push({id:asset.id, name:asset.name, type:asset.type, originalAssetId:asset.originalAssetId, '@class': 'com.github.murataykanat.toybox.dbo.Asset', parentContainerId: asset.parentContainerId});
             }
 
             return selectedAssets;

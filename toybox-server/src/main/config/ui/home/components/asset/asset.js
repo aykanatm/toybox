@@ -8,7 +8,8 @@ module.exports = {
         extension: String,
         renditionUrl: String,
         type: String,
-        subscribed: String
+        subscribed: String,
+        parentContainerId: String
     },
     data: function() {
         return  {
@@ -99,7 +100,8 @@ module.exports = {
                 name: this.name,
                 type: this.type,
                 originalAssetId: this.originalAssetId,
-                '@class': 'com.github.murataykanat.toybox.dbo.Asset'
+                '@class': 'com.github.murataykanat.toybox.dbo.Asset',
+                parentContainerId: this.parentContainerId
             }
             var selectedAssets= [asset];
             this.downloadAssets(selectedAssets);
@@ -118,7 +120,8 @@ module.exports = {
                 name: this.name,
                 type: this.type,
                 originalAssetId: this.originalAssetId,
-                '@class': 'com.github.murataykanat.toybox.dbo.Asset'
+                '@class': 'com.github.murataykanat.toybox.dbo.Asset',
+                parentContainerId: this.parentContainerId
             }
             var selectedAssets= [asset];
             this.copyAssets(selectedAssets);
@@ -131,7 +134,8 @@ module.exports = {
                 name: this.name,
                 type: this.type,
                 originalAssetId: this.originalAssetId,
-                '@class': 'com.github.murataykanat.toybox.dbo.Asset'
+                '@class': 'com.github.murataykanat.toybox.dbo.Asset',
+                parentContainerId: this.parentContainerId
             }
             var selectedAssets= [asset];
             this.moveAssets(selectedAssets);
@@ -145,7 +149,8 @@ module.exports = {
                 name: this.name,
                 type: this.type,
                 originalAssetId: this.originalAssetId,
-                '@class': 'com.github.murataykanat.toybox.dbo.Asset'
+                '@class': 'com.github.murataykanat.toybox.dbo.Asset',
+                parentContainerId: this.parentContainerId
             }
             var selectedAssets= [asset];
             this.subscribeToAssets(selectedAssets);
@@ -159,7 +164,8 @@ module.exports = {
                 name: this.name,
                 type: this.type,
                 originalAssetId: this.originalAssetId,
-                '@class': 'com.github.murataykanat.toybox.dbo.Asset'
+                '@class': 'com.github.murataykanat.toybox.dbo.Asset',
+                parentContainerId: this.parentContainerId
             }
             var selectedAssets= [asset];
             this.unsubscribeFromAssets(selectedAssets);
@@ -172,7 +178,8 @@ module.exports = {
                 name: this.name,
                 type: this.type,
                 originalAssetId: this.originalAssetId,
-                '@class': 'com.github.murataykanat.toybox.dbo.Asset'
+                '@class': 'com.github.murataykanat.toybox.dbo.Asset',
+                parentContainerId: this.parentContainerId
             }
             var selectedAssets= [asset];
             this.deleteAssets(selectedAssets);

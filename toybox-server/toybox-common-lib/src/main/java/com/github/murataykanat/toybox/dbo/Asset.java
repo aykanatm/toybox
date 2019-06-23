@@ -64,6 +64,9 @@ public class Asset implements Serializable, ContainerItem {
     @Transient
     private String subscribed;
 
+    @Transient
+    private String parentContainerId;
+
     @Column(name = "checksum")
     @JsonProperty("checksum")
     private String checksum;
@@ -231,5 +234,15 @@ public class Asset implements Serializable, ContainerItem {
 
     public void setFileSize(String fileSize) {
         this.fileSize = fileSize;
+    }
+
+    @Transient
+    @JsonGetter(value = "parentContainerId")
+    public String getParentContainerId() {
+        return parentContainerId;
+    }
+
+    public void setParentContainerId(String parentContainerId) {
+        this.parentContainerId = parentContainerId;
     }
 }
