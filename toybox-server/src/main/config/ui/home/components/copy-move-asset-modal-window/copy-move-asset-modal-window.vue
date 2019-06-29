@@ -9,8 +9,8 @@
             </div>
         </div>
         <div class="actions">
-            <div v-show="isCopy" class="ui primary button" v-on:click="copyAsset">Copy</div>
-            <div v-show="isMove" class="ui primary button" v-on:click="moveAsset">Move</div>
+            <div v-show="isCopy" v-bind:class="{'ui':true, 'primary':true, 'button':true, 'disabled': !hasSelectedFolders}" v-on:click="copyAsset">Copy</div>
+            <div v-show="isMove" v-bind:class="{'ui':true, 'primary':true, 'button':true, 'disabled': !hasSelectedFolders}" v-on:click="moveAsset">Move</div>
         </div>
     </div>
 </template>

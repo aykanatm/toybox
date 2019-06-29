@@ -6,10 +6,12 @@ module.exports = {
             selectedAssets:[],
             isMove: false,
             isCopy: false,
-            parentContainerId: ''
+            parentContainerId: '',
+            hasSelectedFolders: false
         }
     },
     mounted:function(){
+        var self = this;
         this.$root.$on('open-copy-move-asset-modal-window', (selectedAssets, isMove, isCopy) => {
             this.selectedAssets = selectedAssets;
             this.isMove = isMove;
@@ -60,7 +62,12 @@ module.exports = {
                                     },
                                     checkbox: true,
                                     selectMode: (isMove? 1 : 2),
-                                    source: folderSource
+                                    source: folderSource,
+                                    click: function(event, data){
+                                        setTimeout(() => {
+                                            self.hasSelectedFolders = $('#folder-tree').fancytree('getTree').getSelectedNodes().length > 0;
+                                        }, 200);
+                                      }
                                 });
 
                                 $("#folder-tree").fancytree("getTree").visit(function(node) {
@@ -77,6 +84,8 @@ module.exports = {
 
                                 $("#folder-tree").fancytree("option", "selectMode", (isMove? 1 : 2));
                             }
+
+                            this.hasSelectedFolders = false;
                         })
                         .catch(error => {
                             this.isLoading = false;
