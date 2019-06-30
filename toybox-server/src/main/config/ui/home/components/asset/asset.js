@@ -91,6 +91,16 @@ module.exports = {
         },
         assetShare:function(){
             console.log('Opening share modal window for asset with ID "' + this.id + '"');
+            var asset = {
+                id: this.id,
+                name: this.name,
+                type: this.type,
+                originalAssetId: this.originalAssetId,
+                '@class': 'com.github.murataykanat.toybox.dbo.Asset',
+                parentContainerId: this.parentContainerId
+            }
+            var selectedAssets= [asset];
+            this.shareAssets(selectedAssets);
             this.contextMenuOpen = false;
         },
         assetDownload:function(){

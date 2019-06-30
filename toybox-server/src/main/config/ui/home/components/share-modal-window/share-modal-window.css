@@ -1,0 +1,74 @@
+#toybox-share-modal-window{
+    height: 50%;
+    width: 50%;
+}
+
+.user-selection{
+    float: right;
+}
+
+.share-settings{
+    clear:right;
+    height: calc(100% - 10px);
+}
+
+#user-selection-toggle input:checked ~ .box:before,
+#user-selection-toggle input:checked ~ label:before {
+  background-color: #0D71BB !important;
+}
+
+#user-selection-toggle input:focus:checked~.box:before,
+#user-selection-toggle input:focus:checked~label:before {
+    background-color: #0D71BB !important
+}
+
+
+#user-selection-toggle .box:before,
+#user-selection-toggle label:before {
+    background-color: #0AC90A !important;
+}
+
+.notification-settings{
+    float: left;
+    width: 50%;
+    height: 50%;
+}
+
+.permission-settings{
+    float: left;
+    width: 49%;
+    height: 50%;
+}
+
+.internal-user-share{
+    clear: both;
+    height: 50%;
+    background-color: #F2F2F2;
+    border-radius: 5px;
+    padding: 10px;
+}
+
+.external-user-share{
+    clear: both;
+    height: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #F2F2F2;
+    border-radius: 5px;
+}
+
+#toybox-toggle{
+    margin-bottom: 5px;
+}
+
+
+.notification-types{
+    margin-top: 10px;
+    margin-left: 20px;
+}
+
+.permission-types{
+    margin-top: 17px;
+    margin-left: 20px;
+}

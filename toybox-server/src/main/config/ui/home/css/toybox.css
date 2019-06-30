@@ -84,3 +84,19 @@
     border-top-right-radius: 5px;
     font-weight: bold;
 }
+
+#toybox-toggle input:checked ~ .box:before,
+#toybox-toggle input:checked ~ label:before {
+  background-color: #0AC90A !important;
+}
+
+#toybox-toggle input:focus:checked~.box:before,
+#toybox-toggle input:focus:checked~label:before {
+    background-color: #0AC90A !important
+}
+
+
+#toybox-toggle .box:before,
+#toybox-toggle label:before {
+    background-color: #F2F2F2 !important;
+}
