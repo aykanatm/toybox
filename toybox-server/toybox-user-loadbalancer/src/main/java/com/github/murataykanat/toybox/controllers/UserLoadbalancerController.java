@@ -2,6 +2,7 @@ package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
+import com.github.murataykanat.toybox.schema.user.RetrieveUsersResponse;
 import com.github.murataykanat.toybox.schema.user.UserResponse;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import org.apache.commons.lang.StringUtils;
@@ -112,6 +113,73 @@ public class UserLoadbalancerController {
 
         _logger.debug("<< getCurrentUserErrorFallback()");
         return new ResponseEntity<>(userResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @HystrixCommand(fallbackMethod = "retrieveUsersErrorFallback")
+    @RequestMapping(value = "/users", method = RequestMethod.GET)
+    public ResponseEntity<RetrieveUsersResponse> retrieveUsers(Authentication authentication, HttpSession session){
+        _logger.debug("retrieveUsers() >>");
+        RetrieveUsersResponse retrieveUsersResponse = new RetrieveUsersResponse();
+
+        try{
+            if(isSessionValid(authentication)){
+                HttpHeaders headers = getHeaders(session);
+                String prefix = getPrefix();
+
+                if(StringUtils.isNotBlank(prefix)){
+                    _logger.debug("<< retrieveUsers()");
+                    return restTemplate.exchange(prefix + userServiceName + "/users", HttpMethod.GET, new HttpEntity<>(headers), RetrieveUsersResponse.class);
+                }
+                else{
+                    String errorMessage = "Service ID prefix is null!";
+
+                    _logger.error(errorMessage);
+
+                    retrieveUsersResponse.setMessage(errorMessage);
+
+                    _logger.debug("<< retrieveUsers()");
+                    return new ResponseEntity<>(retrieveUsersResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                retrieveUsersResponse.setMessage(errorMessage);
+
+                _logger.debug("<< retrieveUsers()");
+                return new ResponseEntity<>(retrieveUsersResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while retrieving users. " + e.getLocalizedMessage();
+            _logger.debug(errorMessage, e);
+
+            retrieveUsersResponse.setMessage(errorMessage);
+
+            _logger.debug("<< retrieveUsers()");
+            return new ResponseEntity<>(retrieveUsersResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public ResponseEntity<RetrieveUsersResponse> retrieveUsersErrorFallback(Authentication authentication, HttpSession session, Throwable e){
+        _logger.debug("retrieveUsersErrorFallback() >>");
+        RetrieveUsersResponse retrieveUsersResponse = new RetrieveUsersResponse();
+
+        String errorMessage;
+        if(e.getLocalizedMessage() != null){
+            errorMessage = "Unable to retrieve users. " + e.getLocalizedMessage();
+        }
+        else{
+            errorMessage = "Unable to get response from the user service.";
+        }
+
+        _logger.error(errorMessage, e);
+
+        retrieveUsersResponse.setMessage(errorMessage);
+
+        _logger.debug("<< retrieveUsersErrorFallback()");
+        return new ResponseEntity<>(retrieveUsersResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     private HttpHeaders getHeaders(HttpSession session) throws Exception {

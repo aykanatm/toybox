@@ -1,4 +1,5 @@
 module.exports = {
+    mixins:[serviceMixin],
     data:function(){
         return{
             componentName: 'Share Modal Window',
@@ -24,28 +25,77 @@ module.exports = {
     },
     mounted:function(){
         this.$root.$on('open-share-modal-window', (selectedAssets) => {
-            this.selectedAssets = selectedAssets;
+            this.getService("toybox-user-loadbalancer")
+                .then(response => {
+                    var userServiceUrl = response.data.value;
+                    axios.get(userServiceUrl + "/users")
+                        .then(response => {
+                            console.log(response);
+                            var users = response.data.users;
 
-            // TODO: Fetch users and populate the users list
+                            for(var i = 0; i < users.length; i++){
+                                var user = users[i];
 
-            this.isExternalUser = false;
+                                this.users.push({
+                                    'displayName' : user.name + ' ' + user.lastname + ' (' + user.username + ')',
+                                    'userId': user.id
+                                })
+                            }
 
-            this.notifyMe = false;
-            this.notifyOnView = false;
-            this.notifyOnEdit = false;
-            this.notifyOnDownload = false;
-            this.notifyOnShare = false;
-            this.notifyOnMoveOrCopy = false;
+                            this.selectedAssets = selectedAssets;
 
-            this.canView = true;
-            this.canEdit = false;
-            this.canDownload = false;
-            this.canShare = false;
-            this.canMoveOrCopy = false;
+                            this.isExternalUser = false;
 
-            this.externalShareUrl = ''
+                            this.notifyMe = false;
+                            this.notifyOnView = false;
+                            this.notifyOnEdit = false;
+                            this.notifyOnDownload = false;
+                            this.notifyOnShare = false;
+                            this.notifyOnMoveOrCopy = false;
 
-            $('#user-dropdown').dropdown();
+                            this.canView = true;
+                            this.canEdit = false;
+                            this.canDownload = false;
+                            this.canShare = false;
+                            this.canMoveOrCopy = false;
+
+                            this.externalShareUrl = ''
+
+                            $('#user-dropdown').dropdown();
+                        })
+                        .catch(error => {
+                            var errorMessage;
+
+                            if(error.response){
+                                errorMessage = error.response.data.message
+                                if(error.response.status == 401){
+                                    window.location = '/logout';
+                                }
+                            }
+                            else{
+                                errorMessage = error.message;
+                            }
+
+                            console.error(errorMessage);
+                            this.$root.$emit('message-sent', 'Error', errorMessage);
+                        });
+                })
+                .catch(error => {
+                    var errorMessage;
+
+                    if(error.response){
+                        errorMessage = error.response.data.message
+                        if(error.response.status == 401){
+                            window.location = '/logout';
+                        }
+                    }
+                    else{
+                        errorMessage = error.message;
+                    }
+
+                    console.error(errorMessage);
+                    this.$root.$emit('message-sent', 'Error', errorMessage);
+                });
 
             $(this.$el).modal('setting', 'closable', false).modal('show');
         });

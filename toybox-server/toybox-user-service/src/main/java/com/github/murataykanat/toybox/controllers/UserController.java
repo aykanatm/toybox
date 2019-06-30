@@ -2,6 +2,7 @@ package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
+import com.github.murataykanat.toybox.schema.user.RetrieveUsersResponse;
 import com.github.murataykanat.toybox.schema.user.UserResponse;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -65,6 +66,42 @@ public class UserController {
 
             _logger.debug("<< getCurrentUser()");
             return new ResponseEntity<>(userResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @RequestMapping(value = "/users", method = RequestMethod.GET)
+    public ResponseEntity<RetrieveUsersResponse> retrieveUsers(Authentication authentication){
+        _logger.debug("retrieveUsers() >>");
+        RetrieveUsersResponse retrieveUsersResponse = new RetrieveUsersResponse();
+
+        try {
+            if(isSessionValid(authentication)){
+                List<User> users = usersRepository.findAll();
+
+                retrieveUsersResponse.setUsers(users);
+                retrieveUsersResponse.setMessage("Users retrieved successfully!");
+
+                _logger.debug("<< retrieveUsers()");
+                return new ResponseEntity<>(retrieveUsersResponse, HttpStatus.OK);
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                retrieveUsersResponse.setMessage(errorMessage);
+
+                _logger.debug("<< retrieveUsers()");
+                return new ResponseEntity<>(retrieveUsersResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while retrieving users. " + e.getLocalizedMessage();
+            _logger.debug(errorMessage, e);
+
+            retrieveUsersResponse.setMessage(errorMessage);
+
+            _logger.debug("<< retrieveUsers()");
+            return new ResponseEntity<>(retrieveUsersResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
