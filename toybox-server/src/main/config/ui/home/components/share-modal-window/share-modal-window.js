@@ -20,7 +20,10 @@ module.exports = {
             canDownload: false,
             canShare: false,
             canMoveOrCopy: false,
-            externalShareUrl:''
+            // Models
+            externalShareUrl: '',
+            expirationDate: '',
+            maxNumberOfHits: 0
         }
     },
     mounted:function(){
@@ -133,7 +136,10 @@ module.exports = {
                 .then(response =>{
                     var shareServiceUrl = response.data.value;
                     var externalShareRequest = {
-                        selectedAssets: this.selectedAssets
+                        selectedAssets: this.selectedAssets,
+                        expirationDate: this.expirationDate,
+                        maxNumberOfHits: this.maxNumberOfHits,
+                        notifyWhenDownloaded: this.notifyOnDownload
                     }
 
                     axios.post(shareServiceUrl + "/share/external", externalShareRequest)

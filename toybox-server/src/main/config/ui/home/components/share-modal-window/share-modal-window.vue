@@ -101,12 +101,26 @@
                 </div>
                 <div class="external-user-share" v-show="isExternalUser">
                     <div style="width: 70%;">
-                        <div class="ui input" style="width: 80%;">
-                            <input type="text" placeholder="Share URL" v-model="externalShareUrl">
+                        <div style="padding-left: 10px;">
+                            <span style="width: 19%; display: inline-block;">Usage Limit:</span>
+                            <div class="ui input" style="width: 200px;">
+                                <input type="text" placeholder="" v-model="maxNumberOfHits">
+                            </div>
                         </div>
-                        <button class="ui primary button" style="width: 19%;" v-on:click.stop="copy">
-                            Copy
-                        </button>
+                        <div style="margin-bottom: 10px; padding-left: 10px;">
+                            <span style="width: 19%; display: inline-block;">Expiration Date:</span>
+                            <div class="ui input" style="width: 200px">
+                                <input type="date" placeholder="" v-model="expirationDate">
+                            </div>
+                        </div>
+                        <div>
+                            <div class="ui input" style="width: 80%;">
+                                <input type="text" placeholder="Share URL" v-model="externalShareUrl">
+                            </div>
+                            <button class="ui primary button" style="width: 19%;" v-on:click.stop="copy">
+                                Copy
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

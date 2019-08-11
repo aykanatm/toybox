@@ -14,6 +14,8 @@ public class ExternalShareRequest implements Serializable {
     private Date expirationDate;
     @JsonProperty("maxNumberOfHits")
     private int maxNumberOfHits;
+    @JsonProperty("notifyWhenDownloaded")
+    private boolean notifyWhenDownloaded;
 
     public List<Asset> getSelectedAssets() {
         return selectedAssets;
@@ -37,5 +39,13 @@ public class ExternalShareRequest implements Serializable {
 
     public void setMaxNumberOfHits(int maxNumberOfHits) {
         this.maxNumberOfHits = maxNumberOfHits;
+    }
+
+    public boolean getNotifyWhenDownloaded() {
+        return notifyWhenDownloaded;
+    }
+
+    public void setNotifyWhenDownloaded(boolean notifyWhenDownloaded) {
+        this.notifyWhenDownloaded = notifyWhenDownloaded;
     }
 }

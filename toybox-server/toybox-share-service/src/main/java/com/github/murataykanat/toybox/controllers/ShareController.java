@@ -39,7 +39,7 @@ public class ShareController {
     private static final Log _logger = LogFactory.getLog(ShareController.class);
 
     private static final String jobServiceLoadBalancerServiceName = "toybox-job-loadbalancer";
-    private static final String externalShareServiceLoadBalancerServiceName = "toybox-externalshare-loadbalancer";
+    private static final String shareServiceLoadBalancerServiceName = "toybox-share-loadbalancer";
 
     @Autowired
     private DiscoveryClient discoveryClient;
@@ -61,6 +61,7 @@ public class ShareController {
                         String username = authentication.getName();
                         Date expirationDate = externalShareRequest.getExpirationDate();
                         int maxNumberOfHits = externalShareRequest.getMaxNumberOfHits();
+                        String notifyWhenDownloaded = externalShareRequest.getNotifyWhenDownloaded() ? "Y" : "N";
 
                         if(expirationDate == null){
                             SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss");
@@ -75,8 +76,7 @@ public class ShareController {
 
                         HttpEntity<SelectedAssets> selectedAssetsEntity = new HttpEntity<>(selectedAssets, headers);
                         String jobServiceUrl = getLoadbalancerUrl(jobServiceLoadBalancerServiceName);
-                        // String externalShareServiceUrl = getLoadbalancerUrl(externalShareServiceLoadBalancerServiceName);
-                        String externalShareServiceUrl = "http://localhost:8108/";
+                        String shareServiceUrl = getLoadbalancerUrl(shareServiceLoadBalancerServiceName);
 
                         ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/package", selectedAssetsEntity, JobResponse.class);
                         if(jobResponseResponseEntity != null){
@@ -87,10 +87,10 @@ public class ShareController {
 
                                 String externalShareId = generateExternalShareId();
 
-                                externalSharesRepository.insertExternalShare(externalShareId, username, jobResponse.getJobId(), expirationDate, maxNumberOfHits);
+                                externalSharesRepository.insertExternalShare(externalShareId, username, jobResponse.getJobId(), expirationDate, maxNumberOfHits, notifyWhenDownloaded);
 
                                 externalShareResponse.setMessage("External share successfully generated.");
-                                externalShareResponse.setUrl(externalShareServiceUrl + "/externalshare?externalShareId=" + externalShareId);
+                                externalShareResponse.setUrl(shareServiceUrl + "/share/external?id=" + externalShareId);
 
                                 return new ResponseEntity<>(externalShareResponse, HttpStatus.OK);
                             }
