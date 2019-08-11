@@ -1,5 +1,5 @@
 module.exports = {
-    mixins:[serviceMixin],
+    mixins:[serviceMixin, userMixin],
     data:function(){
         return{
             componentName: 'Share Modal Window',
@@ -36,10 +36,12 @@ module.exports = {
                             for(var i = 0; i < users.length; i++){
                                 var user = users[i];
 
-                                this.users.push({
-                                    'displayName' : user.name + ' ' + user.lastname + ' (' + user.username + ')',
-                                    'userId': user.id
-                                })
+                                if(this.user.username !== user.username){
+                                    this.users.push({
+                                        'displayName' : user.name + ' ' + user.lastname + ' (' + user.username + ')',
+                                        'userId': user.id
+                                    });
+                                }
                             }
 
                             this.selectedAssets = selectedAssets;
