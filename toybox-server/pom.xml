@@ -18,7 +18,19 @@
         <module>toybox-authorization-server</module>
         <module>toybox-ui</module>
         <module>toybox-asset-service</module>
+        <module>toybox-asset-loadbalancer</module>
+        <module>toybox-folder-service</module>
+        <module>toybox-folder-loadbalancer</module>
         <module>toybox-job-service</module>
+        <module>toybox-job-loadbalancer</module>
         <module>toybox-rendition-service</module>
+        <module>toybox-rendition-loadbalancer</module>
+        <module>toybox-share-service</module>
+        <module>toybox-share-loadbalancer</module>
+        <module>toybox-user-service</module>
+        <module>toybox-user-loadbalancer</module>
+        <module>toybox-notification-service</module>
+        <module>toybox-notification-loadbalancer</module>
+        <module>toybox-notification-listener-service</module>
     </modules>
 </project>
