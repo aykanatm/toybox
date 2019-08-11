@@ -129,7 +129,51 @@ module.exports = {
     },
     methods:{
         generateUrl:function(){
-            // TODO: Generate external share url
+            this.getService("toybox-share-loadbalancer")
+                .then(response =>{
+                    var shareServiceUrl = response.data.value;
+                    var externalShareRequest = {
+                        selectedAssets: this.selectedAssets
+                    }
+
+                    axios.post(shareServiceUrl + "/share/external", externalShareRequest)
+                        .then(response =>{
+                            console.log(response);
+                            this.externalShareUrl = response.data.url;
+                        })
+                        .catch(error => {
+                            var errorMessage;
+
+                            if(error.response){
+                                errorMessage = error.response.data.message
+                                if(error.response.status == 401){
+                                    window.location = '/logout';
+                                }
+                            }
+                            else{
+                                errorMessage = error.message;
+                            }
+
+                            console.error(errorMessage);
+                            this.$root.$emit('message-sent', 'Error', errorMessage);
+                        });
+                })
+                .catch(error => {
+                    var errorMessage;
+
+                    if(error.response){
+                        errorMessage = error.response.data.message
+                        if(error.response.status == 401){
+                            window.location = '/logout';
+                        }
+                    }
+                    else{
+                        errorMessage = error.message;
+                    }
+
+                    console.error(errorMessage);
+                    this.$root.$emit('message-sent', 'Error', errorMessage);
+                });
         },
         share:function(){
             // TODO: Generate internal share and close the window
