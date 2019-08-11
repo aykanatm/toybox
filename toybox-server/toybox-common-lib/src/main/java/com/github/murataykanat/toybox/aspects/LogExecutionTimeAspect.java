@@ -22,7 +22,7 @@ public class LogExecutionTimeAspect {
         long executionTime = System.currentTimeMillis() - start;
 
 
-        _logger.debug(">> " + joinPoint.getSignature().getName() + "() [" + executionTime + " ms]");
+        _logger.debug("<< " + joinPoint.getSignature().getName() + "() [" + executionTime + " ms]");
         return proceed;
     }
 }
