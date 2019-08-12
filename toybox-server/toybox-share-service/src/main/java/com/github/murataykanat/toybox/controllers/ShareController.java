@@ -12,11 +12,13 @@ import com.github.murataykanat.toybox.schema.job.JobResponse;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
 import com.github.murataykanat.toybox.schema.share.ExternalShareRequest;
 import com.github.murataykanat.toybox.schema.share.ExternalShareResponse;
+import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
+import com.github.murataykanat.toybox.utilities.LoadbalancerUtils;
+import com.github.murataykanat.toybox.utilities.NotificationUtils;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.http.HttpEntity;
@@ -24,7 +26,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -59,8 +60,8 @@ public class ShareController {
     public ResponseEntity<ExternalShareResponse> createExternalShare(Authentication authentication, HttpSession session, @RequestBody ExternalShareRequest externalShareRequest) {
         ExternalShareResponse externalShareResponse = new ExternalShareResponse();
         try{
-            if(isSessionValid(authentication)){
-                User user = getUser(authentication);
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+                User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
                 if(user != null){
                     if(externalShareRequest != null){
                         if(!externalShareRequest.getSelectedAssets().isEmpty()){
@@ -75,14 +76,14 @@ public class ShareController {
                             }
 
                             RestTemplate restTemplate = new RestTemplate();
-                            HttpHeaders headers = getHeaders(session);
+                            HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
 
                             SelectedAssets selectedAssets = new SelectedAssets();
                             selectedAssets.setSelectedAssets(externalShareRequest.getSelectedAssets());
 
                             HttpEntity<SelectedAssets> selectedAssetsEntity = new HttpEntity<>(selectedAssets, headers);
-                            String jobServiceUrl = getLoadbalancerUrl(jobServiceLoadBalancerServiceName);
-                            String shareServiceUrl = getLoadbalancerUrl(shareServiceLoadBalancerServiceName);
+                            String jobServiceUrl = LoadbalancerUtils.getInstance().getLoadbalancerUrl(discoveryClient, jobServiceLoadBalancerServiceName);
+                            String shareServiceUrl = LoadbalancerUtils.getInstance().getLoadbalancerUrl(discoveryClient, shareServiceLoadBalancerServiceName);
 
                             ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/package", selectedAssetsEntity, JobResponse.class);
                             if(jobResponseResponseEntity != null){
@@ -105,7 +106,7 @@ public class ShareController {
                                         sendNotificationRequest.setAsset(asset);
                                         sendNotificationRequest.setFromUser(user);
                                         sendNotificationRequest.setMessage(message);
-                                        sendNotification(sendNotificationRequest, session);
+                                        NotificationUtils.getInstance().sendNotification(sendNotificationRequest, discoveryClient, session, notificationServiceLoadBalancerServiceName);
                                     }
 
                                     return new ResponseEntity<>(externalShareResponse, HttpStatus.OK);
@@ -160,76 +161,6 @@ public class ShareController {
     }
 
     @LogEntryExitExecutionTime
-    private HttpHeaders getHeaders(HttpSession session) {
-        HttpHeaders headers = new HttpHeaders();
-
-        _logger.debug("Session ID: " + session.getId());
-        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-        if(token != null){
-            _logger.debug("CSRF Token: " + token.getToken());
-            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-            headers.set("X-XSRF-TOKEN", token.getToken());
-
-            return headers;
-        }
-        else{
-            throw new IllegalArgumentException("CSRF token is null!");
-        }
-    }
-
-    @LogEntryExitExecutionTime
-    private String getLoadbalancerUrl(String loadbalancerServiceName) throws Exception {
-        List<ServiceInstance> instances = discoveryClient.getInstances(loadbalancerServiceName);
-        if(!instances.isEmpty()){
-            ServiceInstance serviceInstance = instances.get(0);
-            _logger.debug("Load balancer URL: " + serviceInstance.getUri().toString());
-            return serviceInstance.getUri().toString();
-        }
-        else{
-            throw new Exception("There is no load balancer instance with name '" + loadbalancerServiceName + "'.");
-        }
-    }
-
-    @LogEntryExitExecutionTime
-    private boolean isSessionValid(Authentication authentication){
-        String errorMessage;
-        List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-        if(!usersByUsername.isEmpty()){
-            if(usersByUsername.size() == 1){
-                return true;
-            }
-            else{
-                errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-            }
-        }
-        else{
-            errorMessage = "No users with username '" + authentication.getName() + " is found!";
-        }
-
-        _logger.error(errorMessage);
-        return false;
-    }
-
-    @LogEntryExitExecutionTime
-    private User getUser(Authentication authentication){
-        String errorMessage;
-        List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-        if(!usersByUsername.isEmpty()){
-            if(usersByUsername.size() == 1){
-                return usersByUsername.get(0);
-            }
-            else{
-                errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-            }
-        }
-        else{
-            errorMessage = "No users with username '" + authentication.getName() + " is found!";
-        }
-        _logger.error(errorMessage);
-        return null;
-    }
-
-    @LogEntryExitExecutionTime
     private String generateExternalShareId(){
         String externalShareId = RandomStringUtils.randomAlphanumeric(40);
         if(isExternalShareIdValid(externalShareId)){
@@ -246,25 +177,6 @@ public class ShareController {
         }
         else{
             return false;
-        }
-    }
-
-    @LogEntryExitExecutionTime
-    private void sendNotification(SendNotificationRequest sendNotificationRequest, HttpSession session) throws Exception {
-        HttpHeaders headers = getHeaders(session);
-        String loadbalancerUrl = getLoadbalancerUrl(notificationServiceLoadBalancerServiceName);
-        HttpEntity<SendNotificationRequest> sendNotificationRequestHttpEntity = new HttpEntity<>(sendNotificationRequest, headers);
-
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<GenericResponse> genericResponseResponseEntity = restTemplate.postForEntity(loadbalancerUrl + "/notifications", sendNotificationRequestHttpEntity, GenericResponse.class);
-
-        boolean successful = genericResponseResponseEntity.getStatusCode().is2xxSuccessful();
-
-        if(successful){
-            _logger.debug("Notification was send successfully!");
-        }
-        else{
-            throw new Exception("An error occurred while sending a notification. " + genericResponseResponseEntity.getBody().getMessage());
         }
     }
 }

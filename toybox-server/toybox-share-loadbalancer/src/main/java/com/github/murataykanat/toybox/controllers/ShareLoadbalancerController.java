@@ -5,6 +5,8 @@ import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.share.ExternalShareRequest;
 import com.github.murataykanat.toybox.schema.share.ExternalShareResponse;
+import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
+import com.github.murataykanat.toybox.utilities.LoadbalancerUtils;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -58,10 +60,10 @@ public class ShareLoadbalancerController {
         ExternalShareResponse externalShareResponse = new ExternalShareResponse();
 
         try{
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(externalShareRequest != null){
-                    HttpHeaders headers = getHeaders(session);
-                    String prefix = getPrefix();
+                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
+                    String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, shareServiceName);
 
                     if(StringUtils.isNotBlank(prefix)){
                         return restTemplate.exchange(prefix + shareServiceName + "/share/external", HttpMethod.POST, new HttpEntity<>(externalShareRequest, headers), ExternalShareResponse.class);
@@ -125,78 +127,6 @@ public class ShareLoadbalancerController {
             externalShareResponse.setMessage(errorMessage);
 
             return new ResponseEntity<>(externalShareResponse, HttpStatus.BAD_REQUEST);
-        }
-    }
-
-    @LogEntryExitExecutionTime
-    private boolean isSessionValid(Authentication authentication){
-        String errorMessage;
-        List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-        if(!usersByUsername.isEmpty()){
-            if(usersByUsername.size() == 1){
-                return true;
-            }
-            else{
-                errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-            }
-        }
-        else{
-            errorMessage = "No users with username '" + authentication.getName() + " is found!";
-        }
-
-        _logger.error(errorMessage);
-        return false;
-    }
-
-    @LogEntryExitExecutionTime
-    private HttpHeaders getHeaders(HttpSession session) throws Exception {
-        HttpHeaders headers = new HttpHeaders();
-
-        _logger.debug("Session ID: " + session.getId());
-        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-        if(token != null){
-            _logger.debug("CSRF Token: " + token.getToken());
-            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-            headers.set("X-XSRF-TOKEN", token.getToken());
-            return headers;
-        }
-        else{
-            throw new Exception("CSRF token is null!");
-        }
-    }
-
-    @LogEntryExitExecutionTime
-    private String getPrefix() throws Exception {
-        List<ServiceInstance> instances = discoveryClient.getInstances(shareServiceName);
-        if(!instances.isEmpty()){
-            List<Boolean> serviceSecurity = new ArrayList<>();
-            for(ServiceInstance serviceInstance: instances){
-                serviceSecurity.add(serviceInstance.isSecure());
-            }
-
-            boolean result = serviceSecurity.get(0);
-
-            for(boolean isServiceSecure : serviceSecurity){
-                result ^= isServiceSecure;
-            }
-
-            if(!result){
-                String prefix = result ? "https://" : "http://";
-                return prefix;
-            }
-            else{
-                String errorMessage = "Not all asset services have the same transfer protocol!";
-                _logger.error(errorMessage);
-
-                throw new Exception(errorMessage);
-
-            }
-        }
-        else{
-            String errorMessage = "No asset services are running!";
-            _logger.error(errorMessage);
-
-            throw new Exception(errorMessage);
         }
     }
 }
