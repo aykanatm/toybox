@@ -128,6 +128,7 @@ public class ShareLoadbalancerController {
         }
     }
 
+    @LogEntryExitExecutionTime
     private boolean isSessionValid(Authentication authentication){
         String errorMessage;
         List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
@@ -147,8 +148,8 @@ public class ShareLoadbalancerController {
         return false;
     }
 
+    @LogEntryExitExecutionTime
     private HttpHeaders getHeaders(HttpSession session) throws Exception {
-        _logger.debug("getHeaders() >>");
         HttpHeaders headers = new HttpHeaders();
 
         _logger.debug("Session ID: " + session.getId());
@@ -157,8 +158,6 @@ public class ShareLoadbalancerController {
             _logger.debug("CSRF Token: " + token.getToken());
             headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
             headers.set("X-XSRF-TOKEN", token.getToken());
-
-            _logger.debug("<< getHeaders()");
             return headers;
         }
         else{
@@ -166,8 +165,8 @@ public class ShareLoadbalancerController {
         }
     }
 
+    @LogEntryExitExecutionTime
     private String getPrefix() throws Exception {
-        _logger.debug("getPrefix() >>");
         List<ServiceInstance> instances = discoveryClient.getInstances(shareServiceName);
         if(!instances.isEmpty()){
             List<Boolean> serviceSecurity = new ArrayList<>();
@@ -183,8 +182,6 @@ public class ShareLoadbalancerController {
 
             if(!result){
                 String prefix = result ? "https://" : "http://";
-
-                _logger.debug("<< getPrefix() [" + prefix + "]");
                 return prefix;
             }
             else{
