@@ -23,7 +23,7 @@ module.exports = {
             // Models
             externalShareUrl: '',
             expirationDate: '',
-            maxNumberOfHits: 0
+            maxNumberOfHits: -1
         }
     },
     mounted:function(){

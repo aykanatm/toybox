@@ -1,7 +1,6 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
-import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.share.ExternalShareRequest;
 import com.github.murataykanat.toybox.schema.share.ExternalShareResponse;
@@ -13,23 +12,17 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.cloud.netflix.ribbon.RibbonClient;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.io.Resource;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.web.csrf.CsrfToken;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpSession;
-import java.util.ArrayList;
-import java.util.List;
 
 @RibbonClient(name = "toybox-share-loadbalancer")
 @RestController
@@ -52,6 +45,55 @@ public class ShareLoadbalancerController {
 
     @Autowired
     private RestTemplate restTemplate;
+
+    @LogEntryExitExecutionTime
+    @HystrixCommand(fallbackMethod = "downloadExternalShareErrorFallback")
+    @RequestMapping(value = "/share/download/{externalShareId}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public ResponseEntity<Resource> downloadExternalShare(@PathVariable String externalShareId){
+        try{
+            if(StringUtils.isNotBlank(externalShareId)){
+                String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, shareServiceName);
+                HttpHeaders headers = new HttpHeaders();
+
+                return restTemplate.exchange(prefix + shareServiceName + "/share/download/" + externalShareId, HttpMethod.GET, new HttpEntity<>(headers),Resource.class);
+            }
+            else{
+                String errorMessage = "External share ID is blank! ";
+                _logger.error(errorMessage);
+
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while downloading the shared assets. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    public ResponseEntity<Resource> downloadExternalShareErrorFallback(String externalShareId, Throwable e){
+        if(StringUtils.isNotBlank(externalShareId)){
+            String errorMessage;
+            if(e.getLocalizedMessage() != null){
+                errorMessage = "Unable to create external share. " + e.getLocalizedMessage();
+            }
+            else{
+                errorMessage = "Unable to get response from the share service.";
+            }
+
+            _logger.error(errorMessage, e);
+
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        else{
+            String errorMessage = "External share ID is blank! ";
+            _logger.error(errorMessage);
+
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
 
     @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "createExternalShareErrorFallback")

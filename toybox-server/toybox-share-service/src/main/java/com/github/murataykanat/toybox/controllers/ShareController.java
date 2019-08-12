@@ -7,7 +7,6 @@ import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.ExternalSharesRepository;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.asset.SelectedAssets;
-import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
 import com.github.murataykanat.toybox.schema.share.ExternalShareRequest;
@@ -16,24 +15,27 @@ import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import com.github.murataykanat.toybox.utilities.LoadbalancerUtils;
 import com.github.murataykanat.toybox.utilities.NotificationUtils;
 import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpSession;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InvalidObjectException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -54,6 +56,89 @@ public class ShareController {
 
     @Autowired
     private ExternalSharesRepository externalSharesRepository;
+
+    @Value("${exportStagingPath}")
+    private String exportStagingPath;
+
+    @LogEntryExitExecutionTime
+    @RequestMapping(value = "/share/download/{externalShareId}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public ResponseEntity<Resource> downloadExternalShare(@PathVariable String externalShareId){
+        try{
+            if(StringUtils.isNotBlank(externalShareId)){
+                List<ExternalShare> externalSharesById = externalSharesRepository.getExternalSharesById(externalShareId);
+                if(!externalSharesById.isEmpty()){
+                    if(externalSharesById.size() == 1){
+                        ExternalShare externalShare = externalSharesById.get(0);
+
+                        boolean canDownload = false;
+
+                        Date expirationDate = externalShare.getExpirationDate();
+                        if(expirationDate != null){
+                            Calendar cal = Calendar.getInstance();
+                            cal.set(Calendar.HOUR_OF_DAY, 0);
+                            cal.set(Calendar.MINUTE, 0);
+                            cal.set(Calendar.SECOND, 0);
+                            Date today = cal.getTime();
+
+                            SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+                            _logger.debug("Expiration date: " + formatter.format(expirationDate));
+                            _logger.debug("Today: " + formatter.format(today));
+
+                            if(today.before(expirationDate) && (externalShare.getMaxNumberOfHits() == -1 || externalShare.getMaxNumberOfHits() > 0)){
+                                canDownload = true;
+                            }
+                        }
+                        else{
+                            throw new IllegalArgumentException("Expiration date is null!");
+                        }
+
+                        if(canDownload){
+                            String downloadFilePath =  exportStagingPath + File.separator + externalShare.getJobId() + File.separator + "Download.zip";
+
+                            File archiveFile = new File(downloadFilePath);
+                            if(archiveFile.exists()){
+                                InputStreamResource resource = new InputStreamResource(new FileInputStream(archiveFile));
+
+                                HttpHeaders headers = new HttpHeaders();
+                                headers.set("Content-disposition", "attachment; filename=Download.zip");
+                                return new ResponseEntity<>(resource, headers, HttpStatus.OK);
+                            }
+                            else{
+                                throw new IOException("File path '" + downloadFilePath + "' is not valid!");
+                            }
+                        }
+                        else{
+                            String errorMessage = "Either the external share is expired or the maximum number of uses exceeded the set amount.!";
+                            _logger.error(errorMessage);
+
+                            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                        }
+                    }
+                    else{
+                        throw new Exception("There are multiple external shares with ID '" + externalShareId + "'!");
+                    }
+                }
+                else{
+                    String errorMessage = "External share ID is not found! ";
+                    _logger.error(errorMessage);
+
+                    return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                }
+            }
+            else{
+                String errorMessage = "External share ID is blank! ";
+                _logger.error(errorMessage);
+
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while downloading the shared assets. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
     @LogEntryExitExecutionTime
     @RequestMapping(value = "/share/external", method = RequestMethod.POST)
@@ -97,7 +182,7 @@ public class ShareController {
                                     externalSharesRepository.insertExternalShare(externalShareId, username, jobResponse.getJobId(), expirationDate, maxNumberOfHits, notifyWhenDownloaded);
 
                                     externalShareResponse.setMessage("External share successfully generated.");
-                                    externalShareResponse.setUrl(shareServiceUrl + "/share/external?id=" + externalShareId);
+                                    externalShareResponse.setUrl(shareServiceUrl + "/share/download/" + externalShareId);
 
                                     for(Asset asset: externalShareRequest.getSelectedAssets()){
                                         // Send notification
@@ -109,7 +194,7 @@ public class ShareController {
                                         NotificationUtils.getInstance().sendNotification(sendNotificationRequest, discoveryClient, session, notificationServiceLoadBalancerServiceName);
                                     }
 
-                                    return new ResponseEntity<>(externalShareResponse, HttpStatus.OK);
+                                    return new ResponseEntity<>(externalShareResponse, HttpStatus.CREATED);
                                 }
                                 else{
                                     throw new IllegalArgumentException("Job response is null!");
