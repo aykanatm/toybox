@@ -14,7 +14,8 @@ public class SortUtils{
             return sortUtils;
         }
 
-        return new SortUtils();
+        sortUtils = new SortUtils();
+        return sortUtils;
     }
 
     public  <T> List<T> sortItems(String sortType, List<T> items, Comparator<T> comparing) {

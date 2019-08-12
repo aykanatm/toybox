@@ -20,9 +20,9 @@ public class LoadbalancerUtils {
         if(loadbalancerUtils != null){
             return loadbalancerUtils;
         }
-        else{
-            return new LoadbalancerUtils();
-        }
+
+        loadbalancerUtils = new LoadbalancerUtils();
+        return loadbalancerUtils;
     }
 
     @LogEntryExitExecutionTime

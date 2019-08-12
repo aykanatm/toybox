@@ -23,9 +23,9 @@ public class AuthenticationUtils {
         if(authenticationUtils != null){
             return authenticationUtils;
         }
-        else{
-            return new AuthenticationUtils();
-        }
+
+        authenticationUtils = new AuthenticationUtils();
+        return authenticationUtils;
     }
 
     @LogEntryExitExecutionTime

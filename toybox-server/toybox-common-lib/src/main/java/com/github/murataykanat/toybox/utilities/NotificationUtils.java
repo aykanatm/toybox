@@ -24,9 +24,9 @@ public class NotificationUtils {
         if(notificationUtils != null){
             return notificationUtils;
         }
-        else{
-            return new NotificationUtils();
-        }
+
+        notificationUtils = new NotificationUtils();
+        return notificationUtils;
     }
 
     @LogEntryExitExecutionTime

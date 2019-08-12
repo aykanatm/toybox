@@ -25,7 +25,9 @@ public class FacetUtils {
         if(facetUtils != null){
             return facetUtils;
         }
-        return new FacetUtils();
+
+        facetUtils = new FacetUtils();
+        return facetUtils;
     }
 
     public <T> List<Facet>  getFacets (List<T> objects) throws IllegalAccessException {
