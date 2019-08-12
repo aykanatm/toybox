@@ -1,12 +1,15 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
+import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.dbo.ExternalShare;
 import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.ExternalSharesRepository;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.asset.SelectedAssets;
+import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
+import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
 import com.github.murataykanat.toybox.schema.share.ExternalShareRequest;
 import com.github.murataykanat.toybox.schema.share.ExternalShareResponse;
 import org.apache.commons.lang.RandomStringUtils;
@@ -40,6 +43,7 @@ public class ShareController {
 
     private static final String jobServiceLoadBalancerServiceName = "toybox-job-loadbalancer";
     private static final String shareServiceLoadBalancerServiceName = "toybox-share-loadbalancer";
+    private static final String notificationServiceLoadBalancerServiceName = "toybox-notification-loadbalancer";
 
     @Autowired
     private DiscoveryClient discoveryClient;
@@ -56,68 +60,84 @@ public class ShareController {
         ExternalShareResponse externalShareResponse = new ExternalShareResponse();
         try{
             if(isSessionValid(authentication)){
-                if(externalShareRequest != null){
-                    if(!externalShareRequest.getSelectedAssets().isEmpty()){
-                        String username = authentication.getName();
-                        Date expirationDate = externalShareRequest.getExpirationDate();
-                        int maxNumberOfHits = externalShareRequest.getMaxNumberOfHits();
-                        String notifyWhenDownloaded = externalShareRequest.getNotifyWhenDownloaded() ? "Y" : "N";
+                User user = getUser(authentication);
+                if(user != null){
+                    if(externalShareRequest != null){
+                        if(!externalShareRequest.getSelectedAssets().isEmpty()){
+                            String username = authentication.getName();
+                            Date expirationDate = externalShareRequest.getExpirationDate();
+                            int maxNumberOfHits = externalShareRequest.getMaxNumberOfHits();
+                            String notifyWhenDownloaded = externalShareRequest.getNotifyWhenDownloaded() ? "Y" : "N";
 
-                        if(expirationDate == null){
-                            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss");
-                            expirationDate = simpleDateFormat.parse("12/31/9999 23:59:59");
-                        }
+                            if(expirationDate == null){
+                                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss");
+                                expirationDate = simpleDateFormat.parse("12/31/9999 23:59:59");
+                            }
 
-                        RestTemplate restTemplate = new RestTemplate();
-                        HttpHeaders headers = getHeaders(session);
+                            RestTemplate restTemplate = new RestTemplate();
+                            HttpHeaders headers = getHeaders(session);
 
-                        SelectedAssets selectedAssets = new SelectedAssets();
-                        selectedAssets.setSelectedAssets(externalShareRequest.getSelectedAssets());
+                            SelectedAssets selectedAssets = new SelectedAssets();
+                            selectedAssets.setSelectedAssets(externalShareRequest.getSelectedAssets());
 
-                        HttpEntity<SelectedAssets> selectedAssetsEntity = new HttpEntity<>(selectedAssets, headers);
-                        String jobServiceUrl = getLoadbalancerUrl(jobServiceLoadBalancerServiceName);
-                        String shareServiceUrl = getLoadbalancerUrl(shareServiceLoadBalancerServiceName);
+                            HttpEntity<SelectedAssets> selectedAssetsEntity = new HttpEntity<>(selectedAssets, headers);
+                            String jobServiceUrl = getLoadbalancerUrl(jobServiceLoadBalancerServiceName);
+                            String shareServiceUrl = getLoadbalancerUrl(shareServiceLoadBalancerServiceName);
 
-                        ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/package", selectedAssetsEntity, JobResponse.class);
-                        if(jobResponseResponseEntity != null){
-                            JobResponse jobResponse = jobResponseResponseEntity.getBody();
-                            if(jobResponse != null){
-                                _logger.debug("Job response message: " + jobResponse.getMessage());
-                                _logger.debug("Job ID: " + jobResponse.getJobId());
+                            ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/package", selectedAssetsEntity, JobResponse.class);
+                            if(jobResponseResponseEntity != null){
+                                JobResponse jobResponse = jobResponseResponseEntity.getBody();
+                                if(jobResponse != null){
+                                    _logger.debug("Job response message: " + jobResponse.getMessage());
+                                    _logger.debug("Job ID: " + jobResponse.getJobId());
 
-                                String externalShareId = generateExternalShareId();
+                                    String externalShareId = generateExternalShareId();
 
-                                externalSharesRepository.insertExternalShare(externalShareId, username, jobResponse.getJobId(), expirationDate, maxNumberOfHits, notifyWhenDownloaded);
+                                    externalSharesRepository.insertExternalShare(externalShareId, username, jobResponse.getJobId(), expirationDate, maxNumberOfHits, notifyWhenDownloaded);
 
-                                externalShareResponse.setMessage("External share successfully generated.");
-                                externalShareResponse.setUrl(shareServiceUrl + "/share/external?id=" + externalShareId);
+                                    externalShareResponse.setMessage("External share successfully generated.");
+                                    externalShareResponse.setUrl(shareServiceUrl + "/share/external?id=" + externalShareId);
 
-                                return new ResponseEntity<>(externalShareResponse, HttpStatus.OK);
+                                    for(Asset asset: externalShareRequest.getSelectedAssets()){
+                                        // Send notification
+                                        String message = "Asset '" + asset.getName() + "' is shared by '" + user.getUsername() + "'";
+                                        SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                        sendNotificationRequest.setAsset(asset);
+                                        sendNotificationRequest.setFromUser(user);
+                                        sendNotificationRequest.setMessage(message);
+                                        sendNotification(sendNotificationRequest, session);
+                                    }
+
+                                    return new ResponseEntity<>(externalShareResponse, HttpStatus.OK);
+                                }
+                                else{
+                                    throw new IllegalArgumentException("Job response is null!");
+                                }
                             }
                             else{
-                                throw new IllegalArgumentException("Job response is null!");
+                                throw new IllegalArgumentException("Job response entity is null!");
                             }
                         }
                         else{
-                            throw new IllegalArgumentException("Job response entity is null!");
+                            String warningMessage = "No assets were selected!";
+                            _logger.warn(warningMessage);
+
+                            externalShareResponse.setMessage(warningMessage);
+
+                            return new ResponseEntity<>(externalShareResponse, HttpStatus.NOT_FOUND);
                         }
                     }
                     else{
-                        String warningMessage = "No assets were selected!";
-                        _logger.warn(warningMessage);
+                        String errorMessage = "External share request is null!";
+                        _logger.error(errorMessage);
 
-                        externalShareResponse.setMessage(warningMessage);
+                        externalShareResponse.setMessage(errorMessage);
 
-                        return new ResponseEntity<>(externalShareResponse, HttpStatus.NOT_FOUND);
+                        return new ResponseEntity<>(externalShareResponse, HttpStatus.BAD_REQUEST);
                     }
                 }
                 else{
-                    String errorMessage = "External share request is null!";
-                    _logger.error(errorMessage);
-
-                    externalShareResponse.setMessage(errorMessage);
-
-                    return new ResponseEntity<>(externalShareResponse, HttpStatus.BAD_REQUEST);
+                    throw new IllegalArgumentException("User is null!");
                 }
             }
             else{
@@ -226,6 +246,25 @@ public class ShareController {
         }
         else{
             return false;
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    private void sendNotification(SendNotificationRequest sendNotificationRequest, HttpSession session) throws Exception {
+        HttpHeaders headers = getHeaders(session);
+        String loadbalancerUrl = getLoadbalancerUrl(notificationServiceLoadBalancerServiceName);
+        HttpEntity<SendNotificationRequest> sendNotificationRequestHttpEntity = new HttpEntity<>(sendNotificationRequest, headers);
+
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<GenericResponse> genericResponseResponseEntity = restTemplate.postForEntity(loadbalancerUrl + "/notifications", sendNotificationRequestHttpEntity, GenericResponse.class);
+
+        boolean successful = genericResponseResponseEntity.getStatusCode().is2xxSuccessful();
+
+        if(successful){
+            _logger.debug("Notification was send successfully!");
+        }
+        else{
+            throw new Exception("An error occurred while sending a notification. " + genericResponseResponseEntity.getBody().getMessage());
         }
     }
 }
