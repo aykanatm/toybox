@@ -13,6 +13,7 @@ import com.github.murataykanat.toybox.schema.notification.SearchNotificationsReq
 import com.github.murataykanat.toybox.schema.notification.SearchNotificationsResponse;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
 import com.github.murataykanat.toybox.schema.notification.UpdateNotificationsRequest;
+import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import com.github.murataykanat.toybox.utilities.FacetUtils;
 import com.github.murataykanat.toybox.utilities.SortUtils;
 import org.apache.commons.lang.StringUtils;
@@ -58,7 +59,7 @@ public class NotificationController {
         int notificationCount = 0;
 
         try{
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(sendNotificationRequest != null){
                     List<AssetUser> assetUsersByAssetId = assetUserRepository.findAssetUsersByAssetId(sendNotificationRequest.getAsset().getId());
                     if(assetUsersByAssetId != null && !assetUsersByAssetId.isEmpty()){
@@ -155,7 +156,7 @@ public class NotificationController {
         SearchNotificationsResponse searchNotificationsResponse = new SearchNotificationsResponse();
 
         try{
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(searchNotificationsRequest != null){
                     int offset = searchNotificationsRequest.getOffset();
                     int limit = searchNotificationsRequest.getLimit();
@@ -250,7 +251,7 @@ public class NotificationController {
         GenericResponse genericResponse = new GenericResponse();
 
         try{
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(updateNotificationsRequest != null){
                     if(!updateNotificationsRequest.getNotificationIds().isEmpty()){
                         if(updateNotificationsRequest.getNotificationIds().get(0) == 0){
@@ -304,24 +305,5 @@ public class NotificationController {
             _logger.debug("<< updateNotifications()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
-
-    private boolean isSessionValid(Authentication authentication){
-        String errorMessage;
-        List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-        if(!usersByUsername.isEmpty()){
-            if(usersByUsername.size() == 1){
-                return true;
-            }
-            else{
-                errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-            }
-        }
-        else{
-            errorMessage = "No users with username '" + authentication.getName() + " is found!";
-        }
-
-        _logger.error(errorMessage);
-        return false;
     }
 }

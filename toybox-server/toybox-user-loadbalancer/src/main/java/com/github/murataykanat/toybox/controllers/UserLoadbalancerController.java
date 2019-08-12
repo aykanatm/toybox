@@ -4,6 +4,8 @@ import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.user.RetrieveUsersResponse;
 import com.github.murataykanat.toybox.schema.user.UserResponse;
+import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
+import com.github.murataykanat.toybox.utilities.LoadbalancerUtils;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -55,9 +57,9 @@ public class UserLoadbalancerController {
         _logger.debug("getCurrentUser()");
         UserResponse userResponse = new UserResponse();
         try{
-            if(isSessionValid(authentication)){
-                HttpHeaders headers = getHeaders(session);
-                String prefix = getPrefix();
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+                HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
+                String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, userServiceName);
 
                 if(StringUtils.isNotBlank(prefix)){
                     _logger.debug("<< getCurrentUser()");
@@ -122,9 +124,9 @@ public class UserLoadbalancerController {
         RetrieveUsersResponse retrieveUsersResponse = new RetrieveUsersResponse();
 
         try{
-            if(isSessionValid(authentication)){
-                HttpHeaders headers = getHeaders(session);
-                String prefix = getPrefix();
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+                HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
+                String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, userServiceName);
 
                 if(StringUtils.isNotBlank(prefix)){
                     _logger.debug("<< retrieveUsers()");
@@ -180,80 +182,5 @@ public class UserLoadbalancerController {
 
         _logger.debug("<< retrieveUsersErrorFallback()");
         return new ResponseEntity<>(retrieveUsersResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    private HttpHeaders getHeaders(HttpSession session) throws Exception {
-        _logger.debug("getHeaders() >>");
-        HttpHeaders headers = new HttpHeaders();
-
-        _logger.debug("Session ID: " + session.getId());
-        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-        if(token != null){
-            _logger.debug("CSRF Token: " + token.getToken());
-            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-            headers.set("X-XSRF-TOKEN", token.getToken());
-
-            _logger.debug("<< getHeaders()");
-            return headers;
-        }
-        else{
-            throw new Exception("CSRF token is null!");
-        }
-    }
-
-    private String getPrefix() throws Exception {
-        _logger.debug("getPrefix() >>");
-        List<ServiceInstance> instances = discoveryClient.getInstances(userServiceName);
-        if(!instances.isEmpty()){
-            List<Boolean> serviceSecurity = new ArrayList<>();
-            for(ServiceInstance serviceInstance: instances){
-                serviceSecurity.add(serviceInstance.isSecure());
-            }
-
-            boolean result = serviceSecurity.get(0);
-
-            for(boolean isServiceSecure : serviceSecurity){
-                result ^= isServiceSecure;
-            }
-
-            if(!result){
-                String prefix = result ? "https://" : "http://";
-
-                _logger.debug("<< getPrefix() [" + prefix + "]");
-                return prefix;
-            }
-            else{
-                String errorMessage = "Not all container services have the same transfer protocol!";
-                _logger.error(errorMessage);
-
-                throw new Exception(errorMessage);
-
-            }
-        }
-        else{
-            String errorMessage = "No container services are running!";
-            _logger.error(errorMessage);
-
-            throw new Exception(errorMessage);
-        }
-    }
-
-    private boolean isSessionValid(Authentication authentication){
-        String errorMessage;
-        List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-        if(!usersByUsername.isEmpty()){
-            if(usersByUsername.size() == 1){
-                return true;
-            }
-            else{
-                errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-            }
-        }
-        else{
-            errorMessage = "No users with username '" + authentication.getName() + " is found!";
-        }
-
-        _logger.error(errorMessage);
-        return false;
     }
 }

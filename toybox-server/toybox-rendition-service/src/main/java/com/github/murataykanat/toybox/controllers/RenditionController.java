@@ -4,6 +4,7 @@ import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
+import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -40,7 +41,7 @@ public class RenditionController {
     public ResponseEntity<Resource> getUserAvatar(Authentication authentication, @PathVariable String username){
         _logger.debug("getUserAvatar() >>");
         try{
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(StringUtils.isNotBlank(username)){
                     if(username.equalsIgnoreCase("me")){
                         username = authentication.getName();
@@ -110,7 +111,7 @@ public class RenditionController {
     public ResponseEntity<Resource> getRendition(Authentication authentication, @PathVariable String assetId, @PathVariable String renditionType){
         _logger.debug("getRendition() >>");
         try{
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(StringUtils.isNotBlank(assetId) || StringUtils.isNotBlank(renditionType)){
                     List<Asset> assets = assetsRepository.getAssetsById(assetId);
                     if(assets != null){
@@ -193,24 +194,5 @@ public class RenditionController {
             _logger.debug("<< getRendition()");
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
-
-    private boolean isSessionValid(Authentication authentication){
-        String errorMessage;
-        List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-        if(!usersByUsername.isEmpty()){
-            if(usersByUsername.size() == 1){
-                return true;
-            }
-            else{
-                errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-            }
-        }
-        else{
-            errorMessage = "No users with username '" + authentication.getName() + " is found!";
-        }
-
-        _logger.error(errorMessage);
-        return false;
     }
 }

@@ -4,20 +4,18 @@ import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.user.RetrieveUsersResponse;
 import com.github.murataykanat.toybox.schema.user.UserResponse;
+import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpSession;
 import java.util.List;
 
 @RestController
@@ -35,8 +33,8 @@ public class UserController {
         UserResponse userResponse = new UserResponse();
 
         try{
-            if(isSessionValid(authentication)){
-                User user = getUser(authentication);
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+                User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
                 if(user != null){
                     userResponse.setUser(user);
                     userResponse.setMessage("User is retrieved successfully.");
@@ -75,7 +73,7 @@ public class UserController {
         RetrieveUsersResponse retrieveUsersResponse = new RetrieveUsersResponse();
 
         try {
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 List<User> users = usersRepository.findAll();
 
                 retrieveUsersResponse.setUsers(users);
@@ -103,68 +101,5 @@ public class UserController {
             _logger.debug("<< retrieveUsers()");
             return new ResponseEntity<>(retrieveUsersResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
-
-    private HttpHeaders getHeaders(HttpSession session) throws Exception {
-        _logger.debug("getHeaders() >>");
-        HttpHeaders headers = new HttpHeaders();
-
-        _logger.debug("Session ID: " + session.getId());
-        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-        if(token != null){
-            _logger.debug("CSRF Token: " + token.getToken());
-            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-            headers.set("X-XSRF-TOKEN", token.getToken());
-
-            _logger.debug("<< getHeaders()");
-            return headers;
-        }
-        else{
-            throw new Exception("CSRF token is null!");
-        }
-    }
-
-    private boolean isSessionValid(Authentication authentication){
-        _logger.debug("isSessionValid() >>");
-        String errorMessage;
-        List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-        if(!usersByUsername.isEmpty()){
-            if(usersByUsername.size() == 1){
-                _logger.debug("<< isSessionValid() [true]");
-                return true;
-            }
-            else{
-                errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-            }
-        }
-        else{
-            errorMessage = "No users with username '" + authentication.getName() + " is found!";
-        }
-
-        _logger.error(errorMessage);
-        _logger.debug("<< isSessionValid() [false]");
-        return false;
-    }
-
-    private User getUser(Authentication authentication){
-        _logger.debug("getUser() >>");
-        String errorMessage;
-        List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-        if(!usersByUsername.isEmpty()){
-            if(usersByUsername.size() == 1){
-                _logger.debug("<< getUser()");
-                return usersByUsername.get(0);
-            }
-            else{
-                errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-            }
-        }
-        else{
-            errorMessage = "No users with username '" + authentication.getName() + " is found!";
-        }
-
-        _logger.error(errorMessage);
-        _logger.debug("<< getUser()");
-        return null;
     }
 }

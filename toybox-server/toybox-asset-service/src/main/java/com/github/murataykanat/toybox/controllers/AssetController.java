@@ -17,8 +17,7 @@ import com.github.murataykanat.toybox.schema.job.RetrieveToyboxJobResult;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
 import com.github.murataykanat.toybox.schema.upload.UploadFile;
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
-import com.github.murataykanat.toybox.utilities.FacetUtils;
-import com.github.murataykanat.toybox.utilities.SortUtils;
+import com.github.murataykanat.toybox.utilities.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -75,7 +74,7 @@ public class AssetController {
     public ResponseEntity<Resource> downloadAssets(Authentication authentication, HttpSession session, @RequestBody SelectedAssets selectedAssets){
         _logger.debug("downloadAssets() >>");
         try{
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(selectedAssets != null){
                     List<Asset> assets = selectedAssets.getSelectedAssets();
                     if(assets != null){
@@ -117,7 +116,7 @@ public class AssetController {
                             else{
                                 _logger.debug("Downloading multiple assets...");
                                 RestTemplate restTemplate = new RestTemplate();
-                                HttpHeaders headers = getHeaders(session);
+                                HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
 
                                 HttpEntity<SelectedAssets> selectedAssetsEntity = new HttpEntity<>(selectedAssets, headers);
 
@@ -132,7 +131,7 @@ public class AssetController {
                                         if(jobResponse != null){
                                             _logger.debug("Job response message: " + jobResponse.getMessage());
                                             _logger.debug("Job ID: " + jobResponse.getJobId());
-                                            File archiveFile = getArchiveFile(jobResponse.getJobId(), headers, jobServiceUrl);
+                                            File archiveFile = JobUtils.getInstance().getArchiveFile(jobResponse.getJobId(), headers, jobServiceUrl, exportStagingPath);
                                             if(archiveFile != null && archiveFile.exists()){
                                                 InputStreamResource resource = new InputStreamResource(new FileInputStream(archiveFile));
 
@@ -198,11 +197,11 @@ public class AssetController {
         _logger.debug("uploadAssets() >>");
         try{
             GenericResponse genericResponse = new GenericResponse();
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(uploadFileLst != null){
                     RestTemplate restTemplate = new RestTemplate();
 
-                    HttpHeaders headers = getHeaders(session);
+                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
                     HttpEntity<UploadFileLst> selectedAssetsEntity = new HttpEntity<>(uploadFileLst, headers);
 
                     List<ServiceInstance> instances = discoveryClient.getInstances(jobServiceLoadBalancerServiceName);
@@ -264,9 +263,9 @@ public class AssetController {
         _logger.debug("retrieveAssets() >>");
         try{
             RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(assetSearchRequest != null){
-                    User user = getUser(authentication);
+                    User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
                     if(user != null){
                         String sortColumn = assetSearchRequest.getSortColumn();
                         String sortType = assetSearchRequest.getSortType();
@@ -286,7 +285,7 @@ public class AssetController {
                             }
 
                             List<Asset> assetsByCurrentUser = new ArrayList<>();
-                            if(isAdminUser(authentication)){
+                            if(AuthenticationUtils.getInstance().isAdminUser(authentication)){
                                 _logger.debug("Retrieving all assets [Admin User]...");
                                 assetsByCurrentUser = assets.stream()
                                         .filter(asset -> asset.getIsLatestVersion().equalsIgnoreCase("Y"))
@@ -429,9 +428,9 @@ public class AssetController {
         _logger.debug("deleteAssets() >>");
         GenericResponse genericResponse = new GenericResponse();
         try{
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(selectedAssets != null){
-                    User user = getUser(authentication);
+                    User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
                     if(user != null){
                         if(!selectedAssets.getSelectedAssets().isEmpty()){
                             List<Asset> assetsAndVersions = new ArrayList<>();
@@ -451,7 +450,7 @@ public class AssetController {
                                     sendNotificationRequest.setAsset(asset);
                                     sendNotificationRequest.setFromUser(user);
                                     sendNotificationRequest.setMessage(message);
-                                    sendNotification(sendNotificationRequest, session);
+                                    NotificationUtils.getInstance().sendNotification(sendNotificationRequest, discoveryClient, session, notificationServiceLoadBalancerServiceName);
                                 }
 
                                 for(Asset asset: assetsAndVersions){
@@ -529,10 +528,10 @@ public class AssetController {
         _logger.debug("subscribeToAssets() >>");
         GenericResponse genericResponse = new GenericResponse();
         try{
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(selectedAssets != null){
                     if(!selectedAssets.getSelectedAssets().isEmpty()){
-                        User user = getUser(authentication);
+                        User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
                         if(user != null){
                             int assetCount = 0;
                             for(Asset selectedAsset: selectedAssets.getSelectedAssets()){
@@ -610,10 +609,10 @@ public class AssetController {
         _logger.debug("unsubscribeFromAssets() >>");
         GenericResponse genericResponse = new GenericResponse();
         try{
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(selectedAssets != null){
                     if(!selectedAssets.getSelectedAssets().isEmpty()){
-                        User user = getUser(authentication);
+                        User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
                         if(user != null){
                             int assetCount = 0;
                             for(Asset selectedAsset: selectedAssets.getSelectedAssets()){
@@ -693,10 +692,10 @@ public class AssetController {
         GenericResponse genericResponse = new GenericResponse();
 
         try {
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(StringUtils.isNotBlank(assetId)){
                     if(updateAssetRequest != null){
-                        User user = getUser(authentication);
+                        User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
                         if(user != null){
                             List<Asset> assetsById = assetsRepository.getAssetsById(assetId);
                             if(!assetsById.isEmpty()){
@@ -727,7 +726,7 @@ public class AssetController {
                                         sendNotificationRequest.setAsset(asset);
                                         sendNotificationRequest.setFromUser(user);
                                         sendNotificationRequest.setMessage(notification);
-                                        sendNotification(sendNotificationRequest, session);
+                                        NotificationUtils.getInstance().sendNotification(sendNotificationRequest, discoveryClient, session, notificationServiceLoadBalancerServiceName);
 
                                         String message = "Asset updated successfully.";
                                         _logger.debug(message);
@@ -806,9 +805,9 @@ public class AssetController {
         AssetVersionResponse assetVersionResponse = new AssetVersionResponse();
 
         try{
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(StringUtils.isNotBlank(assetId)){
-                    User user = getUser(authentication);
+                    User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
                     if(user != null){
                         List<Asset> assetsById = assetsRepository.getAssetsById(assetId);
                         if(!assetsById.isEmpty()){
@@ -884,7 +883,7 @@ public class AssetController {
         GenericResponse genericResponse = new GenericResponse();
 
         try{
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(StringUtils.isNotBlank(assetId)){
                     if(revertAssetVersionRequest != null){
                         List<Asset> assetsById = assetsRepository.getAssetsById(assetId);
@@ -915,7 +914,7 @@ public class AssetController {
 
                                         RestTemplate restTemplate = new RestTemplate();
 
-                                        HttpHeaders headers = getHeaders(session);
+                                        HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
                                         HttpEntity<SelectedAssets> selectedAssetsEntity = new HttpEntity<>(selectedAssets, headers);
 
                                         List<ServiceInstance> instances = discoveryClient.getInstances(assetServiceLoadBalancerServiceName);
@@ -1009,7 +1008,7 @@ public class AssetController {
         GenericResponse genericResponse = new GenericResponse();
 
         try{
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(moveAssetRequest != null){
                     for(String assetId: moveAssetRequest.getAssetIds()){
                         List<Asset> assetsById = assetsRepository.getAssetsById(assetId);
@@ -1113,9 +1112,9 @@ public class AssetController {
         _logger.debug("copyAsset() >>");
         GenericResponse genericResponse = new GenericResponse();
         try{
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(copyAssetRequest != null){
-                    User user = getUser(authentication);
+                    User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
                     if(user != null){
                         List<ServiceInstance> instances = discoveryClient.getInstances(jobServiceLoadBalancerServiceName);
 
@@ -1180,7 +1179,7 @@ public class AssetController {
                         String jobServiceUrl = serviceInstance.getUri().toString();
 
                         RestTemplate restTemplate = new RestTemplate();
-                        HttpHeaders headers = getHeaders(session);
+                        HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
 
                         int successfulJobs = 0;
                         for(UploadFileLst uploadFileLst: uploadLists){
@@ -1236,118 +1235,6 @@ public class AssetController {
         }
     }
 
-    private File getArchiveFile(long jobId, HttpHeaders headers, String jobServiceUrl) {
-        _logger.debug("getArchiveFile() >>");
-
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<RetrieveToyboxJobResult> retrieveToyboxJobResultResponseEntity = restTemplate.exchange(jobServiceUrl + "/jobs/" + jobId, HttpMethod.GET, new HttpEntity<>(headers), RetrieveToyboxJobResult.class);
-        RetrieveToyboxJobResult retrieveToyboxJobResult = retrieveToyboxJobResultResponseEntity.getBody();
-        if(retrieveToyboxJobResult.getToyboxJob().getStatus().equalsIgnoreCase("COMPLETED")){
-            String downloadFilePath =  exportStagingPath + File.separator + jobId + File.separator + "Download.zip";
-            File file = new File(downloadFilePath);
-            _logger.debug("<< getArchiveFile()");
-            return file;
-        }
-        else if(retrieveToyboxJobResult.getToyboxJob().getStatus().equalsIgnoreCase("FAILED")){
-            _logger.info("Job with ID '" + jobId + "' failed.");
-            _logger.debug("<< getArchiveFile()");
-            return null;
-        }
-        else{
-            return getArchiveFile(jobId, headers, jobServiceUrl);
-        }
-    }
-
-    private String getLoadbalancerUrl(String loadbalancerServiceName) throws Exception {
-        _logger.debug("getLoadbalancerUrl() [" + loadbalancerServiceName + "]");
-        List<ServiceInstance> instances = discoveryClient.getInstances(loadbalancerServiceName);
-        if(!instances.isEmpty()){
-            ServiceInstance serviceInstance = instances.get(0);
-            _logger.debug("Load balancer URL: " + serviceInstance.getUri().toString());
-            _logger.debug("<< getLoadbalancerUrl()");
-            return serviceInstance.getUri().toString();
-        }
-        else{
-            throw new Exception("There is no load balancer instance with name '" + loadbalancerServiceName + "'.");
-        }
-    }
-
-    private void sendNotification(SendNotificationRequest sendNotificationRequest, HttpSession session) throws Exception {
-        _logger.debug("sendNotification() >>");
-        HttpHeaders headers = getHeaders(session);
-        String loadbalancerUrl = getLoadbalancerUrl(notificationServiceLoadBalancerServiceName);
-        HttpEntity<SendNotificationRequest> sendNotificationRequestHttpEntity = new HttpEntity<>(sendNotificationRequest, headers);
-
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<GenericResponse> genericResponseResponseEntity = restTemplate.postForEntity(loadbalancerUrl + "/notifications", sendNotificationRequestHttpEntity, GenericResponse.class);
-
-        boolean successful = genericResponseResponseEntity.getStatusCode().is2xxSuccessful();
-
-        if(successful){
-            _logger.debug("Notification was send successfully!");
-            _logger.debug("<< sendNotification()");
-        }
-        else{
-            throw new Exception("An error occurred while sending a notification. " + genericResponseResponseEntity.getBody().getMessage());
-        }
-    }
-
-    private HttpHeaders getHeaders(HttpSession session) throws Exception {
-        _logger.debug("getHeaders() >>");
-        HttpHeaders headers = new HttpHeaders();
-
-        _logger.debug("Session ID: " + session.getId());
-        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-        if(token != null){
-            _logger.debug("CSRF Token: " + token.getToken());
-            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-            headers.set("X-XSRF-TOKEN", token.getToken());
-
-            _logger.debug("<< getHeaders()");
-            return headers;
-        }
-        else{
-            throw new Exception("CSRF token is null!");
-        }
-    }
-
-    private boolean isSessionValid(Authentication authentication){
-        String errorMessage;
-        List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-        if(!usersByUsername.isEmpty()){
-            if(usersByUsername.size() == 1){
-                return true;
-            }
-            else{
-                errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-            }
-        }
-        else{
-            errorMessage = "No users with username '" + authentication.getName() + " is found!";
-        }
-
-        _logger.error(errorMessage);
-        return false;
-    }
-
-    private User getUser(Authentication authentication){
-        String errorMessage;
-        List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-        if(!usersByUsername.isEmpty()){
-            if(usersByUsername.size() == 1){
-                return usersByUsername.get(0);
-            }
-            else{
-                errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-            }
-        }
-        else{
-            errorMessage = "No users with username '" + authentication.getName() + " is found!";
-        }
-        _logger.error(errorMessage);
-        return null;
-    }
-
     private boolean isSubscribed(User user, Asset asset){
         List<AssetUser> assetUsersByUserId = assetUserRepository.findAssetUsersByUserId(user.getId());
         for(AssetUser assetUser: assetUsersByUserId){
@@ -1356,37 +1243,6 @@ public class AssetController {
             }
         }
 
-        return false;
-    }
-
-    private boolean isJobSuccessful(long jobId, HttpHeaders headers, String jobServiceUrl) {
-        _logger.debug("isJobSuccessful() >>");
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<RetrieveToyboxJobResult> retrieveToyboxJobResultResponseEntity = restTemplate.exchange(jobServiceUrl + "/jobs/" + jobId, HttpMethod.GET, new HttpEntity<>(headers), RetrieveToyboxJobResult.class);
-        RetrieveToyboxJobResult retrieveToyboxJobResult = retrieveToyboxJobResultResponseEntity.getBody();
-        if(retrieveToyboxJobResult.getToyboxJob().getStatus().equalsIgnoreCase("COMPLETED")){
-            return true;
-        }
-        else if(retrieveToyboxJobResult.getToyboxJob().getStatus().equalsIgnoreCase("FAILED")){
-            _logger.info("Job with ID '" + jobId + "' failed.");
-            _logger.debug("<< isJobSuccessful()");
-            return false;
-        }
-        else{
-            return isJobSuccessful(jobId, headers, jobServiceUrl);
-        }
-    }
-
-    private boolean isAdminUser(Authentication authentication){
-        _logger.debug("isAdminUser() >>");
-        Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
-        List<? extends GrantedAuthority> roleAdmin = authorities.stream().filter(authority -> authority.getAuthority().equalsIgnoreCase("ROLE_ADMIN")).collect(Collectors.toList());
-        if(!roleAdmin.isEmpty()){
-            _logger.debug("<< isAdminUser() [false]");
-            return true;
-        }
-
-        _logger.debug("<< isAdminUser() [false]");
         return false;
     }
 }

@@ -8,6 +8,8 @@ import com.github.murataykanat.toybox.schema.container.ContainerSearchRequest;
 import com.github.murataykanat.toybox.schema.container.CreateContainerRequest;
 import com.github.murataykanat.toybox.schema.container.RetrieveContainerContentsResult;
 import com.github.murataykanat.toybox.schema.container.RetrieveContainersResults;
+import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
+import com.github.murataykanat.toybox.utilities.LoadbalancerUtils;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -57,10 +59,10 @@ public class FolderLoadbalancerController {
         _logger.debug("createContainer() >>");
         GenericResponse genericResponse = new GenericResponse();
         try {
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(createContainerRequest != null){
-                    HttpHeaders headers = getHeaders(session);
-                    String prefix = getPrefix();
+                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
+                    String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, folderServiceName);
 
                     if(StringUtils.isNotBlank(prefix)){
                         _logger.debug("<< createContainer()");
@@ -147,11 +149,11 @@ public class FolderLoadbalancerController {
         _logger.debug("retrieveContainerContents()");
         RetrieveContainerContentsResult retrieveContainerContentsResult = new RetrieveContainerContentsResult();
         try{
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(StringUtils.isNotBlank(containerId)){
                     if(assetSearchRequest != null){
-                        HttpHeaders headers = getHeaders(session);
-                        String prefix = getPrefix();
+                        HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
+                        String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, folderServiceName);
 
                         if(StringUtils.isNotBlank(prefix)){
                             _logger.debug("<< retrieveContainerContents()");
@@ -259,10 +261,10 @@ public class FolderLoadbalancerController {
         _logger.debug("retrieveContainers() >>");
         RetrieveContainersResults retrieveContainersResults = new RetrieveContainersResults();
         try {
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(containerSearchRequest != null){
-                    HttpHeaders headers = getHeaders(session);
-                    String prefix = getPrefix();
+                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
+                    String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, folderServiceName);
 
                     if(StringUtils.isNotBlank(prefix)){
                         _logger.debug("<< retrieveContainers()");
@@ -341,80 +343,5 @@ public class FolderLoadbalancerController {
             _logger.debug("<< retrieveContainersErrorFallback()");
             return new ResponseEntity<>(retrieveContainersResults, HttpStatus.BAD_REQUEST);
         }
-    }
-
-    private HttpHeaders getHeaders(HttpSession session) throws Exception {
-        _logger.debug("getHeaders() >>");
-        HttpHeaders headers = new HttpHeaders();
-
-        _logger.debug("Session ID: " + session.getId());
-        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-        if(token != null){
-            _logger.debug("CSRF Token: " + token.getToken());
-            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-            headers.set("X-XSRF-TOKEN", token.getToken());
-
-            _logger.debug("<< getHeaders()");
-            return headers;
-        }
-        else{
-            throw new Exception("CSRF token is null!");
-        }
-    }
-
-    private String getPrefix() throws Exception {
-        _logger.debug("getPrefix() >>");
-        List<ServiceInstance> instances = discoveryClient.getInstances(folderServiceName);
-        if(!instances.isEmpty()){
-            List<Boolean> serviceSecurity = new ArrayList<>();
-            for(ServiceInstance serviceInstance: instances){
-                serviceSecurity.add(serviceInstance.isSecure());
-            }
-
-            boolean result = serviceSecurity.get(0);
-
-            for(boolean isServiceSecure : serviceSecurity){
-                result ^= isServiceSecure;
-            }
-
-            if(!result){
-                String prefix = result ? "https://" : "http://";
-
-                _logger.debug("<< getPrefix() [" + prefix + "]");
-                return prefix;
-            }
-            else{
-                String errorMessage = "Not all container services have the same transfer protocol!";
-                _logger.error(errorMessage);
-
-                throw new Exception(errorMessage);
-
-            }
-        }
-        else{
-            String errorMessage = "No container services are running!";
-            _logger.error(errorMessage);
-
-            throw new Exception(errorMessage);
-        }
-    }
-
-    private boolean isSessionValid(Authentication authentication){
-        String errorMessage;
-        List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-        if(!usersByUsername.isEmpty()){
-            if(usersByUsername.size() == 1){
-                return true;
-            }
-            else{
-                errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-            }
-        }
-        else{
-            errorMessage = "No users with username '" + authentication.getName() + " is found!";
-        }
-
-        _logger.error(errorMessage);
-        return false;
     }
 }

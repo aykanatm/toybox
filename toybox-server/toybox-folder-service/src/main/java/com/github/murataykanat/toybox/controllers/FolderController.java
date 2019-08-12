@@ -8,6 +8,7 @@ import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.container.*;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
+import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import com.github.murataykanat.toybox.utilities.FacetUtils;
 import com.github.murataykanat.toybox.utilities.SortUtils;
 import com.github.murataykanat.toybox.utils.Constants;
@@ -61,12 +62,12 @@ public class FolderController {
         _logger.debug("createContainer() >>");
         GenericResponse genericResponse = new GenericResponse();
         try {
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(createContainerRequest != null){
                     if(StringUtils.isNotBlank(createContainerRequest.getContainerName())){
                         boolean canCreateFolder = false;
                         if(StringUtils.isBlank(createContainerRequest.getParentContainerId())){
-                            if(isAdminUser(authentication)){
+                            if(AuthenticationUtils.getInstance().isAdminUser(authentication)){
                                 canCreateFolder = true;
                             }
                             else{
@@ -155,11 +156,11 @@ public class FolderController {
         _logger.debug("retrieveContainerContents() >>");
         RetrieveContainerContentsResult retrieveContainerContentsResult = new RetrieveContainerContentsResult();
         try{
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(StringUtils.isNotBlank(containerId)){
                     if(assetSearchRequest != null){
                         Container container = getContainer(containerId);
-                        User user = getUser(authentication);
+                        User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
                         if(user != null){
                             String sortColumn = assetSearchRequest.getSortColumn();
                             String sortType = assetSearchRequest.getSortType();
@@ -189,7 +190,7 @@ public class FolderController {
                                 assets = allAssets;
                             }
 
-                            if(isAdminUser(authentication)){
+                            if(AuthenticationUtils.getInstance().isAdminUser(authentication)){
                                 _logger.debug("Retrieving all the items in the container [Admin User]...");
                                 containersByCurrentUser = containersRepository.getNonDeletedContainersByParentContainerId(container.getId());
                                 assetsByCurrentUser = assets.stream()
@@ -358,9 +359,9 @@ public class FolderController {
         _logger.debug("retrieveContainers() >>");
         RetrieveContainersResults retrieveContainersResults = new RetrieveContainersResults();
         try {
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(containerSearchRequest != null){
-                    User user = getUser(authentication);
+                    User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
                     if(user != null){
                         int offset = containerSearchRequest.getOffset();
                         int limit = containerSearchRequest.getLimit();
@@ -368,7 +369,7 @@ public class FolderController {
                         List<Container> containersByCurrentUser;
 
                         if(containerSearchRequest.getRetrieveTopLevelContainers() != null && containerSearchRequest.getRetrieveTopLevelContainers().equalsIgnoreCase("Y")){
-                            if(isAdminUser(authentication)){
+                            if(AuthenticationUtils.getInstance().isAdminUser(authentication)){
                                 _logger.debug("Retrieving the top level containers [Admin User]...");
                                 containersByCurrentUser = containersRepository.getTopLevelNonDeletedContainers();
                             }
@@ -493,116 +494,6 @@ public class FolderController {
             _logger.debug("<< retrieveContainers()");
             return new ResponseEntity<>(retrieveContainersResults, HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
-
-    private String getLoadbalancerUrl(String loadbalancerServiceName) throws Exception {
-        _logger.debug("getLoadbalancerUrl() [" + loadbalancerServiceName + "]");
-        List<ServiceInstance> instances = discoveryClient.getInstances(loadbalancerServiceName);
-        if(!instances.isEmpty()){
-            ServiceInstance serviceInstance = instances.get(0);
-            _logger.debug("Load balancer URL: " + serviceInstance.getUri().toString());
-            _logger.debug("<< getLoadbalancerUrl()");
-            return serviceInstance.getUri().toString();
-        }
-        else{
-            throw new Exception("There is no load balancer instance with name '" + loadbalancerServiceName + "'.");
-        }
-    }
-
-    private void sendNotification(SendNotificationRequest sendNotificationRequest, HttpSession session) throws Exception {
-        _logger.debug("sendNotification() >>");
-        HttpHeaders headers = getHeaders(session);
-        String loadbalancerUrl = getLoadbalancerUrl(notificationServiceLoadBalancerServiceName);
-        HttpEntity<SendNotificationRequest> sendNotificationRequestHttpEntity = new HttpEntity<>(sendNotificationRequest, headers);
-
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<GenericResponse> genericResponseResponseEntity = restTemplate.postForEntity(loadbalancerUrl + "/notifications", sendNotificationRequestHttpEntity, GenericResponse.class);
-
-        boolean successful = genericResponseResponseEntity.getStatusCode().is2xxSuccessful();
-
-        if(successful){
-            _logger.debug("Notification was send successfully!");
-            _logger.debug("<< sendNotification()");
-        }
-        else{
-            throw new Exception("An error occurred while sending a notification. " + genericResponseResponseEntity.getBody().getMessage());
-        }
-    }
-
-    private HttpHeaders getHeaders(HttpSession session) throws Exception {
-        _logger.debug("getHeaders() >>");
-        HttpHeaders headers = new HttpHeaders();
-
-        _logger.debug("Session ID: " + session.getId());
-        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-        if(token != null){
-            _logger.debug("CSRF Token: " + token.getToken());
-            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-            headers.set("X-XSRF-TOKEN", token.getToken());
-
-            _logger.debug("<< getHeaders()");
-            return headers;
-        }
-        else{
-            throw new Exception("CSRF token is null!");
-        }
-    }
-
-    private boolean isSessionValid(Authentication authentication){
-        _logger.debug("isSessionValid() >>");
-        String errorMessage;
-        List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-        if(!usersByUsername.isEmpty()){
-            if(usersByUsername.size() == 1){
-                _logger.debug("<< isSessionValid() [true]");
-                return true;
-            }
-            else{
-                errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-            }
-        }
-        else{
-            errorMessage = "No users with username '" + authentication.getName() + " is found!";
-        }
-
-        _logger.error(errorMessage);
-        _logger.debug("<< isSessionValid() [false]");
-        return false;
-    }
-
-    private User getUser(Authentication authentication){
-        _logger.debug("getUser() >>");
-        String errorMessage;
-        List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-        if(!usersByUsername.isEmpty()){
-            if(usersByUsername.size() == 1){
-                _logger.debug("<< getUser()");
-                return usersByUsername.get(0);
-            }
-            else{
-                errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-            }
-        }
-        else{
-            errorMessage = "No users with username '" + authentication.getName() + " is found!";
-        }
-
-        _logger.error(errorMessage);
-        _logger.debug("<< getUser()");
-        return null;
-    }
-
-    private boolean isAdminUser(Authentication authentication){
-        _logger.debug("isAdminUser() >>");
-        Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
-        List<? extends GrantedAuthority> roleAdmin = authorities.stream().filter(authority -> authority.getAuthority().equalsIgnoreCase("ROLE_ADMIN")).collect(Collectors.toList());
-        if(!roleAdmin.isEmpty()){
-            _logger.debug("<< isAdminUser() [false]");
-            return true;
-        }
-
-        _logger.debug("<< isAdminUser() [false]");
-        return false;
     }
 
     private String generateFolderId(){

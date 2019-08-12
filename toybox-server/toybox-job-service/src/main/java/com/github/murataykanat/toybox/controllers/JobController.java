@@ -15,6 +15,7 @@ import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.job.*;
 import com.github.murataykanat.toybox.schema.upload.UploadFile;
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
+import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import com.github.murataykanat.toybox.utilities.FacetUtils;
 import com.github.murataykanat.toybox.utilities.SortUtils;
 import org.apache.commons.lang.StringUtils;
@@ -72,7 +73,7 @@ public class JobController {
         JobResponse jobResponse = new JobResponse();
 
         try{
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(selectedAssets != null){
                     List<String> selectedAssetIds = selectedAssets.getSelectedAssets().stream().map(asset -> asset.getId()).collect(Collectors.toList());
 
@@ -152,7 +153,7 @@ public class JobController {
         JobResponse jobResponse = new JobResponse();
 
         try{
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(uploadFileLst != null){
                     _logger.debug("Putting values into the parameter map...");
                     List<UploadFile> uploadedFiles = uploadFileLst.getUploadFiles();
@@ -223,7 +224,7 @@ public class JobController {
         RetrieveToyboxJobsResult retrieveToyboxJobsResult = new RetrieveToyboxJobsResult();
 
         try{
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(jobSearchRequest != null){
                     String sortColumn = jobSearchRequest.getSortColumn();
                     String sortType = jobSearchRequest.getSortType();
@@ -268,7 +269,7 @@ public class JobController {
 
                         List<ToyboxJob> jobsByCurrentUser;
 
-                        if(isAdminUser(authentication)){
+                        if(AuthenticationUtils.getInstance().isAdminUser(authentication)){
                             _logger.debug("Retrieving all jobs [Admin User]...");
                             jobsByCurrentUser = jobs;
                         }
@@ -339,7 +340,7 @@ public class JobController {
         RetrieveToyboxJobResult retrieveToyboxJobResult = new RetrieveToyboxJobResult();
 
         try{
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(StringUtils.isNotBlank(jobInstanceId)){
                     List<ToyboxJob> jobs = jobsRepository.getJobsByInstanceId(jobInstanceId);
                     if(!jobs.isEmpty()){
@@ -411,7 +412,7 @@ public class JobController {
     public ResponseEntity<Resource> downloadJobResult(Authentication authentication, @PathVariable String jobInstanceId){
         _logger.debug("downloadJobResult() >>");
         try{
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(StringUtils.isNotBlank(jobInstanceId)){
                     String downloadFilePath =  exportStagingPath + File.separator + jobInstanceId + File.separator + "Download.zip";
                     File file = new File(downloadFilePath);
@@ -457,7 +458,7 @@ public class JobController {
         JobResponse jobResponse = new JobResponse();
 
         try{
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(StringUtils.isNotBlank(jobInstanceId)){
                     boolean stop = jobOperator.stop(Long.parseLong(jobInstanceId));
                     if(stop){
@@ -500,37 +501,5 @@ public class JobController {
             _logger.debug("<< stopJob()");
             return new ResponseEntity<>(jobResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
-
-    private boolean isSessionValid(Authentication authentication){
-        String errorMessage;
-        List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-        if(!usersByUsername.isEmpty()){
-            if(usersByUsername.size() == 1){
-                return true;
-            }
-            else{
-                errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-            }
-        }
-        else{
-            errorMessage = "No users with username '" + authentication.getName() + " is found!";
-        }
-
-        _logger.error(errorMessage);
-        return false;
-    }
-
-    private boolean isAdminUser(Authentication authentication){
-        _logger.debug("isAdminUser() >>");
-        Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
-        List<? extends GrantedAuthority> roleAdmin = authorities.stream().filter(authority -> authority.getAuthority().equalsIgnoreCase("ROLE_ADMIN")).collect(Collectors.toList());
-        if(!roleAdmin.isEmpty()){
-            _logger.debug("<< isAdminUser() [false]");
-            return true;
-        }
-
-        _logger.debug("<< isAdminUser() [false]");
-        return false;
     }
 }

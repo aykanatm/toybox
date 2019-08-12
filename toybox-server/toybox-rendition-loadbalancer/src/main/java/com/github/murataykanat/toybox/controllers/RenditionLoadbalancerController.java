@@ -2,6 +2,8 @@ package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
+import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
+import com.github.murataykanat.toybox.utilities.LoadbalancerUtils;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -54,10 +56,10 @@ public class RenditionLoadbalancerController {
     public ResponseEntity<Resource> getUserAvatar(HttpSession session, Authentication authentication, @PathVariable String username) {
         _logger.debug("getUserAvatar() >>");
         try{
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(StringUtils.isNotBlank(username)){
-                    HttpHeaders headers = getHeaders(session);
-                    String prefix = getPrefix();
+                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
+                    String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, renditionServiceName);
 
                     if(StringUtils.isNotBlank(prefix)){
                         _logger.debug("<< getUserAvatar()");
@@ -117,11 +119,11 @@ public class RenditionLoadbalancerController {
     public ResponseEntity<Resource> getAssetRendition(HttpSession session, Authentication authentication, @PathVariable String assetId, @PathVariable String renditionType){
         _logger.debug("getAssetRendition() >>");
         try{
-            if(isSessionValid(authentication)){
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(StringUtils.isNotBlank(assetId)){
                     if(StringUtils.isNotBlank(renditionType)){
-                        HttpHeaders headers = getHeaders(session);
-                        String prefix = getPrefix();
+                        HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
+                        String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, renditionServiceName);
 
                         if(StringUtils.isNotBlank(prefix)){
                             _logger.debug("<< getAssetRendition()");
@@ -194,81 +196,6 @@ public class RenditionLoadbalancerController {
 
             _logger.debug("<< assetRenditionErrorFallback()");
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-    }
-
-    private boolean isSessionValid(Authentication authentication){
-        String errorMessage;
-        List<User> usersByUsername = usersRepository.findUsersByUsername(authentication.getName());
-        if(!usersByUsername.isEmpty()){
-            if(usersByUsername.size() == 1){
-                return true;
-            }
-            else{
-                errorMessage = "Username '" + authentication.getName() + "' is not unique!";
-            }
-        }
-        else{
-            errorMessage = "No users with username '" + authentication.getName() + " is found!";
-        }
-
-        _logger.error(errorMessage);
-        return false;
-    }
-
-    private HttpHeaders getHeaders(HttpSession session) throws Exception {
-        _logger.debug("getHeaders() >>");
-        HttpHeaders headers = new HttpHeaders();
-
-        _logger.debug("Session ID: " + session.getId());
-        CsrfToken token = (CsrfToken) session.getAttribute("org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository.CSRF_TOKEN");
-        if(token != null){
-            _logger.debug("CSRF Token: " + token.getToken());
-            headers.set("Cookie", "SESSION=" + session.getId() + "; XSRF-TOKEN=" + token.getToken());
-            headers.set("X-XSRF-TOKEN", token.getToken());
-
-            _logger.debug("<< getHeaders()");
-            return headers;
-        }
-        else{
-            throw new Exception("CSRF token is null!");
-        }
-    }
-
-    private String getPrefix() throws Exception {
-        _logger.debug("getPrefix() >>");
-        List<ServiceInstance> instances = discoveryClient.getInstances(renditionServiceName);
-        if(!instances.isEmpty()){
-            List<Boolean> serviceSecurity = new ArrayList<>();
-            for(ServiceInstance serviceInstance: instances){
-                serviceSecurity.add(serviceInstance.isSecure());
-            }
-
-            boolean result = serviceSecurity.get(0);
-
-            for(boolean isServiceSecure : serviceSecurity){
-                result ^= isServiceSecure;
-            }
-
-            if(!result){
-                String prefix = result ? "https://" : "http://";
-
-                _logger.debug("<< getPrefix() [" + prefix + "]");
-                return prefix;
-            }
-            else{
-                String errorMessage = "Not all rendition services have the same transfer protocol!";
-                _logger.error(errorMessage);
-
-                throw new Exception(errorMessage);
-
-            }
-        }
-        else{
-            String errorMessage = "No rendition services are running!";
-            _logger.error(errorMessage);
-
-            throw new Exception(errorMessage);
         }
     }
 }

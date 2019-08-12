@@ -7,10 +7,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.csrf.CsrfToken;
 
 import javax.servlet.http.HttpSession;
+import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class AuthenticationUtils {
     private static final Log _logger = LogFactory.getLog(AuthenticationUtils.class);
@@ -45,6 +48,20 @@ public class AuthenticationUtils {
         }
         _logger.error(errorMessage);
         return null;
+    }
+
+    @LogEntryExitExecutionTime
+    public boolean isAdminUser(Authentication authentication){
+        _logger.debug("isAdminUser() >>");
+        Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+        List<? extends GrantedAuthority> roleAdmin = authorities.stream().filter(authority -> authority.getAuthority().equalsIgnoreCase("ROLE_ADMIN")).collect(Collectors.toList());
+        if(!roleAdmin.isEmpty()){
+            _logger.debug("<< isAdminUser() [false]");
+            return true;
+        }
+
+        _logger.debug("<< isAdminUser() [false]");
+        return false;
     }
 
     @LogEntryExitExecutionTime
