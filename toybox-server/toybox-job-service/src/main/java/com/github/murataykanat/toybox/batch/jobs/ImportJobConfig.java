@@ -1,5 +1,6 @@
 package com.github.murataykanat.toybox.batch.jobs;
 
+import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.batch.utils.Constants;
 import com.github.murataykanat.toybox.dbo.Container;
 import com.github.murataykanat.toybox.dbo.ContainerAsset;
@@ -311,9 +312,8 @@ public class ImportJobConfig {
     private JobParametersValidator importValidator(){
         return new JobParametersValidator(){
             @Override
+            @LogEntryExitExecutionTime
             public void validate(JobParameters parameters) throws JobParametersInvalidException {
-                _logger.debug("validate() >>");
-
                 Map<String, JobParameter> parameterMap = parameters.getParameters();
                 for(Map.Entry<String, JobParameter> parameterEntry: parameterMap.entrySet()){
                     if(parameterEntry.getKey().startsWith(Constants.JOB_PARAM_UPLOADED_FILE)){
@@ -324,14 +324,12 @@ public class ImportJobConfig {
                         }
                     }
                 }
-
-                _logger.debug("<< validate()");
             }
         };
     }
 
+    @LogEntryExitExecutionTime
     private void createFolder(String assetFolderPath, String assetRenditionPath) throws IOException {
-        _logger.debug("createAssetFolders() >>");
         String[] paths = new String[]{assetFolderPath, assetRenditionPath};
         for(String path: paths){
             File directory = new File(path);
@@ -342,12 +340,10 @@ public class ImportJobConfig {
                 }
             }
         }
-
-        _logger.debug("<< createAssetFolders()");
     }
 
+    @LogEntryExitExecutionTime
     private void updateAssetRendition(String assetId, String renditionPath, RenditionTypes renditionType) {
-        _logger.debug("updateAsset() >>");
         if(renditionType == RenditionTypes.Thumbnail){
             assetsRepository.updateAssetThumbnailPath(renditionPath, assetId);
         }
@@ -357,11 +353,10 @@ public class ImportJobConfig {
         else{
             throw new IllegalArgumentException("Unknown rendition type!");
         }
-        _logger.debug("<< updateAsset()");
     }
 
+    @LogEntryExitExecutionTime
     private String calculateChecksum(String filepath) throws NoSuchAlgorithmException, IOException {
-        _logger.debug("calculateChecksum() >>");
         MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
         try(FileInputStream fis = new FileInputStream(filepath)){
             try(DigestInputStream dis = new DigestInputStream(fis, messageDigest)){
@@ -375,31 +370,27 @@ public class ImportJobConfig {
             result.append(String.format("%02x", b));
         }
 
-        _logger.debug("<< calculateChecksum()");
         return result.toString();
     }
 
+    @LogEntryExitExecutionTime
     private String getOriginalAssetId(String assetName, String assetId, String username, String containerId){
-        _logger.debug("getOriginalAssetId() >>");
         List<Asset> duplicateAssetsByAssetName = getDuplicateAssets(assetName, username, containerId);
         if(duplicateAssetsByAssetName.isEmpty()){
-            _logger.debug("<< getOriginalAssetId()");
             return assetId;
         }
         else{
             if(duplicateAssetsByAssetName.size() == 1){
-                _logger.debug("<< getOriginalAssetId()");
                 return duplicateAssetsByAssetName.get(0).getId();
             }
             else{
-                _logger.debug("<< getOriginalAssetId()");
                 return duplicateAssetsByAssetName.get(0).getOriginalAssetId();
             }
         }
     }
 
+    @LogEntryExitExecutionTime
     private int getLatestVersion(String assetName, String username, String containerId){
-        _logger.debug("getLatestVersion() >>");
         List<Asset> duplicateAssetsByAssetName = getDuplicateAssets(assetName, username, containerId);
 
         if(duplicateAssetsByAssetName.isEmpty()){
@@ -412,9 +403,8 @@ public class ImportJobConfig {
         }
     }
 
+    @LogEntryExitExecutionTime
     private void insertAsset(Asset asset){
-        _logger.debug("insertAsset() >>");
-
         _logger.debug("Asset:");
         _logger.debug("Asset ID: " + asset.getId());
         _logger.debug("Asset Extension: " + asset.getExtension());
@@ -437,12 +427,10 @@ public class ImportJobConfig {
         assetsRepository.insertAsset(asset.getId(), asset.getExtension(), asset.getImportedByUsername(), asset.getName(), asset.getPath(),
                 asset.getPreviewPath(), asset.getThumbnailPath(), asset.getType(), asset.getImportDate(), asset.getDeleted(), asset.getChecksum(),
                 asset.getIsLatestVersion(), asset.getOriginalAssetId(), asset.getVersion(), asset.getFileSize());
-
-        _logger.debug("<< insertAsset()");
     }
 
+    @LogEntryExitExecutionTime
     private void updateDuplicateAssets(String assetName, String assetId, String username, String containerId){
-        _logger.debug("updateDuplicateAssets() >>");
         List<Asset> duplicateAssetsByAssetName = getDuplicateAssets(assetName, username, containerId);
 
         if(!duplicateAssetsByAssetName.isEmpty()){
@@ -452,12 +440,10 @@ public class ImportJobConfig {
                     .collect(Collectors.toList());
             assetsRepository.updateAssetsLatestVersion("N", assetIds);
         }
-
-        _logger.debug("<< updateDuplicateAssets()");
     }
 
+    @LogEntryExitExecutionTime
     private List<Asset> getDuplicateAssets(String assetName, String username, String containerId){
-        _logger.debug("getDuplicateAssets() >>");
         List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(containerId);
         if(!containerAssetsByContainerId.isEmpty()){
             List<Asset> assetsInContainer = assetsRepository.getAssetsByAssetIds(containerAssetsByContainerId.stream()
@@ -468,39 +454,34 @@ public class ImportJobConfig {
                     .filter(asset -> asset.getName().equalsIgnoreCase(assetName))
                     .collect(Collectors.toList());
 
-            _logger.debug("<< getDuplicateAssets");
             return duplicateAssetsByAssetName;
         }
 
-        _logger.debug("<< getDuplicateAssets");
         return new ArrayList<>();
     }
 
+    @LogEntryExitExecutionTime
     private String generateAssetId(){
-        _logger.debug("generateAssetId() >>");
         String assetId = RandomStringUtils.randomAlphanumeric(Constants.ASSET_ID_LENGTH);
         if(isAssetIdValid(assetId)){
-            _logger.debug("<< generateAssetId() [" + assetId + "]");
             return assetId;
         }
         return generateAssetId();
     }
 
+    @LogEntryExitExecutionTime
     private boolean isAssetIdValid(String assetId){
-        _logger.debug("isAssetIdValid() >> [" + assetId + "]");
-
         List<Container> containers = containersRepository.getContainersById(assetId);
         List<Asset> assets = assetsRepository.getAssetsById(assetId);
         if(containers.isEmpty() && assets.isEmpty()){
-            _logger.debug("<< isAssetIdValid() [" + true + "]");
             return true;
         }
         else{
-            _logger.debug("<< isAssetIdValid() [" + false + "]");
             return false;
         }
     }
 
+    @LogEntryExitExecutionTime
     private RenditionProperties getRenditionProperties(Asset asset, String assetRenditionPath, RenditionTypes renditionType) {
         String assetMimeType = asset.getType();
 
@@ -597,6 +578,7 @@ public class ImportJobConfig {
         return renditionProperties;
     }
 
+    @LogEntryExitExecutionTime
     private void runExecutable(Asset asset, File inputFile, File outputFile, String executable, String timeout, String renditionSettings, RenditionTypes renditionType, String executableName) throws IOException, InterruptedException {
         CommandLine cmdLine = new CommandLine(executable);
 
@@ -651,8 +633,9 @@ public class ImportJobConfig {
             updateAssetRendition(asset.getId(), outputFile.getAbsolutePath(), renditionType);
         }
     }
+
+    @LogEntryExitExecutionTime
     private void generateRendition(List<Asset> assets, RenditionTypes renditionType) throws IOException, InterruptedException {
-        _logger.debug("generateRendition() >>");
         for(Asset asset: assets){
             File inputFile = new File(asset.getPath());
             if(inputFile.exists()){
@@ -786,16 +769,13 @@ public class ImportJobConfig {
                 throw new FileNotFoundException("File " + asset.getPath() + " does not exist!");
             }
         }
-
-        _logger.debug("<< generateRendition()");
     }
 
+    @LogEntryExitExecutionTime
     private List<Asset> getAssetsFromContext(Object obj) {
-        _logger.debug("getAssetsFromContext() >>");
         if(obj instanceof List){
             if(!((List) obj).isEmpty()){
                 if(((List) obj).get(0) instanceof Asset){
-                    _logger.debug("<< getAssetsFromContext()");
                     return (List<Asset>) obj;
                 }
                 else{

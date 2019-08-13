@@ -1,5 +1,6 @@
 package com.github.murataykanat.toybox.controllers;
 
+import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.dbo.*;
 import com.github.murataykanat.toybox.repositories.*;
 import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
@@ -7,7 +8,6 @@ import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.container.*;
-import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import com.github.murataykanat.toybox.utilities.FacetUtils;
 import com.github.murataykanat.toybox.utilities.SortUtils;
@@ -17,20 +17,12 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.client.ServiceInstance;
-import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 
-import javax.servlet.http.HttpSession;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -42,8 +34,6 @@ public class FolderController {
     private static final String assetServiceLoadBalancerServiceName = "toybox-asset-loadbalancer";
     private static final String notificationServiceLoadBalancerServiceName = "toybox-notification-loadbalancer";
 
-    @Autowired
-    private DiscoveryClient discoveryClient;
     @Autowired
     private UsersRepository usersRepository;
     @Autowired
@@ -57,9 +47,9 @@ public class FolderController {
     @Autowired
     private AssetUserRepository assetUserRepository;
 
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/containers", method = RequestMethod.POST)
     public ResponseEntity<GenericResponse> createContainer(Authentication authentication, @RequestBody CreateContainerRequest createContainerRequest){
-        _logger.debug("createContainer() >>");
         GenericResponse genericResponse = new GenericResponse();
         try {
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
@@ -106,7 +96,6 @@ public class FolderController {
 
                             genericResponse.setMessage(errorMessage);
 
-                            _logger.debug("<< createContainer()");
                             return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
                         }
                     }
@@ -116,7 +105,6 @@ public class FolderController {
 
                         genericResponse.setMessage(errorMessage);
 
-                        _logger.debug("<< createContainer()");
                         return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                     }
                 }
@@ -126,7 +114,6 @@ public class FolderController {
 
                     genericResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< createContainer()");
                     return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -136,7 +123,6 @@ public class FolderController {
 
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< createContainer()");
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -146,14 +132,13 @@ public class FolderController {
 
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< createContainer()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/containers/{containerId}/search", method = RequestMethod.POST)
     public ResponseEntity<RetrieveContainerContentsResult> retrieveContainerContents(Authentication authentication, @PathVariable String containerId, @RequestBody AssetSearchRequest assetSearchRequest){
-        _logger.debug("retrieveContainerContents() >>");
         RetrieveContainerContentsResult retrieveContainerContentsResult = new RetrieveContainerContentsResult();
         try{
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
@@ -306,11 +291,10 @@ public class FolderController {
                             retrieveContainerContentsResult.setContainerItems(containerItemsOnPage);
                             retrieveContainerContentsResult.setMessage("Container contents retrieved successfully!");
 
-                            _logger.debug("<< retrieveContainerContents()");
                             return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.OK);
                         }
                         else{
-                            throw new Exception("User is null!");
+                            throw new IllegalArgumentException("User is null!");
                         }
                     }
                     else{
@@ -319,7 +303,6 @@ public class FolderController {
 
                         retrieveContainerContentsResult.setMessage(errorMessage);
 
-                        _logger.debug("<< retrieveContainerContents()");
                         return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.BAD_REQUEST);
                     }
                 }
@@ -329,7 +312,6 @@ public class FolderController {
 
                     retrieveContainerContentsResult.setMessage(errorMessage);
 
-                    _logger.debug("<< retrieveContainerContents()");
                     return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -339,7 +321,6 @@ public class FolderController {
 
                 retrieveContainerContentsResult.setMessage(errorMessage);
 
-                _logger.debug("<< retrieveContainerContents()");
                 return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -349,14 +330,13 @@ public class FolderController {
 
             retrieveContainerContentsResult.setMessage(errorMessage);
 
-            _logger.debug("<< retrieveContainerContents()");
             return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/containers/search", method = RequestMethod.POST)
     public ResponseEntity<RetrieveContainersResults> retrieveContainers(Authentication authentication, @RequestBody ContainerSearchRequest containerSearchRequest){
-        _logger.debug("retrieveContainers() >>");
         RetrieveContainersResults retrieveContainersResults = new RetrieveContainersResults();
         try {
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
@@ -379,7 +359,6 @@ public class FolderController {
 
                                 retrieveContainersResults.setMessage(errorMessage);
 
-                                _logger.debug("<< retrieveContainers()");
                                 return new ResponseEntity<>(retrieveContainersResults, HttpStatus.UNAUTHORIZED);
                             }
                         }
@@ -447,7 +426,6 @@ public class FolderController {
                             retrieveContainersResults.setTotalRecords(totalRecords);
                             retrieveContainersResults.setContainers(containersOnPage);
 
-                            _logger.debug("<< retrieveContainers()");
                             retrieveContainersResults.setMessage("Assets retrieved successfully!");
                             return new ResponseEntity<>(retrieveContainersResults, HttpStatus.OK);
                         }
@@ -457,12 +435,11 @@ public class FolderController {
 
                             retrieveContainersResults.setMessage(message);
 
-                            _logger.debug("<< retrieveContainers()");
                             return new ResponseEntity<>(retrieveContainersResults, HttpStatus.OK);
                         }
                     }
                     else{
-                        throw new Exception("User is null!");
+                        throw new IllegalArgumentException("User is null!");
                     }
                 }
                 else{
@@ -471,7 +448,6 @@ public class FolderController {
 
                     retrieveContainersResults.setMessage(errorMessage);
 
-                    _logger.debug("<< retrieveContainers()");
                     return new ResponseEntity<>(retrieveContainersResults, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -481,7 +457,6 @@ public class FolderController {
 
                 retrieveContainersResults.setMessage(errorMessage);
 
-                _logger.debug("<< retrieveContainers()");
                 return new ResponseEntity<>(retrieveContainersResults, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -491,39 +466,33 @@ public class FolderController {
 
             retrieveContainersResults.setMessage(errorMessage);
 
-            _logger.debug("<< retrieveContainers()");
             return new ResponseEntity<>(retrieveContainersResults, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     private String generateFolderId(){
-        _logger.debug("generateFolderId() >>");
         String containerId = RandomStringUtils.randomAlphanumeric(Constants.FOLDER_ID_LENGTH);
         if(isContainerIdValid(containerId)){
-            _logger.debug("<< generateFolderId() [" + containerId + "]");
             return containerId;
         }
         return generateFolderId();
     }
 
+    @LogEntryExitExecutionTime
     private boolean isContainerIdValid(String containerId){
-        _logger.debug("isContainerIdValid() >> [" + containerId + "]");
-
         List<Container> containers = containersRepository.getContainersById(containerId);
         List<Asset> assets = assetsRepository.getAssetsById(containerId);
         if(containers.isEmpty() && assets.isEmpty()){
-            _logger.debug("<< isContainerIdValid() [" + true + "]");
             return true;
         }
         else{
-            _logger.debug("<< isContainerIdValid() [" + false + "]");
             return false;
         }
     }
 
+    @LogEntryExitExecutionTime
     private void createContainer(Container container){
-        _logger.debug("createContainer() >>");
-
         _logger.debug("Container ID: " + container.getId());
         _logger.debug("Container name: " + container.getName());
         _logger.debug("Container parent ID: " + container.getParentId());
@@ -533,12 +502,10 @@ public class FolderController {
         containersRepository.insertContainer(container.getId(), container.getName(), container.getParentId(),
                 container.getCreatedByUsername(), container.getCreationDate(), container.getDeleted(),
                 container.getSystem());
-
-        _logger.debug("<< createContainer()");
     }
 
+    @LogEntryExitExecutionTime
     private List<Breadcrumb> generateContainerPath(String containerId) throws Exception {
-        _logger.debug("generateContainerPath() >>");
         List<Breadcrumb> breadcrumbs = new ArrayList<>();
         Container container;
         Breadcrumb breadcrumb = new Breadcrumb();
@@ -573,10 +540,10 @@ public class FolderController {
             breadcrumbs.add(breadcrumb);
         }
 
-        _logger.debug("<< generateContainerPath()");
         return breadcrumbs;
     }
 
+    @LogEntryExitExecutionTime
     private Container getContainer(String containerId) throws Exception {
         List<Container> containersById = containersRepository.getContainersById(containerId);
         if(!containersById.isEmpty()){

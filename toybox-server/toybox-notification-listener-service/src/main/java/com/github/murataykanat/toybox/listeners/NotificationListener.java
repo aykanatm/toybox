@@ -1,5 +1,6 @@
 package com.github.murataykanat.toybox.listeners;
 
+import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.dbo.Notification;
 import com.github.murataykanat.toybox.repositories.NotificationsRepository;
 import org.apache.commons.logging.Log;
@@ -16,8 +17,8 @@ public class NotificationListener {
     @Autowired
     private NotificationsRepository notificationsRepository;
 
+    @LogEntryExitExecutionTime
     public void receiveNotification(Notification notification){
-        _logger.debug("receiveNotification() >>");
         SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
 
         _logger.debug("Username: " + notification.getUsername());
@@ -25,6 +26,5 @@ public class NotificationListener {
         _logger.debug("Date: " + formatter.format(notification.getDate()));
 
         notificationsRepository.insertNotification(notification.getUsername(), notification.getFrom(), notification.getNotification(), notification.getDate(), notification.getIsRead());
-        _logger.debug("<< receiveNotification()");
     }
 }

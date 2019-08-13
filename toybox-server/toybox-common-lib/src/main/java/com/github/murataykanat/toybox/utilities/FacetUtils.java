@@ -1,5 +1,6 @@
 package com.github.murataykanat.toybox.utilities;
 
+import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.models.annotations.FacetColumnName;
 import com.github.murataykanat.toybox.models.annotations.FacetDataType;
 import com.github.murataykanat.toybox.models.annotations.FacetDefaultLookup;
@@ -30,6 +31,7 @@ public class FacetUtils {
         return facetUtils;
     }
 
+    @LogEntryExitExecutionTime
     public <T> List<Facet>  getFacets (List<T> objects) throws IllegalAccessException {
         List<Facet> facets = new ArrayList<>();
         if(!objects.isEmpty()){
@@ -115,6 +117,7 @@ public class FacetUtils {
         return facets;
     }
 
+    @LogEntryExitExecutionTime
     public <T> boolean hasFacetValue(T obj, List<SearchRequestFacet> searchRequestFacetList){
         boolean result = true;
 

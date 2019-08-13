@@ -1,5 +1,6 @@
 package com.github.murataykanat.toybox.controllers;
 
+import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.user.RetrieveUsersResponse;
@@ -8,7 +9,6 @@ import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -23,13 +23,11 @@ public class UserController {
     private static final Log _logger = LogFactory.getLog(UserController.class);
 
     @Autowired
-    private DiscoveryClient discoveryClient;
-    @Autowired
     private UsersRepository usersRepository;
 
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/users/me", method = RequestMethod.GET)
     public ResponseEntity<UserResponse> getCurrentUser(Authentication authentication){
-        _logger.debug("getCurrentUser() >>");
         UserResponse userResponse = new UserResponse();
 
         try{
@@ -39,11 +37,10 @@ public class UserController {
                     userResponse.setUser(user);
                     userResponse.setMessage("User is retrieved successfully.");
 
-                    _logger.debug("<< getCurrentUser()");
                     return new ResponseEntity<>(userResponse, HttpStatus.OK);
                 }
                 else{
-                    throw new Exception("User is null!");
+                    throw new IllegalArgumentException("User is null!");
                 }
             }
             else{
@@ -52,7 +49,6 @@ public class UserController {
 
                 userResponse.setMessage(errorMessage);
 
-                _logger.debug("<< getCurrentUser()");
                 return new ResponseEntity<>(userResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -62,7 +58,6 @@ public class UserController {
 
             userResponse.setMessage(errorMessage);
 
-            _logger.debug("<< getCurrentUser()");
             return new ResponseEntity<>(userResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -79,7 +74,6 @@ public class UserController {
                 retrieveUsersResponse.setUsers(users);
                 retrieveUsersResponse.setMessage("Users retrieved successfully!");
 
-                _logger.debug("<< retrieveUsers()");
                 return new ResponseEntity<>(retrieveUsersResponse, HttpStatus.OK);
             }
             else{
@@ -88,7 +82,6 @@ public class UserController {
 
                 retrieveUsersResponse.setMessage(errorMessage);
 
-                _logger.debug("<< retrieveUsers()");
                 return new ResponseEntity<>(retrieveUsersResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -98,7 +91,6 @@ public class UserController {
 
             retrieveUsersResponse.setMessage(errorMessage);
 
-            _logger.debug("<< retrieveUsers()");
             return new ResponseEntity<>(retrieveUsersResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

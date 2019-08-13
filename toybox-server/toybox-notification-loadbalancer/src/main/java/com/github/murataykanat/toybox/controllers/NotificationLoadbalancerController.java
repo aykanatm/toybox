@@ -1,5 +1,6 @@
 package com.github.murataykanat.toybox.controllers;
 
+import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.notification.SearchNotificationsRequest;
@@ -49,10 +50,10 @@ public class NotificationLoadbalancerController {
     @Autowired
     private RestTemplate restTemplate;
 
+    @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "sendNotificationErrorFallback")
     @RequestMapping(value = "/notifications", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> sendNotification(Authentication authentication, HttpSession session, @RequestBody SendNotificationRequest sendNotificationRequest){
-        _logger.debug("sendNotification() >>");
         GenericResponse genericResponse = new GenericResponse();
         try{
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
@@ -67,7 +68,6 @@ public class NotificationLoadbalancerController {
                     String errorMessage = "Send notification request parameter is null.";
                     genericResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< sendNotification()");
                     return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -77,7 +77,6 @@ public class NotificationLoadbalancerController {
 
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< sendNotification()");
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -87,13 +86,12 @@ public class NotificationLoadbalancerController {
 
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< sendNotification()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     public ResponseEntity<GenericResponse> sendNotificationErrorFallback(Authentication authentication, HttpSession session, SendNotificationRequest sendNotificationRequest, Throwable e){
-        _logger.debug("sendNotificationErrorFallback() >>");
         GenericResponse genericResponse = new GenericResponse();
         if(sendNotificationRequest != null){
             String errorMessage;
@@ -106,22 +104,21 @@ public class NotificationLoadbalancerController {
 
             _logger.error(errorMessage, e);
             genericResponse.setMessage(errorMessage);
-            _logger.debug("<< sendNotificationErrorFallback()");
+
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         else{
             String errorMessage = "Send notification request parameter is null.";
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< sendNotificationErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
         }
     }
 
+    @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "searchNotificationsErrorFallback")
     @RequestMapping(value = "/notifications/search", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<SearchNotificationsResponse> searchNotifications(Authentication authentication, HttpSession session, @RequestBody SearchNotificationsRequest searchNotificationsRequest){
-        _logger.debug("searchNotifications() >>");
         SearchNotificationsResponse searchNotificationsResponse = new SearchNotificationsResponse();
 
         try{
@@ -137,7 +134,6 @@ public class NotificationLoadbalancerController {
                     String errorMessage = "Search notifications request parameter is null.";
                     searchNotificationsResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< searchNotifications()");
                     return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -147,7 +143,6 @@ public class NotificationLoadbalancerController {
 
                 searchNotificationsResponse.setMessage(errorMessage);
 
-                _logger.debug("<< searchNotifications()");
                 return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -157,13 +152,12 @@ public class NotificationLoadbalancerController {
 
             searchNotificationsResponse.setMessage(errorMessage);
 
-            _logger.debug("<< searchNotifications()");
             return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     public ResponseEntity<SearchNotificationsResponse> searchNotificationsErrorFallback(Authentication authentication, HttpSession session, SearchNotificationsRequest searchNotificationsRequest, Throwable e){
-        _logger.debug("searchNotificationsErrorFallback() >>");
         SearchNotificationsResponse searchNotificationsResponse = new SearchNotificationsResponse();
 
         if(searchNotificationsRequest != null){
@@ -177,22 +171,21 @@ public class NotificationLoadbalancerController {
 
             _logger.error(errorMessage, e);
             searchNotificationsResponse.setMessage(errorMessage);
-            _logger.debug("<< searchNotificationsErrorFallback()");
+
             return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         else{
             String errorMessage = "Search notifications request parameter is null.";
             searchNotificationsResponse.setMessage(errorMessage);
 
-            _logger.debug("<< searchNotificationsErrorFallback()");
             return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.BAD_REQUEST);
         }
     }
 
+    @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "updateNotificationsErrorFallback")
     @RequestMapping(value = "/notifications", method = RequestMethod.PATCH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> updateNotifications(Authentication authentication, HttpSession session, @RequestBody UpdateNotificationsRequest updateNotificationsRequest){
-        _logger.debug("updateNotifications() >>");
         GenericResponse genericResponse = new GenericResponse();
 
         try{
@@ -201,14 +194,12 @@ public class NotificationLoadbalancerController {
                     HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
                     String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, notificationServiceName);
 
-                    _logger.debug("<< updateNotifications()");
                     return restTemplate.exchange(prefix + notificationServiceName + "/notifications", HttpMethod.PATCH, new HttpEntity<>(updateNotificationsRequest, headers), GenericResponse.class);
                 }
                 else{
                     String errorMessage = "Update notifications request parameter is null.";
                     genericResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< updateNotifications()");
                     return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -218,7 +209,6 @@ public class NotificationLoadbalancerController {
 
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< updateNotifications()");
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -228,13 +218,12 @@ public class NotificationLoadbalancerController {
 
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< updateNotifications()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     public ResponseEntity<GenericResponse> updateNotificationsErrorFallback(Authentication authentication, HttpSession session, UpdateNotificationsRequest updateNotificationsRequest, Throwable e){
-        _logger.debug("updateNotificationsErrorFallback() >>");
         GenericResponse genericResponse = new GenericResponse();
         if(updateNotificationsRequest != null){
             String errorMessage;
@@ -247,14 +236,13 @@ public class NotificationLoadbalancerController {
 
             _logger.error(errorMessage, e);
             genericResponse.setMessage(errorMessage);
-            _logger.debug("<< updateNotificationsErrorFallback()");
+
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         else{
             String errorMessage = "Update notifications request parameter is null.";
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< updateNotificationsErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
         }
     }

@@ -1,8 +1,8 @@
 package com.github.murataykanat.toybox.controllers;
 
+import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.batch.utils.Constants;
 import com.github.murataykanat.toybox.dbo.Asset;
-import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.models.job.ToyboxJob;
 import com.github.murataykanat.toybox.models.job.ToyboxJobStep;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
@@ -33,7 +33,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
@@ -67,9 +66,9 @@ public class JobController {
     @Autowired
     private UsersRepository usersRepository;
 
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/jobs/package", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<JobResponse> packageAssets(Authentication authentication, @RequestBody SelectedAssets selectedAssets){
-        _logger.debug("packageAssets() >>");
         JobResponse jobResponse = new JobResponse();
 
         try{
@@ -99,14 +98,12 @@ public class JobController {
                             jobResponse.setJobId(jobExecution.getJobId());
                             jobResponse.setMessage("Packaging job started.");
 
-                            _logger.debug("<< packageAssets()");
                             return new ResponseEntity<>(jobResponse, HttpStatus.CREATED);
                         }
                         else{
                             String message = "No assets were found in the system with the requested IDs.";
                             jobResponse.setMessage(message);
 
-                            _logger.debug("<< packageAssets()");
                             return new ResponseEntity<>(jobResponse, HttpStatus.NO_CONTENT);
                         }
                     }
@@ -114,7 +111,6 @@ public class JobController {
                         String message = "No assets were found in the request.";
                         jobResponse.setMessage(message);
 
-                        _logger.debug("<< packageAssets()");
                         return new ResponseEntity<>(jobResponse, HttpStatus.NOT_FOUND);
                     }
                 }
@@ -122,7 +118,6 @@ public class JobController {
                     String message = "Selected assets are null!";
                     jobResponse.setMessage(message);
 
-                    _logger.debug("<< packageAssets()");
                     return new ResponseEntity<>(jobResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -132,7 +127,6 @@ public class JobController {
 
                 jobResponse.setMessage(errorMessage);
 
-                _logger.debug("<< packageAssets()");
                 return new ResponseEntity<>(jobResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -142,14 +136,13 @@ public class JobController {
 
             jobResponse.setMessage(errorMessage);
 
-            _logger.debug("<< packageAssets()");
             return new ResponseEntity<>(jobResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/jobs/import", method = RequestMethod.POST)
     public ResponseEntity<JobResponse> importAsset(Authentication authentication, @RequestBody UploadFileLst uploadFileLst) {
-        _logger.debug("importAsset() >>");
         JobResponse jobResponse = new JobResponse();
 
         try{
@@ -174,7 +167,6 @@ public class JobController {
                         jobResponse.setJobId(jobExecution.getJobId());
                         jobResponse.setMessage("Import job started.");
 
-                        _logger.debug("<< importAsset()");
                         return new ResponseEntity<>(jobResponse, HttpStatus.CREATED);
                     }
                     else{
@@ -183,7 +175,6 @@ public class JobController {
 
                         jobResponse.setMessage(errorMessage);
 
-                        _logger.debug("<< importAsset()");
                         return new ResponseEntity<>(jobResponse, HttpStatus.BAD_REQUEST);
                     }
                 }
@@ -193,7 +184,6 @@ public class JobController {
 
                     jobResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< importAsset()");
                     return new ResponseEntity<>(jobResponse, HttpStatus.UNAUTHORIZED);
                 }
             }
@@ -203,7 +193,6 @@ public class JobController {
 
                 jobResponse.setMessage(errorMessage);
 
-                _logger.debug("<< importAsset()");
                 return new ResponseEntity<>(jobResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -213,14 +202,13 @@ public class JobController {
 
             jobResponse.setMessage(errorMessage);
 
-            _logger.debug("<< importAsset()");
             return new ResponseEntity<>(jobResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/jobs/search", method = RequestMethod.POST)
     public ResponseEntity<RetrieveToyboxJobsResult> retrieveJobs(Authentication authentication, @RequestBody JobSearchRequest jobSearchRequest) {
-        _logger.debug("retrieveJobs() >>");
         RetrieveToyboxJobsResult retrieveToyboxJobsResult = new RetrieveToyboxJobsResult();
 
         try{
@@ -288,7 +276,6 @@ public class JobController {
                         retrieveToyboxJobsResult.setTotalRecords(totalRecords);
                         retrieveToyboxJobsResult.setJobs(jobsOnPage);
 
-                        _logger.debug("<< retrieveJobs()");
                         retrieveToyboxJobsResult.setMessage("Jobs retrieved successfully!");
                         return new ResponseEntity<>(retrieveToyboxJobsResult, HttpStatus.OK);
                     }
@@ -299,7 +286,6 @@ public class JobController {
                         retrieveToyboxJobsResult = new RetrieveToyboxJobsResult();
                         retrieveToyboxJobsResult.setMessage(message);
 
-                        _logger.debug("<< retrieveJobs()");
                         return new ResponseEntity<>(retrieveToyboxJobsResult, HttpStatus.NO_CONTENT);
                     }
                 }
@@ -309,7 +295,6 @@ public class JobController {
 
                     retrieveToyboxJobsResult.setMessage(errorMessage);
 
-                    _logger.debug("<< retrieveJobs()");
                     return new ResponseEntity<>(retrieveToyboxJobsResult, HttpStatus.UNAUTHORIZED);
                 }
             }
@@ -319,7 +304,6 @@ public class JobController {
 
                 retrieveToyboxJobsResult.setMessage(errorMessage);
 
-                _logger.debug("<< retrieveJobs()");
                 return new ResponseEntity<>(retrieveToyboxJobsResult, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -329,14 +313,13 @@ public class JobController {
 
             retrieveToyboxJobsResult.setMessage(errorMessage);
 
-            _logger.debug("<< retrieveJobs()");
             return new ResponseEntity<>(retrieveToyboxJobsResult, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/jobs/{jobInstanceId}", method = RequestMethod.GET)
     public ResponseEntity<RetrieveToyboxJobResult> retrieveJob(Authentication authentication, @PathVariable String jobInstanceId){
-        _logger.debug("retrieveJob() >>");
         RetrieveToyboxJobResult retrieveToyboxJobResult = new RetrieveToyboxJobResult();
 
         try{
@@ -354,7 +337,6 @@ public class JobController {
 
                             retrieveToyboxJobResult.setMessage("Job retrieved successfully!");
 
-                            _logger.debug("<< retrieveJob()");
                             return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.OK);
                         }
                         else{
@@ -363,7 +345,6 @@ public class JobController {
 
                             retrieveToyboxJobResult.setMessage(errorMessage);
 
-                            _logger.debug("<< retrieveJob()");
                             return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.INTERNAL_SERVER_ERROR);
                         }
                     }
@@ -373,7 +354,6 @@ public class JobController {
 
                         retrieveToyboxJobResult.setMessage(message);
 
-                        _logger.debug("<< retrieveJob()");
                         return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.NO_CONTENT);
                     }
                 }
@@ -383,7 +363,6 @@ public class JobController {
 
                     retrieveToyboxJobResult.setMessage(errorMessage);
 
-                    _logger.debug("<< retrieveJob()");
                     return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.UNAUTHORIZED);
                 }
             }
@@ -393,7 +372,6 @@ public class JobController {
 
                 retrieveToyboxJobResult.setMessage(errorMessage);
 
-                _logger.debug("<< retrieveJob()");
                 return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -403,14 +381,13 @@ public class JobController {
 
             retrieveToyboxJobResult.setMessage(errorMessage);
 
-            _logger.debug("<< retrieveJob()");
             return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/jobs/download/{jobInstanceId}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> downloadJobResult(Authentication authentication, @PathVariable String jobInstanceId){
-        _logger.debug("downloadJobResult() >>");
         try{
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(StringUtils.isNotBlank(jobInstanceId)){
@@ -420,7 +397,6 @@ public class JobController {
                     if(file.exists()){
                         InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
 
-                        _logger.debug("<< downloadJobResult()");
                         return new ResponseEntity<>(resource, HttpStatus.OK);
                     }
                     else{
@@ -431,7 +407,6 @@ public class JobController {
                     String errorMessage = "Job instance ID is blank!";
                     _logger.error(errorMessage);
 
-                    _logger.debug("<< downloadJobResult()");
                     return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
                 }
             }
@@ -439,7 +414,6 @@ public class JobController {
                 String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
-                _logger.debug("<< downloadJobResult()");
                 return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
             }
         }
@@ -447,14 +421,13 @@ public class JobController {
             String errorMessage = "An error occurred while download the export job result. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
-            _logger.debug("<< downloadJobResult()");
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/jobs/stop/{jobInstanceId}", method = RequestMethod.POST)
     public ResponseEntity<JobResponse> stopJob(Authentication authentication, @PathVariable String jobInstanceId) {
-        _logger.debug("stopJob() >>");
         JobResponse jobResponse = new JobResponse();
 
         try{
@@ -465,7 +438,6 @@ public class JobController {
                         jobResponse.setJobId(Long.parseLong(jobInstanceId));
                         jobResponse.setMessage("Job stopped successfully.");
 
-                        _logger.debug("<< stopJob()");
                         return new ResponseEntity<>(jobResponse, HttpStatus.OK);
                     }
                     else{
@@ -478,7 +450,6 @@ public class JobController {
 
                     jobResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< stopJob()");
                     return new ResponseEntity<>(jobResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -488,7 +459,6 @@ public class JobController {
 
                 jobResponse.setMessage(errorMessage);
 
-                _logger.debug("<< stopJob()");
                 return new ResponseEntity<>(jobResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -498,7 +468,6 @@ public class JobController {
 
             jobResponse.setMessage(errorMessage);
 
-            _logger.debug("<< stopJob()");
             return new ResponseEntity<>(jobResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

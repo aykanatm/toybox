@@ -1,5 +1,6 @@
 package com.github.murataykanat.toybox.controllers;
 
+import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.dbo.AssetUser;
 import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.AssetUserRepository;
@@ -52,9 +53,9 @@ public class NotificationController {
     @Autowired
     private NotificationsRepository notificationsRepository;
 
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/notifications", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> sendNotification(Authentication authentication, @RequestBody SendNotificationRequest sendNotificationRequest){
-        _logger.debug("sendNotification() >>");
         GenericResponse genericResponse = new GenericResponse();
         int notificationCount = 0;
 
@@ -102,13 +103,11 @@ public class NotificationController {
                             genericResponse.setMessage("No notifications were sent.");
                         }
 
-                        _logger.debug("<< sendNotification()");
                         return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                     }
                     else{
                         _logger.debug("No users associated with asset with ID '" + sendNotificationRequest.getAsset().getId() + "' is found.");
 
-                        _logger.debug("<< sendNotification()");
                         return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                     }
                 }
@@ -118,7 +117,6 @@ public class NotificationController {
 
                     genericResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< sendNotification()");
                     return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -128,7 +126,6 @@ public class NotificationController {
 
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< sendNotification()");
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -145,14 +142,13 @@ public class NotificationController {
 
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< sendNotification()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/notifications/search", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<SearchNotificationsResponse> searchNotifications(Authentication authentication, @RequestBody SearchNotificationsRequest searchNotificationsRequest){
-        _logger.debug("searchNotifications() >>");
         SearchNotificationsResponse searchNotificationsResponse = new SearchNotificationsResponse();
 
         try{
@@ -201,7 +197,6 @@ public class NotificationController {
                         searchNotificationsResponse.setNotifications(notificationsOnPage);
                         searchNotificationsResponse.setMessage("Notifications were retrieved successfully!");
 
-                        _logger.debug("<< searchNotifications()");
                         return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.OK);
                     }
                     else{
@@ -210,7 +205,6 @@ public class NotificationController {
 
                         searchNotificationsResponse.setMessage(message);
 
-                        _logger.debug("<< searchNotifications()");
                         return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.NO_CONTENT);
                     }
                 }
@@ -220,7 +214,6 @@ public class NotificationController {
 
                     searchNotificationsResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< searchNotifications()");
                     return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -230,7 +223,6 @@ public class NotificationController {
 
                 searchNotificationsResponse.setMessage(errorMessage);
 
-                _logger.debug("<< searchNotifications()");
                 return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -240,14 +232,13 @@ public class NotificationController {
 
             searchNotificationsResponse.setMessage(errorMessage);
 
-            _logger.debug("<< searchNotifications()");
             return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/notifications", method = RequestMethod.PATCH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> updateNotifications(Authentication authentication, @RequestBody UpdateNotificationsRequest updateNotificationsRequest){
-        _logger.debug("updateNotifications() >>");
         GenericResponse genericResponse = new GenericResponse();
 
         try{
@@ -263,7 +254,6 @@ public class NotificationController {
 
                         genericResponse.setMessage("Notifications were updated successfully!");
 
-                        _logger.debug("<< updateNotifications()");
                         return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                     }
                     else{
@@ -272,7 +262,6 @@ public class NotificationController {
 
                         genericResponse.setMessage(message);
 
-                        _logger.debug("<< updateNotifications()");
                         return new ResponseEntity<>(genericResponse, HttpStatus.NO_CONTENT);
                     }
                 }
@@ -282,7 +271,6 @@ public class NotificationController {
 
                     genericResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< updateNotifications()");
                     return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -292,7 +280,6 @@ public class NotificationController {
 
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< updateNotifications()");
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -302,7 +289,6 @@ public class NotificationController {
 
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< updateNotifications()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

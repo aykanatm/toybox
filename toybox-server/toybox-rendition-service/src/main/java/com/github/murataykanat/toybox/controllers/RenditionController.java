@@ -1,5 +1,6 @@
 package com.github.murataykanat.toybox.controllers;
 
+import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
@@ -37,9 +38,9 @@ public class RenditionController {
     @Autowired
     private UsersRepository usersRepository;
 
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/renditions/users/{username}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> getUserAvatar(Authentication authentication, @PathVariable String username){
-        _logger.debug("getUserAvatar() >>");
         try{
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(StringUtils.isNotBlank(username)){
@@ -60,11 +61,9 @@ public class RenditionController {
                                 else{
                                     _logger.error("User avatar path is blank!");
 
-                                    _logger.debug("<< getUserAvatar()");
                                     return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                                 }
 
-                                _logger.debug("<< getUserAvatar()");
                                 return new ResponseEntity<>(resource, HttpStatus.OK);
                             }
                             else{
@@ -74,7 +73,6 @@ public class RenditionController {
                         else{
                             _logger.error("No user was found with username '" + username + "'");
 
-                            _logger.debug("<< getUserAvatar()");
                             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                         }
                     }
@@ -86,7 +84,6 @@ public class RenditionController {
                     String errorMessage = "Username parameter is blank!";
                     _logger.error(errorMessage);
 
-                    _logger.debug("<< getUserAvatar()");
                     return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
                 }
             }
@@ -94,7 +91,6 @@ public class RenditionController {
                 String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
-                _logger.debug("<< getUserAvatar()");
                 return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
             }
         }
@@ -102,14 +98,13 @@ public class RenditionController {
             String errorMessage = "An error occurred while retrieving the user with username " + username + ". " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
-            _logger.debug("<< getUserAvatar()");
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/renditions/assets/{assetId}/{renditionType}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> getRendition(Authentication authentication, @PathVariable String assetId, @PathVariable String renditionType){
-        _logger.debug("getRendition() >>");
         try{
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(StringUtils.isNotBlank(assetId) || StringUtils.isNotBlank(renditionType)){
@@ -129,7 +124,6 @@ public class RenditionController {
                                     else{
                                         _logger.error("Thumbnail path is blank!");
 
-                                        _logger.debug("<< getRendition()");
                                         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                                     }
                                 }
@@ -148,7 +142,6 @@ public class RenditionController {
                                     else{
                                         _logger.error("Preview path is blank!");
 
-                                        _logger.debug("<< getRendition()");
                                         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                                     }
                                 }
@@ -163,7 +156,6 @@ public class RenditionController {
                         else{
                             _logger.error("No asset was found with ID '" + assetId + "'");
 
-                            _logger.debug("<< getRendition()");
                             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                         }
                     }
@@ -175,7 +167,6 @@ public class RenditionController {
                     String errorMessage = "Parameters are invalid!";
                     _logger.error(errorMessage);
 
-                    _logger.debug("<< getRendition()");
                     return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
                 }
             }
@@ -183,7 +174,6 @@ public class RenditionController {
                 String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
-                _logger.debug("<< getRendition()");
                 return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
             }
         }
@@ -191,7 +181,6 @@ public class RenditionController {
             String errorMessage = "An error occurred while retrieving the asset with ID " + assetId + ". " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
-            _logger.debug("<< getRendition()");
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

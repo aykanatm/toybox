@@ -1,6 +1,6 @@
 package com.github.murataykanat.toybox.controllers;
 
-import com.github.murataykanat.toybox.dbo.User;
+import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.user.RetrieveUsersResponse;
 import com.github.murataykanat.toybox.schema.user.UserResponse;
@@ -12,22 +12,18 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.cloud.netflix.ribbon.RibbonClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpSession;
-import java.util.ArrayList;
-import java.util.List;
 
 @RibbonClient(name = "toybox-user-loadbalancer")
 @RestController
@@ -51,10 +47,10 @@ public class UserLoadbalancerController {
     @Autowired
     private RestTemplate restTemplate;
 
+    @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "getCurrentUserErrorFallback")
     @RequestMapping(value = "/users/me", method = RequestMethod.GET)
     public ResponseEntity<UserResponse> getCurrentUser(Authentication authentication, HttpSession session){
-        _logger.debug("getCurrentUser()");
         UserResponse userResponse = new UserResponse();
         try{
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
@@ -62,7 +58,6 @@ public class UserLoadbalancerController {
                 String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, userServiceName);
 
                 if(StringUtils.isNotBlank(prefix)){
-                    _logger.debug("<< getCurrentUser()");
                     return restTemplate.exchange(prefix + userServiceName + "/users/me", HttpMethod.GET, new HttpEntity<>(headers), UserResponse.class);
                 }
                 else{
@@ -72,7 +67,6 @@ public class UserLoadbalancerController {
 
                     userResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< getCurrentUser()");
                     return new ResponseEntity<>(userResponse, HttpStatus.INTERNAL_SERVER_ERROR);
                 }
             }
@@ -82,7 +76,6 @@ public class UserLoadbalancerController {
 
                 userResponse.setMessage(errorMessage);
 
-                _logger.debug("<< getCurrentUser()");
                 return new ResponseEntity<>(userResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -92,13 +85,12 @@ public class UserLoadbalancerController {
 
             userResponse.setMessage(errorMessage);
 
-            _logger.debug("<< getCurrentUser()");
             return new ResponseEntity<>(userResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     public ResponseEntity<UserResponse> getCurrentUserErrorFallback(Authentication authentication, HttpSession session, Throwable e){
-        _logger.debug("getCurrentUserErrorFallback() >>");
         UserResponse userResponse = new UserResponse();
 
         String errorMessage;
@@ -113,14 +105,13 @@ public class UserLoadbalancerController {
 
         userResponse.setMessage(errorMessage);
 
-        _logger.debug("<< getCurrentUserErrorFallback()");
         return new ResponseEntity<>(userResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
+    @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "retrieveUsersErrorFallback")
     @RequestMapping(value = "/users", method = RequestMethod.GET)
     public ResponseEntity<RetrieveUsersResponse> retrieveUsers(Authentication authentication, HttpSession session){
-        _logger.debug("retrieveUsers() >>");
         RetrieveUsersResponse retrieveUsersResponse = new RetrieveUsersResponse();
 
         try{
@@ -129,7 +120,6 @@ public class UserLoadbalancerController {
                 String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, userServiceName);
 
                 if(StringUtils.isNotBlank(prefix)){
-                    _logger.debug("<< retrieveUsers()");
                     return restTemplate.exchange(prefix + userServiceName + "/users", HttpMethod.GET, new HttpEntity<>(headers), RetrieveUsersResponse.class);
                 }
                 else{
@@ -139,7 +129,6 @@ public class UserLoadbalancerController {
 
                     retrieveUsersResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< retrieveUsers()");
                     return new ResponseEntity<>(retrieveUsersResponse, HttpStatus.INTERNAL_SERVER_ERROR);
                 }
             }
@@ -149,7 +138,6 @@ public class UserLoadbalancerController {
 
                 retrieveUsersResponse.setMessage(errorMessage);
 
-                _logger.debug("<< retrieveUsers()");
                 return new ResponseEntity<>(retrieveUsersResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -159,13 +147,12 @@ public class UserLoadbalancerController {
 
             retrieveUsersResponse.setMessage(errorMessage);
 
-            _logger.debug("<< retrieveUsers()");
             return new ResponseEntity<>(retrieveUsersResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     public ResponseEntity<RetrieveUsersResponse> retrieveUsersErrorFallback(Authentication authentication, HttpSession session, Throwable e){
-        _logger.debug("retrieveUsersErrorFallback() >>");
         RetrieveUsersResponse retrieveUsersResponse = new RetrieveUsersResponse();
 
         String errorMessage;
@@ -180,7 +167,6 @@ public class UserLoadbalancerController {
 
         retrieveUsersResponse.setMessage(errorMessage);
 
-        _logger.debug("<< retrieveUsersErrorFallback()");
         return new ResponseEntity<>(retrieveUsersResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

@@ -1,5 +1,6 @@
 package com.github.murataykanat.toybox.controllers;
 
+import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.dbo.AssetUser;
 import com.github.murataykanat.toybox.dbo.ContainerAsset;
@@ -13,7 +14,6 @@ import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
-import com.github.murataykanat.toybox.schema.job.RetrieveToyboxJobResult;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
 import com.github.murataykanat.toybox.schema.upload.UploadFile;
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
@@ -32,8 +32,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
@@ -70,9 +68,9 @@ public class AssetController {
     @Value("${importStagingPath}")
     private String importStagingPath;
 
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/assets/download", method = RequestMethod.POST, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> downloadAssets(Authentication authentication, HttpSession session, @RequestBody SelectedAssets selectedAssets){
-        _logger.debug("downloadAssets() >>");
         try{
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(selectedAssets != null){
@@ -90,12 +88,10 @@ public class AssetController {
                                                 File file = new File(asset.getPath());
                                                 InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
 
-                                                _logger.debug("<< downloadAssets()");
                                                 return new ResponseEntity<>(resource, HttpStatus.OK);
                                             }
                                             else{
                                                 _logger.error("Asset path is blank!");
-                                                _logger.debug("<< downloadAssets()");
                                                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                                             }
                                         }
@@ -108,8 +104,7 @@ public class AssetController {
                                     }
                                 }
                                 else{
-                                    _logger.warn("Asset with ID '" + assets.get(0).getId() + "' is not found!");
-                                    _logger.debug("<< downloadAssets()");
+                                    _logger.error("Asset with ID '" + assets.get(0).getId() + "' is not found!");
                                     return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                                 }
                             }
@@ -135,7 +130,6 @@ public class AssetController {
                                             if(archiveFile != null && archiveFile.exists()){
                                                 InputStreamResource resource = new InputStreamResource(new FileInputStream(archiveFile));
 
-                                                _logger.debug("<< downloadAssets()");
                                                 return new ResponseEntity<>(resource, HttpStatus.OK);
                                             }
                                             else{
@@ -159,7 +153,6 @@ public class AssetController {
                             }
                         }
                         else{
-                            _logger.debug("<< downloadAssets()");
                             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                         }
                     }
@@ -171,7 +164,6 @@ public class AssetController {
                     String errorMessage = "Selected assets parameter is null!";
                     _logger.error(errorMessage);
 
-                    _logger.debug("<< downloadAssets()");
                     return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
                 }
             }
@@ -179,7 +171,6 @@ public class AssetController {
                 String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
-                _logger.debug("<< downloadAssets()");
                 return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
             }
         }
@@ -187,14 +178,13 @@ public class AssetController {
             String errorMessage = "An error occurred while downloading selected assets. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
-            _logger.debug("<< downloadAssets()");
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/assets/upload", method = RequestMethod.POST)
     public ResponseEntity<GenericResponse> uploadAssets(Authentication authentication, HttpSession session, @RequestBody UploadFileLst uploadFileLst) {
-        _logger.debug("uploadAssets() >>");
         try{
             GenericResponse genericResponse = new GenericResponse();
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
@@ -213,12 +203,10 @@ public class AssetController {
 
                         if(successful){
                             genericResponse.setMessage(uploadFileLst.getUploadFiles().size() + " file(s) successfully uploaded. Import job started.");
-                            _logger.debug("<< uploadAssets()");
                             return new ResponseEntity<>(genericResponse, HttpStatus.CREATED);
                         }
                         else{
                             genericResponse.setMessage("Upload was successful but import failed to start. " + jobResponseResponseEntity.getBody().getMessage());
-                            _logger.debug("<< uploadAssets()");
                             return new ResponseEntity<>(genericResponse, jobResponseResponseEntity.getStatusCode());
                         }
                     }
@@ -232,7 +220,6 @@ public class AssetController {
 
                     genericResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< updateNotifications()");
                     return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -242,7 +229,6 @@ public class AssetController {
 
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< updateNotifications()");
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -253,14 +239,13 @@ public class AssetController {
             GenericResponse genericResponse = new GenericResponse();
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< uploadAssets()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/assets/search", method = RequestMethod.POST)
     public ResponseEntity<RetrieveAssetsResults> retrieveAssets(Authentication authentication, @RequestBody AssetSearchRequest assetSearchRequest){
-        _logger.debug("retrieveAssets() >>");
         try{
             RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
@@ -373,7 +358,6 @@ public class AssetController {
                             retrieveAssetsResults.setTotalRecords(totalRecords);
                             retrieveAssetsResults.setAssets(assetsOnPage);
 
-                            _logger.debug("<< retrieveAssets()");
                             retrieveAssetsResults.setMessage("Assets retrieved successfully!");
                             return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.OK);
                         }
@@ -383,12 +367,11 @@ public class AssetController {
 
                             retrieveAssetsResults.setMessage(message);
 
-                            _logger.debug("<< retrieveAssets()");
                             return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.NO_CONTENT);
                         }
                     }
                     else{
-                        throw new Exception("User is null!");
+                        throw new IllegalArgumentException("User is null!");
                     }
                 }
                 else{
@@ -397,7 +380,6 @@ public class AssetController {
 
                     retrieveAssetsResults.setMessage(errorMessage);
 
-                    _logger.debug("<< retrieveAssets()");
                     return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -407,7 +389,6 @@ public class AssetController {
 
                 retrieveAssetsResults.setMessage(errorMessage);
 
-                _logger.debug("<< retrieveAssets()");
                 return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -418,14 +399,13 @@ public class AssetController {
             RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
             retrieveAssetsResults.setMessage(errorMessage);
 
-            _logger.debug("<< retrieveAssets()");
             return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/assets/delete", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> deleteAssets(Authentication authentication, HttpSession session, @RequestBody SelectedAssets selectedAssets){
-        _logger.debug("deleteAssets() >>");
         GenericResponse genericResponse = new GenericResponse();
         try{
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
@@ -471,7 +451,6 @@ public class AssetController {
 
                                 genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " asset(s) deleted successfully.");
 
-                                _logger.debug("<< deleteAssets()");
                                 return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                             }
                             else{
@@ -484,12 +463,11 @@ public class AssetController {
 
                             genericResponse.setMessage(warningMessage);
 
-                            _logger.debug("<< deleteAssets()");
                             return new ResponseEntity<>(genericResponse, HttpStatus.NOT_FOUND);
                         }
                     }
                     else{
-                        throw new Exception("User is null!");
+                        throw new IllegalArgumentException("User is null!");
                     }
                 }
                 else{
@@ -498,7 +476,6 @@ public class AssetController {
 
                     genericResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< deleteAssets()");
                     return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -508,7 +485,6 @@ public class AssetController {
 
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< deleteAssets()");
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -518,14 +494,13 @@ public class AssetController {
 
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< deleteAssets()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/assets/subscribe", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> subscribeToAssets(Authentication authentication, @RequestBody SelectedAssets selectedAssets){
-        _logger.debug("subscribeToAssets() >>");
         GenericResponse genericResponse = new GenericResponse();
         try{
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
@@ -550,18 +525,16 @@ public class AssetController {
                                     genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " out of " + assetCount + " asset(s) were subscribed successfully. The rest of the assets were already subscribed.");
                                 }
 
-                                _logger.debug("<< subscribeToAssets()");
                                 return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                             }
                             else{
                                 genericResponse.setMessage("Selected assets were already subscribed.");
 
-                                _logger.debug("<< subscribeToAssets()");
                                 return new ResponseEntity<>(genericResponse, HttpStatus.NO_CONTENT);
                             }
                         }
                         else{
-                            throw new Exception("User is null");
+                            throw new IllegalArgumentException("User is null");
                         }
                     }
                     else{
@@ -570,7 +543,6 @@ public class AssetController {
 
                         genericResponse.setMessage(warningMessage);
 
-                        _logger.debug("<< subscribeToAssets()");
                         return new ResponseEntity<>(genericResponse, HttpStatus.NOT_FOUND);
                     }
                 }
@@ -580,7 +552,6 @@ public class AssetController {
 
                     genericResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< subscribeToAssets()");
                     return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -590,7 +561,6 @@ public class AssetController {
 
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< subscribeToAssets()");
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -600,13 +570,13 @@ public class AssetController {
 
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< subscribeToAssets()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/assets/unsubscribe", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> unsubscribeFromAssets(Authentication authentication, @RequestBody SelectedAssets selectedAssets){
-        _logger.debug("unsubscribeFromAssets() >>");
         GenericResponse genericResponse = new GenericResponse();
         try{
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
@@ -631,18 +601,16 @@ public class AssetController {
                                     genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " out of " + assetCount + " asset(s) were unsubscribed successfully. The rest of the assets were already subscribed.");
                                 }
 
-                                _logger.debug("<< unsubscribeFromAssets()");
                                 return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                             }
                             else{
                                 genericResponse.setMessage("Selected assets were already unsubscribed.");
 
-                                _logger.debug("<< unsubscribeFromAssets()");
                                 return new ResponseEntity<>(genericResponse, HttpStatus.NO_CONTENT);
                             }
                         }
                         else{
-                            throw new Exception("User is null!");
+                            throw new IllegalArgumentException("User is null!");
                         }
                     }
                     else{
@@ -651,7 +619,6 @@ public class AssetController {
 
                         genericResponse.setMessage(errorMessage);
 
-                        _logger.debug("<< unsubscribeFromAssets()");
                         return new ResponseEntity<>(genericResponse, HttpStatus.NOT_FOUND);
                     }
                 }
@@ -661,7 +628,6 @@ public class AssetController {
 
                     genericResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< unsubscribeFromAssets()");
                     return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -671,7 +637,6 @@ public class AssetController {
 
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< unsubscribeFromAssets()");
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -681,14 +646,13 @@ public class AssetController {
 
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< unsubscribeFromAssets()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/assets/{assetId}", method = RequestMethod.PATCH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> updateAsset(Authentication authentication, HttpSession session, @RequestBody UpdateAssetRequest updateAssetRequest, @PathVariable String assetId){
-        _logger.debug("updateAssets() >>");
         GenericResponse genericResponse = new GenericResponse();
 
         try {
@@ -733,7 +697,6 @@ public class AssetController {
 
                                         genericResponse.setMessage(message);
 
-                                        _logger.debug("<< updateAssets()");
                                         return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                                     }
                                     else{
@@ -750,12 +713,11 @@ public class AssetController {
 
                                 genericResponse.setMessage(errorMessage);
 
-                                _logger.debug("<< updateAssets()");
                                 return new ResponseEntity<>(genericResponse, HttpStatus.NOT_FOUND);
                             }
                         }
                         else{
-                            throw new Exception("User is null!");
+                            throw new IllegalArgumentException("User is null!");
                         }
                     }
                     else{
@@ -764,7 +726,6 @@ public class AssetController {
 
                         genericResponse.setMessage(errorMessage);
 
-                        _logger.debug("<< updateAssets()");
                         return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                     }
                 }
@@ -774,7 +735,6 @@ public class AssetController {
 
                     genericResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< updateAssets()");
                     return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -784,7 +744,6 @@ public class AssetController {
 
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< updateAssets()");
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -794,14 +753,13 @@ public class AssetController {
 
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< updateAssets()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/assets/{assetId}/versions", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<AssetVersionResponse> getVersionHistory(Authentication authentication, @PathVariable String assetId){
-        _logger.debug("getVersionHistory() >>");
         AssetVersionResponse assetVersionResponse = new AssetVersionResponse();
 
         try{
@@ -821,7 +779,6 @@ public class AssetController {
                                     assetVersionResponse.setAssets(assetsByOriginalAssetId);
                                     assetVersionResponse.setMessage("Asset version history retrieved successfully.");
 
-                                    _logger.debug("<< getVersionHistory()");
                                     return new ResponseEntity<>(assetVersionResponse, HttpStatus.OK);
                                 }
                                 else{
@@ -838,12 +795,11 @@ public class AssetController {
 
                             assetVersionResponse.setMessage(errorMessage);
 
-                            _logger.debug("<< getVersionHistory()");
                             return new ResponseEntity<>(assetVersionResponse, HttpStatus.NOT_FOUND);
                         }
                     }
                     else{
-                        throw new Exception("User is null!");
+                        throw new IllegalArgumentException("User is null!");
                     }
                 }
                 else{
@@ -852,7 +808,6 @@ public class AssetController {
 
                     assetVersionResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< getVersionHistory()");
                     return new ResponseEntity<>(assetVersionResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -862,7 +817,6 @@ public class AssetController {
 
                 assetVersionResponse.setMessage(errorMessage);
 
-                _logger.debug("<< updateAssets()");
                 return new ResponseEntity<>(assetVersionResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -872,14 +826,13 @@ public class AssetController {
 
             assetVersionResponse.setMessage(errorMessage);
 
-            _logger.debug("<< getVersionHistory()");
             return new ResponseEntity<>(assetVersionResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/assets/{assetId}/revert", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> revertAssetToVersion(Authentication authentication, HttpSession session, @PathVariable String assetId, @RequestBody RevertAssetVersionRequest revertAssetVersionRequest){
-        _logger.debug("revertAssetToVersion() >>");
         GenericResponse genericResponse = new GenericResponse();
 
         try{
@@ -928,7 +881,6 @@ public class AssetController {
                                             if(successful){
                                                 genericResponse.setMessage("Asset was successfully reverted to version " + revertAssetVersionRequest.getVersion() + ".");
 
-                                                _logger.debug("<< revertAssetToVersion()");
                                                 return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                                             }
                                             else{
@@ -945,7 +897,6 @@ public class AssetController {
 
                                         genericResponse.setMessage(errorMessage);
 
-                                        _logger.debug("<< revertAssetToVersion()");
                                         return new ResponseEntity<>(genericResponse, HttpStatus.NOT_FOUND);
                                     }
                                 }
@@ -967,7 +918,6 @@ public class AssetController {
 
                         genericResponse.setMessage(errorMessage);
 
-                        _logger.debug("<< revertAssetToVersion()");
                         return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                     }
                 }
@@ -977,7 +927,6 @@ public class AssetController {
 
                     genericResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< revertAssetToVersion()");
                     return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -987,7 +936,6 @@ public class AssetController {
 
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< revertAssetToVersion()");
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -997,14 +945,13 @@ public class AssetController {
 
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< revertAssetToVersion()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/assets/move", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> moveAsset(Authentication authentication, @RequestBody MoveAssetRequest moveAssetRequest){
-        _logger.debug("moveAsset() >>");
         GenericResponse genericResponse = new GenericResponse();
 
         try{
@@ -1053,7 +1000,7 @@ public class AssetController {
                                         }
                                     }
                                     else{
-                                        throw new Exception("Duplicate asset is null!");
+                                        throw new IllegalArgumentException("Duplicate asset is null!");
                                     }
                                 }
                                 else{
@@ -1073,7 +1020,6 @@ public class AssetController {
 
                     genericResponse.setMessage("Assets were successfully moved to the folder with ID '" + moveAssetRequest.getContainerId()+ "'.");
 
-                    _logger.debug("<< moveAsset()");
                     return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                 }
                 else{
@@ -1082,7 +1028,6 @@ public class AssetController {
 
                     genericResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< moveAsset()");
                     return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -1092,7 +1037,6 @@ public class AssetController {
 
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< moveAsset()");
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -1102,14 +1046,13 @@ public class AssetController {
 
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< moveAsset()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/assets/copy", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> copyAsset(Authentication authentication, HttpSession session, @RequestBody CopyAssetRequest copyAssetRequest){
-        _logger.debug("copyAsset() >>");
         GenericResponse genericResponse = new GenericResponse();
         try{
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
@@ -1167,7 +1110,6 @@ public class AssetController {
                                 }
                                 else{
                                     _logger.warn("There is no asset with ID '" + assetId + "'! Skipping...");
-                                    throw new Exception();
                                 }
                             }
 
@@ -1196,12 +1138,12 @@ public class AssetController {
                             }
                         }
 
-                        genericResponse.setMessage(successfulJobs + " out of" + uploadLists.size() + " asset duplication jobs started successfully. You can follow the progress of the jobs in 'Jobs' section.");
-                        _logger.debug("<< copyAsset()");
+                        genericResponse.setMessage(successfulJobs + " out of " + uploadLists.size() + " asset duplication jobs started successfully. You can follow the progress of the jobs in 'Jobs' section.");
+
                         return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                     }
                     else{
-                        throw new Exception("User is null!");
+                        throw new IllegalArgumentException("User is null!");
                     }
                 }
                 else{
@@ -1210,7 +1152,6 @@ public class AssetController {
 
                     genericResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< copyAsset()");
                     return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -1220,7 +1161,6 @@ public class AssetController {
 
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< copyAsset()");
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -1230,11 +1170,11 @@ public class AssetController {
 
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< copyAsset()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     private boolean isSubscribed(User user, Asset asset){
         List<AssetUser> assetUsersByUserId = assetUserRepository.findAssetUsersByUserId(user.getId());
         for(AssetUser assetUser: assetUsersByUserId){

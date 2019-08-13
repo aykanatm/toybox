@@ -1,5 +1,7 @@
 package com.github.murataykanat.toybox.utilities;
 
+import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
+
 import java.util.Comparator;
 import java.util.List;
 
@@ -18,6 +20,7 @@ public class SortUtils{
         return sortUtils;
     }
 
+    @LogEntryExitExecutionTime
     public  <T> List<T> sortItems(String sortType, List<T> items, Comparator<T> comparing) {
         if(sortType.equalsIgnoreCase("des")){
             items.sort(comparing.reversed());

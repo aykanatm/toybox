@@ -1,6 +1,6 @@
 package com.github.murataykanat.toybox.controllers;
 
-import com.github.murataykanat.toybox.dbo.User;
+import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
@@ -16,20 +16,16 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.cloud.netflix.ribbon.RibbonClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpSession;
-import java.util.ArrayList;
-import java.util.List;
 
 @RibbonClient(name = "toybox-folder-loadbalancer")
 @RestController
@@ -53,10 +49,10 @@ public class FolderLoadbalancerController {
     @Autowired
     private RestTemplate restTemplate;
 
+    @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "createContainerErrorFallback")
     @RequestMapping(value = "/containers", method = RequestMethod.POST)
     public ResponseEntity<GenericResponse> createContainer(Authentication authentication,  HttpSession session, @RequestBody CreateContainerRequest createContainerRequest){
-        _logger.debug("createContainer() >>");
         GenericResponse genericResponse = new GenericResponse();
         try {
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
@@ -65,7 +61,6 @@ public class FolderLoadbalancerController {
                     String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, folderServiceName);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        _logger.debug("<< createContainer()");
                         return restTemplate.exchange(prefix + folderServiceName + "/containers", HttpMethod.POST, new HttpEntity<>(createContainerRequest, headers), GenericResponse.class);
                     }
                     else{
@@ -75,7 +70,6 @@ public class FolderLoadbalancerController {
 
                         genericResponse.setMessage(errorMessage);
 
-                        _logger.debug("<< createContainer()");
                         return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
                     }
                 }
@@ -86,7 +80,6 @@ public class FolderLoadbalancerController {
 
                     genericResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< createContainer()");
                     return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -96,7 +89,6 @@ public class FolderLoadbalancerController {
 
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< createContainer()");
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -111,8 +103,8 @@ public class FolderLoadbalancerController {
         }
     }
 
+    @LogEntryExitExecutionTime
     public ResponseEntity<GenericResponse> createContainerErrorFallback(Authentication authentication, HttpSession session, CreateContainerRequest createContainerRequest, Throwable e){
-        _logger.debug("createContainerErrorFallback() >>");
         GenericResponse genericResponse = new GenericResponse();
 
         if(createContainerRequest != null){
@@ -128,7 +120,6 @@ public class FolderLoadbalancerController {
 
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< createContainerErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         else{
@@ -138,15 +129,14 @@ public class FolderLoadbalancerController {
 
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< createContainerErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
         }
     }
 
+    @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "retrieveContainerContentsErrorFallback")
     @RequestMapping(value = "/containers/{containerId}/search", method = RequestMethod.POST)
     public ResponseEntity<RetrieveContainerContentsResult> retrieveContainerContents(Authentication authentication, HttpSession session, @PathVariable String containerId, @RequestBody AssetSearchRequest assetSearchRequest){
-        _logger.debug("retrieveContainerContents()");
         RetrieveContainerContentsResult retrieveContainerContentsResult = new RetrieveContainerContentsResult();
         try{
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
@@ -156,7 +146,6 @@ public class FolderLoadbalancerController {
                         String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, folderServiceName);
 
                         if(StringUtils.isNotBlank(prefix)){
-                            _logger.debug("<< retrieveContainerContents()");
                             return restTemplate.exchange(prefix + folderServiceName + "/containers/" + containerId + "/search", HttpMethod.POST, new HttpEntity<>(assetSearchRequest, headers), RetrieveContainerContentsResult.class);
                         }
                         else{
@@ -166,7 +155,6 @@ public class FolderLoadbalancerController {
 
                             retrieveContainerContentsResult.setMessage(errorMessage);
 
-                            _logger.debug("<< retrieveContainerContents()");
                             return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.INTERNAL_SERVER_ERROR);
                         }
                     }
@@ -176,7 +164,6 @@ public class FolderLoadbalancerController {
 
                         retrieveContainerContentsResult.setMessage(errorMessage);
 
-                        _logger.debug("<< retrieveContainerContents()");
                         return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.BAD_REQUEST);
                     }
                 }
@@ -186,7 +173,6 @@ public class FolderLoadbalancerController {
 
                     retrieveContainerContentsResult.setMessage(errorMessage);
 
-                    _logger.debug("<< retrieveContainerContents()");
                     return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -196,7 +182,6 @@ public class FolderLoadbalancerController {
 
                 retrieveContainerContentsResult.setMessage(errorMessage);
 
-                _logger.debug("<< retrieveContainerContents()");
                 return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -206,13 +191,12 @@ public class FolderLoadbalancerController {
 
             retrieveContainerContentsResult.setMessage(errorMessage);
 
-            _logger.debug("<< retrieveContainerContents()");
             return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     public ResponseEntity<RetrieveContainerContentsResult> retrieveContainerContentsErrorFallback(Authentication authentication, HttpSession session, @PathVariable String containerId, @RequestBody AssetSearchRequest assetSearchRequest, Throwable e){
-        _logger.debug("retrieveContainerContentsErrorFallback() >>");
         RetrieveContainerContentsResult retrieveContainerContentsResult = new RetrieveContainerContentsResult();
 
         if(StringUtils.isNotBlank(containerId)){
@@ -229,7 +213,6 @@ public class FolderLoadbalancerController {
 
                 retrieveContainerContentsResult.setMessage(errorMessage);
 
-                _logger.debug("<< retrieveContainerContentsErrorFallback()");
                 return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.INTERNAL_SERVER_ERROR);
             }
             else{
@@ -239,7 +222,6 @@ public class FolderLoadbalancerController {
 
                 retrieveContainerContentsResult.setMessage(errorMessage);
 
-                _logger.debug("<< retrieveContainerContentsErrorFallback()");
                 return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.BAD_REQUEST);
             }
         }
@@ -250,15 +232,14 @@ public class FolderLoadbalancerController {
 
             retrieveContainerContentsResult.setMessage(errorMessage);
 
-            _logger.debug("<< retrieveContainerContentsErrorFallback()");
             return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.BAD_REQUEST);
         }
     }
 
+    @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "retrieveContainersErrorFallback")
     @RequestMapping(value = "/containers/search", method = RequestMethod.POST)
     public ResponseEntity<RetrieveContainersResults> retrieveContainers(Authentication authentication, HttpSession session, @RequestBody ContainerSearchRequest containerSearchRequest){
-        _logger.debug("retrieveContainers() >>");
         RetrieveContainersResults retrieveContainersResults = new RetrieveContainersResults();
         try {
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
@@ -267,7 +248,6 @@ public class FolderLoadbalancerController {
                     String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, folderServiceName);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        _logger.debug("<< retrieveContainers()");
                         return restTemplate.exchange(prefix + folderServiceName + "/containers/search", HttpMethod.POST, new HttpEntity<>(containerSearchRequest, headers), RetrieveContainersResults.class);
                     }
                     else{
@@ -277,7 +257,6 @@ public class FolderLoadbalancerController {
 
                         retrieveContainersResults.setMessage(errorMessage);
 
-                        _logger.debug("<< retrieveContainers()");
                         return new ResponseEntity<>(retrieveContainersResults, HttpStatus.INTERNAL_SERVER_ERROR);
                     }
                 }
@@ -288,7 +267,6 @@ public class FolderLoadbalancerController {
 
                     retrieveContainersResults.setMessage(errorMessage);
 
-                    _logger.debug("<< retrieveContainers()");
                     return new ResponseEntity<>(retrieveContainersResults, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -298,7 +276,6 @@ public class FolderLoadbalancerController {
 
                 retrieveContainersResults.setMessage(errorMessage);
 
-                _logger.debug("<< retrieveContainers()");
                 return new ResponseEntity<>(retrieveContainersResults, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -308,13 +285,12 @@ public class FolderLoadbalancerController {
 
             retrieveContainersResults.setMessage(errorMessage);
 
-            _logger.debug("<< retrieveContainers()");
             return new ResponseEntity<>(retrieveContainersResults, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     public ResponseEntity<RetrieveContainersResults> retrieveContainersErrorFallback(Authentication authentication, HttpSession session, ContainerSearchRequest containerSearchRequest, Throwable e){
-        _logger.debug("retrieveContainersErrorFallback() >>");
         RetrieveContainersResults retrieveContainersResults = new RetrieveContainersResults();
 
         if(containerSearchRequest != null){
@@ -330,7 +306,6 @@ public class FolderLoadbalancerController {
 
             retrieveContainersResults.setMessage(errorMessage);
 
-            _logger.debug("<< retrieveContainersErrorFallback()");
             return new ResponseEntity<>(retrieveContainersResults, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         else{
@@ -340,7 +315,6 @@ public class FolderLoadbalancerController {
 
             retrieveContainersResults.setMessage(errorMessage);
 
-            _logger.debug("<< retrieveContainersErrorFallback()");
             return new ResponseEntity<>(retrieveContainersResults, HttpStatus.BAD_REQUEST);
         }
     }

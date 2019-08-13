@@ -1,6 +1,6 @@
 package com.github.murataykanat.toybox.controllers;
 
-import com.github.murataykanat.toybox.dbo.User;
+import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.asset.*;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
@@ -16,7 +16,6 @@ import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.cloud.netflix.ribbon.RibbonClient;
@@ -24,7 +23,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.Resource;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
@@ -61,10 +59,10 @@ public class AssetLoadbalancerController {
     @Autowired
     private RestTemplate restTemplate;
 
+    @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "downloadAssetsErrorFallback")
     @RequestMapping(value = "/assets/download", method = RequestMethod.POST, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> downloadAssets(Authentication authentication, HttpSession session, @RequestBody SelectedAssets selectedAssets){
-        _logger.debug("downloadAssets() >>");
         try {
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(selectedAssets != null){
@@ -76,7 +74,6 @@ public class AssetLoadbalancerController {
                         return restTemplate.exchange(prefix + assetServiceName + "/assets/download", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), Resource.class);
                     }
                     else{
-                        _logger.debug("<< downloadAssets()");
                         return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
                     }
                 }
@@ -84,7 +81,6 @@ public class AssetLoadbalancerController {
                     String errorMessage = "Selected assets are null!";
                     _logger.error(errorMessage);
 
-                    _logger.debug("<< downloadAssets()");
                     return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
                 }
             }
@@ -92,7 +88,6 @@ public class AssetLoadbalancerController {
                 String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
-                _logger.debug("<< downloadAssets()");
                 return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
             }
         }
@@ -100,14 +95,12 @@ public class AssetLoadbalancerController {
             String errorMessage = "An error occurred while downloading the assets. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
-            _logger.debug("<< downloadAssets()");
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     public ResponseEntity<Resource> downloadAssetsErrorFallback(Authentication authentication, HttpSession session, SelectedAssets selectedAssets, Throwable e){
-        _logger.debug("downloadAssetsErrorFallback() >>");
-
         if(selectedAssets != null){
             String errorMessage;
             if(e.getLocalizedMessage() != null){
@@ -119,23 +112,21 @@ public class AssetLoadbalancerController {
 
             _logger.error(errorMessage, e);
 
-            _logger.debug("<< downloadAssetsErrorFallback()");
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
         else{
             String errorMessage = "Selected assets are null!";
             _logger.error(errorMessage);
 
-            _logger.debug("<< downloadAssetsErrorFallback()");
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
     }
 
     // The name "upload" must match the "name" attribute of the input in UI
+    @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "uploadAssetsErrorFallback")
     @RequestMapping(value = "/assets/upload", method = RequestMethod.POST)
     public ResponseEntity<GenericResponse> uploadAssets(Authentication authentication, HttpSession session, @RequestHeader(value="container-id") String containerId, @RequestParam("upload") MultipartFile[] files) {
-        _logger.debug("uploadAssets() >>");
         String tempFolderName = Long.toString(System.currentTimeMillis());
         String tempImportStagingPath = importStagingPath + File.separator + tempFolderName;
         _logger.debug("Import staging path: " + tempImportStagingPath);
@@ -178,7 +169,6 @@ public class AssetLoadbalancerController {
                         uploadFileLst.setUploadFiles(uploadFiles);
                         uploadFileLst.setMessage("Files uploaded successfully!");
 
-                        _logger.debug("<< uploadAssets()");
                         return restTemplate.exchange(prefix + assetServiceName + "/assets/upload", HttpMethod.POST, new HttpEntity<>(uploadFileLst, headers), GenericResponse.class);
                     }
                     else{
@@ -187,7 +177,6 @@ public class AssetLoadbalancerController {
 
                         genericResponse.setMessage(errorMessage);
 
-                        _logger.debug("<< uploadAssets()");
                         return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
                     }
                 }
@@ -198,7 +187,6 @@ public class AssetLoadbalancerController {
 
                     genericResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< uploadAssets()");
                     return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -208,7 +196,6 @@ public class AssetLoadbalancerController {
 
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< uploadAssets()");
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -229,13 +216,12 @@ public class AssetLoadbalancerController {
 
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< uploadAssets()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     public ResponseEntity<GenericResponse> uploadAssetsErrorFallback(Authentication authentication, HttpSession session, String containerId, MultipartFile[] files, Throwable e){
-        _logger.debug("uploadAssetsErrorFallback() >>");
         GenericResponse genericResponse = new GenericResponse();
 
         if(files != null){
@@ -249,10 +235,8 @@ public class AssetLoadbalancerController {
 
             _logger.error(errorMessage, e);
 
-
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< uploadAssetsErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         else{
@@ -262,15 +246,14 @@ public class AssetLoadbalancerController {
 
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< uploadAssetsErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
         }
     }
 
+    @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "retrieveAssetsErrorFallback")
     @RequestMapping(value = "/assets/search", method = RequestMethod.POST)
     public ResponseEntity<RetrieveAssetsResults> retrieveAssets(Authentication authentication, HttpSession session, @RequestBody AssetSearchRequest assetSearchRequest){
-        _logger.debug("retrieveAssets() >>");
         try{
             RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
 
@@ -290,7 +273,6 @@ public class AssetLoadbalancerController {
 
                         retrieveAssetsResults.setMessage(errorMessage);
 
-                        _logger.debug("<< retrieveAssets()");
                         return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.INTERNAL_SERVER_ERROR);
                     }
                 }
@@ -301,7 +283,6 @@ public class AssetLoadbalancerController {
 
                     retrieveAssetsResults.setMessage(errorMessage);
 
-                    _logger.debug("<< retrieveAssets()");
                     return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -311,7 +292,6 @@ public class AssetLoadbalancerController {
 
                 retrieveAssetsResults.setMessage(errorMessage);
 
-                _logger.debug("<< retrieveAssets()");
                 return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -322,14 +302,12 @@ public class AssetLoadbalancerController {
             RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
             retrieveAssetsResults.setMessage(errorMessage);
 
-            _logger.debug("<< retrieveAssets()");
             return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     public ResponseEntity<RetrieveAssetsResults> retrieveAssetsErrorFallback(Authentication authentication, HttpSession session, AssetSearchRequest assetSearchRequest, Throwable e){
-        _logger.debug("retrieveAssetsErrorFallback() >>");
-
         if(assetSearchRequest != null){
             String errorMessage;
             if(e.getLocalizedMessage() != null){
@@ -344,7 +322,6 @@ public class AssetLoadbalancerController {
             RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
             retrieveAssetsResults.setMessage(errorMessage);
 
-            _logger.debug("<< retrieveAssetsErrorFallback()");
             return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         else{
@@ -355,15 +332,14 @@ public class AssetLoadbalancerController {
             RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
             retrieveAssetsResults.setMessage(errorMessage);
 
-            _logger.debug("<< retrieveAssetsErrorFallback()");
             return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.BAD_REQUEST);
         }
     }
 
+    @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "deleteAssetsErrorFallback")
     @RequestMapping(value = "/assets/delete", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> deleteAssets(Authentication authentication, HttpSession session, @RequestBody SelectedAssets selectedAssets){
-        _logger.debug("deleteAssets() >>");
         try {
             GenericResponse genericResponse = new GenericResponse();
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
@@ -372,7 +348,6 @@ public class AssetLoadbalancerController {
                     String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, assetServiceName);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        _logger.debug("<< deleteAssets()");
                         return restTemplate.exchange(prefix + assetServiceName + "/assets/delete", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
                     }
                     else{
@@ -381,7 +356,6 @@ public class AssetLoadbalancerController {
 
                         genericResponse.setMessage(errorMessage);
 
-                        _logger.debug("<< deleteAssets()");
                         return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
                     }
                 }
@@ -392,7 +366,6 @@ public class AssetLoadbalancerController {
 
                     genericResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< deleteAssets()");
                     return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -402,7 +375,6 @@ public class AssetLoadbalancerController {
 
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< deleteAssets()");
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -413,14 +385,12 @@ public class AssetLoadbalancerController {
             GenericResponse genericResponse = new GenericResponse();
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< deleteAssets()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     public ResponseEntity<GenericResponse> deleteAssetsErrorFallback(Authentication authentication, HttpSession session, SelectedAssets selectedAssets, Throwable e){
-        _logger.debug("deleteAssetsErrorFallback() >>");
-
         if(selectedAssets != null){
             String errorMessage;
             if(e.getLocalizedMessage() != null){
@@ -435,7 +405,6 @@ public class AssetLoadbalancerController {
             GenericResponse genericResponse = new GenericResponse();
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< deleteAssetsErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         else{
@@ -446,15 +415,14 @@ public class AssetLoadbalancerController {
             GenericResponse genericResponse = new GenericResponse();
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< deleteAssetsErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
         }
     }
 
+    @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "subscribeToAssetsErrorFallback")
     @RequestMapping(value = "/assets/subscribe", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> subscribeToAssets(HttpSession session, Authentication authentication, @RequestBody SelectedAssets selectedAssets){
-        _logger.debug("subscribeToAssets() >>");
         try{
             GenericResponse genericResponse = new GenericResponse();
 
@@ -464,7 +432,6 @@ public class AssetLoadbalancerController {
                     String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, assetServiceName);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        _logger.debug("<< subscribeToAssets()");
                         return restTemplate.exchange(prefix + assetServiceName + "/assets/subscribe", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
                     }
                     else{
@@ -473,7 +440,6 @@ public class AssetLoadbalancerController {
 
                         genericResponse.setMessage(errorMessage);
 
-                        _logger.debug("<< subscribeToAssets()");
                         return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
                     }
                 }
@@ -484,7 +450,6 @@ public class AssetLoadbalancerController {
 
                     genericResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< subscribeToAssets()");
                     return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -494,7 +459,6 @@ public class AssetLoadbalancerController {
 
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< subscribeToAssets()");
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -505,14 +469,12 @@ public class AssetLoadbalancerController {
             GenericResponse genericResponse = new GenericResponse();
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< subscribeToAssets()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     public ResponseEntity<GenericResponse> subscribeToAssetsErrorFallback(HttpSession session, Authentication authentication, SelectedAssets selectedAssets, Throwable e){
-        _logger.debug("subscribeToAssetsErrorFallback() >>");
-
         if(selectedAssets != null){
             String errorMessage;
             if(e.getLocalizedMessage() != null){
@@ -527,7 +489,6 @@ public class AssetLoadbalancerController {
             GenericResponse genericResponse = new GenericResponse();
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< subscribeToAssetsErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         else{
@@ -538,15 +499,14 @@ public class AssetLoadbalancerController {
             GenericResponse genericResponse = new GenericResponse();
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< subscribeToAssetsErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
         }
     }
 
+    @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "unsubscribeFromAssetsErrorFallback")
     @RequestMapping(value = "/assets/unsubscribe", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> unsubscribeFromAssets(HttpSession session, Authentication authentication, @RequestBody SelectedAssets selectedAssets){
-        _logger.debug("unsubscribeFromAssets() >>");
         try {
             GenericResponse genericResponse = new GenericResponse();
 
@@ -556,7 +516,6 @@ public class AssetLoadbalancerController {
                     String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, assetServiceName);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        _logger.debug("<< unsubscribeFromAssets()");
                         return restTemplate.exchange(prefix + assetServiceName + "/assets/unsubscribe", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
                     }
                     else{
@@ -565,7 +524,6 @@ public class AssetLoadbalancerController {
 
                         genericResponse.setMessage(errorMessage);
 
-                        _logger.debug("<< unsubscribeFromAssets()");
                         return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
                     }
                 }
@@ -573,10 +531,8 @@ public class AssetLoadbalancerController {
                     String errorMessage = "Selected assets are null!";
                     _logger.error(errorMessage);
 
-
                     genericResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< unsubscribeFromAssets()");
                     return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -586,7 +542,6 @@ public class AssetLoadbalancerController {
 
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< unsubscribeFromAssets()");
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -597,14 +552,12 @@ public class AssetLoadbalancerController {
             GenericResponse genericResponse = new GenericResponse();
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< unsubscribeFromAssets()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     public ResponseEntity<GenericResponse> unsubscribeFromAssetsErrorFallback(HttpSession session, Authentication authentication, SelectedAssets selectedAssets, Throwable e){
-        _logger.debug("unsubscribeFromAssetsErrorFallback() >>");
-
         if(selectedAssets != null){
             String errorMessage;
             if(e.getLocalizedMessage() != null){
@@ -619,7 +572,6 @@ public class AssetLoadbalancerController {
             GenericResponse genericResponse = new GenericResponse();
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< unsubscribeFromAssetsErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         else{
@@ -630,15 +582,14 @@ public class AssetLoadbalancerController {
             GenericResponse genericResponse = new GenericResponse();
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< unsubscribeFromAssetsErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
         }
     }
 
+    @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "updateAssetErrorFallback")
     @RequestMapping(value = "/assets/{assetId}", method = RequestMethod.PATCH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> updateAsset(Authentication authentication, HttpSession session, @RequestBody UpdateAssetRequest updateAssetRequest, @PathVariable String assetId){
-        _logger.error("updateAsset()");
         GenericResponse genericResponse = new GenericResponse();
 
         try{
@@ -649,7 +600,6 @@ public class AssetLoadbalancerController {
                         String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, assetServiceName);
 
                         if(StringUtils.isNotBlank(prefix)){
-                            _logger.debug("<< updateAsset()");
                             return restTemplate.exchange(prefix + assetServiceName + "/assets/" + assetId, HttpMethod.PATCH, new HttpEntity<>(updateAssetRequest, headers), GenericResponse.class);
                         }
                         else{
@@ -658,7 +608,6 @@ public class AssetLoadbalancerController {
 
                             genericResponse.setMessage(errorMessage);
 
-                            _logger.debug("<< updateAsset()");
                             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
                         }
                     }
@@ -669,7 +618,6 @@ public class AssetLoadbalancerController {
 
                         genericResponse.setMessage(errorMessage);
 
-                        _logger.debug("<< updateAsset()");
                         return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                     }
                 }
@@ -680,7 +628,6 @@ public class AssetLoadbalancerController {
 
                     genericResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< updateAsset()");
                     return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -690,7 +637,6 @@ public class AssetLoadbalancerController {
 
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< updateAsset()");
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -700,14 +646,12 @@ public class AssetLoadbalancerController {
 
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< updateAsset()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     public ResponseEntity<GenericResponse> updateAssetErrorFallback(Authentication authentication, HttpSession session, UpdateAssetRequest updateAssetRequest, String assetId, Throwable e){
-        _logger.debug("updateAssetErrorFallback() >>");
-
         if(updateAssetRequest != null){
             if(StringUtils.isNotBlank(assetId)){
                 String errorMessage;
@@ -723,7 +667,6 @@ public class AssetLoadbalancerController {
                 GenericResponse genericResponse = new GenericResponse();
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< updateAssetErrorFallback()");
                 return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
             }
             else{
@@ -734,7 +677,6 @@ public class AssetLoadbalancerController {
                 GenericResponse genericResponse = new GenericResponse();
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< updateAssetErrorFallback()");
                 return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
             }
         }
@@ -746,15 +688,14 @@ public class AssetLoadbalancerController {
             GenericResponse genericResponse = new GenericResponse();
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< updateAssetErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
         }
     }
 
+    @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "getVersionHistoryErrorFallback")
     @RequestMapping(value = "/assets/{assetId}/versions", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<AssetVersionResponse> getVersionHistory(Authentication authentication, HttpSession session, @PathVariable String assetId){
-        _logger.debug("getVersionHistory() >>");
         AssetVersionResponse assetVersionResponse = new AssetVersionResponse();
 
         try {
@@ -764,7 +705,6 @@ public class AssetLoadbalancerController {
                     String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, assetServiceName);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        _logger.debug("<< updateAsset()");
                         return restTemplate.exchange(prefix + assetServiceName + "/assets/" + assetId + "/versions", HttpMethod.GET, new HttpEntity<>(headers), AssetVersionResponse.class);
                     }
                     else{
@@ -773,7 +713,6 @@ public class AssetLoadbalancerController {
 
                         assetVersionResponse.setMessage(errorMessage);
 
-                        _logger.debug("<< getVersionHistory()");
                         return new ResponseEntity<>(assetVersionResponse, HttpStatus.INTERNAL_SERVER_ERROR);
                     }
                 }
@@ -783,7 +722,6 @@ public class AssetLoadbalancerController {
 
                     assetVersionResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< getVersionHistory()");
                     return new ResponseEntity<>(assetVersionResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -793,7 +731,6 @@ public class AssetLoadbalancerController {
 
                 assetVersionResponse.setMessage(errorMessage);
 
-                _logger.debug("<< updateAssets()");
                 return new ResponseEntity<>(assetVersionResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -803,14 +740,12 @@ public class AssetLoadbalancerController {
 
             assetVersionResponse.setMessage(errorMessage);
 
-            _logger.debug("<< getVersionHistory()");
             return new ResponseEntity<>(assetVersionResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     public ResponseEntity<AssetVersionResponse> getVersionHistoryErrorFallback(Authentication authentication, HttpSession session, String assetId, Throwable e){
-        _logger.debug("getVersionHistoryErrorFallback() >>");
-
         AssetVersionResponse assetVersionResponse = new AssetVersionResponse();
         if(StringUtils.isNotBlank(assetId)){
             String errorMessage;
@@ -825,7 +760,6 @@ public class AssetLoadbalancerController {
 
             assetVersionResponse.setMessage(errorMessage);
 
-            _logger.debug("<< getVersionHistoryErrorFallback()");
             return new ResponseEntity<>(assetVersionResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         else{
@@ -835,15 +769,14 @@ public class AssetLoadbalancerController {
 
             assetVersionResponse.setMessage(errorMessage);
 
-            _logger.debug("<< getVersionHistoryErrorFallback()");
             return new ResponseEntity<>(assetVersionResponse, HttpStatus.BAD_REQUEST);
         }
     }
 
+    @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "revertAssetToVersionErrorFallback")
     @RequestMapping(value = "/assets/{assetId}/revert", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> revertAssetToVersion(Authentication authentication, HttpSession session, @PathVariable String assetId, @RequestBody RevertAssetVersionRequest revertAssetVersionRequest){
-        _logger.debug("revertAssetToVersion() >>");
         GenericResponse genericResponse = new GenericResponse();
 
         try{
@@ -853,7 +786,6 @@ public class AssetLoadbalancerController {
                         HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
                         String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, assetServiceName);
                         if(StringUtils.isNotBlank(prefix)){
-                            _logger.debug("<< revertAssetToVersion()");
                             return restTemplate.exchange(prefix + assetServiceName + "/assets/" + assetId + "/revert", HttpMethod.POST, new HttpEntity<>(revertAssetVersionRequest, headers), GenericResponse.class);
                         }
                         else{
@@ -862,7 +794,6 @@ public class AssetLoadbalancerController {
 
                             genericResponse.setMessage(errorMessage);
 
-                            _logger.debug("<< revertAssetToVersion()");
                             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
                         }
                     }
@@ -872,7 +803,6 @@ public class AssetLoadbalancerController {
 
                         genericResponse.setMessage(errorMessage);
 
-                        _logger.debug("<< revertAssetToVersion()");
                         return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                     }
                 }
@@ -882,7 +812,6 @@ public class AssetLoadbalancerController {
 
                     genericResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< revertAssetToVersion()");
                     return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -892,7 +821,6 @@ public class AssetLoadbalancerController {
 
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< revertAssetToVersion()");
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -910,14 +838,12 @@ public class AssetLoadbalancerController {
 
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< revertAssetToVersion()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     public ResponseEntity<GenericResponse> revertAssetToVersionErrorFallback(Authentication authentication, HttpSession session, String assetId, RevertAssetVersionRequest revertAssetVersionRequest, Throwable e){
-        _logger.debug("revertAssetToVersionErrorFallback() >>");
-
         GenericResponse genericResponse = new GenericResponse();
         if(StringUtils.isNotBlank(assetId)){
             if(revertAssetVersionRequest != null){
@@ -933,7 +859,6 @@ public class AssetLoadbalancerController {
 
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< revertAssetToVersionErrorFallback()");
                 return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
             }
             else{
@@ -942,7 +867,6 @@ public class AssetLoadbalancerController {
 
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< revertAssetToVersionErrorFallback()");
                 return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
             }
         }
@@ -953,16 +877,14 @@ public class AssetLoadbalancerController {
 
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< revertAssetToVersionErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
         }
     }
 
+    @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "moveAssetErrorFallback")
     @RequestMapping(value = "/assets/move", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> moveAsset(Authentication authentication, HttpSession session, @RequestBody MoveAssetRequest moveAssetRequest){
-        _logger.debug("moveAsset() >>");
-
         GenericResponse genericResponse = new GenericResponse();
         try{
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
@@ -970,7 +892,6 @@ public class AssetLoadbalancerController {
                     HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
                     String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, assetServiceName);
                     if(StringUtils.isNotBlank(prefix)){
-                        _logger.debug("<< moveAsset()");
                         return restTemplate.exchange(prefix + assetServiceName + "/assets/move", HttpMethod.POST, new HttpEntity<>(moveAssetRequest, headers), GenericResponse.class);
                     }
                     else{
@@ -979,7 +900,6 @@ public class AssetLoadbalancerController {
 
                         genericResponse.setMessage(errorMessage);
 
-                        _logger.debug("<< moveAsset()");
                         return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
                     }
                 }
@@ -989,7 +909,6 @@ public class AssetLoadbalancerController {
 
                     genericResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< moveAsset()");
                     return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -999,7 +918,6 @@ public class AssetLoadbalancerController {
 
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< moveAsset()");
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -1009,14 +927,12 @@ public class AssetLoadbalancerController {
 
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< moveAsset()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     public ResponseEntity<GenericResponse> moveAssetErrorFallback(Authentication authentication, HttpSession session, MoveAssetRequest moveAssetRequest, Throwable e){
-        _logger.debug("moveAssetErrorFallback() >>");
-
         GenericResponse genericResponse = new GenericResponse();
 
         if(moveAssetRequest != null){
@@ -1032,7 +948,6 @@ public class AssetLoadbalancerController {
 
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< moveAssetErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         else{
@@ -1041,15 +956,14 @@ public class AssetLoadbalancerController {
 
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< moveAssetErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
         }
     }
 
+    @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "copyAssetErrorFallback")
     @RequestMapping(value = "/assets/copy", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> copyAsset(Authentication authentication, HttpSession session, @RequestBody CopyAssetRequest copyAssetRequest){
-        _logger.debug("copyAsset() >>");
         GenericResponse genericResponse = new GenericResponse();
 
         try{
@@ -1058,7 +972,6 @@ public class AssetLoadbalancerController {
                     HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
                     String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, assetServiceName);
                     if(StringUtils.isNotBlank(prefix)){
-                        _logger.debug("<< copyAsset()");
                         return restTemplate.exchange(prefix + assetServiceName + "/assets/copy", HttpMethod.POST, new HttpEntity<>(copyAssetRequest, headers), GenericResponse.class);
                     }
                     else{
@@ -1067,7 +980,6 @@ public class AssetLoadbalancerController {
 
                         genericResponse.setMessage(errorMessage);
 
-                        _logger.debug("<< copyAsset()");
                         return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
                     }
                 }
@@ -1077,7 +989,6 @@ public class AssetLoadbalancerController {
 
                     genericResponse.setMessage(errorMessage);
 
-                    _logger.debug("<< moveAsset()");
                     return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                 }
             }
@@ -1087,7 +998,6 @@ public class AssetLoadbalancerController {
 
                 genericResponse.setMessage(errorMessage);
 
-                _logger.debug("<< copyAsset()");
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
@@ -1097,14 +1007,12 @@ public class AssetLoadbalancerController {
 
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< copyAsset()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @LogEntryExitExecutionTime
     public ResponseEntity<GenericResponse> copyAssetErrorFallback(Authentication authentication, HttpSession session, CopyAssetRequest copyAssetRequest, Throwable e){
-        _logger.debug("copyAssetErrorFallback() >>");
-
         GenericResponse genericResponse = new GenericResponse();
 
         if(copyAssetRequest != null){
@@ -1120,7 +1028,6 @@ public class AssetLoadbalancerController {
 
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< copyAssetErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         else{
@@ -1129,7 +1036,6 @@ public class AssetLoadbalancerController {
 
             genericResponse.setMessage(errorMessage);
 
-            _logger.debug("<< copyAssetErrorFallback()");
             return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
         }
     }
