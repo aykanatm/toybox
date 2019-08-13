@@ -6,7 +6,7 @@ import com.github.murataykanat.toybox.dbo.ExternalShare;
 import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.ExternalSharesRepository;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
-import com.github.murataykanat.toybox.schema.asset.SelectedAssets;
+import com.github.murataykanat.toybox.schema.selection.SelectionContext;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
 import com.github.murataykanat.toybox.schema.share.ExternalShareRequest;
@@ -33,7 +33,6 @@ import javax.servlet.http.HttpSession;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InvalidObjectException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -163,14 +162,14 @@ public class ShareController {
                             RestTemplate restTemplate = new RestTemplate();
                             HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
 
-                            SelectedAssets selectedAssets = new SelectedAssets();
-                            selectedAssets.setSelectedAssets(externalShareRequest.getSelectedAssets());
+                            SelectionContext selectionContext = new SelectionContext();
+                            selectionContext.setSelectedAssets(externalShareRequest.getSelectedAssets());
 
-                            HttpEntity<SelectedAssets> selectedAssetsEntity = new HttpEntity<>(selectedAssets, headers);
+                            HttpEntity<SelectionContext> selectionContextEntity = new HttpEntity<>(selectionContext, headers);
                             String jobServiceUrl = LoadbalancerUtils.getInstance().getLoadbalancerUrl(discoveryClient, jobServiceLoadBalancerServiceName);
                             String shareServiceUrl = LoadbalancerUtils.getInstance().getLoadbalancerUrl(discoveryClient, shareServiceLoadBalancerServiceName);
 
-                            ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/package", selectedAssetsEntity, JobResponse.class);
+                            ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/package", selectionContextEntity, JobResponse.class);
                             if(jobResponseResponseEntity != null){
                                 JobResponse jobResponse = jobResponseResponseEntity.getBody();
                                 if(jobResponse != null){

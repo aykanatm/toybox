@@ -15,6 +15,7 @@ import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
+import com.github.murataykanat.toybox.schema.selection.SelectionContext;
 import com.github.murataykanat.toybox.schema.upload.UploadFile;
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
 import com.github.murataykanat.toybox.utilities.*;
@@ -70,11 +71,11 @@ public class AssetController {
 
     @LogEntryExitExecutionTime
     @RequestMapping(value = "/assets/download", method = RequestMethod.POST, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public ResponseEntity<Resource> downloadAssets(Authentication authentication, HttpSession session, @RequestBody SelectedAssets selectedAssets){
+    public ResponseEntity<Resource> downloadAssets(Authentication authentication, HttpSession session, @RequestBody SelectionContext selectionContext){
         try{
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
-                if(selectedAssets != null){
-                    List<Asset> assets = selectedAssets.getSelectedAssets();
+                if(selectionContext != null){
+                    List<Asset> assets = selectionContext.getSelectedAssets();
                     if(assets != null){
                         if(!assets.isEmpty()){
                             if(assets.size() == 1) {
@@ -113,7 +114,7 @@ public class AssetController {
                                 RestTemplate restTemplate = new RestTemplate();
                                 HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
 
-                                HttpEntity<SelectedAssets> selectedAssetsEntity = new HttpEntity<>(selectedAssets, headers);
+                                HttpEntity<SelectionContext> selectedAssetsEntity = new HttpEntity<>(selectionContext, headers);
 
                                 List<ServiceInstance> instances = discoveryClient.getInstances(jobServiceLoadBalancerServiceName);
                                 if(!instances.isEmpty()){
@@ -405,17 +406,17 @@ public class AssetController {
 
     @LogEntryExitExecutionTime
     @RequestMapping(value = "/assets/delete", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<GenericResponse> deleteAssets(Authentication authentication, HttpSession session, @RequestBody SelectedAssets selectedAssets){
+    public ResponseEntity<GenericResponse> deleteAssets(Authentication authentication, HttpSession session, @RequestBody SelectionContext selectionContext){
         GenericResponse genericResponse = new GenericResponse();
         try{
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
-                if(selectedAssets != null){
+                if(selectionContext != null){
                     User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
                     if(user != null){
-                        if(!selectedAssets.getSelectedAssets().isEmpty()){
+                        if(!selectionContext.getSelectedAssets().isEmpty()){
                             List<Asset> assetsAndVersions = new ArrayList<>();
 
-                            for(Asset selectedAsset: selectedAssets.getSelectedAssets()){
+                            for(Asset selectedAsset: selectionContext.getSelectedAssets()){
                                 List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(selectedAsset.getOriginalAssetId());
                                 assetsAndVersions.addAll(assetsByOriginalAssetId);
                             }
@@ -423,7 +424,7 @@ public class AssetController {
                             if(!assetsAndVersions.isEmpty()){
                                 assetsRepository.deleteAssetById("Y",assetsAndVersions.stream().map(a -> a.getId()).collect(Collectors.toList()));
 
-                                for(Asset asset: selectedAssets.getSelectedAssets()){
+                                for(Asset asset: selectionContext.getSelectedAssets()){
                                     // Send notification
                                     String message = "Asset '" + asset.getName() + "' is deleted by '" + user.getUsername() + "'";
                                     SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
@@ -449,7 +450,7 @@ public class AssetController {
                                     }
                                 }
 
-                                genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " asset(s) deleted successfully.");
+                                genericResponse.setMessage(selectionContext.getSelectedAssets().size() + " asset(s) deleted successfully.");
 
                                 return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                             }
@@ -500,16 +501,16 @@ public class AssetController {
 
     @LogEntryExitExecutionTime
     @RequestMapping(value = "/assets/subscribe", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<GenericResponse> subscribeToAssets(Authentication authentication, @RequestBody SelectedAssets selectedAssets){
+    public ResponseEntity<GenericResponse> subscribeToAssets(Authentication authentication, @RequestBody SelectionContext selectionContext){
         GenericResponse genericResponse = new GenericResponse();
         try{
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
-                if(selectedAssets != null){
-                    if(!selectedAssets.getSelectedAssets().isEmpty()){
+                if(selectionContext != null){
+                    if(!selectionContext.getSelectedAssets().isEmpty()){
                         User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
                         if(user != null){
                             int assetCount = 0;
-                            for(Asset selectedAsset: selectedAssets.getSelectedAssets()){
+                            for(Asset selectedAsset: selectionContext.getSelectedAssets()){
                                 if(!isSubscribed(user, selectedAsset)){
                                     List<Asset> assetsByOriginalAssetId = assetsRepository.getAssetsByOriginalAssetId(selectedAsset.getOriginalAssetId());
                                     assetsByOriginalAssetId.forEach(asset -> assetUserRepository.insertSubscriber(asset.getId(), user.getId()));
@@ -518,11 +519,11 @@ public class AssetController {
                             }
 
                             if(assetCount > 0){
-                                if(assetCount == selectedAssets.getSelectedAssets().size()){
+                                if(assetCount == selectionContext.getSelectedAssets().size()){
                                     genericResponse.setMessage(assetCount + " asset(s) were subscribed successfully.");
                                 }
                                 else{
-                                    genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " out of " + assetCount + " asset(s) were subscribed successfully. The rest of the assets were already subscribed.");
+                                    genericResponse.setMessage(selectionContext.getSelectedAssets().size() + " out of " + assetCount + " asset(s) were subscribed successfully. The rest of the assets were already subscribed.");
                                 }
 
                                 return new ResponseEntity<>(genericResponse, HttpStatus.OK);
@@ -576,16 +577,16 @@ public class AssetController {
 
     @LogEntryExitExecutionTime
     @RequestMapping(value = "/assets/unsubscribe", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<GenericResponse> unsubscribeFromAssets(Authentication authentication, @RequestBody SelectedAssets selectedAssets){
+    public ResponseEntity<GenericResponse> unsubscribeFromAssets(Authentication authentication, @RequestBody SelectionContext selectionContext){
         GenericResponse genericResponse = new GenericResponse();
         try{
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
-                if(selectedAssets != null){
-                    if(!selectedAssets.getSelectedAssets().isEmpty()){
+                if(selectionContext != null){
+                    if(!selectionContext.getSelectedAssets().isEmpty()){
                         User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
                         if(user != null){
                             int assetCount = 0;
-                            for(Asset selectedAsset: selectedAssets.getSelectedAssets()){
+                            for(Asset selectedAsset: selectionContext.getSelectedAssets()){
                                 if(isSubscribed(user, selectedAsset)){
                                     List<Asset> assetsByOriginalAssetId = assetsRepository.getAssetsByOriginalAssetId(selectedAsset.getOriginalAssetId());
                                     assetsByOriginalAssetId.forEach(asset -> assetUserRepository.deleteSubscriber(asset.getId(), user.getId()));
@@ -594,11 +595,11 @@ public class AssetController {
                             }
 
                             if(assetCount > 0){
-                                if(assetCount == selectedAssets.getSelectedAssets().size()){
+                                if(assetCount == selectionContext.getSelectedAssets().size()){
                                     genericResponse.setMessage(assetCount + " asset(s) were unsubscribed successfully.");
                                 }
                                 else{
-                                    genericResponse.setMessage(selectedAssets.getSelectedAssets().size() + " out of " + assetCount + " asset(s) were unsubscribed successfully. The rest of the assets were already subscribed.");
+                                    genericResponse.setMessage(selectionContext.getSelectedAssets().size() + " out of " + assetCount + " asset(s) were unsubscribed successfully. The rest of the assets were already subscribed.");
                                 }
 
                                 return new ResponseEntity<>(genericResponse, HttpStatus.OK);
@@ -862,13 +863,13 @@ public class AssetController {
                                     if(!assetsToDelete.isEmpty()){
                                         assetsRepository.updateAssetsLatestVersion("N", assetsToDelete.stream().map(a -> a.getId()).collect(Collectors.toList()));
 
-                                        SelectedAssets selectedAssets = new SelectedAssets();
-                                        selectedAssets.setSelectedAssets(assetsToDelete);
+                                        SelectionContext selectionContext = new SelectionContext();
+                                        selectionContext.setSelectedAssets(assetsToDelete);
 
                                         RestTemplate restTemplate = new RestTemplate();
 
                                         HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                                        HttpEntity<SelectedAssets> selectedAssetsEntity = new HttpEntity<>(selectedAssets, headers);
+                                        HttpEntity<SelectionContext> selectedAssetsEntity = new HttpEntity<>(selectionContext, headers);
 
                                         List<ServiceInstance> instances = discoveryClient.getInstances(assetServiceLoadBalancerServiceName);
 

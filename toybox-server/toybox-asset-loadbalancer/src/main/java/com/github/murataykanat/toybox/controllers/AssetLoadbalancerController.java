@@ -4,6 +4,7 @@ import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.asset.*;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
+import com.github.murataykanat.toybox.schema.selection.SelectionContext;
 import com.github.murataykanat.toybox.schema.upload.UploadFile;
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
@@ -62,16 +63,16 @@ public class AssetLoadbalancerController {
     @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "downloadAssetsErrorFallback")
     @RequestMapping(value = "/assets/download", method = RequestMethod.POST, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public ResponseEntity<Resource> downloadAssets(Authentication authentication, HttpSession session, @RequestBody SelectedAssets selectedAssets){
+    public ResponseEntity<Resource> downloadAssets(Authentication authentication, HttpSession session, @RequestBody SelectionContext selectionContext){
         try {
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
-                if(selectedAssets != null){
+                if(selectionContext != null){
                     HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
                     String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, assetServiceName);
 
                     if(StringUtils.isNotBlank(prefix)){
                         _logger.debug("<< downloadAssets()");
-                        return restTemplate.exchange(prefix + assetServiceName + "/assets/download", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), Resource.class);
+                        return restTemplate.exchange(prefix + assetServiceName + "/assets/download", HttpMethod.POST, new HttpEntity<>(selectionContext, headers), Resource.class);
                     }
                     else{
                         return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -100,8 +101,8 @@ public class AssetLoadbalancerController {
     }
 
     @LogEntryExitExecutionTime
-    public ResponseEntity<Resource> downloadAssetsErrorFallback(Authentication authentication, HttpSession session, SelectedAssets selectedAssets, Throwable e){
-        if(selectedAssets != null){
+    public ResponseEntity<Resource> downloadAssetsErrorFallback(Authentication authentication, HttpSession session, SelectionContext selectionContext, Throwable e){
+        if(selectionContext != null){
             String errorMessage;
             if(e.getLocalizedMessage() != null){
                 errorMessage = "Unable download selected assets. " + e.getLocalizedMessage();
@@ -339,16 +340,16 @@ public class AssetLoadbalancerController {
     @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "deleteAssetsErrorFallback")
     @RequestMapping(value = "/assets/delete", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<GenericResponse> deleteAssets(Authentication authentication, HttpSession session, @RequestBody SelectedAssets selectedAssets){
+    public ResponseEntity<GenericResponse> deleteAssets(Authentication authentication, HttpSession session, @RequestBody SelectionContext selectionContext){
         try {
             GenericResponse genericResponse = new GenericResponse();
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
-                if(selectedAssets != null){
+                if(selectionContext != null){
                     HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
                     String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, assetServiceName);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        return restTemplate.exchange(prefix + assetServiceName + "/assets/delete", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
+                        return restTemplate.exchange(prefix + assetServiceName + "/assets/delete", HttpMethod.POST, new HttpEntity<>(selectionContext, headers), GenericResponse.class);
                     }
                     else{
                         String errorMessage = "Service ID prefix is null!";
@@ -390,8 +391,8 @@ public class AssetLoadbalancerController {
     }
 
     @LogEntryExitExecutionTime
-    public ResponseEntity<GenericResponse> deleteAssetsErrorFallback(Authentication authentication, HttpSession session, SelectedAssets selectedAssets, Throwable e){
-        if(selectedAssets != null){
+    public ResponseEntity<GenericResponse> deleteAssetsErrorFallback(Authentication authentication, HttpSession session, SelectionContext selectionContext, Throwable e){
+        if(selectionContext != null){
             String errorMessage;
             if(e.getLocalizedMessage() != null){
                 errorMessage = "Unable to delete selected assets. " + e.getLocalizedMessage();
@@ -422,17 +423,17 @@ public class AssetLoadbalancerController {
     @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "subscribeToAssetsErrorFallback")
     @RequestMapping(value = "/assets/subscribe", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<GenericResponse> subscribeToAssets(HttpSession session, Authentication authentication, @RequestBody SelectedAssets selectedAssets){
+    public ResponseEntity<GenericResponse> subscribeToAssets(HttpSession session, Authentication authentication, @RequestBody SelectionContext selectionContext){
         try{
             GenericResponse genericResponse = new GenericResponse();
 
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
-                if(selectedAssets != null){
+                if(selectionContext != null){
                     HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
                     String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, assetServiceName);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        return restTemplate.exchange(prefix + assetServiceName + "/assets/subscribe", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
+                        return restTemplate.exchange(prefix + assetServiceName + "/assets/subscribe", HttpMethod.POST, new HttpEntity<>(selectionContext, headers), GenericResponse.class);
                     }
                     else{
                         String errorMessage = "Service ID prefix is null!";
@@ -474,8 +475,8 @@ public class AssetLoadbalancerController {
     }
 
     @LogEntryExitExecutionTime
-    public ResponseEntity<GenericResponse> subscribeToAssetsErrorFallback(HttpSession session, Authentication authentication, SelectedAssets selectedAssets, Throwable e){
-        if(selectedAssets != null){
+    public ResponseEntity<GenericResponse> subscribeToAssetsErrorFallback(HttpSession session, Authentication authentication, SelectionContext selectionContext, Throwable e){
+        if(selectionContext != null){
             String errorMessage;
             if(e.getLocalizedMessage() != null){
                 errorMessage = "Unable to subscribe to the selected assets. " + e.getLocalizedMessage();
@@ -506,17 +507,17 @@ public class AssetLoadbalancerController {
     @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "unsubscribeFromAssetsErrorFallback")
     @RequestMapping(value = "/assets/unsubscribe", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<GenericResponse> unsubscribeFromAssets(HttpSession session, Authentication authentication, @RequestBody SelectedAssets selectedAssets){
+    public ResponseEntity<GenericResponse> unsubscribeFromAssets(HttpSession session, Authentication authentication, @RequestBody SelectionContext selectionContext){
         try {
             GenericResponse genericResponse = new GenericResponse();
 
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
-                if(selectedAssets != null){
+                if(selectionContext != null){
                     HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
                     String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, assetServiceName);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        return restTemplate.exchange(prefix + assetServiceName + "/assets/unsubscribe", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), GenericResponse.class);
+                        return restTemplate.exchange(prefix + assetServiceName + "/assets/unsubscribe", HttpMethod.POST, new HttpEntity<>(selectionContext, headers), GenericResponse.class);
                     }
                     else{
                         String errorMessage = "Service ID prefix is null!";
@@ -557,8 +558,8 @@ public class AssetLoadbalancerController {
     }
 
     @LogEntryExitExecutionTime
-    public ResponseEntity<GenericResponse> unsubscribeFromAssetsErrorFallback(HttpSession session, Authentication authentication, SelectedAssets selectedAssets, Throwable e){
-        if(selectedAssets != null){
+    public ResponseEntity<GenericResponse> unsubscribeFromAssetsErrorFallback(HttpSession session, Authentication authentication, SelectionContext selectionContext, Throwable e){
+        if(selectionContext != null){
             String errorMessage;
             if(e.getLocalizedMessage() != null){
                 errorMessage = "Unable to unsubscribe from the selected assets. " + e.getLocalizedMessage();
