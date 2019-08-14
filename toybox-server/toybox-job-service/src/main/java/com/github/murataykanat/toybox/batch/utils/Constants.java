@@ -17,6 +17,7 @@ public final class Constants {
     public static final String JOB_PARAM_USERNAME = "toybox-job-param-username";
     public static final String JOB_PARAM_SYSTEM_MILLIS = "toybox-job-param-system-millis";
     public static final String JOB_PARAM_PACKAGING_FILE = "toybox-job-param-packaging-file";
+    public static final String JOB_PARAM_PACKAGING_FOLDER = "toybox-job-param-packaging-folder";
     public static final String JOB_PARAM_DELETE_ASSET_ID = "toybox-job-param-delete-asset-id";
     public static final String JOB_PARAM_CONTAINER_ID = "toybox-job-param-container-id";
 

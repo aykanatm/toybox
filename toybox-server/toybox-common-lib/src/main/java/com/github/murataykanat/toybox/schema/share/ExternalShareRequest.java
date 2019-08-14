@@ -2,6 +2,7 @@ package com.github.murataykanat.toybox.schema.share;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.murataykanat.toybox.dbo.Asset;
+import com.github.murataykanat.toybox.dbo.Container;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -10,6 +11,8 @@ import java.util.List;
 public class ExternalShareRequest implements Serializable {
     @JsonProperty("selectedAssets")
     private List<Asset> selectedAssets;
+    @JsonProperty("selectedContainers")
+    private List<Container> selectedContainers;
     @JsonProperty("expirationDate")
     private Date expirationDate;
     @JsonProperty("maxNumberOfHits")
@@ -47,5 +50,13 @@ public class ExternalShareRequest implements Serializable {
 
     public void setNotifyWhenDownloaded(boolean notifyWhenDownloaded) {
         this.notifyWhenDownloaded = notifyWhenDownloaded;
+    }
+
+    public List<Container> getSelectedContainers() {
+        return selectedContainers;
+    }
+
+    public void setSelectedContainers(List<Container> selectedContainers) {
+        this.selectedContainers = selectedContainers;
     }
 }

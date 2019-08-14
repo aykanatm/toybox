@@ -2,7 +2,7 @@ package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
-import com.github.murataykanat.toybox.schema.asset.SelectedAssets;
+import com.github.murataykanat.toybox.schema.selection.SelectionContext;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
 import com.github.murataykanat.toybox.schema.job.JobSearchRequest;
 import com.github.murataykanat.toybox.schema.job.RetrieveToyboxJobResult;
@@ -53,17 +53,17 @@ public class JobLoadbalancerController {
     @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "packageAssetsErrorFallback")
     @RequestMapping(value = "/jobs/package", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<JobResponse> packageAssets(Authentication authentication, HttpSession session, @RequestBody SelectedAssets selectedAssets){
+    public ResponseEntity<JobResponse> packageAssets(Authentication authentication, HttpSession session, @RequestBody SelectionContext selectionContext){
         JobResponse jobResponse = new JobResponse();
 
         try {
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
-                if(selectedAssets != null){
+                if(selectionContext != null){
                     HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
                     String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, jobServiceName);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        return restTemplate.exchange(prefix + jobServiceName + "/jobs/package", HttpMethod.POST, new HttpEntity<>(selectedAssets, headers), JobResponse.class);
+                        return restTemplate.exchange(prefix + jobServiceName + "/jobs/package", HttpMethod.POST, new HttpEntity<>(selectionContext, headers), JobResponse.class);
                     }
                     else{
                         String errorMessage = "Service ID prefix is null!";
@@ -104,10 +104,10 @@ public class JobLoadbalancerController {
     }
 
     @LogEntryExitExecutionTime
-    public ResponseEntity<JobResponse> packageAssetsErrorFallback(Authentication authentication, HttpSession session, SelectedAssets selectedAssets, Throwable e){
+    public ResponseEntity<JobResponse> packageAssetsErrorFallback(Authentication authentication, HttpSession session, SelectionContext selectionContext, Throwable e){
         JobResponse jobResponse = new JobResponse();
 
-        if(selectedAssets != null){
+        if(selectionContext != null){
             String errorMessage;
             if(e.getLocalizedMessage() != null){
                 errorMessage = "Unable initiate the package job. " + e.getLocalizedMessage();

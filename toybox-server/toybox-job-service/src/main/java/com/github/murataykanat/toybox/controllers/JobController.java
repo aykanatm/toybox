@@ -3,13 +3,11 @@ package com.github.murataykanat.toybox.controllers;
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.batch.utils.Constants;
 import com.github.murataykanat.toybox.dbo.Asset;
+import com.github.murataykanat.toybox.dbo.Container;
 import com.github.murataykanat.toybox.models.job.ToyboxJob;
 import com.github.murataykanat.toybox.models.job.ToyboxJobStep;
-import com.github.murataykanat.toybox.repositories.AssetsRepository;
-import com.github.murataykanat.toybox.repositories.JobStepsRepository;
-import com.github.murataykanat.toybox.repositories.JobsRepository;
-import com.github.murataykanat.toybox.repositories.UsersRepository;
-import com.github.murataykanat.toybox.schema.asset.SelectedAssets;
+import com.github.murataykanat.toybox.repositories.*;
+import com.github.murataykanat.toybox.schema.selection.SelectionContext;
 import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.job.*;
@@ -58,8 +56,6 @@ public class JobController {
     private Job packagingJob;
 
     @Autowired
-    private AssetsRepository assetsRepository;
-    @Autowired
     private JobsRepository jobsRepository;
     @Autowired
     JobStepsRepository jobStepsRepository;
@@ -68,54 +64,57 @@ public class JobController {
 
     @LogEntryExitExecutionTime
     @RequestMapping(value = "/jobs/package", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<JobResponse> packageAssets(Authentication authentication, @RequestBody SelectedAssets selectedAssets){
+    public ResponseEntity<JobResponse> packageAssets(Authentication authentication, @RequestBody SelectionContext selectionContext){
         JobResponse jobResponse = new JobResponse();
 
         try{
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
-                if(selectedAssets != null){
-                    List<String> selectedAssetIds = selectedAssets.getSelectedAssets().stream().map(asset -> asset.getId()).collect(Collectors.toList());
+                if(selectionContext != null){
+                    List<String> selectedAssetIds = new ArrayList<>();
+                    List<String> selectedContainerIds = new ArrayList<>();
 
-                    if(!selectedAssetIds.isEmpty()){
-                        List<Asset> allAssets = assetsRepository.getNonDeletedAssets();
+                    if(selectionContext.getSelectedAssets() != null){
+                        selectedAssetIds = selectionContext.getSelectedAssets().stream().map(Asset::getId).collect(Collectors.toList());
+                    }
 
-                        List<Asset> assets = allAssets.stream().filter(asset -> selectedAssetIds.contains(asset.getId())).collect(Collectors.toList());
+                    if(selectionContext.getSelectedContainers() != null){
+                        selectedContainerIds = selectionContext.getSelectedContainers().stream().map(Container::getId).collect(Collectors.toList());
+                    }
 
-                        if(!assets.isEmpty()){
-                            JobParametersBuilder builder = new JobParametersBuilder();
+                    if(!selectedAssetIds.isEmpty() || !selectedContainerIds.isEmpty()){
+                        JobParametersBuilder builder = new JobParametersBuilder();
 
-                            for(int i = 0; i < assets.size(); i++){
-                                Asset asset = assets.get(i);
-                                builder.addString(Constants.JOB_PARAM_PACKAGING_FILE + "_" + i, asset.getPath());
-                            }
-                            builder.addString(Constants.JOB_PARAM_USERNAME, authentication.getName());
-                            builder.addString(Constants.JOB_PARAM_SYSTEM_MILLIS, String.valueOf(System.currentTimeMillis()));
-
-                            _logger.debug("Launching job [" + packagingJob.getName() + "]...");
-                            JobExecution jobExecution = jobLauncher.run(packagingJob, builder.toJobParameters());
-                            jobExecution.getExecutionContext().put("jobId", jobExecution.getJobId());
-
-                            jobResponse.setJobId(jobExecution.getJobId());
-                            jobResponse.setMessage("Packaging job started.");
-
-                            return new ResponseEntity<>(jobResponse, HttpStatus.CREATED);
+                        for(int i = 0; i < selectedAssetIds.size(); i++){
+                            String assetId = selectedAssetIds.get(i);
+                            builder.addString(Constants.JOB_PARAM_PACKAGING_FILE + "_" + i, assetId);
                         }
-                        else{
-                            String message = "No assets were found in the system with the requested IDs.";
-                            jobResponse.setMessage(message);
 
-                            return new ResponseEntity<>(jobResponse, HttpStatus.NO_CONTENT);
+                        for(int i = 0; i < selectedContainerIds.size(); i++){
+                            String containerId = selectedContainerIds.get(i);
+                            builder.addString(Constants.JOB_PARAM_PACKAGING_FOLDER + "_" + i, containerId);
                         }
+
+                        builder.addString(Constants.JOB_PARAM_USERNAME, authentication.getName());
+                        builder.addString(Constants.JOB_PARAM_SYSTEM_MILLIS, String.valueOf(System.currentTimeMillis()));
+
+                        _logger.debug("Launching job [" + packagingJob.getName() + "]...");
+                        JobExecution jobExecution = jobLauncher.run(packagingJob, builder.toJobParameters());
+                        jobExecution.getExecutionContext().put("jobId", jobExecution.getJobId());
+
+                        jobResponse.setJobId(jobExecution.getJobId());
+                        jobResponse.setMessage("Packaging job started.");
+
+                        return new ResponseEntity<>(jobResponse, HttpStatus.CREATED);
                     }
                     else{
-                        String message = "No assets were found in the request.";
+                        String message = "No assets or containers were found in the request.";
                         jobResponse.setMessage(message);
 
                         return new ResponseEntity<>(jobResponse, HttpStatus.NOT_FOUND);
                     }
                 }
                 else{
-                    String message = "Selected assets are null!";
+                    String message = "Selection context is null!";
                     jobResponse.setMessage(message);
 
                     return new ResponseEntity<>(jobResponse, HttpStatus.BAD_REQUEST);
