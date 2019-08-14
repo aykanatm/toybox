@@ -32,6 +32,7 @@ import org.springframework.context.annotation.Configuration;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -90,19 +91,19 @@ public class PackagingJobConfig {
                                     }
                                 }
 
-                                Collection<File> filesAndFolders = FileUtils.listFiles(jobFolder, null, false);
-                                for(File file: filesAndFolders){
-                                    if(file.exists()){
-                                        if(file.isFile()){
+                                File[] fList = jobFolder.listFiles();
+                                if(fList != null){
+                                    for (File file : fList) {
+                                        if (file.isFile()) {
                                             archive.addFile(file);
                                         }
-                                        else if(file.isDirectory()){
+                                        else if (file.isDirectory()) {
                                             archive.addFolder(file);
                                         }
                                     }
-                                    else{
-                                        throw new IOException("File or folder with path '" + file.getAbsolutePath() + "' does not exist!");
-                                    }
+                                }
+                                else{
+                                    throw new IllegalArgumentException("File list is null!");
                                 }
 
                                 if(zipFile.exists()){
