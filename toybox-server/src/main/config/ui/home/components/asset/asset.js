@@ -34,6 +34,7 @@ module.exports = {
     watch:{
         isSelected:function(){
             this.$root.$emit('asset-selection-changed', this);
+            this.$root.$emit('item-selection-changed', this);
         }
     },
     mounted:function(){
