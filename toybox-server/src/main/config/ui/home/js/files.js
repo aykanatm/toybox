@@ -1,6 +1,6 @@
 const files = new Vue({
     el: '#toybox-files',
-    mixins:[paginationMixin, messageMixin, facetMixin, userMixin, assetActionsMixin, serviceMixin],
+    mixins:[paginationMixin, messageMixin, facetMixin, userMixin, assetActionsMixin, itemActionsMixin, serviceMixin],
     data:{
         view: 'files',
         assets:[],
@@ -195,7 +195,7 @@ const files = new Vue({
         assetsDownload:function(){
             console.log('Downloading the following assets:');
             var selectedAssets = this.getSelectedAssets();
-            this.downloadAssets(selectedAssets);
+            this.downloadItems(selectedAssets);
         },
         assetsCopy:function(){
             console.log('Copying the following assets:');

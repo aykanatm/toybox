@@ -32,5 +32,7 @@
         <module>toybox-notification-service</module>
         <module>toybox-notification-loadbalancer</module>
         <module>toybox-notification-listener-service</module>
+        <module>toybox-common-object-service</module>
+        <module>toybox-common-object-loadbalancer</module>
     </modules>
 </project>

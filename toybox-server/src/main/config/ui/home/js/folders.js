@@ -455,7 +455,13 @@ const folders = new Vue({
             {
                 var item = this.selectedItems[i];
                 console.log(item.name + ' / ' +  item.id);
-                selectedItems.push({id:item.id, name:item.name, type:item.type, originalAssetId:item.originalAssetId});
+
+                var itemClass = 'com.github.murataykanat.toybox.dbo.Asset';
+                if(item.type === undefined){
+                    itemClass = 'com.github.murataykanat.toybox.dbo.Container';
+                }
+
+                selectedItems.push({id:item.id, name:item.name, type:item.type, originalAssetId:item.originalAssetId, '@class': itemClass, parentContainerId: item.parentContainerId});
             }
 
             return selectedItems;

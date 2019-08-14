@@ -28,9 +28,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.core.io.Resource;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -68,120 +65,6 @@ public class AssetController {
 
     @Value("${importStagingPath}")
     private String importStagingPath;
-
-    @LogEntryExitExecutionTime
-    @RequestMapping(value = "/assets/download", method = RequestMethod.POST, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public ResponseEntity<Resource> downloadAssets(Authentication authentication, HttpSession session, @RequestBody SelectionContext selectionContext){
-        try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
-                if(selectionContext != null){
-                    List<Asset> assets = selectionContext.getSelectedAssets();
-                    if(assets != null){
-                        if(!assets.isEmpty()){
-                            if(assets.size() == 1) {
-                                _logger.debug("Downloading a single asset...");
-                                List<Asset> assetsWithId = assetsRepository.getAssetsById(assets.get(0).getId());
-                                if(assetsWithId != null){
-                                    if(assetsWithId.size() == 1){
-                                        Asset asset = assetsWithId.get(0);
-                                        if(asset != null){
-                                            if(StringUtils.isNotBlank(asset.getPath())){
-                                                File file = new File(asset.getPath());
-                                                InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
-
-                                                return new ResponseEntity<>(resource, HttpStatus.OK);
-                                            }
-                                            else{
-                                                _logger.error("Asset path is blank!");
-                                                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-                                            }
-                                        }
-                                        else{
-                                            throw new InvalidObjectException("Asset is null!");
-                                        }
-                                    }
-                                    else{
-                                        throw new DuplicateKeyException("There are more than one asset with ID '" + assets.get(0).getId() + "'");
-                                    }
-                                }
-                                else{
-                                    _logger.error("Asset with ID '" + assets.get(0).getId() + "' is not found!");
-                                    return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-                                }
-                            }
-                            else{
-                                _logger.debug("Downloading multiple assets...");
-                                RestTemplate restTemplate = new RestTemplate();
-                                HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-
-                                HttpEntity<SelectionContext> selectedAssetsEntity = new HttpEntity<>(selectionContext, headers);
-
-                                List<ServiceInstance> instances = discoveryClient.getInstances(jobServiceLoadBalancerServiceName);
-                                if(!instances.isEmpty()){
-                                    ServiceInstance serviceInstance = instances.get(0);
-                                    String jobServiceUrl = serviceInstance.getUri().toString();
-                                    ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/package", selectedAssetsEntity, JobResponse.class);
-                                    if(jobResponseResponseEntity != null){
-                                        _logger.debug(jobResponseResponseEntity);
-                                        JobResponse jobResponse = jobResponseResponseEntity.getBody();
-                                        if(jobResponse != null){
-                                            _logger.debug("Job response message: " + jobResponse.getMessage());
-                                            _logger.debug("Job ID: " + jobResponse.getJobId());
-                                            File archiveFile = JobUtils.getInstance().getArchiveFile(jobResponse.getJobId(), headers, jobServiceUrl, exportStagingPath);
-                                            if(archiveFile != null && archiveFile.exists()){
-                                                InputStreamResource resource = new InputStreamResource(new FileInputStream(archiveFile));
-
-                                                return new ResponseEntity<>(resource, HttpStatus.OK);
-                                            }
-                                            else{
-                                                if(archiveFile != null){
-                                                    throw new IOException("File '" + archiveFile.getAbsolutePath() + "' does not exist!");
-                                                }
-                                                throw new InvalidObjectException("Archive file is null!");
-                                            }
-                                        }
-                                        else{
-                                            throw new InvalidObjectException("Job response is null!");
-                                        }
-                                    }
-                                    else{
-                                        throw new InvalidObjectException("Job response entity is null!");
-                                    }
-                                }
-                                else{
-                                    throw new Exception("There is no job load balancer instance!");
-                                }
-                            }
-                        }
-                        else{
-                            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-                        }
-                    }
-                    else{
-                        throw new InvalidObjectException("Asset list is null!");
-                    }
-                }
-                else{
-                    String errorMessage = "Selected assets parameter is null!";
-                    _logger.error(errorMessage);
-
-                    return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-                }
-            }
-            else{
-                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
-                _logger.error(errorMessage);
-
-                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-            }
-        }
-        catch (Exception e){
-            String errorMessage = "An error occurred while downloading selected assets. " + e.getLocalizedMessage();
-            _logger.error(errorMessage, e);
-
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
 
     @LogEntryExitExecutionTime
     @RequestMapping(value = "/assets/upload", method = RequestMethod.POST)

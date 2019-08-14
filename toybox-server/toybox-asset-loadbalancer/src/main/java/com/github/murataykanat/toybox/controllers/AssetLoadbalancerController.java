@@ -21,7 +21,6 @@ import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.cloud.netflix.ribbon.RibbonClient;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.io.Resource;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -59,69 +58,6 @@ public class AssetLoadbalancerController {
 
     @Autowired
     private RestTemplate restTemplate;
-
-    @LogEntryExitExecutionTime
-    @HystrixCommand(fallbackMethod = "downloadAssetsErrorFallback")
-    @RequestMapping(value = "/assets/download", method = RequestMethod.POST, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public ResponseEntity<Resource> downloadAssets(Authentication authentication, HttpSession session, @RequestBody SelectionContext selectionContext){
-        try {
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
-                if(selectionContext != null){
-                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                    String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, assetServiceName);
-
-                    if(StringUtils.isNotBlank(prefix)){
-                        _logger.debug("<< downloadAssets()");
-                        return restTemplate.exchange(prefix + assetServiceName + "/assets/download", HttpMethod.POST, new HttpEntity<>(selectionContext, headers), Resource.class);
-                    }
-                    else{
-                        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-                    }
-                }
-                else{
-                    String errorMessage = "Selected assets are null!";
-                    _logger.error(errorMessage);
-
-                    return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-                }
-            }
-            else{
-                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
-                _logger.error(errorMessage);
-
-                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-            }
-        }
-        catch (Exception e){
-            String errorMessage = "An error occurred while downloading the assets. " + e.getLocalizedMessage();
-            _logger.error(errorMessage, e);
-
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @LogEntryExitExecutionTime
-    public ResponseEntity<Resource> downloadAssetsErrorFallback(Authentication authentication, HttpSession session, SelectionContext selectionContext, Throwable e){
-        if(selectionContext != null){
-            String errorMessage;
-            if(e.getLocalizedMessage() != null){
-                errorMessage = "Unable download selected assets. " + e.getLocalizedMessage();
-            }
-            else{
-                errorMessage = "Unable to get response from the asset service.";
-            }
-
-            _logger.error(errorMessage, e);
-
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-        else{
-            String errorMessage = "Selected assets are null!";
-            _logger.error(errorMessage);
-
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-    }
 
     // The name "upload" must match the "name" attribute of the input in UI
     @LogEntryExitExecutionTime
