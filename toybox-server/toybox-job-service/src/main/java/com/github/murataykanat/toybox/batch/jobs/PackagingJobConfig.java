@@ -49,6 +49,9 @@ public class PackagingJobConfig {
     private ContainersRepository containersRepository;
 
     @Autowired
+    private AssetsRepository assetsRepository;
+
+    @Autowired
     private ContainerAssetsRepository containerAssetsRepository;
 
     @Bean
@@ -76,7 +79,7 @@ public class PackagingJobConfig {
                                 for(Map.Entry<String, Object> jobParameter: jobParameters.entrySet()){
                                     if(jobParameter.getKey().startsWith(Constants.JOB_PARAM_PACKAGING_FILE)){
                                         String assetId = (String) jobParameter.getValue();
-                                        Asset asset = AssetUtils.getInstance().getAsset(assetId);
+                                        Asset asset = AssetUtils.getInstance().getAsset(assetsRepository, assetId);
                                         File inputFile = new File(asset.getPath());
                                         File outputFile = new File(jobFolderPath + File.separator + inputFile.getName());
                                         Files.copy(inputFile.toPath(), outputFile.toPath());
@@ -157,7 +160,7 @@ public class PackagingJobConfig {
 
     @LogEntryExitExecutionTime
     private void generateFolders(String containerId, String parentPath) throws Exception {
-        Container container = ContainerUtils.getInstance().getContainer(containerId);
+        Container container = ContainerUtils.getInstance().getContainer(containersRepository, containerId);
 
         String folderPath = parentPath + File.separator + container.getName();
         File folder = new File(folderPath);
@@ -166,7 +169,7 @@ public class PackagingJobConfig {
             List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(containerId);
             for(ContainerAsset containerAsset: containerAssetsByContainerId){
                 String assetId = containerAsset.getAssetId();
-                Asset asset = AssetUtils.getInstance().getAsset(assetId);
+                Asset asset = AssetUtils.getInstance().getAsset(assetsRepository, assetId);
 
                 File inputFile = new File(asset.getPath());
                 File outputFile = new File(folderPath + File.separator + inputFile.getName());

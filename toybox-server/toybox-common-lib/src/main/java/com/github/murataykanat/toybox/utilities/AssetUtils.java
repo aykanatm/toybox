@@ -5,15 +5,11 @@ import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
 public class AssetUtils {
     private static Log _logger = LogFactory.getLog(AssetUtils.class);
-
-    @Autowired
-    private AssetsRepository assetsRepository;
 
     private static AssetUtils assetUtils;
 
@@ -29,7 +25,7 @@ public class AssetUtils {
     }
 
     @LogEntryExitExecutionTime
-    public Asset getAsset(String assetId) throws Exception {
+    public Asset getAsset(AssetsRepository assetsRepository, String assetId) throws Exception {
         List<Asset> assetsById = assetsRepository.getAssetsById(assetId);
         if(!assetsById.isEmpty()){
             if(assetsById.size() == 1){

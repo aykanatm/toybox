@@ -5,16 +5,11 @@ import com.github.murataykanat.toybox.dbo.Container;
 import com.github.murataykanat.toybox.repositories.ContainersRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
 public class ContainerUtils {
     private static final Log _logger = LogFactory.getLog(ContainerUtils.class);
-
-    @Autowired
-    private ContainersRepository containersRepository;
-
     private static ContainerUtils containerUtils;
 
     private ContainerUtils(){}
@@ -29,7 +24,7 @@ public class ContainerUtils {
     }
 
     @LogEntryExitExecutionTime
-    public Container getContainer(String containerId) throws Exception {
+    public Container getContainer(ContainersRepository containersRepository, String containerId) throws Exception {
         List<Container> containersById = containersRepository.getContainersById(containerId);
         if(!containersById.isEmpty()){
             if(containersById.size() == 1){
