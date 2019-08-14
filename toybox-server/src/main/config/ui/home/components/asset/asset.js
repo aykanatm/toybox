@@ -1,5 +1,5 @@
 module.exports = {
-    mixins:[assetActionsMixin, serviceMixin],
+    mixins:[assetActionsMixin, serviceMixin, itemActionsMixin],
     props:{
         id: String,
         originalAssetId: String,
@@ -100,8 +100,8 @@ module.exports = {
                 '@class': 'com.github.murataykanat.toybox.dbo.Asset',
                 parentContainerId: this.parentContainerId
             }
-            var selectedAssets= [asset];
-            this.shareAssets(selectedAssets);
+            var selectedAssets = [asset];
+            this.shareItems(selectedAssets);
             this.contextMenuOpen = false;
         },
         assetDownload:function(){

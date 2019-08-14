@@ -384,6 +384,7 @@ const folders = new Vue({
         itemsShare:function(){
             console.log('Sharing the following assets:');
             var selectedItems = this.getSelectedItems();
+            this.shareItems(selectedItems);
         },
         itemsDownload:function(){
             console.log('Downloading the following assets:');

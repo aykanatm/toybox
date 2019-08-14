@@ -11,26 +11,11 @@ var itemActionsMixin = {
         },
         downloadItems(selectedItems){
             console.log(selectedItems);
-            var selectedAssets = [];
-            var selectedContainers = [];
-
-            for(var i = 0; i < selectedItems.length; i++){
-                var selectedItem = selectedItems[i];
-                if(selectedItem['@class'] === 'com.github.murataykanat.toybox.dbo.Asset'){
-                    selectedAssets.push(selectedItem);
-                }
-                else{
-                    selectedContainers.push(selectedItem);
-                }
-            }
+            var selectionContext = this.generateSelectionContext(selectedItems);
 
             this.getService("toybox-common-object-loadbalancer")
             .then(response =>{
                 if(response){
-                    var selectionContext = {
-                        'selectedAssets': selectedAssets,
-                        'selectedContainers': selectedContainers
-                    }
                     return axios.post(response.data.value + '/common-objects/download', selectionContext, {responseType:'blob'})
                         .then(response =>{
                             console.log(response);
@@ -62,6 +47,32 @@ var itemActionsMixin = {
         },
         showVersionHistoryOfItem(itemId, thumbnailUrl){
 
+        },
+        shareItems(selectedItems){
+            var selectionContext = this.generateSelectionContext(selectedItems);
+            this.$root.$emit('open-share-modal-window', selectionContext);
+        },
+        generateSelectionContext(selectedItems){
+            console.log(selectedItems);
+            var selectedAssets = [];
+            var selectedContainers = [];
+
+            for(var i = 0; i < selectedItems.length; i++){
+                var selectedItem = selectedItems[i];
+                if(selectedItem['@class'] === 'com.github.murataykanat.toybox.dbo.Asset'){
+                    selectedAssets.push(selectedItem);
+                }
+                else{
+                    selectedContainers.push(selectedItem);
+                }
+            }
+
+            var selectionContext = {
+                'selectedAssets': selectedAssets,
+                'selectedContainers': selectedContainers
+            }
+
+            return selectionContext;
         }
     }
 }

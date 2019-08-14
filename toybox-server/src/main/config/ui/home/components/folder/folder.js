@@ -53,6 +53,16 @@ module.exports = {
         },
         folderShare:function(){
             console.log('Opening share modal window for folder with ID "' + this.id + '"');
+            var folder = {
+                id: this.id,
+                name: this.name,
+                type: this.type,
+                originalAssetId: this.originalAssetId,
+                '@class': 'com.github.murataykanat.toybox.dbo.Container',
+                parentContainerId: this.parentContainerId
+            }
+            var selectedFolders = [folder];
+            this.shareItems(selectedFolders);
             this.contextMenuOpen = false;
         },
         folderDownload:function(){

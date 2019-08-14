@@ -164,8 +164,5 @@ var assetActionsMixin = {
         copyAssets(selectedAssets){
             this.$root.$emit('open-copy-move-asset-modal-window', selectedAssets, false, true);
         },
-        shareAssets(selectedAssets){
-            this.$root.$emit('open-share-modal-window', selectedAssets);
-        }
     }
 }

@@ -3,30 +3,21 @@ package com.github.murataykanat.toybox.schema.share;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.dbo.Container;
+import com.github.murataykanat.toybox.schema.selection.SelectionContext;
 
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 
 public class ExternalShareRequest implements Serializable {
-    @JsonProperty("selectedAssets")
-    private List<Asset> selectedAssets;
-    @JsonProperty("selectedContainers")
-    private List<Container> selectedContainers;
+    @JsonProperty("selectionContext")
+    private SelectionContext selectionContext;
     @JsonProperty("expirationDate")
     private Date expirationDate;
     @JsonProperty("maxNumberOfHits")
     private int maxNumberOfHits;
     @JsonProperty("notifyWhenDownloaded")
     private boolean notifyWhenDownloaded;
-
-    public List<Asset> getSelectedAssets() {
-        return selectedAssets;
-    }
-
-    public void setSelectedAssets(List<Asset> selectedAssets) {
-        this.selectedAssets = selectedAssets;
-    }
 
     public Date getExpirationDate() {
         return expirationDate;
@@ -52,11 +43,11 @@ public class ExternalShareRequest implements Serializable {
         this.notifyWhenDownloaded = notifyWhenDownloaded;
     }
 
-    public List<Container> getSelectedContainers() {
-        return selectedContainers;
+    public SelectionContext getSelectionContext() {
+        return selectionContext;
     }
 
-    public void setSelectedContainers(List<Container> selectedContainers) {
-        this.selectedContainers = selectedContainers;
+    public void setSelectionContext(SelectionContext selectionContext) {
+        this.selectionContext = selectionContext;
     }
 }

@@ -2,6 +2,7 @@ package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.dbo.Asset;
+import com.github.murataykanat.toybox.dbo.Container;
 import com.github.murataykanat.toybox.dbo.ExternalShare;
 import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.ExternalSharesRepository;
@@ -148,7 +149,8 @@ public class ShareController {
                 User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
                 if(user != null){
                     if(externalShareRequest != null){
-                        if(!externalShareRequest.getSelectedAssets().isEmpty()){
+                        SelectionContext selectionContext = externalShareRequest.getSelectionContext();
+                        if(selectionContext != null){
                             String username = authentication.getName();
                             Date expirationDate = externalShareRequest.getExpirationDate();
                             int maxNumberOfHits = externalShareRequest.getMaxNumberOfHits();
@@ -161,9 +163,6 @@ public class ShareController {
 
                             RestTemplate restTemplate = new RestTemplate();
                             HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-
-                            SelectionContext selectionContext = new SelectionContext();
-                            selectionContext.setSelectedAssets(externalShareRequest.getSelectedAssets());
 
                             HttpEntity<SelectionContext> selectionContextEntity = new HttpEntity<>(selectionContext, headers);
                             String jobServiceUrl = LoadbalancerUtils.getInstance().getLoadbalancerUrl(discoveryClient, jobServiceLoadBalancerServiceName);
@@ -183,15 +182,33 @@ public class ShareController {
                                     externalShareResponse.setMessage("External share successfully generated.");
                                     externalShareResponse.setUrl(shareServiceUrl + "/share/download/" + externalShareId);
 
-                                    for(Asset asset: externalShareRequest.getSelectedAssets()){
-                                        // Send notification
-                                        String message = "Asset '" + asset.getName() + "' is shared by '" + user.getUsername() + "'";
-                                        SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                                        sendNotificationRequest.setAsset(asset);
-                                        sendNotificationRequest.setFromUser(user);
-                                        sendNotificationRequest.setMessage(message);
-                                        NotificationUtils.getInstance().sendNotification(sendNotificationRequest, discoveryClient, session, notificationServiceLoadBalancerServiceName);
+                                    List<Asset> selectedAssets = externalShareRequest.getSelectionContext().getSelectedAssets();
+                                    List<Container> selectedContainers = externalShareRequest.getSelectionContext().getSelectedContainers();
+
+                                    if(selectedAssets != null && !selectedAssets.isEmpty()){
+                                        for(Asset asset: selectedAssets){
+                                            // Send notification
+                                            String message = "Asset '" + asset.getName() + "' is shared externally by '" + user.getUsername() + "'";
+                                            SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                            sendNotificationRequest.setAsset(asset);
+                                            sendNotificationRequest.setFromUser(user);
+                                            sendNotificationRequest.setMessage(message);
+                                            NotificationUtils.getInstance().sendNotification(sendNotificationRequest, discoveryClient, session, notificationServiceLoadBalancerServiceName);
+                                        }
                                     }
+
+                                    // TODO: Make a notification for containers
+//                                    if(selectedContainers != null && !selectedContainers.isEmpty()){
+//                                        for(Container container: selectedContainers){
+//                                            // Send notification
+//                                            String message = "Folder '" + container.getName() + "' is shared externally by '" + user.getUsername() + "'";
+//                                            SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+//                                            sendNotificationRequest.setAsset(container);
+//                                            sendNotificationRequest.setFromUser(user);
+//                                            sendNotificationRequest.setMessage(message);
+//                                            NotificationUtils.getInstance().sendNotification(sendNotificationRequest, discoveryClient, session, notificationServiceLoadBalancerServiceName);
+//                                        }
+//                                    }
 
                                     return new ResponseEntity<>(externalShareResponse, HttpStatus.CREATED);
                                 }
@@ -204,12 +221,7 @@ public class ShareController {
                             }
                         }
                         else{
-                            String warningMessage = "No assets were selected!";
-                            _logger.warn(warningMessage);
-
-                            externalShareResponse.setMessage(warningMessage);
-
-                            return new ResponseEntity<>(externalShareResponse, HttpStatus.NOT_FOUND);
+                            throw new IllegalArgumentException("Selection context is null!");
                         }
                     }
                     else{

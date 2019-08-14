@@ -3,7 +3,7 @@ module.exports = {
     data:function(){
         return{
             componentName: 'Share Modal Window',
-            selectedAssets: '',
+            selectionContext: '',
             users:[],
             // User type
             isExternalUser: false,
@@ -27,7 +27,7 @@ module.exports = {
         }
     },
     mounted:function(){
-        this.$root.$on('open-share-modal-window', (selectedAssets) => {
+        this.$root.$on('open-share-modal-window', (selectionContext) => {
             this.getService("toybox-user-loadbalancer")
                 .then(response => {
                     var userServiceUrl = response.data.value;
@@ -47,7 +47,7 @@ module.exports = {
                                 }
                             }
 
-                            this.selectedAssets = selectedAssets;
+                            this.selectionContext = selectionContext;
 
                             this.isExternalUser = false;
 
@@ -136,7 +136,7 @@ module.exports = {
                 .then(response =>{
                     var shareServiceUrl = response.data.value;
                     var externalShareRequest = {
-                        selectedAssets: this.selectedAssets,
+                        selectionContext: this.selectionContext,
                         expirationDate: this.expirationDate,
                         maxNumberOfHits: this.maxNumberOfHits,
                         notifyWhenDownloaded: this.notifyOnDownload
