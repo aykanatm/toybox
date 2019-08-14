@@ -105,17 +105,38 @@ module.exports = {
         },
         assetDownload:function(){
             console.log('Downloading the file with ID "' + this.id + '"');
-            var asset = {
-                id: this.id,
-                name: this.name,
-                type: this.type,
-                originalAssetId: this.originalAssetId,
-                '@class': 'com.github.murataykanat.toybox.dbo.Asset',
-                parentContainerId: this.parentContainerId
-            }
-            var selectedAssets= [asset];
-            this.downloadAssets(selectedAssets);
-            this.contextMenuOpen = false;
+            this.getService("toybox-rendition-loadbalancer")
+                .then(response =>{
+                    if(response){
+                        return axios.get(response.data.value + '/renditions/assets/' + this.id + '/o', {responseType:'blob'})
+                            .then(response =>{
+                                console.log(response);
+                                var filename = this.name;
+                                var blob = new Blob([response.data], {type:'application/octet-stream'});
+                                saveAs(blob , filename);
+
+                                this.contextMenuOpen = false;
+                            })
+                            .catch(error => {
+                                var errorMessage;
+
+                                if(error.response){
+                                    errorMessage = error.response.data.message
+                                    if(error.response.status == 401){
+                                        window.location = '/logout';
+                                    }
+                                }
+                                else{
+                                    errorMessage = error.message;
+                                }
+
+                                console.error(errorMessage);
+                                this.$root.$emit('message-sent', 'Error', errorMessage);
+
+                                this.contextMenuOpen = false;
+                            });
+                    }
+                });
         },
         assetRename:function(){
             console.log('Renaming the file with ID "' + this.id + '"');

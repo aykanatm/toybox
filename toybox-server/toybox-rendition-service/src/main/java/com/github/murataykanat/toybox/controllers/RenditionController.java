@@ -5,12 +5,14 @@ import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
+import com.github.murataykanat.toybox.utilities.AssetUtils;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.InvalidObjectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -108,59 +111,54 @@ public class RenditionController {
         try{
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(StringUtils.isNotBlank(assetId) || StringUtils.isNotBlank(renditionType)){
-                    List<Asset> assets = assetsRepository.getAssetsById(assetId);
-                    if(assets != null){
-                        if(!assets.isEmpty()){
-                            if(assets.size() == 1){
-                                Asset asset = assets.get(0);
-                                ByteArrayResource resource;
-                                if(renditionType.equalsIgnoreCase("t")){
-                                    if(StringUtils.isNotBlank(asset.getThumbnailPath())){
-                                        Path path = Paths.get(asset.getThumbnailPath());
-                                        resource = new ByteArrayResource(Files.readAllBytes(path));
+                    Asset asset = AssetUtils.getInstance().getAsset(assetsRepository, assetId);
 
-                                        return new ResponseEntity<>(resource, HttpStatus.OK);
-                                    }
-                                    else{
-                                        _logger.error("Thumbnail path is blank!");
+                    if(renditionType.equalsIgnoreCase("t")){
+                        if(StringUtils.isNotBlank(asset.getThumbnailPath())){
+                            Path path = Paths.get(asset.getThumbnailPath());
+                            ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
 
-                                        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-                                    }
-                                }
-                                else if(renditionType.equalsIgnoreCase("p")){
-                                    if(StringUtils.isNotBlank(asset.getPreviewPath())){
-                                        Path path = Paths.get(asset.getPreviewPath());
-                                        resource = new ByteArrayResource(Files.readAllBytes(path));
+                            return new ResponseEntity<>(resource, HttpStatus.OK);
+                        }
+                        else{
+                            _logger.error("Thumbnail path is blank!");
 
-                                        if(asset.getPreviewPath().endsWith("pdf")){
-                                            return ResponseEntity.ok().header("Content-Disposition","inline; filename=" + new File(asset.getPreviewPath()).getName()).contentType(MediaType.APPLICATION_PDF).contentLength(resource.contentLength()).body(resource);
-                                        }
-                                        else{
-                                            return new ResponseEntity<>(resource, HttpStatus.OK);
-                                        }
-                                    }
-                                    else{
-                                        _logger.error("Preview path is blank!");
+                            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                        }
+                    }
+                    else if(renditionType.equalsIgnoreCase("p")){
+                        if(StringUtils.isNotBlank(asset.getPreviewPath())){
+                            Path path = Paths.get(asset.getPreviewPath());
+                            ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
 
-                                        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-                                    }
-                                }
-                                else{
-                                    throw new IllegalArgumentException("Rendition type is not recognized!");
-                                }
+                            if(asset.getPreviewPath().endsWith("pdf")){
+                                return ResponseEntity.ok().header("Content-Disposition","inline; filename=" + new File(asset.getPreviewPath()).getName()).contentType(MediaType.APPLICATION_PDF).contentLength(resource.contentLength()).body(resource);
                             }
                             else{
-                                throw new DuplicateKeyException("There are more than one asset with ID '" + assetId + "'");
+                                return new ResponseEntity<>(resource, HttpStatus.OK);
                             }
                         }
                         else{
-                            _logger.error("No asset was found with ID '" + assetId + "'");
+                            _logger.error("Preview path is blank!");
+
+                            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                        }
+                    }
+                    else if(renditionType.equalsIgnoreCase("o")){
+                        if(StringUtils.isNotBlank(asset.getPath())){
+                            File file = new File(asset.getPath());
+                            InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
+
+                            return new ResponseEntity<>(resource, HttpStatus.OK);
+                        }
+                        else{
+                            _logger.error("Original asset path is blank!");
 
                             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                         }
                     }
                     else{
-                        throw new InvalidObjectException("Assets is null!");
+                        throw new IllegalArgumentException("Rendition type is not recognized!");
                     }
                 }
                 else{
