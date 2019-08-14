@@ -8,6 +8,8 @@ import com.github.murataykanat.toybox.dbo.ContainerAsset;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
 import com.github.murataykanat.toybox.repositories.ContainerAssetsRepository;
 import com.github.murataykanat.toybox.repositories.ContainersRepository;
+import com.github.murataykanat.toybox.utilities.AssetUtils;
+import com.github.murataykanat.toybox.utilities.ContainerUtils;
 import net.lingala.zip4j.ZipFile;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -44,9 +46,8 @@ public class PackagingJobConfig {
     private String exportStagingPath;
 
     @Autowired
-    private AssetsRepository assetsRepository;
-    @Autowired
     private ContainersRepository containersRepository;
+
     @Autowired
     private ContainerAssetsRepository containerAssetsRepository;
 
@@ -75,7 +76,7 @@ public class PackagingJobConfig {
                                 for(Map.Entry<String, Object> jobParameter: jobParameters.entrySet()){
                                     if(jobParameter.getKey().startsWith(Constants.JOB_PARAM_PACKAGING_FILE)){
                                         String assetId = (String) jobParameter.getValue();
-                                        Asset asset = getAsset(assetId);
+                                        Asset asset = AssetUtils.getInstance().getAsset(assetId);
                                         File inputFile = new File(asset.getPath());
                                         File outputFile = new File(jobFolderPath + File.separator + inputFile.getName());
                                         Files.copy(inputFile.toPath(), outputFile.toPath());
@@ -155,40 +156,8 @@ public class PackagingJobConfig {
     }
 
     @LogEntryExitExecutionTime
-    private Asset getAsset(String assetId) throws Exception {
-        List<Asset> assetsById = assetsRepository.getAssetsById(assetId);
-        if(!assetsById.isEmpty()){
-            if(assetsById.size() == 1){
-                return assetsById.get(0);
-            }
-            else{
-                throw new Exception("There are multiple assets with ID '" + assetId + "'!");
-            }
-        }
-        else{
-            throw new Exception("There is no asset with ID '" + assetId + "'!");
-        }
-    }
-
-    @LogEntryExitExecutionTime
-    private Container getContainer(String containerId) throws Exception {
-        List<Container> containersById = containersRepository.getContainersById(containerId);
-        if(!containersById.isEmpty()){
-            if(containersById.size() == 1){
-                return containersById.get(0);
-            }
-            else{
-                throw new Exception("There are multiple containers with ID '" + containerId + "'!");
-            }
-        }
-        else{
-            throw new Exception("There is no container with ID '" + containerId + "'!");
-        }
-    }
-
-    @LogEntryExitExecutionTime
     private void generateFolders(String containerId, String parentPath) throws Exception {
-        Container container = getContainer(containerId);
+        Container container = ContainerUtils.getInstance().getContainer(containerId);
 
         String folderPath = parentPath + File.separator + container.getName();
         File folder = new File(folderPath);
@@ -197,7 +166,7 @@ public class PackagingJobConfig {
             List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(containerId);
             for(ContainerAsset containerAsset: containerAssetsByContainerId){
                 String assetId = containerAsset.getAssetId();
-                Asset asset = getAsset(assetId);
+                Asset asset = AssetUtils.getInstance().getAsset(assetId);
 
                 File inputFile = new File(asset.getPath());
                 File outputFile = new File(folderPath + File.separator + inputFile.getName());
