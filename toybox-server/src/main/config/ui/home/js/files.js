@@ -220,7 +220,7 @@ const files = new Vue({
         assetsDelete:function(){
             console.log('Deleting the following assets:');
             var selectedAssets = this.getSelectedAssets();
-            this.deleteAssets(selectedAssets);
+            this.deleteItems(selectedAssets);
         },
         refreshAssets:function(){
             this.selectedAssets = [];

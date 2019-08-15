@@ -214,7 +214,7 @@ module.exports = {
                 parentContainerId: this.parentContainerId
             }
             var selectedAssets= [asset];
-            this.deleteAssets(selectedAssets);
+            this.deleteItems(selectedAssets);
             this.contextMenuOpen = false;
         },
         assetShowVersionHistory:function(){

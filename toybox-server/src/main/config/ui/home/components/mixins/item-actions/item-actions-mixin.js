@@ -1,7 +1,36 @@
 var itemActionsMixin = {
     methods:{
         deleteItems(selectedItems){
+            var selectionContext = this.generateSelectionContext(selectedItems);
 
+            this.getService("toybox-common-object-loadbalancer")
+            .then(response => {
+                if(response){
+                    return axios.post(response.data.value + '/common-objects/delete', selectionContext)
+                        .then(response => {
+                            console.log(response);
+                            this.$root.$emit('message-sent', 'Success', response.data.message);
+                            this.$root.$emit('refresh-assets');
+                            this.$root.$emit('refresh-items');
+                        })
+                        .catch(error => {
+                            var errorMessage;
+
+                            if(error.response){
+                                errorMessage = error.response.data.message
+                                if(error.response.status == 401){
+                                    window.location = '/logout';
+                                }
+                            }
+                            else{
+                                errorMessage = error.message;
+                            }
+
+                            console.error(errorMessage);
+                            this.$root.$emit('message-sent', 'Error', errorMessage);
+                        });
+                }
+            })
         },
         subscribeToItems(selectedItems){
 

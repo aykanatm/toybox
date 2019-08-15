@@ -51,6 +51,22 @@ public class AuthenticationUtils {
     }
 
     @LogEntryExitExecutionTime
+    public User getUser(UsersRepository usersRepository, String username) throws Exception {
+        List<User> usersByUsername = usersRepository.findUsersByUsername(username);
+        if(!usersByUsername.isEmpty()){
+            if(usersByUsername.size() == 1){
+                return usersByUsername.get(0);
+            }
+            else{
+                throw new Exception("There are multiple instances of the username '" + username + "'!");
+            }
+        }
+        else{
+            throw new Exception("Username '" + username + "' cannot be found in the system!");
+        }
+    }
+
+    @LogEntryExitExecutionTime
     public boolean isAdminUser(Authentication authentication){
         _logger.debug("isAdminUser() >>");
         Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();

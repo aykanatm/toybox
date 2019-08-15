@@ -47,7 +47,7 @@ module.exports = {
             this.$root.$emit('open-folder', this);
         },
         folderDeselect:function(folderId){
-            if(this.id === assetId){
+            if(this.id === folderId){
                 this.isSelected = false;
             }
         },
@@ -117,6 +117,10 @@ module.exports = {
             var folder = {
                 id: this.id,
                 name: this.name,
+                type: this.type,
+                originalAssetId: this.originalAssetId,
+                '@class': 'com.github.murataykanat.toybox.dbo.Container',
+                parentContainerId: this.parentContainerId
             }
             var selectedFolders = [folder];
             this.deleteItems(selectedFolders);

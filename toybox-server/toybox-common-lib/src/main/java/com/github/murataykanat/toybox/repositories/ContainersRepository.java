@@ -47,6 +47,6 @@ public interface ContainersRepository extends JpaRepository<Container, String> {
 
     @Transactional
     @Modifying
-    @Query(value = "UPDATE containers SET deleted=:deleted WHERE asset_id IN :containerIds", nativeQuery = true)
+    @Query(value = "UPDATE containers SET deleted=:deleted WHERE container_id IN :containerIds", nativeQuery = true)
     int deleteContainersById(@Param("deleted") String deleted, @Param("containerIds") List<String> containerIds);
 }
