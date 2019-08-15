@@ -194,4 +194,88 @@ public class CommonObjectLoadbalancerController {
             return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
         }
     }
+
+    @LogEntryExitExecutionTime
+    @HystrixCommand(fallbackMethod = "subscribeToObjectsErrorFallback")
+    @RequestMapping(value = "/common-objects/subscribe", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<GenericResponse> subscribeToObjects(HttpSession session, Authentication authentication, @RequestBody SelectionContext selectionContext){
+        try{
+            GenericResponse genericResponse = new GenericResponse();
+
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+                if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
+                    String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, commonObjectServiceName);
+
+                    if(StringUtils.isNotBlank(prefix)){
+                        return restTemplate.exchange(prefix + commonObjectServiceName + "/common-objects/subscribe", HttpMethod.POST, new HttpEntity<>(selectionContext, headers), GenericResponse.class);
+                    }
+                    else{
+                        String errorMessage = "Service ID prefix is null!";
+                        _logger.error(errorMessage);
+
+                        genericResponse.setMessage(errorMessage);
+
+                        return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                    }
+                }
+                else{
+                    String errorMessage = "Selection context is not valid!";
+
+                    _logger.error(errorMessage);
+
+                    genericResponse.setMessage(errorMessage);
+
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while subscribing to assets. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            GenericResponse genericResponse = new GenericResponse();
+            genericResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    public ResponseEntity<GenericResponse> subscribeToObjectsErrorFallback(HttpSession session, Authentication authentication, SelectionContext selectionContext, Throwable e){
+        if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+            String errorMessage;
+            if(e.getLocalizedMessage() != null){
+                errorMessage = "Unable to subscribe to the selected objects. " + e.getLocalizedMessage();
+            }
+            else{
+                errorMessage = "Unable to get response from the common object service.";
+            }
+
+            _logger.error(errorMessage, e);
+
+            GenericResponse genericResponse = new GenericResponse();
+            genericResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        else{
+            String errorMessage = "Selection context is not valid!";
+
+            _logger.error(errorMessage);
+
+            GenericResponse genericResponse = new GenericResponse();
+            genericResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
 }

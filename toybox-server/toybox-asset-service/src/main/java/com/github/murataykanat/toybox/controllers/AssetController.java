@@ -287,81 +287,7 @@ public class AssetController {
         }
     }
 
-    @LogEntryExitExecutionTime
-    @RequestMapping(value = "/assets/subscribe", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<GenericResponse> subscribeToAssets(Authentication authentication, @RequestBody SelectionContext selectionContext){
-        GenericResponse genericResponse = new GenericResponse();
-        try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
-                if(selectionContext != null){
-                    if(!selectionContext.getSelectedAssets().isEmpty()){
-                        User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
-                        if(user != null){
-                            int assetCount = 0;
-                            for(Asset selectedAsset: selectionContext.getSelectedAssets()){
-                                if(!isSubscribed(user, selectedAsset)){
-                                    List<Asset> assetsByOriginalAssetId = assetsRepository.getAssetsByOriginalAssetId(selectedAsset.getOriginalAssetId());
-                                    assetsByOriginalAssetId.forEach(asset -> assetUserRepository.insertSubscriber(asset.getId(), user.getId()));
-                                    assetCount++;
-                                }
-                            }
 
-                            if(assetCount > 0){
-                                if(assetCount == selectionContext.getSelectedAssets().size()){
-                                    genericResponse.setMessage(assetCount + " asset(s) were subscribed successfully.");
-                                }
-                                else{
-                                    genericResponse.setMessage(selectionContext.getSelectedAssets().size() + " out of " + assetCount + " asset(s) were subscribed successfully. The rest of the assets were already subscribed.");
-                                }
-
-                                return new ResponseEntity<>(genericResponse, HttpStatus.OK);
-                            }
-                            else{
-                                genericResponse.setMessage("Selected assets were already subscribed.");
-
-                                return new ResponseEntity<>(genericResponse, HttpStatus.NO_CONTENT);
-                            }
-                        }
-                        else{
-                            throw new IllegalArgumentException("User is null");
-                        }
-                    }
-                    else{
-                        String warningMessage = "No assets were selected!";
-                        _logger.warn(warningMessage);
-
-                        genericResponse.setMessage(warningMessage);
-
-                        return new ResponseEntity<>(genericResponse, HttpStatus.NOT_FOUND);
-                    }
-                }
-                else{
-                    String errorMessage = "Selected assets are null!";
-                    _logger.error(errorMessage);
-
-                    genericResponse.setMessage(errorMessage);
-
-                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
-                }
-            }
-            else{
-                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
-                _logger.error(errorMessage);
-
-                genericResponse.setMessage(errorMessage);
-
-                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
-            }
-        }
-        catch (Exception e){
-            String errorMessage = "An error occurred while subscribing to assets. " + e.getLocalizedMessage();
-            _logger.error(errorMessage, e);
-
-            genericResponse.setMessage(errorMessage);
-
-            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
 
     @LogEntryExitExecutionTime
     @RequestMapping(value = "/assets/unsubscribe", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -375,7 +301,7 @@ public class AssetController {
                         if(user != null){
                             int assetCount = 0;
                             for(Asset selectedAsset: selectionContext.getSelectedAssets()){
-                                if(isSubscribed(user, selectedAsset)){
+                                if(AssetUtils.getInstance().isSubscribed(assetUserRepository, user, selectedAsset)){
                                     List<Asset> assetsByOriginalAssetId = assetsRepository.getAssetsByOriginalAssetId(selectedAsset.getOriginalAssetId());
                                     assetsByOriginalAssetId.forEach(asset -> assetUserRepository.deleteSubscriber(asset.getId(), user.getId()));
                                     assetCount++;
@@ -961,17 +887,5 @@ public class AssetController {
 
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
-
-    @LogEntryExitExecutionTime
-    private boolean isSubscribed(User user, Asset asset){
-        List<AssetUser> assetUsersByUserId = assetUserRepository.findAssetUsersByUserId(user.getId());
-        for(AssetUser assetUser: assetUsersByUserId){
-            if(assetUser.getAssetId().equalsIgnoreCase(asset.getId())){
-                return true;
-            }
-        }
-
-        return false;
     }
 }

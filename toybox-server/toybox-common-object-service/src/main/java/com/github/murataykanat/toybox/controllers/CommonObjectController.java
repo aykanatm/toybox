@@ -192,32 +192,13 @@ public class CommonObjectController {
 
                             int numberOfDeletedAssets = selectedAssetsAndContainerAssets.size();
                             int numberOfDeletedContainers = selectionContext.getSelectedContainers().size();
-                            boolean hasDeletedAssets = numberOfDeletedAssets > 0;
-                            boolean hasDeletedContainers = numberOfDeletedContainers > 0;
-                            String assetSuffix = numberOfDeletedAssets > 1 ? "s" : "";
-                            String containerSuffix = numberOfDeletedContainers > 1 ? "s" :"";
-                            String assetMessage = hasDeletedAssets ? (numberOfDeletedAssets + " asset" + assetSuffix) : "";
-                            String containerMessage = hasDeletedContainers ? (numberOfDeletedContainers + " folder" + containerSuffix) : "";
 
-                            String message = "";
-                            if(hasDeletedAssets && hasDeletedContainers){
-                                message = assetMessage + " and " + containerMessage;
-                            }
-                            else if(hasDeletedAssets){
-                                message = assetMessage;
-                            }
-                            else if(hasDeletedContainers){
-                                message = containerMessage;
-                            }
-
-                            message += " deleted successfully.";
-
-                            genericResponse.setMessage(message);
+                            genericResponse.setMessage(generateProcessingResponse(numberOfDeletedAssets, numberOfDeletedContainers, " deleted successfully."));
 
                             return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                         }
                         else{
-                            String warningMessage = "No assets or folders were selected!";
+                            String warningMessage = "No assets or folders are selected!";
                             _logger.warn(warningMessage);
 
                             genericResponse.setMessage(warningMessage);
@@ -255,5 +236,119 @@ public class CommonObjectController {
 
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @LogEntryExitExecutionTime
+    @RequestMapping(value = "/common-objects/subscribe", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<GenericResponse> subscribeToObjects(Authentication authentication, @RequestBody SelectionContext selectionContext){
+        GenericResponse genericResponse = new GenericResponse();
+        try{
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+                if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+                    if(!(selectionContext.getSelectedAssets().isEmpty() && selectionContext.getSelectedContainers().isEmpty())){
+                        User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
+                        if(user != null){
+                            int assetCount = 0;
+                            int containerCount = 0;
+                            for(Asset selectedAsset: selectionContext.getSelectedAssets()){
+                                if(!AssetUtils.getInstance().isSubscribed(assetUserRepository, user, selectedAsset)){
+                                    List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(selectedAsset.getOriginalAssetId());
+                                    assetsByOriginalAssetId.forEach(asset -> assetUserRepository.insertSubscriber(asset.getId(), user.getId()));
+                                    assetCount++;
+                                }
+                            }
+                            for(Container selectedContainer: selectionContext.getSelectedContainers()){
+                                if(!ContainerUtils.getInstance().isSubscribed(containerUsersRepository, user, selectedContainer)){
+                                    containerUsersRepository.insertSubscriber(selectedContainer.getId(), user.getId());
+
+                                    List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(selectedContainer.getId());
+                                    for(ContainerAsset containerAsset: containerAssetsByContainerId){
+                                        Asset actualAsset = AssetUtils.getInstance().getAsset(assetsRepository, containerAsset.getAssetId());
+                                        if(!AssetUtils.getInstance().isSubscribed(assetUserRepository, user, actualAsset)){
+                                            List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(actualAsset.getOriginalAssetId());
+                                            assetsByOriginalAssetId.forEach(asset -> assetUserRepository.insertSubscriber(asset.getId(), user.getId()));
+                                            assetCount++;
+                                        }
+                                    }
+                                    containerCount++;
+                                }
+                            }
+
+                            if(assetCount > 0 || containerCount > 0){
+                                genericResponse.setMessage(generateProcessingResponse(assetCount, containerCount, " subscribed successfully."));
+                            }
+                            else{
+                                genericResponse.setMessage("Selected assets were already subscribed.");
+                            }
+
+                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                        }
+                        else{
+                            throw new IllegalArgumentException("User is null");
+                        }
+                    }
+                    else{
+                        String warningMessage = "No assets or folders are selected!";
+                        _logger.warn(warningMessage);
+
+                        genericResponse.setMessage(warningMessage);
+
+                        return new ResponseEntity<>(genericResponse, HttpStatus.NOT_FOUND);
+                    }
+                }
+                else{
+                    String errorMessage = "Selection context is not valid!";
+                    _logger.error(errorMessage);
+
+                    genericResponse.setMessage(errorMessage);
+
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while subscribing to assets. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    private String generateProcessingResponse(int assetCount, int containerCount, String endOfMessage){
+        boolean hasProcessedAssets = assetCount > 0;
+        boolean hasProcessedContainers = containerCount > 0;
+        String assetSuffix = assetCount > 1 ? "s" : "";
+        String containerSuffix = containerCount > 1 ? "s" :"";
+        String assetMessage = hasProcessedAssets ? (assetCount + " asset" + assetSuffix) : "";
+        String containerMessage = hasProcessedContainers ? (containerCount + " folder" + containerSuffix) : "";
+
+        String message = "";
+        if(hasProcessedAssets && hasProcessedContainers){
+            message = assetMessage + " and " + containerMessage;
+        }
+        else if(hasProcessedAssets){
+            message = assetMessage;
+        }
+        else if(hasProcessedContainers){
+            message = containerMessage;
+        }
+        else{
+            throw new IllegalArgumentException("Unexpected input received while generating the processing response! [Asset count: " + assetCount + "][Container count: " + containerCount + "]");
+        }
+
+        message += endOfMessage;
+
+        return message;
     }
 }

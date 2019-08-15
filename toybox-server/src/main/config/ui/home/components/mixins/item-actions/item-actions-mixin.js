@@ -33,7 +33,35 @@ var itemActionsMixin = {
             })
         },
         subscribeToItems(selectedItems){
+            var selectionContext = this.generateSelectionContext(selectedItems);
 
+            this.getService("toybox-common-object-loadbalancer")
+                .then(response =>{
+                    if(response){
+                        return axios.post(response.data.value + '/common-objects/subscribe', selectionContext)
+                            .then(response => {
+                                this.$root.$emit('message-sent', 'Success', response.data.message);
+                                this.$root.$emit('refresh-assets');
+                                this.$root.$emit('refresh-items');
+                            })
+                            .catch(error => {
+                                var errorMessage;
+
+                                if(error.response){
+                                    errorMessage = error.response.data.message
+                                    if(error.response.status == 401){
+                                        window.location = '/logout';
+                                    }
+                                }
+                                else{
+                                    errorMessage = error.message;
+                                }
+
+                                console.error(errorMessage);
+                                this.$root.$emit('message-sent', 'Error', errorMessage);
+                            });
+                    }
+                })
         },
         unsubscribeFromItems(selectedItems){
 
@@ -70,12 +98,6 @@ var itemActionsMixin = {
                         });
                 }
             });
-        },
-        renameItem(itemId, itemName, itemType){
-
-        },
-        showVersionHistoryOfItem(itemId, thumbnailUrl){
-
         },
         shareItems(selectedItems){
             var selectionContext = this.generateSelectionContext(selectedItems);

@@ -1,44 +1,5 @@
 var assetActionsMixin = {
     methods:{
-        subscribeToAssets(selectedAssets){
-            this.getService("toybox-asset-loadbalancer")
-                .then(response =>{
-                    if(response){
-                        var assets = {
-                            'selectedAssets': selectedAssets
-                        }
-
-                        return axios.post(response.data.value + '/assets/subscribe', assets)
-                            .then(response => {
-                                console.log(response);
-                                if(response.status != 204){
-                                    this.$root.$emit('message-sent', 'Success', response.data.message);
-                                    this.$root.$emit('refresh-assets');
-                                    this.$root.$emit('refresh-items');
-                                }
-                                else{
-                                    this.$root.$emit('message-sent', 'Information', 'Selected assets were already subscribed.');
-                                }
-                            })
-                            .catch(error => {
-                                var errorMessage;
-
-                                if(error.response){
-                                    errorMessage = error.response.data.message
-                                    if(error.response.status == 401){
-                                        window.location = '/logout';
-                                    }
-                                }
-                                else{
-                                    errorMessage = error.message;
-                                }
-
-                                console.error(errorMessage);
-                                this.$root.$emit('message-sent', 'Error', errorMessage);
-                            });
-                    }
-                })
-        },
         unsubscribeFromAssets(selectedAssets){
             this.getService("toybox-asset-loadbalancer")
             .then(response =>{

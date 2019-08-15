@@ -185,40 +185,30 @@ const files = new Vue({
             }
         },
         assetsShare:function(){
-            console.log('Sharing the following assets:');
-            for(var i = 0; i < this.selectedAssets.length; i++)
-            {
-                var asset = this.selectedAssets[i];
-                console.log(asset.name + ' / ' +  asset.id);
-            }
+            var selectedAssets = this.getSelectedAssets();
+            this.shareItems(selectedAssets);
         },
         assetsDownload:function(){
-            console.log('Downloading the following assets:');
             var selectedAssets = this.getSelectedAssets();
             this.downloadItems(selectedAssets);
         },
         assetsCopy:function(){
-            console.log('Copying the following assets:');
             var selectedAssets = this.getSelectedAssets();
             this.copyAssets(selectedAssets);
         },
         assetsMove:function(){
-            console.log('Moving the following assets:');
             var selectedAssets = this.getSelectedAssets();
             this.moveAssets(selectedAssets);
         },
         assetsSubscribe:function(){
-            console.log('Subscribing to the following assets:');
             var selectedAssets = this.getSelectedAssets();
-            this.subscribeToAssets(selectedAssets);
+            this.subscribeToItems(selectedAssets);
         },
         assetsUnsubscribe:function(){
-            console.log('Unsubscribing from the following assets:');
             var selectedAssets = this.getSelectedAssets();
             this.unsubscribeFromAssets(selectedAssets);
         },
         assetsDelete:function(){
-            console.log('Deleting the following assets:');
             var selectedAssets = this.getSelectedAssets();
             this.deleteItems(selectedAssets);
         },
@@ -236,7 +226,6 @@ const files = new Vue({
             for(var i = 0; i < this.selectedAssets.length; i++)
             {
                 var asset = this.selectedAssets[i];
-                console.log(asset.name + ' / ' +  asset.id);
                 selectedAssets.push({id:asset.id, name:asset.name, type:asset.type, originalAssetId:asset.originalAssetId, '@class': 'com.github.murataykanat.toybox.dbo.Asset', parentContainerId: asset.parentContainerId});
             }
 

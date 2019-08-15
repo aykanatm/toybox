@@ -2,6 +2,9 @@ package com.github.murataykanat.toybox.utilities;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.dbo.Container;
+import com.github.murataykanat.toybox.dbo.ContainerUser;
+import com.github.murataykanat.toybox.dbo.User;
+import com.github.murataykanat.toybox.repositories.ContainerUsersRepository;
 import com.github.murataykanat.toybox.repositories.ContainersRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -37,5 +40,17 @@ public class ContainerUtils {
         else{
             throw new Exception("There is no container with ID '" + containerId + "'!");
         }
+    }
+
+    @LogEntryExitExecutionTime
+    public boolean isSubscribed(ContainerUsersRepository containerUsersRepository, User user, Container asset){
+        List<ContainerUser> containerUsersByUserId = containerUsersRepository.findContainerUsersByUserId(user.getId());
+        for(ContainerUser containerUser: containerUsersByUserId){
+            if(containerUser.getContainerId().equalsIgnoreCase(asset.getId())){
+                return true;
+            }
+        }
+
+        return false;
     }
 }

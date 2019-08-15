@@ -2,6 +2,9 @@ package com.github.murataykanat.toybox.utilities;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.dbo.Asset;
+import com.github.murataykanat.toybox.dbo.AssetUser;
+import com.github.murataykanat.toybox.dbo.User;
+import com.github.murataykanat.toybox.repositories.AssetUserRepository;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -38,5 +41,17 @@ public class AssetUtils {
         else{
             throw new Exception("There is no asset with ID '" + assetId + "'!");
         }
+    }
+
+    @LogEntryExitExecutionTime
+    public boolean isSubscribed(AssetUserRepository assetUserRepository, User user, Asset asset){
+        List<AssetUser> assetUsersByUserId = assetUserRepository.findAssetUsersByUserId(user.getId());
+        for(AssetUser assetUser: assetUsersByUserId){
+            if(assetUser.getAssetId().equalsIgnoreCase(asset.getId())){
+                return true;
+            }
+        }
+
+        return false;
     }
 }
