@@ -390,25 +390,20 @@ const folders = new Vue({
             this.downloadItems(selectedItems);
         },
         itemsCopy:function(){
-            console.log('Copying the following assets:');
             var selectedItems = this.getSelectedItems();
         },
         itemsMove:function(){
-            console.log('Moving the following assets:');
             var selectedItems = this.getSelectedItems();
         },
         itemsSubscribe:function(){
-            console.log('Subscribing to the following assets:');
             var selectedItems = this.getSelectedItems();
             this.subscribeToItems(selectedItems);
         },
         itemsUnsubscribe:function(){
-            console.log('Unsubscribing from the following assets:');
             var selectedItems = this.getSelectedItems();
             this.unsubscribeFromItems(selectedItems);
         },
         itemsDelete:function(){
-            console.log('Deleting the following assets:');
             var selectedItems = this.getSelectedItems();
             this.deleteItems(selectedItems);
         },
@@ -453,8 +448,6 @@ const folders = new Vue({
             for(var i = 0; i < this.selectedItems.length; i++)
             {
                 var item = this.selectedItems[i];
-                console.log(item.name + ' / ' +  item.id);
-
                 var itemClass = 'com.github.murataykanat.toybox.dbo.Asset';
                 if(item.type === undefined){
                     itemClass = 'com.github.murataykanat.toybox.dbo.Container';
