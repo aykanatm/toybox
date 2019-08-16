@@ -64,7 +64,41 @@ var itemActionsMixin = {
                 })
         },
         unsubscribeFromItems(selectedItems){
+            var selectionContext = this.generateSelectionContext(selectedItems);
 
+            this.getService("toybox-common-object-loadbalancer")
+            .then(response =>{
+                if(response){
+                    return axios.post(response.data.value + '/common-objects/unsubscribe', selectionContext)
+                        .then(response => {
+                            console.log(response);
+                            if(response.status != 204){
+                                this.$root.$emit('message-sent', 'Success', response.data.message);
+                                this.$root.$emit('refresh-assets');
+                                this.$root.$emit('refresh-items');
+                            }
+                            else{
+                                this.$root.$emit('message-sent', 'Information', 'Selected assets were already unsubscribed.');
+                            }
+                        })
+                        .catch(error => {
+                            var errorMessage;
+
+                            if(error.response){
+                                errorMessage = error.response.data.message
+                                if(error.response.status == 401){
+                                    window.location = '/logout';
+                                }
+                            }
+                            else{
+                                errorMessage = error.message;
+                            }
+
+                            console.error(errorMessage);
+                            this.$root.$emit('message-sent', 'Error', errorMessage);
+                        });
+                }
+            })
         },
         downloadItems(selectedItems){
             console.log(selectedItems);

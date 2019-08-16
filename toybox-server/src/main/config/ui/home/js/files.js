@@ -206,7 +206,7 @@ const files = new Vue({
         },
         assetsUnsubscribe:function(){
             var selectedAssets = this.getSelectedAssets();
-            this.unsubscribeFromAssets(selectedAssets);
+            this.unsubscribeFromItems(selectedAssets);
         },
         assetsDelete:function(){
             var selectedAssets = this.getSelectedAssets();

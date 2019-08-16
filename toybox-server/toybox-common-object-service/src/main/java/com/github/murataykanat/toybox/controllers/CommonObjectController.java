@@ -325,6 +325,84 @@ public class CommonObjectController {
     }
 
     @LogEntryExitExecutionTime
+    @RequestMapping(value = "/common-objects/unsubscribe", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<GenericResponse> unsubscribeFromObjects(Authentication authentication, @RequestBody SelectionContext selectionContext){
+        GenericResponse genericResponse = new GenericResponse();
+        try{
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+                if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+                    User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
+                    if(user != null){
+                        int assetCount = 0;
+                        int containerCount = 0;
+
+                        for(Asset selectedAsset: selectionContext.getSelectedAssets()){
+                            if(AssetUtils.getInstance().isSubscribed(assetUserRepository, user, selectedAsset)){
+                                List<Asset> nonDeletedAssetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(selectedAsset.getOriginalAssetId());
+                                nonDeletedAssetsByOriginalAssetId.forEach(asset -> assetUserRepository.deleteSubscriber(asset.getId(), user.getId()));
+                                assetCount++;
+                            }
+                        }
+
+                        for(Container selectedContainer: selectionContext.getSelectedContainers()){
+                            if(ContainerUtils.getInstance().isSubscribed(containerUsersRepository, user, selectedContainer)){
+                                containerUsersRepository.deleteSubscriber(selectedContainer.getId(), user.getId());
+
+                                List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(selectedContainer.getId());
+                                for(ContainerAsset containerAsset: containerAssetsByContainerId){
+                                    Asset actualAsset = AssetUtils.getInstance().getAsset(assetsRepository, containerAsset.getAssetId());
+                                    if(AssetUtils.getInstance().isSubscribed(assetUserRepository, user, actualAsset)){
+                                        List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(actualAsset.getOriginalAssetId());
+                                        assetsByOriginalAssetId.forEach(asset -> assetUserRepository.deleteSubscriber(asset.getId(), user.getId()));
+                                        assetCount++;
+                                    }
+                                }
+                                containerCount++;
+                            }
+                        }
+
+                        if(assetCount > 0 || containerCount > 0){
+                            genericResponse.setMessage(generateProcessingResponse(assetCount, containerCount, " unsubscribed successfully."));
+                        }
+                        else{
+                            genericResponse.setMessage("Selected assets were already unsubscribed.");
+                        }
+
+                        return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                    }
+                    else{
+                        throw new IllegalArgumentException("User is null!");
+                    }
+                }
+                else{
+                    String errorMessage = "Selection context is not valid!";
+                    _logger.error(errorMessage);
+
+                    genericResponse.setMessage(errorMessage);
+
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while unsubscribing from assets. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @LogEntryExitExecutionTime
     private String generateProcessingResponse(int assetCount, int containerCount, String endOfMessage){
         boolean hasProcessedAssets = assetCount > 0;
         boolean hasProcessedContainers = containerCount > 0;

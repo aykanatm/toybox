@@ -200,7 +200,7 @@ module.exports = {
                 parentContainerId: this.parentContainerId
             }
             var selectedAssets= [asset];
-            this.unsubscribeFromAssets(selectedAssets);
+            this.unsubscribeFromItems(selectedAssets);
             this.contextMenuOpen = false;
         },
         assetDelete:function(){
