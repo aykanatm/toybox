@@ -252,9 +252,11 @@ public class CommonObjectController {
                             int containerCount = 0;
                             for(Asset selectedAsset: selectionContext.getSelectedAssets()){
                                 if(!AssetUtils.getInstance().isSubscribed(assetUserRepository, user, selectedAsset)){
-                                    List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(selectedAsset.getOriginalAssetId());
-                                    assetsByOriginalAssetId.forEach(asset -> assetUserRepository.insertSubscriber(asset.getId(), user.getId()));
-                                    assetCount++;
+                                    List<Asset> nonDeletedAssetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(selectedAsset.getOriginalAssetId());
+                                    if(!nonDeletedAssetsByOriginalAssetId.isEmpty()){
+                                        nonDeletedAssetsByOriginalAssetId.forEach(asset -> assetUserRepository.insertSubscriber(asset.getId(), user.getId()));
+                                        assetCount++;
+                                    }
                                 }
                             }
                             for(Container selectedContainer: selectionContext.getSelectedContainers()){
@@ -265,9 +267,11 @@ public class CommonObjectController {
                                     for(ContainerAsset containerAsset: containerAssetsByContainerId){
                                         Asset actualAsset = AssetUtils.getInstance().getAsset(assetsRepository, containerAsset.getAssetId());
                                         if(!AssetUtils.getInstance().isSubscribed(assetUserRepository, user, actualAsset)){
-                                            List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(actualAsset.getOriginalAssetId());
-                                            assetsByOriginalAssetId.forEach(asset -> assetUserRepository.insertSubscriber(asset.getId(), user.getId()));
-                                            assetCount++;
+                                            List<Asset> nonDeletedAssetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(actualAsset.getOriginalAssetId());
+                                            if(!nonDeletedAssetsByOriginalAssetId.isEmpty()){
+                                                nonDeletedAssetsByOriginalAssetId.forEach(asset -> assetUserRepository.insertSubscriber(asset.getId(), user.getId()));
+                                                assetCount++;
+                                            }
                                         }
                                     }
                                     containerCount++;
@@ -339,8 +343,10 @@ public class CommonObjectController {
                         for(Asset selectedAsset: selectionContext.getSelectedAssets()){
                             if(AssetUtils.getInstance().isSubscribed(assetUserRepository, user, selectedAsset)){
                                 List<Asset> nonDeletedAssetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(selectedAsset.getOriginalAssetId());
-                                nonDeletedAssetsByOriginalAssetId.forEach(asset -> assetUserRepository.deleteSubscriber(asset.getId(), user.getId()));
-                                assetCount++;
+                                if(!nonDeletedAssetsByOriginalAssetId.isEmpty()){
+                                    nonDeletedAssetsByOriginalAssetId.forEach(asset -> assetUserRepository.deleteSubscriber(asset.getId(), user.getId()));
+                                    assetCount++;
+                                }
                             }
                         }
 
@@ -352,9 +358,11 @@ public class CommonObjectController {
                                 for(ContainerAsset containerAsset: containerAssetsByContainerId){
                                     Asset actualAsset = AssetUtils.getInstance().getAsset(assetsRepository, containerAsset.getAssetId());
                                     if(AssetUtils.getInstance().isSubscribed(assetUserRepository, user, actualAsset)){
-                                        List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(actualAsset.getOriginalAssetId());
-                                        assetsByOriginalAssetId.forEach(asset -> assetUserRepository.deleteSubscriber(asset.getId(), user.getId()));
-                                        assetCount++;
+                                        List<Asset> nonDeletedAssetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(actualAsset.getOriginalAssetId());
+                                        if(!nonDeletedAssetsByOriginalAssetId.isEmpty()){
+                                            nonDeletedAssetsByOriginalAssetId.forEach(asset -> assetUserRepository.deleteSubscriber(asset.getId(), user.getId()));
+                                            assetCount++;
+                                        }
                                     }
                                 }
                                 containerCount++;
