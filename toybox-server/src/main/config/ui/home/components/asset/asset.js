@@ -170,7 +170,7 @@ module.exports = {
                 parentContainerId: this.parentContainerId
             }
             var selectedAssets= [asset];
-            this.moveAssets(selectedAssets);
+            this.moveItems(selectedAssets);
             this.contextMenuOpen = false;
         },
         assetSubscribe:function(){

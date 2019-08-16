@@ -3,20 +3,18 @@ module.exports = {
     data:function(){
         return{
             componentName: 'Copy Move Asset Modal Window',
-            selectedAssets:[],
+            selectionContext:'',
             isMove: false,
             isCopy: false,
-            parentContainerId: '',
             hasSelectedFolders: false
         }
     },
     mounted:function(){
         var self = this;
-        this.$root.$on('open-copy-move-asset-modal-window', (selectedAssets, isMove, isCopy) => {
-            this.selectedAssets = selectedAssets;
+        this.$root.$on('open-copy-move-asset-modal-window', (selectionContext, isMove, isCopy) => {
+            this.selectionContext = selectionContext;
             this.isMove = isMove;
             this.isCopy = isCopy;
-            this.parentContainerId = this.selectedAssets[0].parentContainerId;
 
             this.getService("toybox-folder-loadbalancer")
                 .then(response => {
@@ -116,7 +114,7 @@ module.exports = {
             for(var i = 0; i < containers.length; i++){
                 var container = containers[i];
                 if(!container.parentId){
-                    folderSource.push({title: container.name, key: container.id, folder: true, unselectable: (this.parentContainerId === container.id), children: this.getChildContainers(containers, container.id)});
+                    folderSource.push({title: container.name, key: container.id, folder: true, children: this.getChildContainers(containers, container.id)});
                 }
             }
 
@@ -127,7 +125,7 @@ module.exports = {
             for(var i = 0; i < containers.length; i++){
                 var container = containers[i]
                 if(container.parentId === containerId){
-                    children.push({title: container.name, key: container.id, folder: true, unselectable: (this.parentContainerId === container.id), children: this.getChildContainers(containers, container.id)});
+                    children.push({title: container.name, key: container.id, folder: true, children: this.getChildContainers(containers, container.id)});
                 }
             }
 
@@ -204,27 +202,16 @@ module.exports = {
         moveAsset(){
             var selectedFolders = $('#folder-tree').fancytree('getTree').getSelectedNodes();
 
-            var assetIds = [];
-            console.log('Moving the following assets:');
-            for(var i = 0; i < this.selectedAssets.length; i++){
-                console.log(this.selectedAssets[i]);
-                assetIds.push(this.selectedAssets[i].id);
-            }
-            console.log('To the following folders:')
-            for(var i = 0; i < selectedFolders.length; i++){
-                console.log(selectedFolders[i]);
-            }
-
-            this.getService("toybox-asset-loadbalancer")
+            this.getService("toybox-common-object-loadbalancer")
                 .then(response =>{
-                    var assetServiceUrl = response.data.value;
+                    var commonObjectsServiceUrl = response.data.value;
 
                     var moveRequest = {
-                        'assetIds': assetIds,
+                        'selectionContext': this.selectionContext,
                         'containerId': selectedFolders[0].key
                     }
 
-                    axios.post(assetServiceUrl + "/assets/move", moveRequest)
+                    axios.post(commonObjectsServiceUrl + "/common-objects/move", moveRequest)
                     .then(response =>{
                         this.$root.$emit('message-sent', 'Success', response.data.message);
                         this.$root.$emit('refresh-assets');
@@ -266,7 +253,6 @@ module.exports = {
                     console.error(errorMessage);
                     this.$root.$emit('message-sent', 'Error', errorMessage);
                 });
-
         }
     },
     components:{

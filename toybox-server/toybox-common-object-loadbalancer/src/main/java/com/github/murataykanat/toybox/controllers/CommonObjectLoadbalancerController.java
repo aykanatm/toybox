@@ -2,6 +2,7 @@ package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
+import com.github.murataykanat.toybox.schema.asset.MoveAssetRequest;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.selection.SelectionContext;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
@@ -353,6 +354,107 @@ public class CommonObjectLoadbalancerController {
         else{
             String errorMessage = "Selection context is not valid!";
 
+            _logger.error(errorMessage);
+
+            genericResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    @HystrixCommand(fallbackMethod = "moveItemsErrorFallback")
+    @RequestMapping(value = "/common-objects/move", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<GenericResponse> moveItems(Authentication authentication, HttpSession session, @RequestBody MoveAssetRequest moveAssetRequest){
+        GenericResponse genericResponse = new GenericResponse();
+        try{
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+                if(moveAssetRequest != null){
+                    SelectionContext selectionContext = moveAssetRequest.getSelectionContext();
+                    if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+                        HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
+                        String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, commonObjectServiceName);
+                        if(StringUtils.isNotBlank(prefix)){
+                            return restTemplate.exchange(prefix + commonObjectServiceName + "/common-objects/move", HttpMethod.POST, new HttpEntity<>(moveAssetRequest, headers), GenericResponse.class);
+                        }
+                        else{
+                            String errorMessage = "Service ID prefix is null!";
+                            _logger.error(errorMessage);
+
+                            genericResponse.setMessage(errorMessage);
+
+                            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                        }
+                    }
+                    else{
+                        String errorMessage = "Selection context is not valid!";
+                        _logger.error(errorMessage);
+
+                        genericResponse.setMessage(errorMessage);
+
+                        return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                    }
+                }
+                else{
+                    String errorMessage = "Asset move request is null!";
+                    _logger.error(errorMessage);
+
+                    genericResponse.setMessage(errorMessage);
+
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while moving assets. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    public ResponseEntity<GenericResponse> moveItemsErrorFallback(Authentication authentication, HttpSession session, MoveAssetRequest moveAssetRequest, Throwable e){
+        GenericResponse genericResponse = new GenericResponse();
+
+        if(moveAssetRequest != null){
+            SelectionContext selectionContext = moveAssetRequest.getSelectionContext();
+            if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+                String errorMessage;
+                if(e.getLocalizedMessage() != null){
+                    errorMessage = "Unable to move the selected assets. " + e.getLocalizedMessage();
+                }
+                else{
+                    errorMessage = "Unable to get response from the asset service.";
+                }
+
+                _logger.error(errorMessage, e);
+
+                genericResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+            else{
+                String errorMessage = "Selection context is not valid!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+            }
+        }
+        else{
+            String errorMessage = "Move asset request is null!";
             _logger.error(errorMessage);
 
             genericResponse.setMessage(errorMessage);

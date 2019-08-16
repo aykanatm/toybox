@@ -137,6 +137,10 @@ var itemActionsMixin = {
             var selectionContext = this.generateSelectionContext(selectedItems);
             this.$root.$emit('open-share-modal-window', selectionContext);
         },
+        moveItems(selectedItems){
+            var selectionContext = this.generateSelectionContext(selectedItems);
+            this.$root.$emit('open-copy-move-asset-modal-window', selectionContext, true, false);
+        },
         generateSelectionContext(selectedItems){
             console.log(selectedItems);
             var selectedAssets = [];

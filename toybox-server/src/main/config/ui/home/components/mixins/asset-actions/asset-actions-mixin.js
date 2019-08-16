@@ -48,9 +48,6 @@ var assetActionsMixin = {
                     this.$root.$emit('message-sent', 'Error', errorMessage);
                 });
         },
-        moveAssets(selectedAssets){
-            this.$root.$emit('open-copy-move-asset-modal-window', selectedAssets, true, false);
-        },
         copyAssets(selectedAssets){
             this.$root.$emit('open-copy-move-asset-modal-window', selectedAssets, false, true);
         },

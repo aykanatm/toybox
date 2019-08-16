@@ -85,6 +85,16 @@ module.exports = {
             this.contextMenuOpen = false;
         },
         folderMove:function(){
+            var folder = {
+                id: this.id,
+                name: this.name,
+                type: this.type,
+                originalAssetId: this.originalAssetId,
+                '@class': 'com.github.murataykanat.toybox.dbo.Container',
+                parentContainerId: this.parentContainerId
+            }
+            var selectedFolders = [folder];
+            this.moveItems(selectedFolders);
             this.contextMenuOpen = false;
         },
         folderSubscribe:function(){

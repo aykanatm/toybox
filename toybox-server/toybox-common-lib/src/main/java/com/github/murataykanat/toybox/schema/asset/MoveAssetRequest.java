@@ -1,23 +1,15 @@
 package com.github.murataykanat.toybox.schema.asset;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.murataykanat.toybox.schema.selection.SelectionContext;
 
 import java.io.Serializable;
-import java.util.List;
 
 public class MoveAssetRequest implements Serializable {
-    @JsonProperty("assetIds")
-    private List<String> assetIds;
+    @JsonProperty("selectionContext")
+    private SelectionContext selectionContext;
     @JsonProperty("containerId")
     private String containerId;
-
-    public List<String> getAssetIds() {
-        return assetIds;
-    }
-
-    public void setAssetIds(List<String> assetIds) {
-        this.assetIds = assetIds;
-    }
 
     public String getContainerId() {
         return containerId;
@@ -25,5 +17,13 @@ public class MoveAssetRequest implements Serializable {
 
     public void setContainerId(String containerId) {
         this.containerId = containerId;
+    }
+
+    public SelectionContext getSelectionContext() {
+        return selectionContext;
+    }
+
+    public void setSelectionContext(SelectionContext selectionContext) {
+        this.selectionContext = selectionContext;
     }
 }

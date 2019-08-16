@@ -394,6 +394,7 @@ const folders = new Vue({
         },
         itemsMove:function(){
             var selectedItems = this.getSelectedItems();
+            this.moveItems(selectedItems);
         },
         itemsSubscribe:function(){
             var selectedItems = this.getSelectedItems();

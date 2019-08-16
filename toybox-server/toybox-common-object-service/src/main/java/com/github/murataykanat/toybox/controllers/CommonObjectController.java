@@ -6,6 +6,7 @@ import com.github.murataykanat.toybox.dbo.Container;
 import com.github.murataykanat.toybox.dbo.ContainerAsset;
 import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.*;
+import com.github.murataykanat.toybox.schema.asset.MoveAssetRequest;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
@@ -33,6 +34,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -402,6 +404,70 @@ public class CommonObjectController {
         }
         catch (Exception e){
             String errorMessage = "An error occurred while unsubscribing from assets. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    @RequestMapping(value = "/common-objects/move", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<GenericResponse> moveItems(Authentication authentication, @RequestBody MoveAssetRequest moveAssetRequest){
+        GenericResponse genericResponse = new GenericResponse();
+
+        try{
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+                if(moveAssetRequest != null){
+                    SelectionContext selectionContext = moveAssetRequest.getSelectionContext();
+                    if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+                        Container targetContainer = ContainerUtils.getInstance().getContainer(containersRepository, moveAssetRequest.getContainerId());
+
+                        List<String> assetIds = selectionContext.getSelectedAssets().stream().map(Asset::getId).collect(Collectors.toList());
+                        List<String> containerIds = selectionContext.getSelectedContainers().stream().map(Container::getId).collect(Collectors.toList());
+
+                        int assetCount = 0;
+                        int containerCount = 0;
+
+                        AssetUtils.getInstance().moveAssets(containerAssetsRepository, assetsRepository, assetIds, targetContainer);
+                        assetCount += assetIds.size();
+                        ContainerUtils.getInstance().moveContainers(containersRepository, containerAssetsRepository, assetsRepository,containerIds, targetContainer);
+                        containerCount += containerIds.size();
+
+                        genericResponse.setMessage(generateProcessingResponse(assetCount, containerCount, " were successfully moved to the folder '" + targetContainer.getName() + "'."));
+
+                        return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                    }
+                    else{
+                        String errorMessage = "Selection context is not valid!";
+                        _logger.error(errorMessage);
+
+                        genericResponse.setMessage(errorMessage);
+
+                        return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                    }
+                }
+                else{
+                    String errorMessage = "Asset move request is null!";
+                    _logger.error(errorMessage);
+
+                    genericResponse.setMessage(errorMessage);
+
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while moving assets. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
             genericResponse.setMessage(errorMessage);
