@@ -6,16 +6,20 @@ import com.github.murataykanat.toybox.dbo.Container;
 import com.github.murataykanat.toybox.dbo.ContainerAsset;
 import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.*;
+import com.github.murataykanat.toybox.schema.asset.CopyAssetRequest;
 import com.github.murataykanat.toybox.schema.asset.MoveAssetRequest;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
 import com.github.murataykanat.toybox.schema.selection.SelectionContext;
+import com.github.murataykanat.toybox.schema.upload.UploadFile;
+import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
 import com.github.murataykanat.toybox.utilities.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.core.io.InputStreamResource;
@@ -29,12 +33,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpSession;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InvalidObjectException;
+import java.io.*;
+import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -46,6 +47,7 @@ public class CommonObjectController {
     private static final String jobServiceLoadBalancerServiceName = "toybox-job-loadbalancer";
     private static final String assetServiceLoadBalancerServiceName = "toybox-asset-loadbalancer";
     private static final String notificationServiceLoadBalancerServiceName = "toybox-notification-loadbalancer";
+    private static final String folderServiceLoadBalancerServiceName = "toybox-folder-loadbalancer";
 
     @Autowired
     private DiscoveryClient discoveryClient;
@@ -65,6 +67,9 @@ public class CommonObjectController {
 
     @Value("${exportStagingPath}")
     private String exportStagingPath;
+
+    @Value("${importStagingPath}")
+    private String importStagingPath;
 
     @LogEntryExitExecutionTime
     @RequestMapping(value = "/common-objects/download", method = RequestMethod.POST, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
@@ -476,6 +481,71 @@ public class CommonObjectController {
         }
         catch (Exception e){
             String errorMessage = "An error occurred while moving assets. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    @RequestMapping(value = "/common-objects/copy", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<GenericResponse> copyItems(Authentication authentication, HttpSession session, @RequestBody CopyAssetRequest copyAssetRequest){
+        GenericResponse genericResponse = new GenericResponse();
+        try{
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+                if(copyAssetRequest != null){
+                    SelectionContext selectionContext = copyAssetRequest.getSelectionContext();
+                    if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+                        List<String> targetContainerIds = copyAssetRequest.getContainerIds();
+                        List<String> sourceAssetIds = selectionContext.getSelectedAssets().stream().map(Asset::getId).collect(Collectors.toList());
+                        List<String> sourceContainerIds = selectionContext.getSelectedContainers().stream().map(Container::getId).collect(Collectors.toList());
+
+                        int assetCount = 0;
+                        int containerCount = 0;
+
+                        AssetUtils.getInstance().copyAssets(assetsRepository, discoveryClient, session, jobServiceLoadBalancerServiceName,
+                                sourceAssetIds, targetContainerIds, authentication.getName(), importStagingPath);
+                        assetCount += sourceAssetIds.size();
+                        ContainerUtils.getInstance().copyContainers(discoveryClient, containersRepository, containerAssetsRepository, assetsRepository,
+                                folderServiceLoadBalancerServiceName, jobServiceLoadBalancerServiceName, session, sourceContainerIds, targetContainerIds,
+                                authentication.getName(), importStagingPath);
+                        containerCount += sourceContainerIds.size();
+
+                        genericResponse.setMessage(generateProcessingResponse(assetCount, containerCount, " started to be copied to the selected folders. This action may take a while depending on the number and size of the selected assets and folders. You can follow the progress of the copy operations in 'Jobs' section."));
+
+                        return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                    }
+                    else{
+                        String errorMessage = "Selection context is not valid!";
+                        _logger.error(errorMessage);
+
+                        genericResponse.setMessage(errorMessage);
+
+                        return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                    }
+                }
+                else{
+                    String errorMessage = "Copy move request is null!";
+                    _logger.error(errorMessage);
+
+                    genericResponse.setMessage(errorMessage);
+
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while copying assets. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
             genericResponse.setMessage(errorMessage);

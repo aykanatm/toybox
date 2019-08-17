@@ -6,9 +6,18 @@ import com.github.murataykanat.toybox.repositories.AssetsRepository;
 import com.github.murataykanat.toybox.repositories.ContainerAssetsRepository;
 import com.github.murataykanat.toybox.repositories.ContainerUsersRepository;
 import com.github.murataykanat.toybox.repositories.ContainersRepository;
+import com.github.murataykanat.toybox.schema.container.CreateContainerRequest;
+import com.github.murataykanat.toybox.schema.container.CreateContainerResponse;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.cloud.client.discovery.DiscoveryClient;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
 
+import javax.servlet.http.HttpSession;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -78,35 +87,24 @@ public class ContainerUtils {
 
         for(String containerId: containerIds){
             Container container = ContainerUtils.getInstance().getContainer(containersRepository, containerId);
-
-            Container duplicateContainer;
-
-            List<Container> nonDeletedContainersByParentContainerId = containersRepository.getNonDeletedContainersByParentContainerId(targetContainer.getId());
             if(!container.getId().equalsIgnoreCase(targetContainer.getId())){
                 if(!isSubfolder(containersRepository, targetContainer, container)){
-                    List<Container> duplicateNameContainers = nonDeletedContainersByParentContainerId.stream().filter(c -> c.getName().equalsIgnoreCase(container.getName())).collect(Collectors.toList());
-                    if(!duplicateNameContainers.isEmpty()){
-                        if(duplicateNameContainers.size() == 1){
-                            // Container has a duplicate inside the target folder
-                            // We delete the container and move the contents to the duplicate container
-                            duplicateContainer = duplicateNameContainers.get(0);
+                    Container duplicateContainer = findDuplicateContainer(containersRepository, targetContainer.getId(), container.getName());
+                    if(duplicateContainer != null){
+                        // Container has a duplicate inside the target folder
+                        // We delete the container and move the contents to the duplicate container
+                        List<String> assetIdsInsideContainer = containerAssetsRepository.findContainerAssetsByContainerId(container.getId()).stream().map(ContainerAsset::getAssetId).collect(Collectors.toList());
+                        List<String> getNonDeletedLastVersionAssetIds = assetsRepository.getNonDeletedLastVersionAssetsByAssetIds(assetIdsInsideContainer).stream().map(Asset::getId).collect(Collectors.toList());
+                        AssetUtils.getInstance().moveAssets(containerAssetsRepository, assetsRepository, getNonDeletedLastVersionAssetIds, duplicateContainer);
 
-                            List<String> assetIdsInsideContainer = containerAssetsRepository.findContainerAssetsByContainerId(container.getId()).stream().map(ContainerAsset::getAssetId).collect(Collectors.toList());
-                            List<String> getNonDeletedLastVersionAssetIds = assetsRepository.getNonDeletedLastVersionAssetsByAssetIds(assetIdsInsideContainer).stream().map(Asset::getId).collect(Collectors.toList());
-                            AssetUtils.getInstance().moveAssets(containerAssetsRepository, assetsRepository, getNonDeletedLastVersionAssetIds, duplicateContainer);
+                        List<String> containerIdsToDelete = new ArrayList<>();
+                        containerIdsToDelete.add(container.getId());
 
-                            List<String> containerIdsToDelete = new ArrayList<>();
-                            containerIdsToDelete.add(container.getId());
-
-                            if(!targetContainer.getId().equalsIgnoreCase(container.getParentId())){
-                                containersRepository.deleteContainersById("Y", containerIdsToDelete);
-                            }
-                            else{
-                                _logger.debug("Container with ID '" + container.getId() + "' is already inside the container with ID '" + targetContainer.getId() + "'. Skipping delete...");
-                            }
+                        if(!targetContainer.getId().equalsIgnoreCase(container.getParentId())){
+                            containersRepository.deleteContainersById("Y", containerIdsToDelete);
                         }
                         else{
-                            throw new IllegalArgumentException("There are more than one duplicate container!");
+                            _logger.debug("Container with ID '" + container.getId() + "' is already inside the container with ID '" + targetContainer.getId() + "'. Skipping delete...");
                         }
                     }
                     else{
@@ -129,6 +127,107 @@ public class ContainerUtils {
     }
 
     @LogEntryExitExecutionTime
+    public int copyContainers(DiscoveryClient discoveryClient, ContainersRepository containersRepository, ContainerAssetsRepository containerAssetsRepository,
+                              AssetsRepository assetsRepository, String folderServiceLoadbalancerServiceName, String jobServiceLoadbalancerServiceName,
+                              HttpSession session, List<String> sourceContainerIds, List<String> targetContainerIds, String username, String importStagingPath) throws Exception {
+        int numberOfIgnoredContainers = 0;
+
+        for(String targetContainerId: targetContainerIds){
+            Container targetContainer = getContainer(containersRepository, targetContainerId);
+            for(String sourceContainerId: sourceContainerIds){
+                Container sourceContainer = getContainer(containersRepository, sourceContainerId);
+                if(!sourceContainerId.equalsIgnoreCase(targetContainerId)){
+                    if(!isSubfolder(containersRepository, targetContainer, sourceContainer)){
+                        copyContainer(discoveryClient, containersRepository, containerAssetsRepository,
+                                assetsRepository, folderServiceLoadbalancerServiceName, jobServiceLoadbalancerServiceName,
+                                session, sourceContainer, targetContainer, username, importStagingPath);
+                    }
+                    else{
+                        numberOfIgnoredContainers++;
+                        _logger.debug("Folder with ID '" + targetContainer.getId() + "' is a sub-folder of the source container with ID '" + sourceContainer.getId() + "'. Skipping copy...");
+                    }
+                }
+                else{
+                    numberOfIgnoredContainers++;
+                    _logger.debug("Target container ID '" + targetContainerId + "' and the source container with ID '" + sourceContainerId + "' is the same. Skipping copy...");
+                }
+            }
+        }
+
+        return numberOfIgnoredContainers;
+    }
+
+    @LogEntryExitExecutionTime
+    private void copyContainer(DiscoveryClient discoveryClient, ContainersRepository containersRepository, ContainerAssetsRepository containerAssetsRepository,
+                               AssetsRepository assetsRepository, String folderServiceLoadbalancerServiceName, String jobServiceLoadbalancerServiceName,
+                               HttpSession session, Container sourceContainer, Container targetContainer, String username, String importStagingPath) throws Exception {
+
+        Container duplicateContainer = findDuplicateContainer(containersRepository, targetContainer.getId(), sourceContainer.getName());
+        String createdContainerId;
+
+        if(duplicateContainer != null){
+            // Container has a duplicate inside the target folder, so we don't need to create a new container
+            createdContainerId = duplicateContainer.getId();
+        }
+        else{
+            // Container does not have any duplicates inside the target container, so we create a new container
+            createdContainerId = createContainer(discoveryClient, folderServiceLoadbalancerServiceName, session, sourceContainer.getName(), targetContainer.getId());
+        }
+
+        // We copy the contents to the target container
+        if(StringUtils.isNotBlank(createdContainerId)){
+            // We find and copy all the assets inside the folder to the new folder
+            List<String> assetIdsInsideContainer = containerAssetsRepository.findContainerAssetsByContainerId(createdContainerId).stream().map(ContainerAsset::getAssetId).collect(Collectors.toList());
+            List<String> getNonDeletedLastVersionAssetIds = assetsRepository.getNonDeletedLastVersionAssetsByAssetIds(assetIdsInsideContainer).stream().map(Asset::getId).collect(Collectors.toList());
+            if(!getNonDeletedLastVersionAssetIds.isEmpty()){
+                List<String> singleTargetContainerId = new ArrayList<>();
+                singleTargetContainerId.add(createdContainerId);
+
+                AssetUtils.getInstance().copyAssets(assetsRepository, discoveryClient, session, jobServiceLoadbalancerServiceName, getNonDeletedLastVersionAssetIds, singleTargetContainerId, username, importStagingPath);
+            }
+
+            // We find the containers which are inside the container and copy them to their new paths recursively
+            List<Container> nonDeletedContainersByParentContainerId = containersRepository.getNonDeletedContainersByParentContainerId(sourceContainer.getId());
+
+            Container createdContainer = getContainer(containersRepository, createdContainerId);
+
+            if(!nonDeletedContainersByParentContainerId.isEmpty()){
+                for(Container nonDeletedContainerByParentContainerId: nonDeletedContainersByParentContainerId){
+                    copyContainer(discoveryClient, containersRepository, containerAssetsRepository,
+                            assetsRepository, folderServiceLoadbalancerServiceName, jobServiceLoadbalancerServiceName,
+                            session, nonDeletedContainerByParentContainerId, createdContainer, username, importStagingPath);
+                }
+            }
+        }
+        else{
+            throw new IllegalArgumentException("Created container ID is blank!");
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    public String createContainer(DiscoveryClient discoveryClient, String folderServiceLoadbalancerServiceName, HttpSession session, String name, String parentContainerId) throws Exception {
+        String folderServiceLoadbalancerUrl = LoadbalancerUtils.getInstance().getLoadbalancerUrl(discoveryClient, folderServiceLoadbalancerServiceName);
+
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
+
+        CreateContainerRequest createContainerRequest = new CreateContainerRequest();
+        createContainerRequest.setContainerName(name);
+        createContainerRequest.setParentContainerId(parentContainerId);
+
+        ResponseEntity<CreateContainerResponse> folderServiceResponseEntity = restTemplate.postForEntity(folderServiceLoadbalancerUrl + "/containers", new HttpEntity<>(createContainerRequest, headers), CreateContainerResponse.class);
+        boolean successful = folderServiceResponseEntity.getStatusCode().is2xxSuccessful();
+
+        if(successful){
+            return folderServiceResponseEntity.getBody().getContainerId();
+        }
+        else{
+            _logger.error("An error occurred while creating the container. " + folderServiceResponseEntity.getBody().getMessage());
+            return null;
+        }
+    }
+
+    @LogEntryExitExecutionTime
     private boolean isSubfolder(ContainersRepository containersRepository, Container subFolder, Container subFolderOf) {
         while(subFolder.getParentId() != null){
             Container parentContainer = getContainer(containersRepository, subFolder.getParentId());
@@ -140,5 +239,23 @@ public class ContainerUtils {
             }
         }
         return false;
+    }
+
+    @LogEntryExitExecutionTime
+    private Container findDuplicateContainer(ContainersRepository containersRepository, String targetContainerId, String containerName){
+        List<Container> nonDeletedContainersByParentContainerId = containersRepository.getNonDeletedContainersByParentContainerId(targetContainerId);
+
+        List<Container> duplicateNameContainers = nonDeletedContainersByParentContainerId.stream().filter(c -> c.getName().equalsIgnoreCase(containerName)).collect(Collectors.toList());
+        if(!duplicateNameContainers.isEmpty()){
+            if(duplicateNameContainers.size() == 1){
+                return duplicateNameContainers.get(0);
+            }
+            else{
+                throw new IllegalArgumentException("There are more than one duplicate container!");
+            }
+        }
+        else{
+            return null;
+        }
     }
 }

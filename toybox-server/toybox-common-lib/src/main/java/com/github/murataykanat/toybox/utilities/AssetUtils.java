@@ -5,9 +5,23 @@ import com.github.murataykanat.toybox.dbo.*;
 import com.github.murataykanat.toybox.repositories.AssetUserRepository;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
 import com.github.murataykanat.toybox.repositories.ContainerAssetsRepository;
+import com.github.murataykanat.toybox.schema.job.JobResponse;
+import com.github.murataykanat.toybox.schema.upload.UploadFile;
+import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.cloud.client.discovery.DiscoveryClient;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
 
+import javax.servlet.http.HttpSession;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -111,5 +125,80 @@ public class AssetUtils {
         }
 
         return numberOfIgnoredFiles;
+    }
+
+    @LogEntryExitExecutionTime
+    public int copyAssets(AssetsRepository assetsRepository, DiscoveryClient discoveryClient, HttpSession session,
+                          String jobServiceLoadBalancerServiceName, List<String> sourceAssetIds, List<String> targetContainerIds, String username,
+                          String importStagingPath) throws Exception {
+        int numberOfFailedJobs = 0;
+
+        for(String targetContainerId : targetContainerIds){
+            numberOfFailedJobs += importAssets(assetsRepository, discoveryClient, session, jobServiceLoadBalancerServiceName, sourceAssetIds, importStagingPath, targetContainerId, username);
+        }
+
+        return numberOfFailedJobs;
+    }
+
+    @LogEntryExitExecutionTime
+    public int importAssets(AssetsRepository assetsRepository, DiscoveryClient discoveryClient, HttpSession session, String jobServiceLoadBalancerServiceName, List<String> assetIds, String importStagingPath, String targetContainerId, String username) throws Exception {
+        int numberOfFailedAssets = 0;
+
+        UploadFileLst uploadFileLst = new UploadFileLst();
+        uploadFileLst.setContainerId(targetContainerId);
+
+        List<UploadFile> uploadFiles = new ArrayList<>();
+        for(String assetId: assetIds){
+            Asset asset = getAsset(assetsRepository, assetId);
+            File currentFile = new File(asset.getPath());
+
+            String tempFolderName = Long.toString(System.currentTimeMillis());
+            String tempImportStagingPath = importStagingPath + File.separator + tempFolderName;
+            _logger.debug("Import staging path: " + tempImportStagingPath);
+
+            File tempFolder = new File(tempImportStagingPath);
+            if(!tempFolder.exists()){
+                if(!tempFolder.mkdir()){
+                    throw new IOException("Unable to generate the temp folder path '" + tempImportStagingPath + "'!");
+                }
+            }
+
+            String destinationPath;
+            if(tempFolder.exists()){
+                destinationPath = tempFolder.getAbsolutePath() + File.separator + asset.getName();
+            }
+            else{
+                throw new FileNotFoundException("The temp folder '" + tempFolder.getAbsolutePath() + "' does not exist!");
+            }
+
+            Files.copy(currentFile.toPath(), new File(destinationPath).toPath());
+
+            UploadFile uploadFile = new UploadFile();
+            uploadFile.setUsername(username);
+            uploadFile.setPath(destinationPath);
+
+            uploadFiles.add(uploadFile);
+        }
+
+        uploadFileLst.setUploadFiles(uploadFiles);
+
+        String jobServiceUrl = LoadbalancerUtils.getInstance().getLoadbalancerUrl(discoveryClient, jobServiceLoadBalancerServiceName);
+
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
+
+        HttpEntity<UploadFileLst> uploadFileLstEntity = new HttpEntity<>(uploadFileLst, headers);
+        ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/import", uploadFileLstEntity, JobResponse.class);
+        boolean successful = jobResponseResponseEntity.getStatusCode().is2xxSuccessful();
+
+        if(successful){
+            _logger.debug("Asset import job successfully started!");
+        }
+        else{
+            _logger.error("Asset import job failed to start. " + jobResponseResponseEntity.getBody().getMessage());
+            numberOfFailedAssets += uploadFileLst.getUploadFiles().size();
+        }
+
+        return numberOfFailedAssets;
     }
 }
