@@ -135,28 +135,22 @@ module.exports = {
             var selectedFolders = $('#folder-tree').fancytree('getTree').getSelectedNodes();
 
             console.log('Copying the following assets:');
-            var assetIds = [];
-            for(var i = 0; i < this.selectedAssets.length; i++){
-                console.log(this.selectedAssets[i]);
-                assetIds.push(this.selectedAssets[i].id);
-            }
-            console.log('To the following folders:')
             var containerIds = [];
             for(var i = 0; i < selectedFolders.length; i++){
                 console.log(selectedFolders[i]);
                 containerIds.push(selectedFolders[i].key);
             }
 
-            this.getService("toybox-asset-loadbalancer")
+            this.getService("toybox-common-object-loadbalancer")
                 .then(response =>{
                     var assetServiceUrl = response.data.value;
 
                     var copyRequest = {
-                        'assetIds': assetIds,
+                        'selectionContext': this.selectionContext,
                         'containerIds': containerIds
                     }
 
-                    axios.post(assetServiceUrl + "/assets/copy", copyRequest)
+                    axios.post(assetServiceUrl + "/common-objects/copy", copyRequest)
                     .then(response =>{
                         this.$root.$emit('message-sent', 'Success', response.data.message);
                         this.$root.$emit('refresh-assets');

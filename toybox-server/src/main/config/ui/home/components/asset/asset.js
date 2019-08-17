@@ -156,7 +156,7 @@ module.exports = {
                 parentContainerId: this.parentContainerId
             }
             var selectedAssets= [asset];
-            this.copyAssets(selectedAssets);
+            this.copyItems(selectedAssets);
             this.contextMenuOpen = false;
         },
         assetMove:function(){

@@ -141,6 +141,10 @@ var itemActionsMixin = {
             var selectionContext = this.generateSelectionContext(selectedItems);
             this.$root.$emit('open-copy-move-asset-modal-window', selectionContext, true, false);
         },
+        copyItems(selectedItems){
+            var selectionContext = this.generateSelectionContext(selectedItems);
+            this.$root.$emit('open-copy-move-asset-modal-window', selectionContext, false, true);
+        },
         generateSelectionContext(selectedItems){
             console.log(selectedItems);
             var selectedAssets = [];

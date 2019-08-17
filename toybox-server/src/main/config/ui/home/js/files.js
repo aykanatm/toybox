@@ -194,7 +194,7 @@ const files = new Vue({
         },
         assetsCopy:function(){
             var selectedAssets = this.getSelectedAssets();
-            this.moveItems(selectedAssets);
+            this.copyItems(selectedAssets);
         },
         assetsMove:function(){
             var selectedAssets = this.getSelectedAssets();

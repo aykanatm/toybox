@@ -391,6 +391,7 @@ const folders = new Vue({
         },
         itemsCopy:function(){
             var selectedItems = this.getSelectedItems();
+            this.copyItems(selectedItems);
         },
         itemsMove:function(){
             var selectedItems = this.getSelectedItems();
