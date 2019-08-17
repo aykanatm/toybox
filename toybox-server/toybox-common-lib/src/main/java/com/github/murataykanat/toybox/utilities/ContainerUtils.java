@@ -29,18 +29,34 @@ public class ContainerUtils {
     }
 
     @LogEntryExitExecutionTime
-    public Container getContainer(ContainersRepository containersRepository, String containerId) throws Exception {
+    public Container getContainer(ContainersRepository containersRepository, String containerId) {
         List<Container> containersById = containersRepository.getContainersById(containerId);
         if(!containersById.isEmpty()){
             if(containersById.size() == 1){
                 return containersById.get(0);
             }
             else{
-                throw new Exception("There are multiple containers with ID '" + containerId + "'!");
+                throw new IllegalArgumentException("There are multiple containers with ID '" + containerId + "'!");
             }
         }
         else{
-            throw new Exception("There is no container with ID '" + containerId + "'!");
+            throw new IllegalArgumentException("There is no container with ID '" + containerId + "'!");
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    public Container getUserContainer(ContainersRepository containersRepository, String username) {
+        List<Container> systemContainersByName = containersRepository.getSystemContainersByName(username);
+        if(!systemContainersByName.isEmpty()){
+            if(systemContainersByName.size() == 1){
+                return systemContainersByName.get(0);
+            }
+            else{
+                throw new IllegalArgumentException("There are multiple system containers for the user '" + username + "'!");
+            }
+        }
+        else{
+            throw new IllegalArgumentException("There is no user container for the user '" + username + "'!");
         }
     }
 
@@ -61,44 +77,62 @@ public class ContainerUtils {
         for(String containerId: containerIds){
             Container container = ContainerUtils.getInstance().getContainer(containersRepository, containerId);
 
-            Container duplicateContainer = null;
+            Container duplicateContainer;
 
             List<Container> nonDeletedContainersByParentContainerId = containersRepository.getNonDeletedContainersByParentContainerId(targetContainer.getId());
-            // TODO: Prevent folders to be moved into folders which are below them in the folder hierarchy
             if(!container.getId().equalsIgnoreCase(targetContainer.getId())){
-                List<Container> duplicateNameContainers = nonDeletedContainersByParentContainerId.stream().filter(c -> c.getName().equalsIgnoreCase(container.getName())).collect(Collectors.toList());
-                if(!duplicateNameContainers.isEmpty()){
-                    if(duplicateNameContainers.size() == 1){
-                        // Container has a duplicate inside the target folder
-                        // We delete the container and move the contents to the duplicate container
-                        duplicateContainer = duplicateNameContainers.get(0);
+                if(!isSubfolder(containersRepository, targetContainer, container)){
+                    List<Container> duplicateNameContainers = nonDeletedContainersByParentContainerId.stream().filter(c -> c.getName().equalsIgnoreCase(container.getName())).collect(Collectors.toList());
+                    if(!duplicateNameContainers.isEmpty()){
+                        if(duplicateNameContainers.size() == 1){
+                            // Container has a duplicate inside the target folder
+                            // We delete the container and move the contents to the duplicate container
+                            duplicateContainer = duplicateNameContainers.get(0);
 
-                        List<String> assetIdsInsideContainer = containerAssetsRepository.findContainerAssetsByContainerId(container.getId()).stream().map(ContainerAsset::getAssetId).collect(Collectors.toList());
-                        List<String> getNonDeletedLastVersionAssetIds = assetsRepository.getNonDeletedLastVersionAssetsByAssetIds(assetIdsInsideContainer).stream().map(Asset::getId).collect(Collectors.toList());
-                        AssetUtils.getInstance().moveAssets(containerAssetsRepository, assetsRepository, getNonDeletedLastVersionAssetIds, duplicateContainer);
+                            List<String> assetIdsInsideContainer = containerAssetsRepository.findContainerAssetsByContainerId(container.getId()).stream().map(ContainerAsset::getAssetId).collect(Collectors.toList());
+                            List<String> getNonDeletedLastVersionAssetIds = assetsRepository.getNonDeletedLastVersionAssetsByAssetIds(assetIdsInsideContainer).stream().map(Asset::getId).collect(Collectors.toList());
+                            AssetUtils.getInstance().moveAssets(containerAssetsRepository, assetsRepository, getNonDeletedLastVersionAssetIds, duplicateContainer);
 
-                        List<String> containerIdsToDelete = new ArrayList<>();
-                        containerIdsToDelete.add(container.getId());
+                            List<String> containerIdsToDelete = new ArrayList<>();
+                            containerIdsToDelete.add(container.getId());
 
-                        if(!targetContainer.getId().equalsIgnoreCase(container.getParentId())){
-                            containersRepository.deleteContainersById("Y", containerIdsToDelete);
+                            if(!targetContainer.getId().equalsIgnoreCase(container.getParentId())){
+                                containersRepository.deleteContainersById("Y", containerIdsToDelete);
+                            }
+                            else{
+                                _logger.debug("Container with ID '" + container.getId() + "' is already inside the container with ID '" + targetContainer.getId() + "'. Skipping delete...");
+                            }
                         }
                         else{
-                            _logger.debug("Container with ID '" + container.getId() + "' is already inside the container with ID '" + targetContainer.getId() + "'. Skipping delete...");
+                            throw new IllegalArgumentException("There are more than one duplicate container!");
                         }
                     }
                     else{
-                        throw new Exception("There are more than one duplicate container!");
+                        // Container does not have any duplicates inside the target container
+                        containersRepository.updateContainerParentContainerId(targetContainer.getId(), container.getId());
                     }
                 }
                 else{
-                    // Container does not have any duplicates inside the target container
-                    containersRepository.updateContainerParentContainerId(targetContainer.getId(), container.getId());
+                    _logger.debug("Folder with ID '" + targetContainer.getId() + "' is a sub-folder of the folder with ID '" + container.getId() + "'. Skipping move...");
                 }
             }
             else{
                 _logger.debug("Target container ID '" + targetContainer.getId() + "' and the container with ID '" + container.getId() + "' is the same. Skipping move...");
             }
         }
+    }
+
+    @LogEntryExitExecutionTime
+    private boolean isSubfolder(ContainersRepository containersRepository, Container subFolder, Container subFolderOf) {
+        while(subFolder.getParentId() != null){
+            Container parentContainer = getContainer(containersRepository, subFolder.getParentId());
+            if(parentContainer.getId().equalsIgnoreCase(subFolderOf.getId())){
+                return true;
+            }
+            else{
+                subFolder = parentContainer;
+            }
+        }
+        return false;
     }
 }
