@@ -5,7 +5,6 @@ import com.github.murataykanat.toybox.dbo.*;
 import com.github.murataykanat.toybox.repositories.*;
 import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
 import com.github.murataykanat.toybox.schema.common.Facet;
-import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.container.*;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
@@ -49,8 +48,8 @@ public class FolderController {
 
     @LogEntryExitExecutionTime
     @RequestMapping(value = "/containers", method = RequestMethod.POST)
-    public ResponseEntity<GenericResponse> createContainer(Authentication authentication, @RequestBody CreateContainerRequest createContainerRequest){
-        GenericResponse genericResponse = new GenericResponse();
+    public ResponseEntity<CreateContainerResponse> createContainer(Authentication authentication, @RequestBody CreateContainerRequest createContainerRequest){
+        CreateContainerResponse createContainerResponse = new CreateContainerResponse();
         try {
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(createContainerRequest != null){
@@ -80,8 +79,9 @@ public class FolderController {
 
                             createContainer(container);
 
-                            genericResponse.setMessage("Folder created successfully!");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                            createContainerResponse.setContainerId(container.getId());
+                            createContainerResponse.setMessage("Folder created successfully!");
+                            return new ResponseEntity<>(createContainerResponse, HttpStatus.OK);
                         }
                         else{
                             String errorMessage;
@@ -94,45 +94,45 @@ public class FolderController {
 
                             _logger.error(errorMessage);
 
-                            genericResponse.setMessage(errorMessage);
+                            createContainerResponse.setMessage(errorMessage);
 
-                            return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                            return new ResponseEntity<>(createContainerResponse, HttpStatus.UNAUTHORIZED);
                         }
                     }
                     else{
                         String errorMessage = "Container name is blank!";
                         _logger.debug(errorMessage);
 
-                        genericResponse.setMessage(errorMessage);
+                        createContainerResponse.setMessage(errorMessage);
 
-                        return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                        return new ResponseEntity<>(createContainerResponse, HttpStatus.BAD_REQUEST);
                     }
                 }
                 else{
                     String errorMessage = "Create container request is null!";
                     _logger.debug(errorMessage);
 
-                    genericResponse.setMessage(errorMessage);
+                    createContainerResponse.setMessage(errorMessage);
 
-                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                    return new ResponseEntity<>(createContainerResponse, HttpStatus.BAD_REQUEST);
                 }
             }
             else{
                 String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
-                genericResponse.setMessage(errorMessage);
+                createContainerResponse.setMessage(errorMessage);
 
-                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                return new ResponseEntity<>(createContainerResponse, HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){
             String errorMessage = "An error occurred while creating the container. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
-            genericResponse.setMessage(errorMessage);
+            createContainerResponse.setMessage(errorMessage);
 
-            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(createContainerResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

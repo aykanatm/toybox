@@ -4,10 +4,7 @@ import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
-import com.github.murataykanat.toybox.schema.container.ContainerSearchRequest;
-import com.github.murataykanat.toybox.schema.container.CreateContainerRequest;
-import com.github.murataykanat.toybox.schema.container.RetrieveContainerContentsResult;
-import com.github.murataykanat.toybox.schema.container.RetrieveContainersResults;
+import com.github.murataykanat.toybox.schema.container.*;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import com.github.murataykanat.toybox.utilities.LoadbalancerUtils;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
@@ -52,8 +49,8 @@ public class FolderLoadbalancerController {
     @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "createContainerErrorFallback")
     @RequestMapping(value = "/containers", method = RequestMethod.POST)
-    public ResponseEntity<GenericResponse> createContainer(Authentication authentication,  HttpSession session, @RequestBody CreateContainerRequest createContainerRequest){
-        GenericResponse genericResponse = new GenericResponse();
+    public ResponseEntity<CreateContainerResponse> createContainer(Authentication authentication, HttpSession session, @RequestBody CreateContainerRequest createContainerRequest){
+        CreateContainerResponse createContainerResponse = new CreateContainerResponse();
         try {
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(createContainerRequest != null){
@@ -61,16 +58,16 @@ public class FolderLoadbalancerController {
                     String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, folderServiceName);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        return restTemplate.exchange(prefix + folderServiceName + "/containers", HttpMethod.POST, new HttpEntity<>(createContainerRequest, headers), GenericResponse.class);
+                        return restTemplate.exchange(prefix + folderServiceName + "/containers", HttpMethod.POST, new HttpEntity<>(createContainerRequest, headers), CreateContainerResponse.class);
                     }
                     else{
                         String errorMessage = "Service ID prefix is null!";
 
                         _logger.error(errorMessage);
 
-                        genericResponse.setMessage(errorMessage);
+                        createContainerResponse.setMessage(errorMessage);
 
-                        return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                        return new ResponseEntity<>(createContainerResponse, HttpStatus.INTERNAL_SERVER_ERROR);
                     }
                 }
                 else{
@@ -78,34 +75,34 @@ public class FolderLoadbalancerController {
 
                     _logger.error(errorMessage);
 
-                    genericResponse.setMessage(errorMessage);
+                    createContainerResponse.setMessage(errorMessage);
 
-                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                    return new ResponseEntity<>(createContainerResponse, HttpStatus.BAD_REQUEST);
                 }
             }
             else{
                 String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
-                genericResponse.setMessage(errorMessage);
+                createContainerResponse.setMessage(errorMessage);
 
-                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+                return new ResponseEntity<>(createContainerResponse, HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){
             String errorMessage = "An error occurred while creating the container. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
-            genericResponse.setMessage(errorMessage);
+            createContainerResponse.setMessage(errorMessage);
 
             _logger.debug("<< createContainer()");
-            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(createContainerResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @LogEntryExitExecutionTime
-    public ResponseEntity<GenericResponse> createContainerErrorFallback(Authentication authentication, HttpSession session, CreateContainerRequest createContainerRequest, Throwable e){
-        GenericResponse genericResponse = new GenericResponse();
+    public ResponseEntity<CreateContainerResponse> createContainerErrorFallback(Authentication authentication, HttpSession session, CreateContainerRequest createContainerRequest, Throwable e){
+        CreateContainerResponse createContainerResponse = new CreateContainerResponse();
 
         if(createContainerRequest != null){
             String errorMessage;
@@ -118,18 +115,18 @@ public class FolderLoadbalancerController {
 
             _logger.error(errorMessage, e);
 
-            genericResponse.setMessage(errorMessage);
+            createContainerResponse.setMessage(errorMessage);
 
-            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(createContainerResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         else{
             String errorMessage = "Create container request is null!";
 
             _logger.error(errorMessage);
 
-            genericResponse.setMessage(errorMessage);
+            createContainerResponse.setMessage(errorMessage);
 
-            return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(createContainerResponse, HttpStatus.BAD_REQUEST);
         }
     }
 
