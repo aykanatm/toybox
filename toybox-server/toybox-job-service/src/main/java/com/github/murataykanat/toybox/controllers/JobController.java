@@ -178,12 +178,12 @@ public class JobController {
                     }
                 }
                 else{
-                    String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                    String errorMessage = "Upload file list is null!";
                     _logger.error(errorMessage);
 
                     jobResponse.setMessage(errorMessage);
 
-                    return new ResponseEntity<>(jobResponse, HttpStatus.UNAUTHORIZED);
+                    return new ResponseEntity<>(jobResponse, HttpStatus.BAD_REQUEST);
                 }
             }
             else{
