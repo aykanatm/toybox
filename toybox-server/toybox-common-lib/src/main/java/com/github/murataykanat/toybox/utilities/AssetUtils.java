@@ -57,7 +57,9 @@ public class AssetUtils {
     }
 
     @LogEntryExitExecutionTime
-    public void moveAssets(ContainerAssetsRepository containerAssetsRepository, AssetsRepository assetsRepository, List<String> assetIds, Container targetContainer) throws Exception {
+    public int moveAssets(ContainerAssetsRepository containerAssetsRepository, AssetsRepository assetsRepository, List<String> assetIds, Container targetContainer) throws Exception {
+        int numberOfIgnoredFiles = 0;
+
         for(String assetId: assetIds){
             boolean assetAlreadyInTargetContainer = false;
             Asset asset = AssetUtils.getInstance().getAsset(assetsRepository, assetId);
@@ -103,8 +105,11 @@ public class AssetUtils {
                 }
             }
             else{
+                numberOfIgnoredFiles++;
                 _logger.debug("Asset with ID '" + asset.getId() + " is already in the container with ID '" + targetContainer.getId() + "'. Skipping move...");
             }
         }
+
+        return numberOfIgnoredFiles;
     }
 }

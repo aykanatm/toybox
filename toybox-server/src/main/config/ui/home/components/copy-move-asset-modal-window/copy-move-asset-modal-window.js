@@ -224,7 +224,10 @@ module.exports = {
 
                         if(error.response){
                             errorMessage = error.response.data.message
-                            if(error.response.status == 401){
+                            if(error.response.status == 304){
+                                errorMessage = 'No asset or folder is moved because either the target folder is the same as the selected folders or the target folder is a sub folder of the selected folders.';
+                            }
+                            else if(error.response.status == 401){
                                 window.location = '/logout';
                             }
                         }
@@ -232,8 +235,18 @@ module.exports = {
                             errorMessage = error.message;
                         }
 
-                        console.error(errorMessage);
-                        this.$root.$emit('message-sent', 'Error', errorMessage);
+
+                        if(error.response.status == 304){
+                            console.warn(errorMessage);
+                            this.$root.$emit('message-sent', 'Warning', errorMessage);
+                            this.$root.$emit('refresh-assets');
+                            this.$root.$emit('refresh-items');
+                            $(this.$el).modal('hide');
+                        }
+                        else{
+                            console.error(errorMessage);
+                            this.$root.$emit('message-sent', 'Error', errorMessage);
+                        }
                     });
                 })
                 .catch(error => {

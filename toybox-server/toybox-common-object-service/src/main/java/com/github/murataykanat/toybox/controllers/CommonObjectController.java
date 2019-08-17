@@ -430,14 +430,22 @@ public class CommonObjectController {
                         int assetCount = 0;
                         int containerCount = 0;
 
-                        AssetUtils.getInstance().moveAssets(containerAssetsRepository, assetsRepository, assetIds, targetContainer);
-                        assetCount += assetIds.size();
-                        ContainerUtils.getInstance().moveContainers(containersRepository, containerAssetsRepository, assetsRepository,containerIds, targetContainer);
-                        containerCount += containerIds.size();
+                        int numberOfIgnoredAssets = AssetUtils.getInstance().moveAssets(containerAssetsRepository, assetsRepository, assetIds, targetContainer);
+                        assetCount += (assetIds.size() - numberOfIgnoredAssets);
+                        int numberOfIgnoredContainers = ContainerUtils.getInstance().moveContainers(containersRepository, containerAssetsRepository, assetsRepository,containerIds, targetContainer);
+                        containerCount += (containerIds.size() - numberOfIgnoredContainers);
 
-                        genericResponse.setMessage(generateProcessingResponse(assetCount, containerCount, " were successfully moved to the folder '" + targetContainer.getName() + "'."));
-
-                        return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                        if(assetCount == 0 && containerCount == 0){
+                            genericResponse.setMessage("No asset or folder is moved because either the target folder is the same as the selected folders or the target folder is a sub folder of the selected folders.");
+                            return new ResponseEntity<>(genericResponse, HttpStatus.NOT_MODIFIED);
+                        }
+                        else if(assetCount < 0 || containerCount < 0){
+                            throw new IllegalArgumentException("Returned asset or container is below zero!");
+                        }
+                        else{
+                            genericResponse.setMessage(generateProcessingResponse(assetCount, containerCount, " were successfully moved to the folder '" + targetContainer.getName() + "'."));
+                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                        }
                     }
                     else{
                         String errorMessage = "Selection context is not valid!";

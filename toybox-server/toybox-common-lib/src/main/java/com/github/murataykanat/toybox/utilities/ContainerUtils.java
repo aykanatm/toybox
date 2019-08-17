@@ -73,7 +73,9 @@ public class ContainerUtils {
     }
 
     @LogEntryExitExecutionTime
-    public void moveContainers(ContainersRepository containersRepository, ContainerAssetsRepository containerAssetsRepository, AssetsRepository assetsRepository, List<String> containerIds, Container targetContainer) throws Exception {
+    public int moveContainers(ContainersRepository containersRepository, ContainerAssetsRepository containerAssetsRepository, AssetsRepository assetsRepository, List<String> containerIds, Container targetContainer) throws Exception {
+        int numberOfIgnoredContainers = 0;
+
         for(String containerId: containerIds){
             Container container = ContainerUtils.getInstance().getContainer(containersRepository, containerId);
 
@@ -113,13 +115,17 @@ public class ContainerUtils {
                     }
                 }
                 else{
+                    numberOfIgnoredContainers++;
                     _logger.debug("Folder with ID '" + targetContainer.getId() + "' is a sub-folder of the folder with ID '" + container.getId() + "'. Skipping move...");
                 }
             }
             else{
+                numberOfIgnoredContainers++;
                 _logger.debug("Target container ID '" + targetContainer.getId() + "' and the container with ID '" + container.getId() + "' is the same. Skipping move...");
             }
         }
+
+        return numberOfIgnoredContainers;
     }
 
     @LogEntryExitExecutionTime
