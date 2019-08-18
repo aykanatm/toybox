@@ -149,27 +149,37 @@ public class JobController {
                 if(uploadFileLst != null){
                     _logger.debug("Putting values into the parameter map...");
                     List<UploadFile> uploadedFiles = uploadFileLst.getUploadFiles();
-                    if(uploadedFiles != null && !uploadedFiles.isEmpty()){
-                        JobParametersBuilder builder = new JobParametersBuilder();
+                    if(uploadedFiles != null){
+                        if(!uploadedFiles.isEmpty()){
+                            JobParametersBuilder builder = new JobParametersBuilder();
 
-                        for(int i = 0; i < uploadedFiles.size(); i++){
-                            UploadFile uploadedFile = uploadedFiles.get(i);
-                            builder.addString(Constants.JOB_PARAM_UPLOADED_FILE+ "_" + i, uploadedFile.getPath());
+                            for(int i = 0; i < uploadedFiles.size(); i++){
+                                UploadFile uploadedFile = uploadedFiles.get(i);
+                                builder.addString(Constants.JOB_PARAM_UPLOADED_FILE+ "_" + i, uploadedFile.getPath());
+                            }
+                            builder.addString(Constants.JOB_PARAM_USERNAME, uploadedFiles.get(0).getUsername());
+                            builder.addString(Constants.JOB_PARAM_CONTAINER_ID, uploadFileLst.getContainerId());
+                            builder.addString(Constants.JOB_PARAM_SYSTEM_MILLIS, String.valueOf(System.currentTimeMillis()));
+
+                            _logger.debug("Launching job [" + importJob.getName() + "]...");
+                            JobExecution jobExecution = jobLauncher.run(importJob, builder.toJobParameters());
+
+                            jobResponse.setJobId(jobExecution.getJobId());
+                            jobResponse.setMessage("Import job started.");
+
+                            return new ResponseEntity<>(jobResponse, HttpStatus.CREATED);
                         }
-                        builder.addString(Constants.JOB_PARAM_USERNAME, uploadedFiles.get(0).getUsername());
-                        builder.addString(Constants.JOB_PARAM_CONTAINER_ID, uploadFileLst.getContainerId());
-                        builder.addString(Constants.JOB_PARAM_SYSTEM_MILLIS, String.valueOf(System.currentTimeMillis()));
+                        else{
+                            String errorMessage = "Uploaded files list is empty, nothing to import.";
+                            _logger.warn(errorMessage);
 
-                        _logger.debug("Launching job [" + importJob.getName() + "]...");
-                        JobExecution jobExecution = jobLauncher.run(importJob, builder.toJobParameters());
+                            jobResponse.setMessage(errorMessage);
 
-                        jobResponse.setJobId(jobExecution.getJobId());
-                        jobResponse.setMessage("Import job started.");
-
-                        return new ResponseEntity<>(jobResponse, HttpStatus.CREATED);
+                            return new ResponseEntity<>(jobResponse, HttpStatus.NO_CONTENT);
+                        }
                     }
                     else{
-                        String errorMessage = "Uploaded files list is null or empty!";
+                        String errorMessage = "Uploaded files list is null!";
                         _logger.error(errorMessage);
 
                         jobResponse.setMessage(errorMessage);
