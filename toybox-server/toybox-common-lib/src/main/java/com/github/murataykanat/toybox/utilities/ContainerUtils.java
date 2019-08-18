@@ -177,12 +177,11 @@ public class ContainerUtils {
         // We copy the contents to the target container
         if(StringUtils.isNotBlank(createdContainerId)){
             // We find and copy all the assets inside the folder to the new folder
-            List<String> assetIdsInsideContainer = containerAssetsRepository.findContainerAssetsByContainerId(createdContainerId).stream().map(ContainerAsset::getAssetId).collect(Collectors.toList());
+            List<String> assetIdsInsideContainer = containerAssetsRepository.findContainerAssetsByContainerId(sourceContainer.getId()).stream().map(ContainerAsset::getAssetId).collect(Collectors.toList());
             List<String> getNonDeletedLastVersionAssetIds = assetsRepository.getNonDeletedLastVersionAssetsByAssetIds(assetIdsInsideContainer).stream().map(Asset::getId).collect(Collectors.toList());
             if(!getNonDeletedLastVersionAssetIds.isEmpty()){
                 List<String> singleTargetContainerId = new ArrayList<>();
                 singleTargetContainerId.add(createdContainerId);
-
                 AssetUtils.getInstance().copyAssets(assetsRepository, discoveryClient, session, jobServiceLoadbalancerServiceName, getNonDeletedLastVersionAssetIds, singleTargetContainerId, username, importStagingPath);
             }
 
