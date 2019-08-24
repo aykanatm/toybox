@@ -53,11 +53,11 @@ public class AssetUtils {
                 return assetsById.get(0);
             }
             else{
-                throw new Exception("There are multiple assets with ID '" + assetId + "'!");
+                throw new IllegalArgumentException("There are multiple assets with ID '" + assetId + "'!");
             }
         }
         else{
-            throw new Exception("There is no asset with ID '" + assetId + "'!");
+            throw new IllegalArgumentException("There is no asset with ID '" + assetId + "'!");
         }
     }
 
@@ -137,14 +137,14 @@ public class AssetUtils {
         int numberOfFailedJobs = 0;
 
         for(String targetContainerId : targetContainerIds){
-            numberOfFailedJobs += importAssets(assetsRepository, discoveryClient, session, jobServiceLoadBalancerServiceName, sourceAssetIds, importStagingPath, targetContainerId, username);
+            numberOfFailedJobs += duplicateAssets(assetsRepository, discoveryClient, session, jobServiceLoadBalancerServiceName, sourceAssetIds, importStagingPath, targetContainerId, username);
         }
 
         return numberOfFailedJobs;
     }
 
     @LogEntryExitExecutionTime
-    public int importAssets(AssetsRepository assetsRepository, DiscoveryClient discoveryClient, HttpSession session, String jobServiceLoadBalancerServiceName, List<String> assetIds, String importStagingPath, String targetContainerId, String username) throws Exception {
+    private int duplicateAssets(AssetsRepository assetsRepository, DiscoveryClient discoveryClient, HttpSession session, String jobServiceLoadBalancerServiceName, List<String> assetIds, String importStagingPath, String targetContainerId, String username) throws Exception {
         int numberOfFailedAssets = 0;
 
         UploadFileLst uploadFileLst = new UploadFileLst();
