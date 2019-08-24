@@ -9,6 +9,7 @@ import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
 import com.github.murataykanat.toybox.repositories.ContainerAssetsRepository;
 import com.github.murataykanat.toybox.repositories.ContainersRepository;
+import com.github.murataykanat.toybox.utilities.ContainerUtils;
 import com.github.murataykanat.toybox.utilities.SortUtils;
 import org.apache.commons.exec.*;
 import org.apache.commons.io.FileUtils;
@@ -131,97 +132,91 @@ public class ImportJobConfig {
                         String username = (String) jobParameters.get(Constants.JOB_PARAM_USERNAME);
                         String containerId = (String) jobParameters.get(Constants.JOB_PARAM_CONTAINER_ID);
 
-                        for(Map.Entry<String, Object> jobParameter: jobParameters.entrySet()){
-                            if(jobParameter.getKey().startsWith(Constants.JOB_PARAM_UPLOADED_FILE)){
-                                String filePath = (String) jobParameter.getValue();
-                                File file = new File(filePath);
-                                if(file.exists()){
-                                    if(file.isFile()){
-                                        String assetId = generateAssetId();
-                                        String assetFolderPath = assetRepositoryPath + File.separator + assetId;
+                        if(StringUtils.isNotBlank(username)){
+                            if(StringUtils.isBlank(containerId)){
+                                Container userContainer = ContainerUtils.getInstance().getUserContainer(containersRepository, username);
+                                containerId = userContainer.getId();
+                            }
 
-                                        // Generate folder
-                                        File assetFolder = new File(assetFolderPath);
-                                        if(!assetFolder.exists() && !assetFolder.mkdir()){
-                                            throw new IOException("Unable to create folder with path " + assetFolderPath + ".");
-                                        }
+                            for(Map.Entry<String, Object> jobParameter: jobParameters.entrySet()){
+                                if(jobParameter.getKey().startsWith(Constants.JOB_PARAM_UPLOADED_FILE)){
+                                    String filePath = (String) jobParameter.getValue();
+                                    File file = new File(filePath);
+                                    if(file.exists()){
+                                        if(file.isFile()){
+                                            String assetId = generateAssetId();
+                                            String assetFolderPath = assetRepositoryPath + File.separator + assetId;
 
-                                        // Copy asset file to repository
-                                        File assetSource = file;
-                                        File assetDestination = new File(assetFolderPath + File.separator + assetSource.getName());
-                                        FileSystemUtils.copyRecursively(assetSource, assetDestination);
+                                            // Generate folder
+                                            File assetFolder = new File(assetFolderPath);
+                                            if(!assetFolder.exists() && !assetFolder.mkdir()){
+                                                throw new IOException("Unable to create folder with path " + assetFolderPath + ".");
+                                            }
 
-                                        String assetMimeType = "UNKNOWN";
-                                        if(assetDestination.exists() && assetDestination.isFile()){
-                                            assetMimeType = tika.detect(assetDestination);
-                                            _logger.debug("Asset mime type: " + assetMimeType);
-                                        }
+                                            // Copy asset file to repository
+                                            File assetSource = file;
+                                            File assetDestination = new File(assetFolderPath + File.separator + assetSource.getName());
+                                            FileSystemUtils.copyRecursively(assetSource, assetDestination);
 
-                                        // Generate database entry
-                                        String checksum = calculateChecksum(assetDestination.getAbsolutePath());
-                                        String originalAssetId = getOriginalAssetId(assetDestination.getName(), assetId, username, containerId);
-                                        int latestVersion = getLatestVersion(assetDestination.getName(), username, containerId);
+                                            String assetMimeType = "UNKNOWN";
+                                            if(assetDestination.exists() && assetDestination.isFile()){
+                                                assetMimeType = tika.detect(assetDestination);
+                                                _logger.debug("Asset mime type: " + assetMimeType);
+                                            }
 
-                                        Asset asset = new Asset();
-                                        asset.setId(assetId);
-                                        asset.setExtension(FilenameUtils.getExtension(assetDestination.getAbsolutePath()).toUpperCase(Locale.ENGLISH));
-                                        asset.setImportDate(Calendar.getInstance().getTime());
-                                        asset.setImportedByUsername(username);
-                                        asset.setName(assetDestination.getName());
-                                        asset.setPath(assetDestination.getAbsolutePath());
-                                        asset.setPreviewPath("");
-                                        asset.setThumbnailPath("");
-                                        asset.setType(assetMimeType);
-                                        asset.setDeleted("N");
-                                        asset.setChecksum(checksum);
-                                        asset.setIsLatestVersion("Y");
-                                        asset.setOriginalAssetId(originalAssetId);
-                                        asset.setVersion(latestVersion);
-                                        asset.setFileSize(FileUtils.byteCountToDisplaySize(assetSource.length()));
+                                            // Generate database entry
+                                            String checksum = calculateChecksum(assetDestination.getAbsolutePath());
+                                            String originalAssetId = getOriginalAssetId(assetDestination.getName(), assetId, username, containerId);
+                                            int latestVersion = getLatestVersion(assetDestination.getName(), username, containerId);
 
-                                        // Update previous versions of the asset
-                                        updateDuplicateAssets(assetDestination.getName(), assetId, username, containerId);
+                                            Asset asset = new Asset();
+                                            asset.setId(assetId);
+                                            asset.setExtension(FilenameUtils.getExtension(assetDestination.getAbsolutePath()).toUpperCase(Locale.ENGLISH));
+                                            asset.setImportDate(Calendar.getInstance().getTime());
+                                            asset.setImportedByUsername(username);
+                                            asset.setName(assetDestination.getName());
+                                            asset.setPath(assetDestination.getAbsolutePath());
+                                            asset.setPreviewPath("");
+                                            asset.setThumbnailPath("");
+                                            asset.setType(assetMimeType);
+                                            asset.setDeleted("N");
+                                            asset.setChecksum(checksum);
+                                            asset.setIsLatestVersion("Y");
+                                            asset.setOriginalAssetId(originalAssetId);
+                                            asset.setVersion(latestVersion);
+                                            asset.setFileSize(FileUtils.byteCountToDisplaySize(assetSource.length()));
 
-                                        // Add the asset to the database
-                                        insertAsset(asset);
+                                            // Update previous versions of the asset
+                                            updateDuplicateAssets(assetDestination.getName(), assetId, username, containerId);
 
-                                        // Add the asset to a list to move it to the next step of the job
-                                        assets.add(asset);
+                                            // Add the asset to the database
+                                            insertAsset(asset);
 
-                                        // Attach the asset to a folder
-                                        if(StringUtils.isNotBlank(containerId)){
+                                            // Add the asset to a list to move it to the next step of the job
+                                            assets.add(asset);
+
+                                            // Attach the asset to a folder
                                             containerAssetsRepository.attachAsset(containerId, assetId);
                                         }
                                         else{
-                                            List<Container> systemContainersByName = containersRepository.getSystemContainersByName(username);
-                                            if(!systemContainersByName.isEmpty()){
-                                                if(systemContainersByName.size() == 1){
-                                                    containerAssetsRepository.attachAsset(systemContainersByName.get(0).getId(), assetId);
-                                                }
-                                                else{
-                                                    throw new Exception("There are more than one system container for user '" + username + "'!");
-                                                }
-                                            }
-                                            else{
-                                                throw new Exception("There is no system container for the user '" + username + "'!");
-                                            }
+                                            throw new IOException("File " + filePath + " is not a file!");
                                         }
                                     }
                                     else{
-                                        throw new IOException("File " + filePath + " is not a file!");
+                                        throw new IOException("File path " + filePath + " is not valid!");
                                     }
                                 }
-                                else{
-                                    throw new FileNotFoundException("File path " + filePath + " is not valid!");
-                                }
                             }
+
+                            _logger.debug("Adding assets to job context...");
+                            chunkContext.getStepContext().getStepExecution().getJobExecution().getExecutionContext().put("assets", assets);
+
+                            _logger.debug("<< execute() [" + Constants.STEP_IMPORT_GENERATE_ASSETS + "]");
+                            return RepeatStatus.FINISHED;
                         }
-
-                        _logger.debug("Adding assets to job context...");
-                        chunkContext.getStepContext().getStepExecution().getJobExecution().getExecutionContext().put("assets", assets);
-
-                        _logger.debug("<< execute() [" + Constants.STEP_IMPORT_GENERATE_ASSETS + "]");
-                        return RepeatStatus.FINISHED;
+                        else{
+                            throw new IllegalArgumentException("Username parameter is blank!");
+                        }
                     }
                 })
                 .build();
@@ -283,11 +278,11 @@ public class ImportJobConfig {
                                         }
                                     }
                                     else{
-                                        throw new FileNotFoundException("File path " + parentFolder.getAbsolutePath() + " is not valid!");
+                                        throw new IOException("File path " + parentFolder.getAbsolutePath() + " is not valid!");
                                     }
                                 }
                                 else{
-                                    throw new FileNotFoundException("File path " + filePath + " is not valid!");
+                                    throw new IOException("File path " + filePath + " is not valid!");
                                 }
                             }
                         }
