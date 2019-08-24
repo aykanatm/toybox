@@ -298,59 +298,26 @@ public class AssetController {
                     if(updateAssetRequest != null){
                         User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
                         if(user != null){
-                            List<Asset> assetsById = assetsRepository.getAssetsById(assetId);
-                            if(!assetsById.isEmpty()){
-                                if(assetsById.size() == 1){
-                                    Asset asset = assetsById.get(0);
-                                    List<Asset> assetsByOriginalAssetId = assetsRepository.getAssetsByOriginalAssetId(asset.getOriginalAssetId());
-                                    if(!assetsByOriginalAssetId.isEmpty()){
-                                        for(Asset versionedAsset: assetsByOriginalAssetId){
-                                            String extension = versionedAsset.getExtension().toLowerCase();
-                                            String newFileName = updateAssetRequest.getName() + "." + extension;
-                                            File oldFile = new File(versionedAsset.getPath());
-                                            if(oldFile.exists()){
-                                                String parentDirectoryPath = oldFile.getParentFile().getAbsolutePath();
-                                                String newFilePath = parentDirectoryPath + File.separator + newFileName;
-                                                File newFile = new File(newFilePath);
-                                                FileUtils.moveFile(oldFile, newFile);
+                            Asset oldAsset = AssetUtils.getInstance().getAsset(assetsRepository, assetId);
+                            Asset asset = AssetUtils.getInstance().updateAsset(assetsRepository, updateAssetRequest, assetId);
+                            if(asset != null){
+                                // Send notification
+                                String notification = "Asset '" + oldAsset.getName() + "' is updated by '" + user.getUsername() + "'";
+                                SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                sendNotificationRequest.setAsset(oldAsset);
+                                sendNotificationRequest.setFromUser(user);
+                                sendNotificationRequest.setMessage(notification);
+                                NotificationUtils.getInstance().sendNotification(sendNotificationRequest, discoveryClient, session, notificationServiceLoadBalancerServiceName);
 
-                                                assetsRepository.updateAssetName(newFileName, newFilePath, versionedAsset.getId());
-                                            }
-                                            else{
-                                                throw new Exception("File path " + versionedAsset.getPath() + " is not a valid file!");
-                                            }
-                                        }
+                                String message = "Asset updated successfully.";
+                                _logger.debug(message);
 
-                                        // Send notification
-                                        String notification = "Asset '" + asset.getName() + "' is updated by '" + user.getUsername() + "'";
-                                        SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                                        sendNotificationRequest.setAsset(asset);
-                                        sendNotificationRequest.setFromUser(user);
-                                        sendNotificationRequest.setMessage(notification);
-                                        NotificationUtils.getInstance().sendNotification(sendNotificationRequest, discoveryClient, session, notificationServiceLoadBalancerServiceName);
+                                genericResponse.setMessage(message);
 
-                                        String message = "Asset updated successfully.";
-                                        _logger.debug(message);
-
-                                        genericResponse.setMessage(message);
-
-                                        return new ResponseEntity<>(genericResponse, HttpStatus.OK);
-                                    }
-                                    else{
-                                        throw new Exception("There are not assets with the original asset ID '" + asset.getOriginalAssetId() + "'!");
-                                    }
-                                }
-                                else{
-                                    throw new Exception("Multiple assets with ID '" + assetId + "' found!");
-                                }
+                                return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                             }
                             else{
-                                String errorMessage = "Asset with ID '" + assetId + "' is not found!";
-                                _logger.error(errorMessage);
-
-                                genericResponse.setMessage(errorMessage);
-
-                                return new ResponseEntity<>(genericResponse, HttpStatus.NOT_FOUND);
+                                throw new IllegalArgumentException("Asset update failed!");
                             }
                         }
                         else{

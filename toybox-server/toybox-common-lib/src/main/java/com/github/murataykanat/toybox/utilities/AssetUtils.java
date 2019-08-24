@@ -5,9 +5,12 @@ import com.github.murataykanat.toybox.dbo.*;
 import com.github.murataykanat.toybox.repositories.AssetUserRepository;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
 import com.github.murataykanat.toybox.repositories.ContainerAssetsRepository;
+import com.github.murataykanat.toybox.schema.asset.UpdateAssetRequest;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
 import com.github.murataykanat.toybox.schema.upload.UploadFile;
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
@@ -200,5 +203,67 @@ public class AssetUtils {
         }
 
         return numberOfFailedAssets;
+    }
+
+    @LogEntryExitExecutionTime
+    public Asset updateAsset(AssetsRepository assetsRepository, UpdateAssetRequest updateAssetRequest, String assetId) throws Exception {
+        Asset asset = AssetUtils.getInstance().getAsset(assetsRepository, assetId);
+        boolean updateChecksum = StringUtils.isNotBlank(updateAssetRequest.getChecksum());
+        boolean updateDeleted = StringUtils.isNotBlank(updateAssetRequest.getDeleted());
+        boolean updateExtension = StringUtils.isNotBlank(updateAssetRequest.getExtension());
+        boolean updateFileSize = StringUtils.isNotBlank(updateAssetRequest.getFileSize());
+        boolean updateImportDate = updateAssetRequest.getImportDate() != null;
+        boolean updateImportedByUsername = StringUtils.isNotBlank(updateAssetRequest.getImportedByUsername());
+        boolean updateIsLatestVersion = StringUtils.isNotBlank(updateAssetRequest.getIsLatestVersion());
+        boolean updateName = StringUtils.isNotBlank(updateAssetRequest.getName());
+        boolean updateOriginalAssetId = StringUtils.isNotBlank(updateAssetRequest.getOriginalAssetId());
+        boolean updatePath = StringUtils.isNotBlank(updateAssetRequest.getPath());
+        boolean updatePreviewPath = StringUtils.isNotBlank(updateAssetRequest.getPreviewPath());
+        boolean updateThumbnailPath = StringUtils.isNotBlank(updateAssetRequest.getThumbnailPath());
+        boolean updateType = StringUtils.isNotBlank(updateAssetRequest.getType());
+        boolean updateVersion = updateAssetRequest.getVersion() != 0;
+
+        asset.setChecksum(updateChecksum ? updateAssetRequest.getChecksum() : asset.getChecksum());
+        asset.setDeleted(updateDeleted ? updateAssetRequest.getDeleted() : asset.getDeleted());
+        asset.setExtension(updateExtension ? updateAssetRequest.getExtension() : asset.getExtension());
+        asset.setFileSize(updateFileSize ? updateAssetRequest.getFileSize() : asset.getFileSize());
+        asset.setImportDate(updateImportDate ? updateAssetRequest.getImportDate() : asset.getImportDate());
+        asset.setImportedByUsername(updateImportedByUsername ? updateAssetRequest.getImportedByUsername() : asset.getImportedByUsername());
+        asset.setIsLatestVersion(updateIsLatestVersion ? updateAssetRequest.getIsLatestVersion() : asset.getIsLatestVersion());
+        asset.setName(updateName ? updateAssetRequest.getName() : asset.getName());
+        asset.setOriginalAssetId(updateOriginalAssetId ? updateAssetRequest.getOriginalAssetId() : asset.getOriginalAssetId());
+        asset.setPath(updatePath ? updateAssetRequest.getPath() : asset.getPath());
+        asset.setPreviewPath(updatePreviewPath ? updateAssetRequest.getPreviewPath() : asset.getPreviewPath());
+        asset.setThumbnailPath(updateThumbnailPath ? updateAssetRequest.getThumbnailPath() : asset.getThumbnailPath());
+        asset.setType(updateType ? updateAssetRequest.getType() : asset.getType());
+        asset.setVersion(updateVersion ? updateAssetRequest.getVersion() : asset.getVersion());
+        assetsRepository.save(asset);
+
+        if(updateName){
+            List<Asset> assetsByOriginalAssetId = assetsRepository.getAssetsByOriginalAssetId(asset.getOriginalAssetId());
+            if(!assetsByOriginalAssetId.isEmpty()){
+                for(Asset versionedAsset: assetsByOriginalAssetId){
+                    String extension = versionedAsset.getExtension().toLowerCase();
+                    String newFileName = updateAssetRequest.getName() + "." + extension;
+                    File oldFile = new File(versionedAsset.getPath());
+                    if(oldFile.exists()){
+                        String parentDirectoryPath = oldFile.getParentFile().getAbsolutePath();
+                        String newFilePath = parentDirectoryPath + File.separator + newFileName;
+                        File newFile = new File(newFilePath);
+                        FileUtils.moveFile(oldFile, newFile);
+
+                        assetsRepository.updateAssetName(newFileName, newFilePath, versionedAsset.getId());
+                    }
+                    else{
+                        throw new IOException("File path " + versionedAsset.getPath() + " is not a valid file!");
+                    }
+                }
+            }
+            else{
+                throw new IllegalArgumentException("There are no assets with the original asset ID '" + asset.getOriginalAssetId() + "'!");
+            }
+        }
+
+        return asset;
     }
 }
