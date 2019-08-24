@@ -82,6 +82,11 @@
                                 </button>
                             </div>
                         </div>
+                        <div style="margin-bottom:20px">
+                            <button class="ui icon button" v-on:click.stop="refreshAssets">
+                                <i class="sync icon"></i>
+                            </button>
+                        </div>
                         <div class="ui four doubling stackable cards">
                             <div class="ui active dimmer" v-if="isLoading">
                                 <div class="ui massive text loader">Loading</div>
