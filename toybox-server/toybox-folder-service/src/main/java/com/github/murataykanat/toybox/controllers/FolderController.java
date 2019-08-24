@@ -8,6 +8,7 @@ import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.container.*;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
+import com.github.murataykanat.toybox.utilities.ContainerUtils;
 import com.github.murataykanat.toybox.utilities.FacetUtils;
 import com.github.murataykanat.toybox.utilities.SortUtils;
 import com.github.murataykanat.toybox.utils.Constants;
@@ -50,21 +51,40 @@ public class FolderController {
     @RequestMapping(value = "/containers", method = RequestMethod.POST)
     public ResponseEntity<CreateContainerResponse> createContainer(Authentication authentication, @RequestBody CreateContainerRequest createContainerRequest){
         CreateContainerResponse createContainerResponse = new CreateContainerResponse();
+
         try {
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(createContainerRequest != null){
                     if(StringUtils.isNotBlank(createContainerRequest.getContainerName())){
-                        boolean canCreateFolder = false;
+                        boolean canCreateFolder;
+                        String errorMessage = "";
                         if(StringUtils.isBlank(createContainerRequest.getParentContainerId())){
                             if(AuthenticationUtils.getInstance().isAdminUser(authentication)){
+                                Container duplicateTopLevelContainer = ContainerUtils.getInstance().findDuplicateTopLevelContainer(containersRepository, createContainerRequest.getContainerName());
+                                if(duplicateTopLevelContainer == null){
+                                    canCreateFolder = true;
+                                }
+                                else{
+                                    canCreateFolder = false;
+                                    errorMessage = "The root folder already has a folder named '" + createContainerRequest.getContainerName() + "'.";
+                                }
+
+                            }
+                            else{
+                                canCreateFolder = false;
+                                errorMessage = "You are not allowed to create a folder under the root folder.";
+                            }
+                        }
+                        else{
+                            Container parentContainer = ContainerUtils.getInstance().getContainer(containersRepository, createContainerRequest.getParentContainerId());
+                            Container duplicateContainer = ContainerUtils.getInstance().findDuplicateContainer(containersRepository, createContainerRequest.getParentContainerId(), createContainerRequest.getContainerName());
+                            if(duplicateContainer == null){
                                 canCreateFolder = true;
                             }
                             else{
                                 canCreateFolder = false;
+                                errorMessage = "The folder '" + parentContainer.getName() + "' already has a folder named '" + createContainerRequest.getContainerName() + "'.";
                             }
-                        }
-                        else{
-                            canCreateFolder = true;
                         }
 
                         if(canCreateFolder){
@@ -84,19 +104,11 @@ public class FolderController {
                             return new ResponseEntity<>(createContainerResponse, HttpStatus.OK);
                         }
                         else{
-                            String errorMessage;
-                            if(StringUtils.isBlank(createContainerRequest.getParentContainerId())){
-                                errorMessage = "The user '" + authentication.getName() + "' is not allowed to create a folder under the root!";
-                            }
-                            else{
-                                errorMessage = "The user '" + authentication.getName() + "' is not allowed to create a folder under the folder with ID '" + createContainerRequest.getParentContainerId() + "'";
-                            }
-
                             _logger.error(errorMessage);
 
                             createContainerResponse.setMessage(errorMessage);
 
-                            return new ResponseEntity<>(createContainerResponse, HttpStatus.UNAUTHORIZED);
+                            return new ResponseEntity<>(createContainerResponse, HttpStatus.BAD_REQUEST);
                         }
                     }
                     else{

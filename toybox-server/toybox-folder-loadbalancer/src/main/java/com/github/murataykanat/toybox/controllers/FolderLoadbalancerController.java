@@ -3,10 +3,11 @@ package com.github.murataykanat.toybox.controllers;
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
-import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.container.*;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import com.github.murataykanat.toybox.utilities.LoadbalancerUtils;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -20,6 +21,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpSession;
@@ -89,13 +91,17 @@ public class FolderLoadbalancerController {
                 return new ResponseEntity<>(createContainerResponse, HttpStatus.UNAUTHORIZED);
             }
         }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            createContainerResponse.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(createContainerResponse, httpEx.getStatusCode());
+        }
         catch (Exception e){
             String errorMessage = "An error occurred while creating the container. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
             createContainerResponse.setMessage(errorMessage);
 
-            _logger.debug("<< createContainer()");
             return new ResponseEntity<>(createContainerResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

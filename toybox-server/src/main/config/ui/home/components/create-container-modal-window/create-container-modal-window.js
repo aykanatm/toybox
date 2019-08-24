@@ -30,11 +30,15 @@ module.exports = {
                 })
                 .catch(error => {
                     var errorMessage;
+                    var isWarning = false;
 
                     if(error.response){
                         errorMessage = error.response.data.message
                         if(error.response.status == 401){
                             window.location = '/logout';
+                        }
+                        else if(error.response.status == 400){
+                            isWarning = true;
                         }
                     }
                     else{
@@ -42,7 +46,14 @@ module.exports = {
                     }
 
                     console.error(errorMessage);
-                    this.$root.$emit('message-sent', 'Error', errorMessage);
+                    if(isWarning){
+                        this.$root.$emit('message-sent', 'Warning', errorMessage);
+                    }
+                    else{
+                        this.$root.$emit('message-sent', 'Error', errorMessage);
+                    }
+
+                    $(this.$el).modal('hide');
                 });
         }
     }

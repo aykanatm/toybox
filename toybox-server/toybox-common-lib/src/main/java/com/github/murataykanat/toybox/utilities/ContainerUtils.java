@@ -241,10 +241,26 @@ public class ContainerUtils {
     }
 
     @LogEntryExitExecutionTime
-    private Container findDuplicateContainer(ContainersRepository containersRepository, String targetContainerId, String containerName){
+    public Container findDuplicateContainer(ContainersRepository containersRepository, String targetContainerId, String containerName){
         List<Container> nonDeletedContainersByParentContainerId = containersRepository.getNonDeletedContainersByParentContainerId(targetContainerId);
 
         List<Container> duplicateNameContainers = nonDeletedContainersByParentContainerId.stream().filter(c -> c.getName().equalsIgnoreCase(containerName)).collect(Collectors.toList());
+        if(!duplicateNameContainers.isEmpty()){
+            if(duplicateNameContainers.size() == 1){
+                return duplicateNameContainers.get(0);
+            }
+            else{
+                throw new IllegalArgumentException("There are more than one duplicate container!");
+            }
+        }
+        else{
+            return null;
+        }
+    }
+
+    public Container findDuplicateTopLevelContainer(ContainersRepository containersRepository, String containerName){
+        List<Container> topLevelNonDeletedContainers = containersRepository.getTopLevelNonDeletedContainers();
+        List<Container> duplicateNameContainers = topLevelNonDeletedContainers.stream().filter(c -> c.getName().equalsIgnoreCase(containerName)).collect(Collectors.toList());
         if(!duplicateNameContainers.isEmpty()){
             if(duplicateNameContainers.size() == 1){
                 return duplicateNameContainers.get(0);
