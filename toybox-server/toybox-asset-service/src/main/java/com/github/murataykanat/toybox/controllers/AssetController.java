@@ -77,25 +77,17 @@ public class AssetController {
 
                     HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
                     HttpEntity<UploadFileLst> selectedAssetsEntity = new HttpEntity<>(uploadFileLst, headers);
+                    String jobServiceUrl = LoadbalancerUtils.getInstance().getLoadbalancerUrl(discoveryClient, jobServiceLoadBalancerServiceName);
+                    ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/import", selectedAssetsEntity, JobResponse.class);
+                    boolean successful = jobResponseResponseEntity.getStatusCode().is2xxSuccessful();
 
-                    List<ServiceInstance> instances = discoveryClient.getInstances(jobServiceLoadBalancerServiceName);
-                    if(!instances.isEmpty()){
-                        ServiceInstance serviceInstance = instances.get(0);
-                        String jobServiceUrl = serviceInstance.getUri().toString();
-                        ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/import", selectedAssetsEntity, JobResponse.class);
-                        boolean successful = jobResponseResponseEntity.getStatusCode().is2xxSuccessful();
-
-                        if(successful){
-                            genericResponse.setMessage(uploadFileLst.getUploadFiles().size() + " file(s) successfully uploaded. Import job started.");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.CREATED);
-                        }
-                        else{
-                            genericResponse.setMessage("Upload was successful but import failed to start. " + jobResponseResponseEntity.getBody().getMessage());
-                            return new ResponseEntity<>(genericResponse, jobResponseResponseEntity.getStatusCode());
-                        }
+                    if(successful){
+                        genericResponse.setMessage(uploadFileLst.getUploadFiles().size() + " file(s) successfully uploaded. Import job started.");
+                        return new ResponseEntity<>(genericResponse, HttpStatus.CREATED);
                     }
                     else{
-                        throw new Exception("There is no job load balancer instance!");
+                        genericResponse.setMessage("Upload was successful but import failed to start. " + jobResponseResponseEntity.getBody().getMessage());
+                        return new ResponseEntity<>(genericResponse, jobResponseResponseEntity.getStatusCode());
                     }
                 }
                 else{
