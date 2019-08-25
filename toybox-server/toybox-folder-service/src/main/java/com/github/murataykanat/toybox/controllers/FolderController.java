@@ -4,7 +4,9 @@ import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.dbo.*;
 import com.github.murataykanat.toybox.repositories.*;
 import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
+import com.github.murataykanat.toybox.schema.asset.UpdateAssetRequest;
 import com.github.murataykanat.toybox.schema.common.Facet;
+import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.container.*;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
@@ -19,10 +21,12 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpSession;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -343,6 +347,72 @@ public class FolderController {
             retrieveContainerContentsResult.setMessage(errorMessage);
 
             return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    @RequestMapping(value = "/containers/{containerId}", method = RequestMethod.PATCH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<GenericResponse> updateContainer(Authentication authentication, HttpSession session, @RequestBody UpdateContainerRequest updateContainerRequest, @PathVariable String containerId){
+        GenericResponse genericResponse = new GenericResponse();
+        try{
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+               if(StringUtils.isNotBlank(containerId)){
+                    if(updateContainerRequest != null){
+                        User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
+                        if(user != null){
+                            Container oldContainer = ContainerUtils.getInstance().getContainer(containersRepository, containerId);
+                            Container container = ContainerUtils.getInstance().updateContainer(containersRepository, updateContainerRequest, containerId);
+                            if(container != null){
+                                //TODO: Send notification
+                                String message = "Container updated successfully.";
+                                _logger.debug(message);
+
+                                genericResponse.setMessage(message);
+
+                                return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                            }
+                            else{
+                                throw new IllegalArgumentException("Container update failed!");
+                            }
+                        }
+                        else{
+                            throw new IllegalArgumentException("User is null!");
+                        }
+                    }
+                    else{
+                        String errorMessage = "Update container request is null!";
+                        _logger.error(errorMessage);
+
+                        genericResponse.setMessage(errorMessage);
+
+                        return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                    }
+                }
+                else{
+                   String errorMessage = "Container ID is blank!";
+                   _logger.error(errorMessage);
+
+                   genericResponse.setMessage(errorMessage);
+
+                   return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while updating the container with ID '" + containerId + "'. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

@@ -8,6 +8,7 @@ import com.github.murataykanat.toybox.repositories.ContainerUsersRepository;
 import com.github.murataykanat.toybox.repositories.ContainersRepository;
 import com.github.murataykanat.toybox.schema.container.CreateContainerRequest;
 import com.github.murataykanat.toybox.schema.container.CreateContainerResponse;
+import com.github.murataykanat.toybox.schema.container.UpdateContainerRequest;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -258,6 +259,7 @@ public class ContainerUtils {
         }
     }
 
+    @LogEntryExitExecutionTime
     public Container findDuplicateTopLevelContainer(ContainersRepository containersRepository, String containerName){
         List<Container> topLevelNonDeletedContainers = containersRepository.getTopLevelNonDeletedContainers();
         List<Container> duplicateNameContainers = topLevelNonDeletedContainers.stream().filter(c -> c.getName().equalsIgnoreCase(containerName)).collect(Collectors.toList());
@@ -272,5 +274,26 @@ public class ContainerUtils {
         else{
             return null;
         }
+    }
+
+    @LogEntryExitExecutionTime
+    public Container updateContainer(ContainersRepository containersRepository, UpdateContainerRequest updateContainerRequest, String containerId){
+        Container container = getContainer(containersRepository, containerId);
+        boolean updateCreatedByUserName = StringUtils.isNotBlank(updateContainerRequest.getCreatedByUsername());
+        boolean updateCreationDate = updateContainerRequest.getCreationDate() != null;
+        boolean updateDeleted = StringUtils.isNotBlank(updateContainerRequest.getDeleted());
+        boolean updateIsSystem = StringUtils.isNotBlank(updateContainerRequest.getIsSystem());
+        boolean updateName = StringUtils.isNotBlank(updateContainerRequest.getName());
+        boolean updateParentId = StringUtils.isNotBlank(updateContainerRequest.getParentId());
+
+        container.setCreatedByUsername(updateCreatedByUserName ? updateContainerRequest.getCreatedByUsername() : container.getCreatedByUsername());
+        container.setCreationDate(updateCreationDate ? updateContainerRequest.getCreationDate() : container.getCreationDate());
+        container.setDeleted(updateDeleted ? updateContainerRequest.getDeleted() : container.getDeleted());
+        container.setSystem(updateIsSystem ? updateContainerRequest.getIsSystem() : container.getSystem());
+        container.setName(updateName ? updateContainerRequest.getName() : container.getName());
+        container.setParentId(updateParentId ? updateContainerRequest.getParentId() : container.getParentId());
+        containersRepository.save(container);
+
+        return getContainer(containersRepository, containerId);
     }
 }

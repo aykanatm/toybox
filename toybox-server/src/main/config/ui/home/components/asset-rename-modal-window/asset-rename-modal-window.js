@@ -2,30 +2,40 @@ module.exports = {
     data:function(){
         return{
             componentName: 'Rename Modal Window',
-            assetId:'',
-            assetName:'',
-            assetUrl: ''
+            id:'',
+            name:'',
+            serviceUrl: '',
+            isAsset: true
         }
     },
     mounted:function(){
-        this.$root.$on('open-asset-rename-modal-window', (assetId, assetName, assetUrl) => {
-            this.assetId = assetId;
-            this.assetName = assetName;
-            this.assetUrl = assetUrl;
+        this.$root.$on('open-asset-rename-modal-window', (id, name, serviceUrl, isAsset) => {
+            this.id = id;
+            this.name = name;
+            this.serviceUrl = serviceUrl;
+            this.isAsset = isAsset;
+
+            if(isAsset){
+                this.serviceUrl += '/assets/';
+            }
+            else{
+                this.serviceUrl += '/containers/';
+            }
 
             $(this.$el).modal('setting', 'closable', false).modal('show');
         });
     },
     methods:{
-        renameAsset:function(){
+        renameItem:function(){
             var updateAssetRequest = {
-                'name': this.assetName
+                'name': this.name
             }
 
-            axios.patch(this.assetUrl + '/assets/' + this.assetId, updateAssetRequest)
+            axios.patch(this.serviceUrl + this.id, updateAssetRequest)
                 .then(response => {
                     this.$root.$emit('message-sent', 'Success', response.data.message);
                     this.$root.$emit('refresh-assets');
+                    this.$root.$emit('refresh-items');
                     $(this.$el).modal('hide');
                 })
                 .catch(error => {

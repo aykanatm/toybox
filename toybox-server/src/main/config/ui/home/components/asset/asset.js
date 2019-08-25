@@ -142,7 +142,7 @@ module.exports = {
         assetRename:function(){
             console.log('Renaming the file with ID "' + this.id + '"');
             var filename = this.name.substr(0, this.name.lastIndexOf('.')) || this.name;
-            this.renameAsset(this.id, filename);
+            this.renameItem(this.id, filename, true);
             this.contextMenuOpen = false;
         },
         assetCopy:function(){

@@ -145,6 +145,37 @@ var itemActionsMixin = {
             var selectionContext = this.generateSelectionContext(selectedItems);
             this.$root.$emit('open-copy-move-asset-modal-window', selectionContext, false, true);
         },
+        renameItem(id, name, isAsset){
+            var serviceName;
+            if(isAsset){
+                serviceName = "toybox-asset-loadbalancer";
+            }
+            else{
+                serviceName = "toybox-folder-loadbalancer";
+            }
+            this.getService(serviceName)
+            .then(response => {
+                if(response){
+                    this.$root.$emit('open-asset-rename-modal-window', id, name, response.data.value, isAsset);
+                }
+            })
+            .catch(error => {
+                var errorMessage;
+
+                if(error.response){
+                    errorMessage = error.response.data.message
+                    if(error.response.status == 401){
+                        window.location = '/logout';
+                    }
+                }
+                else{
+                    errorMessage = error.message;
+                }
+
+                console.error(errorMessage);
+                this.$root.$emit('message-sent', 'Error', errorMessage);
+            });
+        },
         generateSelectionContext(selectedItems){
             console.log(selectedItems);
             var selectedAssets = [];

@@ -3,6 +3,7 @@ package com.github.murataykanat.toybox.controllers;
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
+import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.container.*;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import com.github.murataykanat.toybox.utilities.LoadbalancerUtils;
@@ -311,6 +312,112 @@ public class FolderLoadbalancerController {
             retrieveContainersResults.setMessage(errorMessage);
 
             return new ResponseEntity<>(retrieveContainersResults, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    @HystrixCommand(fallbackMethod = "updateContainerErrorFallback")
+    @RequestMapping(value = "/containers/{containerId}", method = RequestMethod.PATCH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<GenericResponse> updateContainer(Authentication authentication, HttpSession session, @RequestBody UpdateContainerRequest updateContainerRequest, @PathVariable String containerId){
+        GenericResponse genericResponse = new GenericResponse();
+
+        try{
+            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+                if(StringUtils.isNotBlank(containerId)){
+                    if(updateContainerRequest != null){
+                        HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
+                        String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, folderServiceName);
+
+                        if(StringUtils.isNotBlank(prefix)){
+                            return restTemplate.exchange(prefix + folderServiceName + "/containers/" + containerId, HttpMethod.PATCH, new HttpEntity<>(updateContainerRequest, headers), GenericResponse.class);
+                        }
+                        else{
+                            throw new IllegalArgumentException("Service ID prefix is null!");
+                        }
+                    }
+                    else{
+                        String errorMessage = "Update container request is null!";
+
+                        _logger.error(errorMessage);
+
+                        genericResponse.setMessage(errorMessage);
+
+                        return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                    }
+                }
+                else{
+                    String errorMessage = "Container ID is blank";
+
+                    _logger.error(errorMessage);
+
+                    genericResponse.setMessage(errorMessage);
+
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            genericResponse.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(genericResponse, httpEx.getStatusCode());
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while updating container. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    public ResponseEntity<GenericResponse> updateContainerErrorFallback(Authentication authentication, HttpSession session, UpdateContainerRequest updateContainerRequest, String containerId, Throwable e){
+        if(updateContainerRequest != null){
+            if(StringUtils.isNotBlank(containerId)){
+                String errorMessage;
+                if(e.getLocalizedMessage() != null){
+                    errorMessage = "Unable to update container. " + e.getLocalizedMessage();
+                }
+                else{
+                    errorMessage = "Unable to get response from the container service.";
+                }
+
+                _logger.error(errorMessage, e);
+
+                GenericResponse genericResponse = new GenericResponse();
+                genericResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+            else{
+                String errorMessage = "Container ID is blank!";
+
+                _logger.error(errorMessage);
+
+                GenericResponse genericResponse = new GenericResponse();
+                genericResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+            }
+        }
+        else{
+            String errorMessage = "Update container request is null!";
+
+            _logger.error(errorMessage);
+
+            GenericResponse genericResponse = new GenericResponse();
+            genericResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
         }
     }
 }
