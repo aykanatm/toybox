@@ -9,6 +9,8 @@ import com.github.murataykanat.toybox.schema.notification.SendNotificationReques
 import com.github.murataykanat.toybox.schema.notification.UpdateNotificationsRequest;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import com.github.murataykanat.toybox.utilities.LoadbalancerUtils;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpSession;
@@ -79,6 +82,11 @@ public class NotificationLoadbalancerController {
 
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
+        }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            genericResponse.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(genericResponse, httpEx.getStatusCode());
         }
         catch (Exception e){
             String errorMessage = "An error occurred while sending notification. " + e.getLocalizedMessage();
@@ -146,6 +154,11 @@ public class NotificationLoadbalancerController {
                 return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.UNAUTHORIZED);
             }
         }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            searchNotificationsResponse.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(searchNotificationsResponse, httpEx.getStatusCode());
+        }
         catch (Exception e){
             String errorMessage = "An error occurred while searching notifications. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
@@ -211,6 +224,11 @@ public class NotificationLoadbalancerController {
 
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
+        }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            genericResponse.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(genericResponse, httpEx.getStatusCode());
         }
         catch (Exception e){
             String errorMessage = "An error occurred while updating notifications. " + e.getLocalizedMessage();

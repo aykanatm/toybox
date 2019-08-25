@@ -188,6 +188,11 @@ public class FolderLoadbalancerController {
                 return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.UNAUTHORIZED);
             }
         }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            retrieveContainerContentsResult.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(retrieveContainerContentsResult, httpEx.getStatusCode());
+        }
         catch (Exception e){
             String errorMessage = "An error occurred while retrieving items inside the container with ID '" + containerId + "'. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
@@ -281,6 +286,11 @@ public class FolderLoadbalancerController {
 
                 return new ResponseEntity<>(retrieveContainersResults, HttpStatus.UNAUTHORIZED);
             }
+        }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            retrieveContainersResults.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(retrieveContainersResults, httpEx.getStatusCode());
         }
         catch (Exception e){
             String errorMessage = "An error occurred while searching for containers. " + e.getLocalizedMessage();

@@ -6,6 +6,8 @@ import com.github.murataykanat.toybox.schema.user.RetrieveUsersResponse;
 import com.github.murataykanat.toybox.schema.user.UserResponse;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import com.github.murataykanat.toybox.utilities.LoadbalancerUtils;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -21,6 +23,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpSession;
@@ -78,6 +81,11 @@ public class UserLoadbalancerController {
 
                 return new ResponseEntity<>(userResponse, HttpStatus.UNAUTHORIZED);
             }
+        }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            userResponse.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(userResponse, httpEx.getStatusCode());
         }
         catch (Exception e){
             String errorMessage = "An error occurred while getting the current user. " + e.getLocalizedMessage();
@@ -140,6 +148,11 @@ public class UserLoadbalancerController {
 
                 return new ResponseEntity<>(retrieveUsersResponse, HttpStatus.UNAUTHORIZED);
             }
+        }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            retrieveUsersResponse.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(retrieveUsersResponse, httpEx.getStatusCode());
         }
         catch (Exception e){
             String errorMessage = "An error occurred while retrieving users. " + e.getLocalizedMessage();

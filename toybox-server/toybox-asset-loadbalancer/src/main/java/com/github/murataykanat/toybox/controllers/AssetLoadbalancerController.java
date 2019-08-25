@@ -4,11 +4,12 @@ import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.asset.*;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
-import com.github.murataykanat.toybox.schema.selection.SelectionContext;
 import com.github.murataykanat.toybox.schema.upload.UploadFile;
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import com.github.murataykanat.toybox.utilities.LoadbalancerUtils;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -24,6 +25,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -136,6 +138,11 @@ public class AssetLoadbalancerController {
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            genericResponse.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(genericResponse, httpEx.getStatusCode());
+        }
         catch (Exception e){
             String errorMessage = "An error occurred while uploading files. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
@@ -191,9 +198,9 @@ public class AssetLoadbalancerController {
     @HystrixCommand(fallbackMethod = "retrieveAssetsErrorFallback")
     @RequestMapping(value = "/assets/search", method = RequestMethod.POST)
     public ResponseEntity<RetrieveAssetsResults> retrieveAssets(Authentication authentication, HttpSession session, @RequestBody AssetSearchRequest assetSearchRequest){
-        try{
-            RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
+        RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
 
+        try{
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(assetSearchRequest != null){
                     HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
@@ -232,11 +239,15 @@ public class AssetLoadbalancerController {
                 return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.UNAUTHORIZED);
             }
         }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            retrieveAssetsResults.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(retrieveAssetsResults, httpEx.getStatusCode());
+        }
         catch (Exception e){
             String errorMessage = "An error occurred while searching for assets. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
-            RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
             retrieveAssetsResults.setMessage(errorMessage);
 
             return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -326,6 +337,11 @@ public class AssetLoadbalancerController {
 
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
+        }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            genericResponse.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(genericResponse, httpEx.getStatusCode());
         }
         catch (Exception e){
             String errorMessage = "An error occurred while updating assets. " + e.getLocalizedMessage();
@@ -421,6 +437,11 @@ public class AssetLoadbalancerController {
                 return new ResponseEntity<>(assetVersionResponse, HttpStatus.UNAUTHORIZED);
             }
         }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            assetVersionResponse.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(assetVersionResponse, httpEx.getStatusCode());
+        }
         catch (Exception e){
             String errorMessage = "An error occurred while retrieving asset version history for asset with ID '" + assetId + "'. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
@@ -510,6 +531,11 @@ public class AssetLoadbalancerController {
 
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
+        }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            genericResponse.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(genericResponse, httpEx.getStatusCode());
         }
         catch (Exception e){
             String errorMessage;

@@ -9,6 +9,8 @@ import com.github.murataykanat.toybox.schema.selection.SelectionContext;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import com.github.murataykanat.toybox.utilities.LoadbalancerUtils;
 import com.github.murataykanat.toybox.utilities.SelectionUtils;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpSession;
@@ -83,6 +86,11 @@ public class CommonObjectLoadbalancerController {
                 return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
             }
         }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            _logger.error(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(httpEx.getStatusCode());
+        }
         catch (Exception e){
             String errorMessage = "An error occurred while downloading the assets. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
@@ -99,7 +107,7 @@ public class CommonObjectLoadbalancerController {
                 errorMessage = "Unable download selected assets. " + e.getLocalizedMessage();
             }
             else{
-                errorMessage = "Unable to get response from the asset service.";
+                errorMessage = "Unable to get response from the common object service.";
             }
 
             _logger.error(errorMessage, e);
@@ -156,6 +164,11 @@ public class CommonObjectLoadbalancerController {
 
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
+        }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            genericResponse.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(genericResponse, httpEx.getStatusCode());
         }
         catch (Exception e){
             String errorMessage = "An error occurred while deleting assets. " + e.getLocalizedMessage();
@@ -240,6 +253,11 @@ public class CommonObjectLoadbalancerController {
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            genericResponse.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(genericResponse, httpEx.getStatusCode());
+        }
         catch (Exception e){
             String errorMessage = "An error occurred while subscribing to assets. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
@@ -322,6 +340,11 @@ public class CommonObjectLoadbalancerController {
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            genericResponse.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(genericResponse, httpEx.getStatusCode());
+        }
         catch (Exception e){
             String errorMessage = "An error occurred while unsubscribing from assets. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
@@ -342,7 +365,7 @@ public class CommonObjectLoadbalancerController {
                 errorMessage = "Unable to unsubscribe from the selected objects. " + e.getLocalizedMessage();
             }
             else{
-                errorMessage = "Unable to get response from the asset service.";
+                errorMessage = "Unable to get response from the common object service.";
             }
 
             _logger.error(errorMessage, e);
@@ -414,6 +437,11 @@ public class CommonObjectLoadbalancerController {
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            genericResponse.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(genericResponse, httpEx.getStatusCode());
+        }
         catch (Exception e){
             String errorMessage = "An error occurred while moving assets. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
@@ -433,10 +461,10 @@ public class CommonObjectLoadbalancerController {
             if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
                 String errorMessage;
                 if(e.getLocalizedMessage() != null){
-                    errorMessage = "Unable to move the selected assets. " + e.getLocalizedMessage();
+                    errorMessage = "Unable to move the selected objects. " + e.getLocalizedMessage();
                 }
                 else{
-                    errorMessage = "Unable to get response from the asset service.";
+                    errorMessage = "Unable to get response from the common object service.";
                 }
 
                 _logger.error(errorMessage, e);
@@ -517,6 +545,11 @@ public class CommonObjectLoadbalancerController {
                 return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
             }
         }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            genericResponse.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(genericResponse, httpEx.getStatusCode());
+        }
         catch (Exception e){
             String errorMessage = "An error occurred while moving assets. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
@@ -536,10 +569,10 @@ public class CommonObjectLoadbalancerController {
             if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
                 String errorMessage;
                 if(e.getLocalizedMessage() != null){
-                    errorMessage = "Unable to move the selected assets. " + e.getLocalizedMessage();
+                    errorMessage = "Unable to copy the selected objects. " + e.getLocalizedMessage();
                 }
                 else{
-                    errorMessage = "Unable to get response from the asset service.";
+                    errorMessage = "Unable to get response from the common objects service.";
                 }
 
                 _logger.error(errorMessage, e);

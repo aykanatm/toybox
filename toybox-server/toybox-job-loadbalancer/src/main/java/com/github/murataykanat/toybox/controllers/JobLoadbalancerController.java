@@ -10,6 +10,8 @@ import com.github.murataykanat.toybox.schema.job.RetrieveToyboxJobsResult;
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import com.github.murataykanat.toybox.utilities.LoadbalancerUtils;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -24,6 +26,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpSession;
@@ -91,6 +94,11 @@ public class JobLoadbalancerController {
 
                 return new ResponseEntity<>(jobResponse, HttpStatus.UNAUTHORIZED);
             }
+        }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            jobResponse.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(jobResponse, httpEx.getStatusCode());
         }
         catch (Exception e){
             String errorMessage = "An error occurred while initiating the package job. " + e.getLocalizedMessage();
@@ -174,6 +182,11 @@ public class JobLoadbalancerController {
                 return new ResponseEntity<>(jobResponse, HttpStatus.UNAUTHORIZED);
             }
         }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            jobResponse.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(jobResponse, httpEx.getStatusCode());
+        }
         catch (Exception e){
             String errorMessage = "An error occurred while initiating the import job. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
@@ -254,6 +267,11 @@ public class JobLoadbalancerController {
 
                 return new ResponseEntity<>(retrieveToyboxJobsResult, HttpStatus.UNAUTHORIZED);
             }
+        }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            retrieveToyboxJobsResult.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(retrieveToyboxJobsResult, httpEx.getStatusCode());
         }
         catch (Exception e){
             String errorMessage = "An error occurred while retrieving jobs. " + e.getLocalizedMessage();
@@ -336,6 +354,11 @@ public class JobLoadbalancerController {
                 return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.UNAUTHORIZED);
             }
         }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            retrieveToyboxJobResult.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(retrieveToyboxJobResult, httpEx.getStatusCode());
+        }
         catch (Exception e){
             String errorMessage = "An error occurred while jobs with instance ID '" + jobInstanceId + ". " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
@@ -409,6 +432,11 @@ public class JobLoadbalancerController {
                 return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
             }
         }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            _logger.error(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(httpEx.getStatusCode());
+        }
         catch (Exception e){
             String errorMessage = "An error occurred while downloading job result. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
@@ -480,6 +508,11 @@ public class JobLoadbalancerController {
 
                 return new ResponseEntity<>(jobResponse, HttpStatus.UNAUTHORIZED);
             }
+        }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            jobResponse.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(jobResponse, httpEx.getStatusCode());
         }
         catch (Exception e){
             String errorMessage = "An error occurred while stopping the job with instance ID '" + jobInstanceId + ". " + e.getLocalizedMessage();

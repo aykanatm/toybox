@@ -6,6 +6,8 @@ import com.github.murataykanat.toybox.schema.share.ExternalShareRequest;
 import com.github.murataykanat.toybox.schema.share.ExternalShareResponse;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import com.github.murataykanat.toybox.utilities.LoadbalancerUtils;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -20,6 +22,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpSession;
@@ -63,6 +66,11 @@ public class ShareLoadbalancerController {
 
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
+        }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            _logger.error(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(httpEx.getStatusCode());
         }
         catch (Exception e){
             String errorMessage = "An error occurred while downloading the shared assets. " + e.getLocalizedMessage();
@@ -131,6 +139,11 @@ public class ShareLoadbalancerController {
 
                 return new ResponseEntity<>(externalShareResponse, HttpStatus.UNAUTHORIZED);
             }
+        }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            externalShareResponse.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(externalShareResponse, httpEx.getStatusCode());
         }
         catch (Exception e){
             String errorMessage = "An error occurred while sharing assets externally. " + e.getLocalizedMessage();
