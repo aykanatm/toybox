@@ -207,7 +207,7 @@ public class AssetUtils {
 
     @LogEntryExitExecutionTime
     public Asset updateAsset(AssetsRepository assetsRepository, UpdateAssetRequest updateAssetRequest, String assetId) throws Exception {
-        Asset asset = AssetUtils.getInstance().getAsset(assetsRepository, assetId);
+        Asset asset = getAsset(assetsRepository, assetId);
         boolean updateChecksum = StringUtils.isNotBlank(updateAssetRequest.getChecksum());
         boolean updateDeleted = StringUtils.isNotBlank(updateAssetRequest.getDeleted());
         boolean updateExtension = StringUtils.isNotBlank(updateAssetRequest.getExtension());
@@ -264,6 +264,6 @@ public class AssetUtils {
             }
         }
 
-        return asset;
+        return getAsset(assetsRepository, assetId);
     }
 }
