@@ -111,12 +111,7 @@ public class AssetLoadbalancerController {
                         return restTemplate.exchange(prefix + assetServiceName + "/assets/upload", HttpMethod.POST, new HttpEntity<>(uploadFileLst, headers), GenericResponse.class);
                     }
                     else{
-                        String errorMessage = "Service ID prefix is null!";
-                        _logger.error(errorMessage);
-
-                        genericResponse.setMessage(errorMessage);
-
-                        return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                        throw new IllegalArgumentException("Service ID prefix is null!");
                     }
                 }
                 else{
@@ -211,13 +206,7 @@ public class AssetLoadbalancerController {
                         return restTemplate.exchange(prefix + assetServiceName + "/assets/search", HttpMethod.POST, new HttpEntity<>(assetSearchRequest, headers), RetrieveAssetsResults.class);
                     }
                     else{
-                        String errorMessage = "Service ID prefix is null!";
-
-                        _logger.error(errorMessage);
-
-                        retrieveAssetsResults.setMessage(errorMessage);
-
-                        return new ResponseEntity<>(retrieveAssetsResults, HttpStatus.INTERNAL_SERVER_ERROR);
+                        throw new IllegalArgumentException("Service ID prefix is null!");
                     }
                 }
                 else{
@@ -301,12 +290,7 @@ public class AssetLoadbalancerController {
                             return restTemplate.exchange(prefix + assetServiceName + "/assets/" + assetId, HttpMethod.PATCH, new HttpEntity<>(updateAssetRequest, headers), GenericResponse.class);
                         }
                         else{
-                            String errorMessage = "Service ID prefix is null!";
-                            _logger.error(errorMessage);
-
-                            genericResponse.setMessage(errorMessage);
-
-                            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                            throw new IllegalArgumentException("Service ID prefix is null!");
                         }
                     }
                     else{
@@ -411,12 +395,7 @@ public class AssetLoadbalancerController {
                         return restTemplate.exchange(prefix + assetServiceName + "/assets/" + assetId + "/versions", HttpMethod.GET, new HttpEntity<>(headers), AssetVersionResponse.class);
                     }
                     else{
-                        String errorMessage = "Service ID prefix is null!";
-                        _logger.error(errorMessage);
-
-                        assetVersionResponse.setMessage(errorMessage);
-
-                        return new ResponseEntity<>(assetVersionResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                        throw new IllegalArgumentException("Service ID prefix is null!");
                     }
                 }
                 else{
@@ -497,12 +476,7 @@ public class AssetLoadbalancerController {
                             return restTemplate.exchange(prefix + assetServiceName + "/assets/" + assetId + "/revert", HttpMethod.POST, new HttpEntity<>(revertAssetVersionRequest, headers), GenericResponse.class);
                         }
                         else{
-                            String errorMessage = "Service ID prefix is null!";
-                            _logger.error(errorMessage);
-
-                            genericResponse.setMessage(errorMessage);
-
-                            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                            throw new IllegalArgumentException("Service ID prefix is null!");
                         }
                     }
                     else{

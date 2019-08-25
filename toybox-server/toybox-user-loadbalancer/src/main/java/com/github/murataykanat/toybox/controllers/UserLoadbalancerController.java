@@ -64,13 +64,7 @@ public class UserLoadbalancerController {
                     return restTemplate.exchange(prefix + userServiceName + "/users/me", HttpMethod.GET, new HttpEntity<>(headers), UserResponse.class);
                 }
                 else{
-                    String errorMessage = "Service ID prefix is null!";
-
-                    _logger.error(errorMessage);
-
-                    userResponse.setMessage(errorMessage);
-
-                    return new ResponseEntity<>(userResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                    throw new IllegalArgumentException("Service ID prefix is null!");
                 }
             }
             else{
@@ -131,13 +125,7 @@ public class UserLoadbalancerController {
                     return restTemplate.exchange(prefix + userServiceName + "/users", HttpMethod.GET, new HttpEntity<>(headers), RetrieveUsersResponse.class);
                 }
                 else{
-                    String errorMessage = "Service ID prefix is null!";
-
-                    _logger.error(errorMessage);
-
-                    retrieveUsersResponse.setMessage(errorMessage);
-
-                    return new ResponseEntity<>(retrieveUsersResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                    throw new IllegalArgumentException("Service ID prefix is null!");
                 }
             }
             else{

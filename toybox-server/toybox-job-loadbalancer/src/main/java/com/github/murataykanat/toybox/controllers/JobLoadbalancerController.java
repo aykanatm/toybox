@@ -69,12 +69,7 @@ public class JobLoadbalancerController {
                         return restTemplate.exchange(prefix + jobServiceName + "/jobs/package", HttpMethod.POST, new HttpEntity<>(selectionContext, headers), JobResponse.class);
                     }
                     else{
-                        String errorMessage = "Service ID prefix is null!";
-                        _logger.error(errorMessage);
-
-                        jobResponse.setMessage(errorMessage);
-
-                        return new ResponseEntity<>(jobResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                        throw new IllegalArgumentException("Service ID prefix is null!");
                     }
                 }
                 else{
@@ -106,7 +101,6 @@ public class JobLoadbalancerController {
 
             jobResponse.setMessage(errorMessage);
 
-            _logger.debug("<< packageAssets()");
             return new ResponseEntity<>(jobResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -156,12 +150,7 @@ public class JobLoadbalancerController {
                         return restTemplate.exchange(prefix + jobServiceName + "/jobs/import", HttpMethod.POST, new HttpEntity<>(uploadFileLst, headers), JobResponse.class);
                     }
                     else{
-                        String errorMessage = "Service ID prefix is null!";
-                        _logger.error(errorMessage);
-
-                        jobResponse.setMessage(errorMessage);
-
-                        return new ResponseEntity<>(jobResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                        throw new IllegalArgumentException("Service ID prefix is null!");
                     }
                 }
                 else{
@@ -242,12 +231,7 @@ public class JobLoadbalancerController {
                         return restTemplate.exchange(prefix + jobServiceName + "/jobs/search", HttpMethod.POST, new HttpEntity<>(jobSearchRequest, headers), RetrieveToyboxJobsResult.class);
                     }
                     else{
-                        String errorMessage = "Service ID prefix is null!";
-                        _logger.error(errorMessage);
-
-                        retrieveToyboxJobsResult.setMessage(errorMessage);
-
-                        return new ResponseEntity<>(retrieveToyboxJobsResult, HttpStatus.INTERNAL_SERVER_ERROR);
+                        throw new IllegalArgumentException("Service ID prefix is null!");
                     }
                 }
                 else{
@@ -328,12 +312,7 @@ public class JobLoadbalancerController {
                         return restTemplate.exchange(prefix + jobServiceName + "/jobs/" + jobInstanceId, HttpMethod.GET, new HttpEntity<>(headers), RetrieveToyboxJobResult.class);
                     }
                     else{
-                        String errorMessage = "Service ID prefix is null!";
-                        _logger.error(errorMessage);
-
-                        retrieveToyboxJobResult.setMessage(errorMessage);
-
-                        return new ResponseEntity<>(retrieveToyboxJobResult, HttpStatus.INTERNAL_SERVER_ERROR);
+                        throw new IllegalArgumentException("Service ID prefix is null!");
                     }
                 }
                 else{
@@ -412,10 +391,7 @@ public class JobLoadbalancerController {
                         return restTemplate.exchange(prefix + jobServiceName + "/jobs/download/" + jobInstanceId, HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
                     }
                     else{
-                        String errorMessage = "Service ID prefix is null!";
-                        _logger.error(errorMessage);
-
-                        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+                        throw new IllegalArgumentException("Service ID prefix is null!");
                     }
                 }
                 else{
@@ -483,12 +459,7 @@ public class JobLoadbalancerController {
                         return restTemplate.exchange(prefix + jobServiceName + "/jobs/stop/" + jobInstanceId, HttpMethod.POST, new HttpEntity<>(headers), JobResponse.class);
                     }
                     else{
-                        String errorMessage = "Service ID prefix is null!";
-                        _logger.error(errorMessage);
-
-                        jobResponse.setMessage(errorMessage);
-
-                        return new ResponseEntity<>(jobResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                        throw new IllegalArgumentException("Service ID prefix is null!");
                     }
                 }
                 else{

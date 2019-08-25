@@ -63,13 +63,7 @@ public class FolderLoadbalancerController {
                         return restTemplate.exchange(prefix + folderServiceName + "/containers", HttpMethod.POST, new HttpEntity<>(createContainerRequest, headers), CreateContainerResponse.class);
                     }
                     else{
-                        String errorMessage = "Service ID prefix is null!";
-
-                        _logger.error(errorMessage);
-
-                        createContainerResponse.setMessage(errorMessage);
-
-                        return new ResponseEntity<>(createContainerResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                        throw new IllegalArgumentException("Service ID prefix is null!");
                     }
                 }
                 else{
@@ -152,13 +146,7 @@ public class FolderLoadbalancerController {
                             return restTemplate.exchange(prefix + folderServiceName + "/containers/" + containerId + "/search", HttpMethod.POST, new HttpEntity<>(assetSearchRequest, headers), RetrieveContainerContentsResult.class);
                         }
                         else{
-                            String errorMessage = "Service ID prefix is null!";
-
-                            _logger.error(errorMessage);
-
-                            retrieveContainerContentsResult.setMessage(errorMessage);
-
-                            return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.INTERNAL_SERVER_ERROR);
+                            throw new IllegalArgumentException("Service ID prefix is null!");
                         }
                     }
                     else{
@@ -259,13 +247,7 @@ public class FolderLoadbalancerController {
                         return restTemplate.exchange(prefix + folderServiceName + "/containers/search", HttpMethod.POST, new HttpEntity<>(containerSearchRequest, headers), RetrieveContainersResults.class);
                     }
                     else{
-                        String errorMessage = "Service ID prefix is null!";
-
-                        _logger.error(errorMessage);
-
-                        retrieveContainersResults.setMessage(errorMessage);
-
-                        return new ResponseEntity<>(retrieveContainersResults, HttpStatus.INTERNAL_SERVER_ERROR);
+                        throw new IllegalArgumentException("Service ID prefix is null!");
                     }
                 }
                 else{

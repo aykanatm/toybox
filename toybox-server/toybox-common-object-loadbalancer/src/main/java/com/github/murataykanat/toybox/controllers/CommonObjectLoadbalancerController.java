@@ -69,7 +69,7 @@ public class CommonObjectLoadbalancerController {
                         return restTemplate.exchange(prefix + commonObjectServiceName + "/common-objects/download", HttpMethod.POST, new HttpEntity<>(selectionContext, headers), Resource.class);
                     }
                     else{
-                        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+                        throw new IllegalArgumentException("Service ID prefix is null!");
                     }
                 }
                 else{
@@ -92,7 +92,7 @@ public class CommonObjectLoadbalancerController {
             return new ResponseEntity<>(httpEx.getStatusCode());
         }
         catch (Exception e){
-            String errorMessage = "An error occurred while downloading the assets. " + e.getLocalizedMessage();
+            String errorMessage = "An error occurred while downloading objects. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -104,7 +104,7 @@ public class CommonObjectLoadbalancerController {
         if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
             String errorMessage;
             if(e.getLocalizedMessage() != null){
-                errorMessage = "Unable download selected assets. " + e.getLocalizedMessage();
+                errorMessage = "Unable download selected objects. " + e.getLocalizedMessage();
             }
             else{
                 errorMessage = "Unable to get response from the common object service.";
@@ -138,12 +138,7 @@ public class CommonObjectLoadbalancerController {
                         return restTemplate.exchange(prefix + commonObjectServiceName + "/common-objects/delete", HttpMethod.POST, new HttpEntity<>(selectionContext, headers), GenericResponse.class);
                     }
                     else{
-                        String errorMessage = "Service ID prefix is null!";
-                        _logger.error(errorMessage);
-
-                        genericResponse.setMessage(errorMessage);
-
-                        return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                        throw new IllegalArgumentException("Service ID prefix is null!");
                     }
                 }
                 else{
@@ -171,7 +166,7 @@ public class CommonObjectLoadbalancerController {
             return new ResponseEntity<>(genericResponse, httpEx.getStatusCode());
         }
         catch (Exception e){
-            String errorMessage = "An error occurred while deleting assets. " + e.getLocalizedMessage();
+            String errorMessage = "An error occurred while deleting objects. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
             genericResponse.setMessage(errorMessage);
@@ -226,12 +221,7 @@ public class CommonObjectLoadbalancerController {
                         return restTemplate.exchange(prefix + commonObjectServiceName + "/common-objects/subscribe", HttpMethod.POST, new HttpEntity<>(selectionContext, headers), GenericResponse.class);
                     }
                     else{
-                        String errorMessage = "Service ID prefix is null!";
-                        _logger.error(errorMessage);
-
-                        genericResponse.setMessage(errorMessage);
-
-                        return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                        throw new IllegalArgumentException("Service ID prefix is null!");
                     }
                 }
                 else{
@@ -259,7 +249,7 @@ public class CommonObjectLoadbalancerController {
             return new ResponseEntity<>(genericResponse, httpEx.getStatusCode());
         }
         catch (Exception e){
-            String errorMessage = "An error occurred while subscribing to assets. " + e.getLocalizedMessage();
+            String errorMessage = "An error occurred while subscribing to objects. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
             genericResponse.setMessage(errorMessage);
@@ -314,12 +304,7 @@ public class CommonObjectLoadbalancerController {
                         return restTemplate.exchange(prefix + commonObjectServiceName + "/common-objects/unsubscribe", HttpMethod.POST, new HttpEntity<>(selectionContext, headers), GenericResponse.class);
                     }
                     else{
-                        String errorMessage = "Service ID prefix is null!";
-                        _logger.error(errorMessage);
-
-                        genericResponse.setMessage(errorMessage);
-
-                        return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                        throw new IllegalArgumentException("Service ID prefix is null!");
                     }
                 }
                 else{
@@ -346,7 +331,7 @@ public class CommonObjectLoadbalancerController {
             return new ResponseEntity<>(genericResponse, httpEx.getStatusCode());
         }
         catch (Exception e){
-            String errorMessage = "An error occurred while unsubscribing from assets. " + e.getLocalizedMessage();
+            String errorMessage = "An error occurred while unsubscribing from objects. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
             genericResponse.setMessage(errorMessage);
@@ -402,12 +387,7 @@ public class CommonObjectLoadbalancerController {
                             return restTemplate.exchange(prefix + commonObjectServiceName + "/common-objects/move", HttpMethod.POST, new HttpEntity<>(moveAssetRequest, headers), GenericResponse.class);
                         }
                         else{
-                            String errorMessage = "Service ID prefix is null!";
-                            _logger.error(errorMessage);
-
-                            genericResponse.setMessage(errorMessage);
-
-                            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                            throw new IllegalArgumentException("Service ID prefix is null!");
                         }
                     }
                     else{
@@ -443,7 +423,7 @@ public class CommonObjectLoadbalancerController {
             return new ResponseEntity<>(genericResponse, httpEx.getStatusCode());
         }
         catch (Exception e){
-            String errorMessage = "An error occurred while moving assets. " + e.getLocalizedMessage();
+            String errorMessage = "An error occurred while moving objects. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
             genericResponse.setMessage(errorMessage);
@@ -509,12 +489,7 @@ public class CommonObjectLoadbalancerController {
                             return restTemplate.exchange(prefix + commonObjectServiceName + "/common-objects/copy", HttpMethod.POST, new HttpEntity<>(copyAssetRequest, headers), GenericResponse.class);
                         }
                         else{
-                            String errorMessage = "Service ID prefix is null!";
-                            _logger.error(errorMessage);
-
-                            genericResponse.setMessage(errorMessage);
-
-                            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+                            throw new IllegalArgumentException("Service ID prefix is null!");
                         }
                     }
                     else{
@@ -551,7 +526,7 @@ public class CommonObjectLoadbalancerController {
             return new ResponseEntity<>(genericResponse, httpEx.getStatusCode());
         }
         catch (Exception e){
-            String errorMessage = "An error occurred while moving assets. " + e.getLocalizedMessage();
+            String errorMessage = "An error occurred while copying objects. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
             genericResponse.setMessage(errorMessage);

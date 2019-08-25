@@ -64,7 +64,7 @@ public class RenditionLoadbalancerController {
                         return restTemplate.exchange(prefix + renditionServiceName + "/renditions/users/" + username, HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
                     }
                     else{
-                        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+                        throw new IllegalArgumentException("Service ID prefix is null!");
                     }
                 }
                 else{
@@ -126,7 +126,7 @@ public class RenditionLoadbalancerController {
                             return restTemplate.exchange(prefix + renditionServiceName + "/renditions/assets/" + assetId + "/" + renditionType, HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
                         }
                         else{
-                            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+                            throw new IllegalArgumentException("Service ID prefix is null!");
                         }
                     }
                     else{
