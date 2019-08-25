@@ -58,7 +58,12 @@ public class ShareLoadbalancerController {
                 String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, shareServiceName);
                 HttpHeaders headers = new HttpHeaders();
 
-                return restTemplate.exchange(prefix + shareServiceName + "/share/download/" + externalShareId, HttpMethod.GET, new HttpEntity<>(headers),Resource.class);
+                if(StringUtils.isNotBlank(prefix)){
+                    return restTemplate.exchange(prefix + shareServiceName + "/share/download/" + externalShareId, HttpMethod.GET, new HttpEntity<>(headers),Resource.class);
+                }
+                else{
+                    throw new IllegalArgumentException("Service ID prefix is null!");
+                }
             }
             else{
                 String errorMessage = "External share ID is blank! ";
@@ -119,7 +124,7 @@ public class ShareLoadbalancerController {
                         return restTemplate.exchange(prefix + shareServiceName + "/share/external", HttpMethod.POST, new HttpEntity<>(externalShareRequest, headers), ExternalShareResponse.class);
                     }
                     else{
-                        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+                        throw new IllegalArgumentException("Service ID prefix is null!");
                     }
                 }
                 else{

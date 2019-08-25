@@ -12,6 +12,7 @@ import com.github.murataykanat.toybox.utilities.LoadbalancerUtils;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,8 +65,12 @@ public class NotificationLoadbalancerController {
                     HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
                     String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, notificationServiceName);
 
-                    _logger.debug("<< sendNotification()");
-                    return restTemplate.exchange(prefix + notificationServiceName + "/notifications", HttpMethod.POST, new HttpEntity<>(sendNotificationRequest, headers), GenericResponse.class);
+                    if(StringUtils.isNotBlank(prefix)){
+                        return restTemplate.exchange(prefix + notificationServiceName + "/notifications", HttpMethod.POST, new HttpEntity<>(sendNotificationRequest, headers), GenericResponse.class);
+                    }
+                    else{
+                        throw new IllegalArgumentException("Service ID prefix is null!");
+                    }
                 }
                 else{
                     String errorMessage = "Send notification request parameter is null.";
@@ -135,8 +140,12 @@ public class NotificationLoadbalancerController {
                     HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
                     String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, notificationServiceName);
 
-                    _logger.debug("<< searchNotifications()");
-                    return restTemplate.exchange(prefix + notificationServiceName + "/notifications/search", HttpMethod.POST, new HttpEntity<>(searchNotificationsRequest, headers), SearchNotificationsResponse.class);
+                    if(StringUtils.isNotBlank(prefix)){
+                        return restTemplate.exchange(prefix + notificationServiceName + "/notifications/search", HttpMethod.POST, new HttpEntity<>(searchNotificationsRequest, headers), SearchNotificationsResponse.class);
+                    }
+                    else{
+                        throw new IllegalArgumentException("Service ID prefix is null!");
+                    }
                 }
                 else{
                     String errorMessage = "Search notifications request parameter is null.";
@@ -207,7 +216,12 @@ public class NotificationLoadbalancerController {
                     HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
                     String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, notificationServiceName);
 
-                    return restTemplate.exchange(prefix + notificationServiceName + "/notifications", HttpMethod.PATCH, new HttpEntity<>(updateNotificationsRequest, headers), GenericResponse.class);
+                    if(StringUtils.isNotBlank(prefix)){
+                        return restTemplate.exchange(prefix + notificationServiceName + "/notifications", HttpMethod.PATCH, new HttpEntity<>(updateNotificationsRequest, headers), GenericResponse.class);
+                    }
+                    else{
+                        throw new IllegalArgumentException("Service ID prefix is null!");
+                    }
                 }
                 else{
                     String errorMessage = "Update notifications request parameter is null.";
