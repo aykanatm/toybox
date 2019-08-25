@@ -2,10 +2,9 @@ package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.dbo.AssetUser;
+import com.github.murataykanat.toybox.dbo.ContainerUser;
 import com.github.murataykanat.toybox.dbo.User;
-import com.github.murataykanat.toybox.repositories.AssetUserRepository;
-import com.github.murataykanat.toybox.repositories.NotificationsRepository;
-import com.github.murataykanat.toybox.repositories.UsersRepository;
+import com.github.murataykanat.toybox.repositories.*;
 import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.dbo.Notification;
@@ -51,6 +50,8 @@ public class NotificationController {
     @Autowired
     private UsersRepository usersRepository;
     @Autowired
+    private ContainerUsersRepository containerUsersRepository;
+    @Autowired
     private NotificationsRepository notificationsRepository;
 
     @LogEntryExitExecutionTime
@@ -62,53 +63,83 @@ public class NotificationController {
         try{
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(sendNotificationRequest != null){
-                    List<AssetUser> assetUsersByAssetId = assetUserRepository.findAssetUsersByAssetId(sendNotificationRequest.getAsset().getId());
-                    if(assetUsersByAssetId != null && !assetUsersByAssetId.isEmpty()){
-                        for(AssetUser assetUser: assetUsersByAssetId){
-                            List<User> toUsersByUserId = usersRepository.findUsersByUserId(assetUser.getUserId());
-                            if(!toUsersByUserId.isEmpty()){
-                                if(toUsersByUserId.size() == 1){
-                                    User toUser = toUsersByUserId.get(0);
-                                    if(!authentication.getName().equalsIgnoreCase(toUser.getUsername())){
-                                        String toUsername = toUser.getUsername();
-                                        String fromUsername = sendNotificationRequest.getFromUser().getUsername();
+                    if(sendNotificationRequest.getIsAsset()){
+                        List<AssetUser> assetUsersByAssetId = assetUserRepository.findAssetUsersByAssetId(sendNotificationRequest.getId());
+                        if(!assetUsersByAssetId.isEmpty()){
+                            for(AssetUser assetUser: assetUsersByAssetId){
+                                User toUser = AuthenticationUtils.getInstance().getUser(usersRepository, assetUser.getUserId());
+                                if(!authentication.getName().equalsIgnoreCase(toUser.getUsername())){
+                                    String toUsername = toUser.getUsername();
+                                    String fromUsername = sendNotificationRequest.getFromUser().getUsername();
 
-                                        Notification notification = new Notification();
-                                        notification.setUsername(toUsername);
-                                        notification.setNotification(sendNotificationRequest.getMessage());
-                                        notification.setIsRead("N");
-                                        notification.setDate(new Date());
-                                        notification.setFrom(fromUsername);
+                                    Notification notification = new Notification();
+                                    notification.setUsername(toUsername);
+                                    notification.setNotification(sendNotificationRequest.getMessage());
+                                    notification.setIsRead("N");
+                                    notification.setDate(new Date());
+                                    notification.setFrom(fromUsername);
 
-                                        rabbitTemplate.convertAndSend(topicExchangeName,"toybox.notification." + System.currentTimeMillis(), notification);
-                                        notificationCount++;
-                                    }
-                                    else{
-                                        _logger.debug("Users cannot send notification to themselves. Skipping...");
-                                    }
+                                    rabbitTemplate.convertAndSend(topicExchangeName,"toybox.notification." + System.currentTimeMillis(), notification);
+                                    notificationCount++;
                                 }
                                 else{
-                                    throw new Exception("There are more than one user with ID '" + assetUser.getUserId() + "'.");
+                                    _logger.debug("Users cannot send notification to themselves. Skipping...");
                                 }
                             }
-                            else{
-                                throw new Exception("There is no user with ID '" + assetUser.getUserId() + "'.");
-                            }
-                        }
 
-                        if(notificationCount > 0){
-                            genericResponse.setMessage(notificationCount + " notification(s) were sent successfully!");
+                            if(notificationCount > 0){
+                                genericResponse.setMessage(notificationCount + " notification(s) were sent successfully!");
+                            }
+                            else{
+                                genericResponse.setMessage("No notifications were sent.");
+                            }
+
+                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                         }
                         else{
-                            genericResponse.setMessage("No notifications were sent.");
-                        }
+                            _logger.debug("No users associated with asset with ID '" + sendNotificationRequest.getId() + "' is found.");
 
-                        return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                        }
                     }
                     else{
-                        _logger.debug("No users associated with asset with ID '" + sendNotificationRequest.getAsset().getId() + "' is found.");
+                        List<ContainerUser> containerUsersByContainerId = containerUsersRepository.findContainerUsersByContainerId(sendNotificationRequest.getId());
+                        if(!containerUsersByContainerId.isEmpty()){
+                            for(ContainerUser containerUser: containerUsersByContainerId){
+                                User toUser = AuthenticationUtils.getInstance().getUser(usersRepository, containerUser.getUserId());
+                                if(!authentication.getName().equalsIgnoreCase(toUser.getUsername())){
+                                    String toUsername = toUser.getUsername();
+                                    String fromUsername = sendNotificationRequest.getFromUser().getUsername();
 
-                        return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                    Notification notification = new Notification();
+                                    notification.setUsername(toUsername);
+                                    notification.setNotification(sendNotificationRequest.getMessage());
+                                    notification.setIsRead("N");
+                                    notification.setDate(new Date());
+                                    notification.setFrom(fromUsername);
+
+                                    rabbitTemplate.convertAndSend(topicExchangeName,"toybox.notification." + System.currentTimeMillis(), notification);
+                                    notificationCount++;
+                                }
+                                else{
+                                    _logger.debug("Users cannot send notification to themselves. Skipping...");
+                                }
+                            }
+
+                            if(notificationCount > 0){
+                                genericResponse.setMessage(notificationCount + " notification(s) were sent successfully!");
+                            }
+                            else{
+                                genericResponse.setMessage("No notifications were sent.");
+                            }
+
+                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                        }
+                        else{
+                            _logger.debug("No users associated with container with ID '" + sendNotificationRequest.getId() + "' is found.");
+
+                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                        }
                     }
                 }
                 else{

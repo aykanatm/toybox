@@ -9,10 +9,12 @@ import java.io.Serializable;
 public class SendNotificationRequest implements Serializable {
     @JsonProperty("fromUser")
     private User fromUser;
-    @JsonProperty("asset")
-    private Asset asset;
+    @JsonProperty("id")
+    private String id;
     @JsonProperty("message")
     private String message;
+    @JsonProperty("isAsset")
+    private boolean isAsset;
 
     public User getFromUser() {
         return fromUser;
@@ -22,19 +24,27 @@ public class SendNotificationRequest implements Serializable {
         this.fromUser = fromUser;
     }
 
-    public Asset getAsset() {
-        return asset;
-    }
-
-    public void setAsset(Asset asset) {
-        this.asset = asset;
-    }
-
     public String getMessage() {
         return message;
     }
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public boolean getIsAsset() {
+        return isAsset;
+    }
+
+    public void setIsAsset(boolean isAsset) {
+        this.isAsset = isAsset;
     }
 }

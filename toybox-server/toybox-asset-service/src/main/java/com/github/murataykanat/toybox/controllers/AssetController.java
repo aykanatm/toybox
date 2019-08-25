@@ -296,7 +296,8 @@ public class AssetController {
                                 // Send notification
                                 String notification = "Asset '" + oldAsset.getName() + "' is updated by '" + user.getUsername() + "'";
                                 SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                                sendNotificationRequest.setAsset(oldAsset);
+                                sendNotificationRequest.setIsAsset(true);
+                                sendNotificationRequest.setId(oldAsset.getId());
                                 sendNotificationRequest.setFromUser(user);
                                 sendNotificationRequest.setMessage(notification);
                                 NotificationUtils.getInstance().sendNotification(sendNotificationRequest, discoveryClient, session, notificationServiceLoadBalancerServiceName);

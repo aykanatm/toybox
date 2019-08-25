@@ -9,16 +9,15 @@ import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.container.*;
-import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
-import com.github.murataykanat.toybox.utilities.ContainerUtils;
-import com.github.murataykanat.toybox.utilities.FacetUtils;
-import com.github.murataykanat.toybox.utilities.SortUtils;
+import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
+import com.github.murataykanat.toybox.utilities.*;
 import com.github.murataykanat.toybox.utils.Constants;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -37,6 +36,9 @@ public class FolderController {
 
     private static final String assetServiceLoadBalancerServiceName = "toybox-asset-loadbalancer";
     private static final String notificationServiceLoadBalancerServiceName = "toybox-notification-loadbalancer";
+
+    @Autowired
+    private DiscoveryClient discoveryClient;
 
     @Autowired
     private UsersRepository usersRepository;
@@ -363,7 +365,15 @@ public class FolderController {
                             Container oldContainer = ContainerUtils.getInstance().getContainer(containersRepository, containerId);
                             Container container = ContainerUtils.getInstance().updateContainer(containersRepository, updateContainerRequest, containerId);
                             if(container != null){
-                                //TODO: Send notification
+                                // Send notification
+                                String notification = "Folder '" + oldContainer.getName() + "' is updated by '" + user.getUsername() + "'";
+                                SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                sendNotificationRequest.setIsAsset(false);
+                                sendNotificationRequest.setId(oldContainer.getId());
+                                sendNotificationRequest.setFromUser(user);
+                                sendNotificationRequest.setMessage(notification);
+                                NotificationUtils.getInstance().sendNotification(sendNotificationRequest, discoveryClient, session, notificationServiceLoadBalancerServiceName);
+
                                 String message = "Container updated successfully.";
                                 _logger.debug(message);
 

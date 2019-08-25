@@ -190,7 +190,8 @@ public class ShareController {
                                             // Send notification
                                             String message = "Asset '" + asset.getName() + "' is shared externally by '" + user.getUsername() + "'";
                                             SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                                            sendNotificationRequest.setAsset(asset);
+                                            sendNotificationRequest.setIsAsset(true);
+                                            sendNotificationRequest.setId(asset.getId());
                                             sendNotificationRequest.setFromUser(user);
                                             sendNotificationRequest.setMessage(message);
                                             NotificationUtils.getInstance().sendNotification(sendNotificationRequest, discoveryClient, session, notificationServiceLoadBalancerServiceName);
