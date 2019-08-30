@@ -1,10 +1,7 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
-import com.github.murataykanat.toybox.dbo.Asset;
-import com.github.murataykanat.toybox.dbo.AssetUser;
-import com.github.murataykanat.toybox.dbo.ContainerAsset;
-import com.github.murataykanat.toybox.dbo.User;
+import com.github.murataykanat.toybox.dbo.*;
 import com.github.murataykanat.toybox.repositories.AssetUserRepository;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
 import com.github.murataykanat.toybox.repositories.ContainerAssetsRepository;
@@ -16,26 +13,24 @@ import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
 import com.github.murataykanat.toybox.schema.selection.SelectionContext;
-import com.github.murataykanat.toybox.schema.upload.UploadFile;
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
 import com.github.murataykanat.toybox.utilities.*;
-import org.apache.commons.io.FileUtils;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpSession;
-import java.io.*;
-import java.nio.file.Files;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -44,9 +39,9 @@ import java.util.stream.Collectors;
 public class AssetController {
     private static final Log _logger = LogFactory.getLog(AssetController.class);
 
+    private static final String commonObjectsLoadBalancerServiceName = "toybox-common-object-loadbalancer";
     private static final String jobServiceLoadBalancerServiceName = "toybox-job-loadbalancer";
-    private static final String assetServiceLoadBalancerServiceName = "toybox-asset-loadbalancer";
-    private static final String notificationServiceLoadBalancerServiceName = "toybox-notification-loadbalancer";
+    private static final String notificationsLoadBalancerServiceName = "toybox-notification-loadbalancer";
 
     @Autowired
     private DiscoveryClient discoveryClient;
@@ -300,7 +295,7 @@ public class AssetController {
                                 sendNotificationRequest.setId(oldAsset.getId());
                                 sendNotificationRequest.setFromUser(user);
                                 sendNotificationRequest.setMessage(notification);
-                                NotificationUtils.getInstance().sendNotification(sendNotificationRequest, discoveryClient, session, notificationServiceLoadBalancerServiceName);
+                                NotificationUtils.getInstance().sendNotification(sendNotificationRequest, discoveryClient, session, notificationsLoadBalancerServiceName);
 
                                 String message = "Asset updated successfully.";
                                 _logger.debug(message);
@@ -379,11 +374,11 @@ public class AssetController {
                                     return new ResponseEntity<>(assetVersionResponse, HttpStatus.OK);
                                 }
                                 else{
-                                    throw new Exception("No assets found with original asset ID '" + asset.getOriginalAssetId() + "'!");
+                                    throw new IllegalArgumentException("No assets found with original asset ID '" + asset.getOriginalAssetId() + "'!");
                                 }
                             }
                             else{
-                                throw new Exception("There are multiple assets with ID '" + assetId + "'!");
+                                throw new IllegalArgumentException("There are multiple assets with ID '" + assetId + "'!");
                             }
                         }
                         else{
@@ -436,77 +431,75 @@ public class AssetController {
             if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
                 if(StringUtils.isNotBlank(assetId)){
                     if(revertAssetVersionRequest != null){
-                        List<Asset> assetsById = assetsRepository.getAssetsById(assetId);
-                        if(!assetsById.isEmpty()){
-                            if(assetsById.size() == 1){
-                                Asset asset = assetsById.get(0);
-                                List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(asset.getOriginalAssetId());
-                                if(!assetsByOriginalAssetId.isEmpty()){
-                                    SortUtils.getInstance().sortItems("des", assetsByOriginalAssetId, Comparator.comparing(Asset::getVersion));
-                                    List<Asset> assetsToDelete = new ArrayList<>();
-                                    for(Asset versionAsset: assetsByOriginalAssetId){
-                                        if(versionAsset.getVersion() > revertAssetVersionRequest.getVersion()){
-                                            assetsToDelete.add(versionAsset);
-                                        }
-                                        else if(versionAsset.getVersion() == revertAssetVersionRequest.getVersion()){
-                                            List<String> assetIds = new ArrayList<>();
-                                            assetIds.add(versionAsset.getId());
-
-                                            assetsRepository.updateAssetsLatestVersion("Y", assetIds);
-                                        }
+                        User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
+                        if(user != null){
+                            Asset asset = AssetUtils.getInstance().getAsset(assetsRepository, assetId);
+                            List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(asset.getOriginalAssetId());
+                            if(!assetsByOriginalAssetId.isEmpty()){
+                                SortUtils.getInstance().sortItems("des", assetsByOriginalAssetId, Comparator.comparing(Asset::getVersion));
+                                List<Asset> assetsToDelete = new ArrayList<>();
+                                for(Asset versionAsset: assetsByOriginalAssetId){
+                                    if(versionAsset.getVersion() > revertAssetVersionRequest.getVersion()){
+                                        assetsToDelete.add(versionAsset);
                                     }
+                                    else if(versionAsset.getVersion() == revertAssetVersionRequest.getVersion()){
+                                        List<String> assetIds = new ArrayList<>();
+                                        assetIds.add(versionAsset.getId());
 
-                                    if(!assetsToDelete.isEmpty()){
-                                        assetsRepository.updateAssetsLatestVersion("N", assetsToDelete.stream().map(a -> a.getId()).collect(Collectors.toList()));
-
-                                        SelectionContext selectionContext = new SelectionContext();
-                                        selectionContext.setSelectedAssets(assetsToDelete);
-
-                                        RestTemplate restTemplate = new RestTemplate();
-
-                                        HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                                        HttpEntity<SelectionContext> selectedAssetsEntity = new HttpEntity<>(selectionContext, headers);
-
-                                        List<ServiceInstance> instances = discoveryClient.getInstances(assetServiceLoadBalancerServiceName);
-
-                                        if(!instances.isEmpty()){
-                                            ServiceInstance serviceInstance = instances.get(0);
-                                            String assetServiceUrl = serviceInstance.getUri().toString();
-                                            ResponseEntity<GenericResponse> genericResponseResponseEntity = restTemplate.postForEntity(assetServiceUrl + "/assets/delete", selectedAssetsEntity, GenericResponse.class);
-                                            boolean successful = genericResponseResponseEntity.getStatusCode().is2xxSuccessful();
-
-                                            if(successful){
-                                                genericResponse.setMessage("Asset was successfully reverted to version " + revertAssetVersionRequest.getVersion() + ".");
-
-                                                return new ResponseEntity<>(genericResponse, HttpStatus.OK);
-                                            }
-                                            else{
-                                                throw new Exception("Higher version assets failed to be set as deleted. " + genericResponseResponseEntity.getBody().getMessage());
-                                            }
-                                        }
-                                        else{
-                                            throw new Exception("There is no asset load balancer instance!");
-                                        }
+                                        assetsRepository.updateAssetsLatestVersion("Y", assetIds);
                                     }
-                                    else{
-                                        String errorMessage = "There were no related assets with version higher than '" + revertAssetVersionRequest.getVersion() + "'.";
-                                        _logger.error(errorMessage);
+                                }
 
-                                        genericResponse.setMessage(errorMessage);
+                                if(!assetsToDelete.isEmpty()){
+                                    assetsRepository.updateAssetsLatestVersion("N", assetsToDelete.stream().map(Asset::getId).collect(Collectors.toList()));
+                                    List<Container> containersToDelete = new ArrayList<>();
 
-                                        return new ResponseEntity<>(genericResponse, HttpStatus.NOT_FOUND);
+                                    SelectionContext selectionContext = new SelectionContext();
+                                    selectionContext.setSelectedAssets(assetsToDelete);
+                                    selectionContext.setSelectedContainers(containersToDelete);
+
+                                    RestTemplate restTemplate = new RestTemplate();
+
+                                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
+                                    HttpEntity<SelectionContext> selectedAssetsEntity = new HttpEntity<>(selectionContext, headers);
+
+                                    String loadbalancerUrl = LoadbalancerUtils.getInstance().getLoadbalancerUrl(discoveryClient, commonObjectsLoadBalancerServiceName);
+
+                                    try{
+                                        restTemplate.postForEntity(loadbalancerUrl + "/common-objects/delete", selectedAssetsEntity, GenericResponse.class);
+                                        genericResponse.setMessage("Asset was successfully reverted to version " + revertAssetVersionRequest.getVersion() + ".");
+
+                                        // Send notification
+                                        String notification = "Asset '" + asset.getName() + "' is reverted to version '" + revertAssetVersionRequest.getVersion() + "' by '" + user.getUsername() + "'";
+                                        SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                        sendNotificationRequest.setIsAsset(true);
+                                        sendNotificationRequest.setId(asset.getId());
+                                        sendNotificationRequest.setFromUser(user);
+                                        sendNotificationRequest.setMessage(notification);
+                                        NotificationUtils.getInstance().sendNotification(sendNotificationRequest, discoveryClient, session, notificationsLoadBalancerServiceName);
+
+                                        return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                    }
+                                    catch (HttpStatusCodeException httpEx){
+                                        JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+                                        throw new Exception("Higher version assets failed to be set as deleted. " + responseJson.get("message").getAsString());
                                     }
                                 }
                                 else{
-                                    throw new Exception("No assets with original asset ID '" + asset.getOriginalAssetId() + "' found!");
+                                    String errorMessage = "There were no related assets with version higher than '" + revertAssetVersionRequest.getVersion() + "'.";
+                                    _logger.error(errorMessage);
+
+                                    genericResponse.setMessage(errorMessage);
+
+                                    return new ResponseEntity<>(genericResponse, HttpStatus.NOT_FOUND);
                                 }
                             }
                             else{
-                                throw new Exception("Multiple assets with ID '" + assetId + "' found!");
+                                throw new IllegalArgumentException("No assets with original asset ID '" + asset.getOriginalAssetId() + "' found!");
                             }
                         }
                         else{
-                            throw new Exception("No assets with ID '" + assetId + "' found!");
+                            throw new IllegalArgumentException("User is null!");
                         }
                     }
                     else{
@@ -537,7 +530,14 @@ public class AssetController {
             }
         }
         catch (Exception e){
-            String errorMessage = "An error occurred while reverting the asset with ID '" + assetId + "' to version " + revertAssetVersionRequest.getVersion() + ". " + e.getLocalizedMessage();
+            String errorMessage;
+            if(revertAssetVersionRequest != null){
+                errorMessage = "An error occurred while reverting the asset with ID '" + assetId + "' to version " + revertAssetVersionRequest.getVersion() + ". " + e.getLocalizedMessage();
+            }
+            else{
+                errorMessage = "An error occurred while reverting the asset with ID '" + assetId + "'. " + e.getLocalizedMessage();
+            }
+
             _logger.error(errorMessage, e);
 
             genericResponse.setMessage(errorMessage);
