@@ -143,9 +143,10 @@ public class CommonObjectController {
                     User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
                     if(user != null){
                         if(!(selectionContext.getSelectedAssets().isEmpty() && selectionContext.getSelectedContainers().isEmpty())){
-                            // We are adding the selected assets and the assets which are not deleted, set at their last version and in the selected containers to a list
-                            List<Asset> selectedAssetsAndContainerAssets = new ArrayList<>(selectionContext.getSelectedAssets());
+                            // We are adding a refreshed list of assets to the list of assets which will be deleted
+                            List<Asset> selectedAssetsAndContainerAssets = assetsRepository.getAssetsByAssetIds(selectionContext.getSelectedAssets().stream().map(Asset::getId).collect(Collectors.toList()));
 
+                            // We are adding the last version of the assets inside the containers that was selected as deleted to the list of assets which will be deleted.
                             for(Container selectedContainer: selectionContext.getSelectedContainers()){
                                 List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(selectedContainer.getId());
                                 if(!containerAssetsByContainerId.isEmpty()){
@@ -157,10 +158,12 @@ public class CommonObjectController {
 
                             // We create another list for the final asset list
                             List<Asset> assetsAndVersions = new ArrayList<>(selectedAssetsAndContainerAssets);
-                            // We find all the non-deleted versions of the assets and add them to a list
+                            // We find all the non-deleted versions of the assets if the selected asset is the latest version and add them to a list
                             for(Asset selectedAsset: selectedAssetsAndContainerAssets){
-                                List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(selectedAsset.getOriginalAssetId());
-                                assetsAndVersions.addAll(assetsByOriginalAssetId);
+                                if(selectedAsset.getIsLatestVersion().equalsIgnoreCase("Y")){
+                                    List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(selectedAsset.getOriginalAssetId());
+                                    assetsAndVersions.addAll(assetsByOriginalAssetId);
+                                }
                             }
 
                             if(!assetsAndVersions.isEmpty()){
