@@ -185,7 +185,7 @@ module.exports = {
                 parentContainerId: this.parentContainerId
             }
             var selectedAssets= [asset];
-            this.subscribeToAssets(selectedAssets);
+            this.subscribeToItems(selectedAssets);
             this.contextMenuOpen = false;
         },
         assetUnsubscribe:function(){
