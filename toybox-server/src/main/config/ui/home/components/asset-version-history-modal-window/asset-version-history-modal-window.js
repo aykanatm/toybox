@@ -25,7 +25,6 @@ module.exports = {
                 .then(response => {
                     console.log(response.data);
                     this.versionHistoryAssets = response.data.assets;
-                    this.$root.$emit('message-sent', 'Success', response.data.message);
                 })
                 .catch(error => {
                     var errorMessage;
