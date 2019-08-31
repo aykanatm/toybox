@@ -73,16 +73,14 @@ public class AssetController {
                     HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
                     HttpEntity<UploadFileLst> selectedAssetsEntity = new HttpEntity<>(uploadFileLst, headers);
                     String jobServiceUrl = LoadbalancerUtils.getInstance().getLoadbalancerUrl(discoveryClient, jobServiceLoadBalancerServiceName);
-                    ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/import", selectedAssetsEntity, JobResponse.class);
-                    boolean successful = jobResponseResponseEntity.getStatusCode().is2xxSuccessful();
 
-                    if(successful){
-                        genericResponse.setMessage(uploadFileLst.getUploadFiles().size() + " file(s) successfully uploaded. Import job started.");
-                        return new ResponseEntity<>(genericResponse, HttpStatus.CREATED);
+                    try{
+                        restTemplate.postForEntity(jobServiceUrl + "/jobs/import", selectedAssetsEntity, JobResponse.class);
+                        return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                     }
-                    else{
-                        genericResponse.setMessage("Upload was successful but import failed to start. " + jobResponseResponseEntity.getBody().getMessage());
-                        return new ResponseEntity<>(genericResponse, jobResponseResponseEntity.getStatusCode());
+                    catch (HttpStatusCodeException httpEx){
+                        JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+                        throw new Exception("Upload was successful but import failed to start. " + responseJson.get("message").getAsString());
                     }
                 }
                 else{
