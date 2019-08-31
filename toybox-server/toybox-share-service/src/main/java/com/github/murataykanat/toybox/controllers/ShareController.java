@@ -1,12 +1,12 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
+import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.dbo.Container;
 import com.github.murataykanat.toybox.dbo.ExternalShare;
 import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.ExternalSharesRepository;
-import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.selection.SelectionContext;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
@@ -21,7 +21,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
@@ -44,15 +43,12 @@ import java.util.List;
 public class ShareController {
     private static final Log _logger = LogFactory.getLog(ShareController.class);
 
-    private static final String jobServiceLoadBalancerServiceName = "toybox-job-loadbalancer";
-    private static final String shareServiceLoadBalancerServiceName = "toybox-share-loadbalancer";
-    private static final String notificationServiceLoadBalancerServiceName = "toybox-notification-loadbalancer";
-
     @Autowired
-    private DiscoveryClient discoveryClient;
-
+    private LoadbalancerUtils loadbalancerUtils;
     @Autowired
-    private UsersRepository usersRepository;
+    private AuthenticationUtils authenticationUtils;
+    @Autowired
+    private NotificationUtils notificationUtils;
 
     @Autowired
     private ExternalSharesRepository externalSharesRepository;
@@ -145,8 +141,8 @@ public class ShareController {
     public ResponseEntity<ExternalShareResponse> createExternalShare(Authentication authentication, HttpSession session, @RequestBody ExternalShareRequest externalShareRequest) {
         ExternalShareResponse externalShareResponse = new ExternalShareResponse();
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
-                User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
+            if(authenticationUtils.isSessionValid(authentication)){
+                User user = authenticationUtils.getUser(authentication);
                 if(user != null){
                     if(externalShareRequest != null){
                         SelectionContext selectionContext = externalShareRequest.getSelectionContext();
@@ -162,11 +158,11 @@ public class ShareController {
                             }
 
                             RestTemplate restTemplate = new RestTemplate();
-                            HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
+                            HttpHeaders headers = authenticationUtils.getHeaders(session);
 
                             HttpEntity<SelectionContext> selectionContextEntity = new HttpEntity<>(selectionContext, headers);
-                            String jobServiceUrl = LoadbalancerUtils.getInstance().getLoadbalancerUrl(discoveryClient, jobServiceLoadBalancerServiceName);
-                            String shareServiceUrl = LoadbalancerUtils.getInstance().getLoadbalancerUrl(discoveryClient, shareServiceLoadBalancerServiceName);
+                            String jobServiceUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.JOB_SERVICE_LOAD_BALANCER_SERVICE_NAME);
+                            String shareServiceUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.SHARE_LOAD_BALANCER_SERVICE_NAME);
 
                             ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/package", selectionContextEntity, JobResponse.class);
                             if(jobResponseResponseEntity != null){
@@ -194,7 +190,7 @@ public class ShareController {
                                             sendNotificationRequest.setId(asset.getId());
                                             sendNotificationRequest.setFromUser(user);
                                             sendNotificationRequest.setMessage(message);
-                                            NotificationUtils.getInstance().sendNotification(sendNotificationRequest, discoveryClient, session, notificationServiceLoadBalancerServiceName);
+                                            notificationUtils.sendNotification(sendNotificationRequest, session);
                                         }
                                     }
 

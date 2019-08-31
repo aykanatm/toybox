@@ -23,6 +23,9 @@ public class UserController {
     private static final Log _logger = LogFactory.getLog(UserController.class);
 
     @Autowired
+    private AuthenticationUtils authenticationUtils;
+
+    @Autowired
     private UsersRepository usersRepository;
 
     @LogEntryExitExecutionTime
@@ -31,8 +34,8 @@ public class UserController {
         UserResponse userResponse = new UserResponse();
 
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
-                User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
+            if(authenticationUtils.isSessionValid(authentication)){
+                User user = authenticationUtils.getUser(authentication);
                 if(user != null){
                     userResponse.setUser(user);
                     userResponse.setMessage("User is retrieved successfully.");
@@ -68,7 +71,7 @@ public class UserController {
         RetrieveUsersResponse retrieveUsersResponse = new RetrieveUsersResponse();
 
         try {
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 List<User> users = usersRepository.findAll();
 
                 retrieveUsersResponse.setUsers(users);

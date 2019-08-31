@@ -1,6 +1,7 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
+import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import com.github.murataykanat.toybox.utilities.LoadbalancerUtils;
@@ -12,7 +13,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.cloud.netflix.ribbon.RibbonClient;
 import org.springframework.context.annotation.Bean;
@@ -33,8 +33,6 @@ import javax.servlet.http.HttpSession;
 public class RenditionLoadbalancerController {
     private static final Log _logger = LogFactory.getLog(RenditionLoadbalancerController.class);
 
-    private static final String renditionServiceName = "toybox-rendition-service";
-
     @LoadBalanced
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder){
@@ -42,7 +40,9 @@ public class RenditionLoadbalancerController {
     }
 
     @Autowired
-    private DiscoveryClient discoveryClient;
+    private LoadbalancerUtils loadbalancerUtils;
+    @Autowired
+    private AuthenticationUtils authenticationUtils;
 
     @Autowired
     private UsersRepository usersRepository;
@@ -55,13 +55,13 @@ public class RenditionLoadbalancerController {
     @RequestMapping(value = "/renditions/users/{username}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> getUserAvatar(HttpSession session, Authentication authentication, @PathVariable String username) {
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(StringUtils.isNotBlank(username)){
-                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                    String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, renditionServiceName);
+                    HttpHeaders headers = authenticationUtils.getHeaders(session);
+                    String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.RENDITION_SERVICE_NAME);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        return restTemplate.exchange(prefix + renditionServiceName + "/renditions/users/" + username, HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
+                        return restTemplate.exchange(prefix + ToyboxConstants.RENDITION_SERVICE_NAME + "/renditions/users/" + username, HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
                     }
                     else{
                         throw new IllegalArgumentException("Service ID prefix is null!");
@@ -116,14 +116,14 @@ public class RenditionLoadbalancerController {
     @RequestMapping(value = "/renditions/assets/{assetId}/{renditionType}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> getAssetRendition(HttpSession session, Authentication authentication, @PathVariable String assetId, @PathVariable String renditionType){
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(StringUtils.isNotBlank(assetId)){
                     if(StringUtils.isNotBlank(renditionType)){
-                        HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                        String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, renditionServiceName);
+                        HttpHeaders headers = authenticationUtils.getHeaders(session);
+                        String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.RENDITION_SERVICE_NAME);
 
                         if(StringUtils.isNotBlank(prefix)){
-                            return restTemplate.exchange(prefix + renditionServiceName + "/renditions/assets/" + assetId + "/" + renditionType, HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
+                            return restTemplate.exchange(prefix + ToyboxConstants.RENDITION_SERVICE_NAME + "/renditions/assets/" + assetId + "/" + renditionType, HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
                         }
                         else{
                             throw new IllegalArgumentException("Service ID prefix is null!");

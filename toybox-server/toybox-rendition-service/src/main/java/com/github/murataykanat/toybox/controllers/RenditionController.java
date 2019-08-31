@@ -3,7 +3,6 @@ package com.github.murataykanat.toybox.controllers;
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.dbo.User;
-import com.github.murataykanat.toybox.repositories.AssetsRepository;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.utilities.AssetUtils;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
@@ -37,7 +36,9 @@ public class RenditionController {
     private static final Log _logger = LogFactory.getLog(RenditionController.class);
 
     @Autowired
-    private AssetsRepository assetsRepository;
+    private AssetUtils assetUtils;
+    @Autowired
+    private AuthenticationUtils authenticationUtils;
     @Autowired
     private UsersRepository usersRepository;
 
@@ -45,7 +46,7 @@ public class RenditionController {
     @RequestMapping(value = "/renditions/users/{username}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> getUserAvatar(Authentication authentication, @PathVariable String username){
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(StringUtils.isNotBlank(username)){
                     if(username.equalsIgnoreCase("me")){
                         username = authentication.getName();
@@ -109,9 +110,9 @@ public class RenditionController {
     @RequestMapping(value = "/renditions/assets/{assetId}/{renditionType}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> getRendition(Authentication authentication, @PathVariable String assetId, @PathVariable String renditionType){
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(StringUtils.isNotBlank(assetId) || StringUtils.isNotBlank(renditionType)){
-                    Asset asset = AssetUtils.getInstance().getAsset(assetsRepository, assetId);
+                    Asset asset = assetUtils.getAsset(assetId);
 
                     if(renditionType.equalsIgnoreCase("t")){
                         if(StringUtils.isNotBlank(asset.getThumbnailPath())){

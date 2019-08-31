@@ -1,11 +1,10 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
+import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.*;
 import com.github.murataykanat.toybox.repositories.AssetUserRepository;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
-import com.github.murataykanat.toybox.repositories.ContainerAssetsRepository;
-import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.asset.*;
 import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
@@ -22,7 +21,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
@@ -39,21 +37,21 @@ import java.util.stream.Collectors;
 public class AssetController {
     private static final Log _logger = LogFactory.getLog(AssetController.class);
 
-    private static final String commonObjectsLoadBalancerServiceName = "toybox-common-object-loadbalancer";
-    private static final String jobServiceLoadBalancerServiceName = "toybox-job-loadbalancer";
-    private static final String notificationsLoadBalancerServiceName = "toybox-notification-loadbalancer";
-
     @Autowired
-    private DiscoveryClient discoveryClient;
+    private AssetUtils assetUtils;
+    @Autowired
+    private ContainerUtils containerUtils;
+    @Autowired
+    private LoadbalancerUtils loadbalancerUtils;
+    @Autowired
+    private AuthenticationUtils authenticationUtils;
+    @Autowired
+    private NotificationUtils notificationUtils;
 
     @Autowired
     private AssetsRepository assetsRepository;
     @Autowired
     private AssetUserRepository assetUserRepository;
-    @Autowired
-    private UsersRepository usersRepository;
-    @Autowired
-    private ContainerAssetsRepository containerAssetsRepository;
 
     @Value("${exportStagingPath}")
     private String exportStagingPath;
@@ -66,16 +64,17 @@ public class AssetController {
     public ResponseEntity<GenericResponse> uploadAssets(Authentication authentication, HttpSession session, @RequestBody UploadFileLst uploadFileLst) {
         try{
             GenericResponse genericResponse = new GenericResponse();
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(uploadFileLst != null){
                     RestTemplate restTemplate = new RestTemplate();
 
-                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
+                    HttpHeaders headers = authenticationUtils.getHeaders(session);
                     HttpEntity<UploadFileLst> selectedAssetsEntity = new HttpEntity<>(uploadFileLst, headers);
-                    String jobServiceUrl = LoadbalancerUtils.getInstance().getLoadbalancerUrl(discoveryClient, jobServiceLoadBalancerServiceName);
+                    String jobServiceUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.JOB_SERVICE_LOAD_BALANCER_SERVICE_NAME);
 
                     try{
                         restTemplate.postForEntity(jobServiceUrl + "/jobs/import", selectedAssetsEntity, JobResponse.class);
+                        genericResponse.setMessage("Import job started for the uploaded file. You can track the result of the import job in 'Jobs' section.");
                         return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                     }
                     catch (HttpStatusCodeException httpEx){
@@ -117,13 +116,13 @@ public class AssetController {
     public ResponseEntity<RetrieveAssetsResults> retrieveAssets(Authentication authentication, @RequestBody AssetSearchRequest assetSearchRequest){
         try{
             RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(assetSearchRequest != null){
-                    User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
+                    User user = authenticationUtils.getUser(authentication);
                     if(user != null){
                         String sortColumn = assetSearchRequest.getSortColumn();
                         String sortType = assetSearchRequest.getSortType();
-                        int offset = assetSearchRequest.getOffset();
+                        int startIndex = assetSearchRequest.getOffset();
                         int limit = assetSearchRequest.getLimit();
                         List<SearchRequestFacet> searchRequestFacetList = assetSearchRequest.getAssetSearchRequestFacetList();
 
@@ -139,7 +138,7 @@ public class AssetController {
                             }
 
                             List<Asset> assetsByCurrentUser = new ArrayList<>();
-                            if(AuthenticationUtils.getInstance().isAdminUser(authentication)){
+                            if(authenticationUtils.isAdminUser(authentication)){
                                 _logger.debug("Retrieving all assets [Admin User]...");
                                 assetsByCurrentUser = assets.stream()
                                         .filter(asset -> asset.getIsLatestVersion().equalsIgnoreCase("Y"))
@@ -154,20 +153,9 @@ public class AssetController {
                                             assetsByCurrentUser.add(asset);
                                         }
                                         else{
-                                            List<Asset> assetsById = assetsRepository.getAssetsById(asset.getOriginalAssetId());
-                                            if(!assetsById.isEmpty()){
-                                                if(assetsById.size() == 1){
-                                                    Asset originalAsset = assetsById.get(0);
-                                                    if(originalAsset.getImportedByUsername().equalsIgnoreCase(user.getUsername())){
-                                                        assetsByCurrentUser.add(asset);
-                                                    }
-                                                }
-                                                else{
-                                                    throw new Exception("Asset with ID '" + asset.getId() + " has multiple original assets!");
-                                                }
-                                            }
-                                            else{
-                                                throw new Exception("Asset with ID '" + asset.getId() + " does not have a original asset!");
+                                            Asset originalAsset = assetUtils.getAsset(asset.getOriginalAssetId());
+                                            if(originalAsset.getImportedByUsername().equalsIgnoreCase(user.getUsername())){
+                                                assetsByCurrentUser.add(asset);
                                             }
                                         }
                                     }
@@ -188,8 +176,7 @@ public class AssetController {
 
                             // Paginate assets
                             int totalRecords = assetsByCurrentUser.size();
-                            int startIndex = offset;
-                            int endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
+                            int endIndex = Math.min((startIndex + limit), totalRecords);
 
                             List<Asset> assetsOnPage = assetsByCurrentUser.subList(startIndex, endIndex);
 
@@ -209,19 +196,8 @@ public class AssetController {
 
                             // Set parent container IDs
                             for(Asset assetOnPage: assetsOnPage){
-                                List<ContainerAsset> containerAssetsByAssetId = containerAssetsRepository.findContainerAssetsByAssetId(assetOnPage.getId());
-                                if(!containerAssetsByAssetId.isEmpty()){
-                                    if(containerAssetsByAssetId.size() == 1){
-                                        ContainerAsset containerAsset = containerAssetsByAssetId.get(0);
-                                        assetOnPage.setParentContainerId(containerAsset.getContainerId());
-                                    }
-                                    else{
-                                        throw new Exception("Asset is in multiple folders!");
-                                    }
-                                }
-                                else{
-                                    throw new Exception("Asset is not in any folder!");
-                                }
+                                String parentContainerId = containerUtils.getParentContainerId(assetOnPage);
+                                assetOnPage.setParentContainerId(parentContainerId);
                             }
 
                             retrieveAssetsResults.setTotalRecords(totalRecords);
@@ -278,13 +254,13 @@ public class AssetController {
         GenericResponse genericResponse = new GenericResponse();
 
         try {
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(StringUtils.isNotBlank(assetId)){
                     if(updateAssetRequest != null){
-                        User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
+                        User user = authenticationUtils.getUser(authentication);
                         if(user != null){
-                            Asset oldAsset = AssetUtils.getInstance().getAsset(assetsRepository, assetId);
-                            Asset asset = AssetUtils.getInstance().updateAsset(assetsRepository, updateAssetRequest, assetId);
+                            Asset oldAsset = assetUtils.getAsset(assetId);
+                            Asset asset = assetUtils.updateAsset(updateAssetRequest, assetId, user, session);
                             if(asset != null){
                                 // Send notification
                                 String notification = "Asset '" + oldAsset.getName() + "' is updated by '" + user.getUsername() + "'";
@@ -293,7 +269,7 @@ public class AssetController {
                                 sendNotificationRequest.setId(oldAsset.getId());
                                 sendNotificationRequest.setFromUser(user);
                                 sendNotificationRequest.setMessage(notification);
-                                NotificationUtils.getInstance().sendNotification(sendNotificationRequest, discoveryClient, session, notificationsLoadBalancerServiceName);
+                                notificationUtils.sendNotification(sendNotificationRequest, session);
 
                                 String message = "Asset updated successfully.";
                                 _logger.debug(message);
@@ -353,9 +329,9 @@ public class AssetController {
         AssetVersionResponse assetVersionResponse = new AssetVersionResponse();
 
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(StringUtils.isNotBlank(assetId)){
-                    User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
+                    User user = authenticationUtils.getUser(authentication);
                     if(user != null){
                         List<Asset> assetsById = assetsRepository.getAssetsById(assetId);
                         if(!assetsById.isEmpty()){
@@ -426,12 +402,12 @@ public class AssetController {
         GenericResponse genericResponse = new GenericResponse();
 
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(StringUtils.isNotBlank(assetId)){
                     if(revertAssetVersionRequest != null){
-                        User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
+                        User user = authenticationUtils.getUser(authentication);
                         if(user != null){
-                            Asset asset = AssetUtils.getInstance().getAsset(assetsRepository, assetId);
+                            Asset asset = assetUtils.getAsset(assetId);
                             List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(asset.getOriginalAssetId());
                             if(!assetsByOriginalAssetId.isEmpty()){
                                 SortUtils.getInstance().sortItems("des", assetsByOriginalAssetId, Comparator.comparing(Asset::getVersion));
@@ -458,10 +434,10 @@ public class AssetController {
 
                                     RestTemplate restTemplate = new RestTemplate();
 
-                                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
+                                    HttpHeaders headers = authenticationUtils.getHeaders(session);
                                     HttpEntity<SelectionContext> selectedAssetsEntity = new HttpEntity<>(selectionContext, headers);
 
-                                    String loadbalancerUrl = LoadbalancerUtils.getInstance().getLoadbalancerUrl(discoveryClient, commonObjectsLoadBalancerServiceName);
+                                    String loadbalancerUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.COMMON_OBJECTS_LOAD_BALANCER_SERVICE_NAME);
 
                                     try{
                                         restTemplate.postForEntity(loadbalancerUrl + "/common-objects/delete", selectedAssetsEntity, GenericResponse.class);
@@ -474,7 +450,7 @@ public class AssetController {
                                         sendNotificationRequest.setId(asset.getId());
                                         sendNotificationRequest.setFromUser(user);
                                         sendNotificationRequest.setMessage(notification);
-                                        NotificationUtils.getInstance().sendNotification(sendNotificationRequest, discoveryClient, session, notificationsLoadBalancerServiceName);
+                                        notificationUtils.sendNotification(sendNotificationRequest, session);
 
                                         return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                                     }

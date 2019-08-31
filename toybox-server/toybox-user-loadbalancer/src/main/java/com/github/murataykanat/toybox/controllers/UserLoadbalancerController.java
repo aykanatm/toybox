@@ -1,7 +1,7 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
-import com.github.murataykanat.toybox.repositories.UsersRepository;
+import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.schema.user.RetrieveUsersResponse;
 import com.github.murataykanat.toybox.schema.user.UserResponse;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
@@ -14,7 +14,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.cloud.netflix.ribbon.RibbonClient;
 import org.springframework.context.annotation.Bean;
@@ -33,8 +32,6 @@ import javax.servlet.http.HttpSession;
 public class UserLoadbalancerController {
     private static final Log _logger = LogFactory.getLog(UserLoadbalancerController.class);
 
-    private static final String userServiceName = "toybox-user-service";
-
     @LoadBalanced
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder){
@@ -42,10 +39,9 @@ public class UserLoadbalancerController {
     }
 
     @Autowired
-    private DiscoveryClient discoveryClient;
-
+    private LoadbalancerUtils loadbalancerUtils;
     @Autowired
-    private UsersRepository usersRepository;
+    private AuthenticationUtils authenticationUtils;
 
     @Autowired
     private RestTemplate restTemplate;
@@ -56,12 +52,12 @@ public class UserLoadbalancerController {
     public ResponseEntity<UserResponse> getCurrentUser(Authentication authentication, HttpSession session){
         UserResponse userResponse = new UserResponse();
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
-                HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, userServiceName);
+            if(authenticationUtils.isSessionValid(authentication)){
+                HttpHeaders headers = authenticationUtils.getHeaders(session);
+                String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.USER_SERVICE_NAME);
 
                 if(StringUtils.isNotBlank(prefix)){
-                    return restTemplate.exchange(prefix + userServiceName + "/users/me", HttpMethod.GET, new HttpEntity<>(headers), UserResponse.class);
+                    return restTemplate.exchange(prefix + ToyboxConstants.USER_SERVICE_NAME + "/users/me", HttpMethod.GET, new HttpEntity<>(headers), UserResponse.class);
                 }
                 else{
                     throw new IllegalArgumentException("Service ID prefix is null!");
@@ -117,12 +113,12 @@ public class UserLoadbalancerController {
         RetrieveUsersResponse retrieveUsersResponse = new RetrieveUsersResponse();
 
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
-                HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, userServiceName);
+            if(authenticationUtils.isSessionValid(authentication)){
+                HttpHeaders headers = authenticationUtils.getHeaders(session);
+                String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.USER_SERVICE_NAME);
 
                 if(StringUtils.isNotBlank(prefix)){
-                    return restTemplate.exchange(prefix + userServiceName + "/users", HttpMethod.GET, new HttpEntity<>(headers), RetrieveUsersResponse.class);
+                    return restTemplate.exchange(prefix + ToyboxConstants.USER_SERVICE_NAME + "/users", HttpMethod.GET, new HttpEntity<>(headers), RetrieveUsersResponse.class);
                 }
                 else{
                     throw new IllegalArgumentException("Service ID prefix is null!");

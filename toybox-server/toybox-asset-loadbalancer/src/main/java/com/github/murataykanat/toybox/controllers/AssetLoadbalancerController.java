@@ -1,6 +1,7 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
+import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.asset.*;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
@@ -41,7 +42,10 @@ import java.util.List;
 public class AssetLoadbalancerController {
     private static final Log _logger = LogFactory.getLog(AssetLoadbalancerController.class);
 
-    private static final String assetServiceName = "toybox-asset-service";
+    @Autowired
+    private LoadbalancerUtils loadbalancerUtils;
+    @Autowired
+    private AuthenticationUtils authenticationUtils;
 
     @Value("${importStagingPath}")
     private String importStagingPath;
@@ -51,12 +55,6 @@ public class AssetLoadbalancerController {
     public RestTemplate restTemplate(RestTemplateBuilder builder){
         return builder.build();
     }
-
-    @Autowired
-    private DiscoveryClient discoveryClient;
-
-    @Autowired
-    private UsersRepository usersRepository;
 
     @Autowired
     private RestTemplate restTemplate;
@@ -72,10 +70,10 @@ public class AssetLoadbalancerController {
 
         GenericResponse genericResponse = new GenericResponse();
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(files != null){
-                    String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, assetServiceName);
-                    HttpHeaders headers =AuthenticationUtils.getInstance().getHeaders(session);
+                    String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.ASSET_SERVICE_NAME);
+                    HttpHeaders headers = authenticationUtils.getHeaders(session);
 
                     if(StringUtils.isNotBlank(prefix)){
                         File tempFolder = new File(tempImportStagingPath);
@@ -108,7 +106,7 @@ public class AssetLoadbalancerController {
                         uploadFileLst.setUploadFiles(uploadFiles);
                         uploadFileLst.setMessage("Files uploaded successfully!");
 
-                        return restTemplate.exchange(prefix + assetServiceName + "/assets/upload", HttpMethod.POST, new HttpEntity<>(uploadFileLst, headers), GenericResponse.class);
+                        return restTemplate.exchange(prefix + ToyboxConstants.ASSET_SERVICE_NAME + "/assets/upload", HttpMethod.POST, new HttpEntity<>(uploadFileLst, headers), GenericResponse.class);
                     }
                     else{
                         throw new IllegalArgumentException("Service ID prefix is null!");
@@ -196,14 +194,14 @@ public class AssetLoadbalancerController {
         RetrieveAssetsResults retrieveAssetsResults = new RetrieveAssetsResults();
 
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(assetSearchRequest != null){
-                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                    String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, assetServiceName);
+                    HttpHeaders headers = authenticationUtils.getHeaders(session);
+                    String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.ASSET_SERVICE_NAME);
 
                     if(StringUtils.isNotBlank(prefix)){
                         _logger.debug("<< retrieveAssets()");
-                        return restTemplate.exchange(prefix + assetServiceName + "/assets/search", HttpMethod.POST, new HttpEntity<>(assetSearchRequest, headers), RetrieveAssetsResults.class);
+                        return restTemplate.exchange(prefix + ToyboxConstants.ASSET_SERVICE_NAME + "/assets/search", HttpMethod.POST, new HttpEntity<>(assetSearchRequest, headers), RetrieveAssetsResults.class);
                     }
                     else{
                         throw new IllegalArgumentException("Service ID prefix is null!");
@@ -280,14 +278,14 @@ public class AssetLoadbalancerController {
         GenericResponse genericResponse = new GenericResponse();
 
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(StringUtils.isNotBlank(assetId)){
                     if(updateAssetRequest != null){
-                        HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                        String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, assetServiceName);
+                        HttpHeaders headers = authenticationUtils.getHeaders(session);
+                        String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.ASSET_SERVICE_NAME);
 
                         if(StringUtils.isNotBlank(prefix)){
-                            return restTemplate.exchange(prefix + assetServiceName + "/assets/" + assetId, HttpMethod.PATCH, new HttpEntity<>(updateAssetRequest, headers), GenericResponse.class);
+                            return restTemplate.exchange(prefix + ToyboxConstants.ASSET_SERVICE_NAME + "/assets/" + assetId, HttpMethod.PATCH, new HttpEntity<>(updateAssetRequest, headers), GenericResponse.class);
                         }
                         else{
                             throw new IllegalArgumentException("Service ID prefix is null!");
@@ -386,13 +384,13 @@ public class AssetLoadbalancerController {
         AssetVersionResponse assetVersionResponse = new AssetVersionResponse();
 
         try {
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(StringUtils.isNotBlank(assetId)){
-                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                    String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, assetServiceName);
+                    HttpHeaders headers = authenticationUtils.getHeaders(session);
+                    String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.ASSET_SERVICE_NAME);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        return restTemplate.exchange(prefix + assetServiceName + "/assets/" + assetId + "/versions", HttpMethod.GET, new HttpEntity<>(headers), AssetVersionResponse.class);
+                        return restTemplate.exchange(prefix + ToyboxConstants.ASSET_SERVICE_NAME + "/assets/" + assetId + "/versions", HttpMethod.GET, new HttpEntity<>(headers), AssetVersionResponse.class);
                     }
                     else{
                         throw new IllegalArgumentException("Service ID prefix is null!");
@@ -467,13 +465,13 @@ public class AssetLoadbalancerController {
         GenericResponse genericResponse = new GenericResponse();
 
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(StringUtils.isNotBlank(assetId)){
                     if(revertAssetVersionRequest != null){
-                        HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                        String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, assetServiceName);
+                        HttpHeaders headers = authenticationUtils.getHeaders(session);
+                        String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.ASSET_SERVICE_NAME);
                         if(StringUtils.isNotBlank(prefix)){
-                            return restTemplate.exchange(prefix + assetServiceName + "/assets/" + assetId + "/revert", HttpMethod.POST, new HttpEntity<>(revertAssetVersionRequest, headers), GenericResponse.class);
+                            return restTemplate.exchange(prefix + ToyboxConstants.ASSET_SERVICE_NAME + "/assets/" + assetId + "/revert", HttpMethod.POST, new HttpEntity<>(revertAssetVersionRequest, headers), GenericResponse.class);
                         }
                         else{
                             throw new IllegalArgumentException("Service ID prefix is null!");

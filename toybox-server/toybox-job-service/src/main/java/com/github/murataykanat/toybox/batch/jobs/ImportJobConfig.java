@@ -1,7 +1,7 @@
 package com.github.murataykanat.toybox.batch.jobs;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
-import com.github.murataykanat.toybox.batch.utils.Constants;
+import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.Container;
 import com.github.murataykanat.toybox.dbo.ContainerAsset;
 import com.github.murataykanat.toybox.models.RenditionProperties;
@@ -50,6 +50,9 @@ import java.util.stream.Collectors;
 @EnableBatchProcessing
 public class ImportJobConfig {
     private static final Log _logger = LogFactory.getLog(ImportJobConfig.class);
+
+    @Autowired
+    private ContainerUtils containerUtils;
 
     @Autowired
     private AssetsRepository assetsRepository;
@@ -120,26 +123,26 @@ public class ImportJobConfig {
 
     @Bean
     public Job importJob(JobBuilderFactory jobBuilderFactory, StepBuilderFactory stepBuilderFactory){
-        Step stepGenerateAssets = stepBuilderFactory.get(Constants.STEP_IMPORT_GENERATE_ASSETS)
+        Step stepGenerateAssets = stepBuilderFactory.get(ToyboxConstants.STEP_IMPORT_GENERATE_ASSETS)
                 .tasklet(new Tasklet() {
                     @Override
                     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
-                        _logger.debug("execute() >> [" + Constants.STEP_IMPORT_GENERATE_ASSETS + "]");
+                        _logger.debug("execute() >> [" + ToyboxConstants.STEP_IMPORT_GENERATE_ASSETS + "]");
                         Tika tika = new Tika();
                         List<Asset> assets = new ArrayList<>();
 
                         Map<String, Object> jobParameters = chunkContext.getStepContext().getJobParameters();
-                        String username = (String) jobParameters.get(Constants.JOB_PARAM_USERNAME);
-                        String containerId = (String) jobParameters.get(Constants.JOB_PARAM_CONTAINER_ID);
+                        String username = (String) jobParameters.get(ToyboxConstants.JOB_PARAM_USERNAME);
+                        String containerId = (String) jobParameters.get(ToyboxConstants.JOB_PARAM_CONTAINER_ID);
 
                         if(StringUtils.isNotBlank(username)){
                             if(StringUtils.isBlank(containerId)){
-                                Container userContainer = ContainerUtils.getInstance().getUserContainer(containersRepository, username);
+                                Container userContainer = containerUtils.getUserContainer(username);
                                 containerId = userContainer.getId();
                             }
 
                             for(Map.Entry<String, Object> jobParameter: jobParameters.entrySet()){
-                                if(jobParameter.getKey().startsWith(Constants.JOB_PARAM_UPLOADED_FILE)){
+                                if(jobParameter.getKey().startsWith(ToyboxConstants.JOB_PARAM_UPLOADED_FILE)){
                                     String filePath = (String) jobParameter.getValue();
                                     File file = new File(filePath);
                                     if(file.exists()){
@@ -211,7 +214,7 @@ public class ImportJobConfig {
                             _logger.debug("Adding assets to job context...");
                             chunkContext.getStepContext().getStepExecution().getJobExecution().getExecutionContext().put("assets", assets);
 
-                            _logger.debug("<< execute() [" + Constants.STEP_IMPORT_GENERATE_ASSETS + "]");
+                            _logger.debug("<< execute() [" + ToyboxConstants.STEP_IMPORT_GENERATE_ASSETS + "]");
                             return RepeatStatus.FINISHED;
                         }
                         else{
@@ -221,49 +224,49 @@ public class ImportJobConfig {
                 })
                 .build();
 
-        Step stepGenerateThumbnails = stepBuilderFactory.get(Constants.STEP_IMPORT_GENERATE_THUMBNAILS)
+        Step stepGenerateThumbnails = stepBuilderFactory.get(ToyboxConstants.STEP_IMPORT_GENERATE_THUMBNAILS)
                 .tasklet(new Tasklet() {
                     @Override
                     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
-                        _logger.debug("execute() >> [" + Constants.STEP_IMPORT_GENERATE_THUMBNAILS + "]");
+                        _logger.debug("execute() >> [" + ToyboxConstants.STEP_IMPORT_GENERATE_THUMBNAILS + "]");
 
                         Object obj = chunkContext.getStepContext().getStepExecution().getJobExecution().getExecutionContext().get("assets");
                         List<Asset> assets = getAssetsFromContext(obj);
 
                         generateRendition(assets, RenditionTypes.Thumbnail);
 
-                        _logger.debug("<< execute() " + Constants.STEP_IMPORT_GENERATE_THUMBNAILS + "]");
+                        _logger.debug("<< execute() " + ToyboxConstants.STEP_IMPORT_GENERATE_THUMBNAILS + "]");
                         return RepeatStatus.FINISHED;
                     }
                 })
                 .build();
 
-        Step stepGeneratePreviews = stepBuilderFactory.get(Constants.STEP_IMPORT_GENERATE_PREVIEWS)
+        Step stepGeneratePreviews = stepBuilderFactory.get(ToyboxConstants.STEP_IMPORT_GENERATE_PREVIEWS)
                 .tasklet(new Tasklet() {
                     @Override
                     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
-                        _logger.debug("execute() >> [" + Constants.STEP_IMPORT_GENERATE_PREVIEWS + "]");
+                        _logger.debug("execute() >> [" + ToyboxConstants.STEP_IMPORT_GENERATE_PREVIEWS + "]");
 
                         Object obj = chunkContext.getStepContext().getStepExecution().getJobExecution().getExecutionContext().get("assets");
                         List<Asset> assets = getAssetsFromContext(obj);
 
                         generateRendition(assets, RenditionTypes.Preview);
 
-                        _logger.debug("<< execute() " + Constants.STEP_IMPORT_GENERATE_PREVIEWS + "]");
+                        _logger.debug("<< execute() " + ToyboxConstants.STEP_IMPORT_GENERATE_PREVIEWS + "]");
                         return RepeatStatus.FINISHED;
                     }
                 })
                 .build();
 
-        Step stepDeleteTempFiles = stepBuilderFactory.get(Constants.STEP_IMPORT_DELETE_TEMP_FILES)
+        Step stepDeleteTempFiles = stepBuilderFactory.get(ToyboxConstants.STEP_IMPORT_DELETE_TEMP_FILES)
                 .tasklet(new Tasklet() {
                     @Override
                     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
-                        _logger.debug("execute() >> [" + Constants.STEP_IMPORT_DELETE_TEMP_FILES + "]");
+                        _logger.debug("execute() >> [" + ToyboxConstants.STEP_IMPORT_DELETE_TEMP_FILES + "]");
 
                         Map<String, Object> jobParameters = chunkContext.getStepContext().getJobParameters();
                         for(Map.Entry<String, Object> jobParameter: jobParameters.entrySet()){
-                            if(jobParameter.getKey().startsWith(Constants.JOB_PARAM_UPLOADED_FILE)){
+                            if(jobParameter.getKey().startsWith(ToyboxConstants.JOB_PARAM_UPLOADED_FILE)){
                                 String filePath = (String) jobParameter.getValue();
                                 File file = new File(filePath);
                                 if(file.exists()){
@@ -287,13 +290,13 @@ public class ImportJobConfig {
                             }
                         }
 
-                        _logger.debug("<< execute() " + Constants.STEP_IMPORT_DELETE_TEMP_FILES + "]");
+                        _logger.debug("<< execute() " + ToyboxConstants.STEP_IMPORT_DELETE_TEMP_FILES + "]");
                         return RepeatStatus.FINISHED;
                     }
                 })
                 .build();
 
-        return jobBuilderFactory.get(Constants.JOB_IMPORT_NAME)
+        return jobBuilderFactory.get(ToyboxConstants.JOB_IMPORT_NAME)
                 .incrementer(new RunIdIncrementer())
                 .validator(importValidator())
                 .flow(stepGenerateAssets)
@@ -311,7 +314,7 @@ public class ImportJobConfig {
             public void validate(JobParameters parameters) throws JobParametersInvalidException {
                 Map<String, JobParameter> parameterMap = parameters.getParameters();
                 for(Map.Entry<String, JobParameter> parameterEntry: parameterMap.entrySet()){
-                    if(parameterEntry.getKey().startsWith(Constants.JOB_PARAM_UPLOADED_FILE)){
+                    if(parameterEntry.getKey().startsWith(ToyboxConstants.JOB_PARAM_UPLOADED_FILE)){
                         String filePath = (String) parameterEntry.getValue().getValue();
                         File file = new File(filePath);
                         if(!file.exists()){
@@ -457,7 +460,7 @@ public class ImportJobConfig {
 
     @LogEntryExitExecutionTime
     private String generateAssetId(){
-        String assetId = RandomStringUtils.randomAlphanumeric(Constants.ASSET_ID_LENGTH);
+        String assetId = RandomStringUtils.randomAlphanumeric(ToyboxConstants.ASSET_ID_LENGTH);
         if(isAssetIdValid(assetId)){
             return assetId;
         }
@@ -491,11 +494,11 @@ public class ImportJobConfig {
         String ffmpegAudioSettings;
 
         if(renditionType == RenditionTypes.Thumbnail){
-            if(assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLSX)
-                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLS)){
+            if(assetMimeType.equalsIgnoreCase(ToyboxConstants.FILE_MIME_TYPE_XLSX)
+                || assetMimeType.equalsIgnoreCase(ToyboxConstants.FILE_MIME_TYPE_XLS)){
                 fileFormat = "pdf";
             }
-            else if(assetMimeType.equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_GIF)){
+            else if(assetMimeType.equalsIgnoreCase(ToyboxConstants.IMAGE_MIME_TYPE_GIF)){
                 fileFormat = "gif";
             }
             else{
@@ -510,22 +513,22 @@ public class ImportJobConfig {
             ffmpegAudioSettings = ffmpegAudioThumbnailSettings;
         }
         else if(renditionType == RenditionTypes.Preview){
-            if(assetMimeType.startsWith(Constants.VIDEO_MIME_TYPE_PREFIX)){
+            if(assetMimeType.startsWith(ToyboxConstants.VIDEO_MIME_TYPE_PREFIX)){
                 fileFormat = videoPreviewFormat;
             }
-            else if(assetMimeType.startsWith(Constants.AUIDO_MIME_TYPE_PREFIX)){
+            else if(assetMimeType.startsWith(ToyboxConstants.AUIDO_MIME_TYPE_PREFIX)){
                 fileFormat = audioPreviewFormat;
             }
-            else if(assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLSX)
-                    || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLS)
-                    || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPT)
-                    || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPTX)
-                    || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOC)
-                    || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOCX)
-                    || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_PDF)){
+            else if(assetMimeType.equalsIgnoreCase(ToyboxConstants.FILE_MIME_TYPE_XLSX)
+                    || assetMimeType.equalsIgnoreCase(ToyboxConstants.FILE_MIME_TYPE_XLS)
+                    || assetMimeType.equalsIgnoreCase(ToyboxConstants.FILE_MIME_TYPE_PPT)
+                    || assetMimeType.equalsIgnoreCase(ToyboxConstants.FILE_MIME_TYPE_PPTX)
+                    || assetMimeType.equalsIgnoreCase(ToyboxConstants.FILE_MIME_TYPE_DOC)
+                    || assetMimeType.equalsIgnoreCase(ToyboxConstants.FILE_MIME_TYPE_DOCX)
+                    || assetMimeType.equalsIgnoreCase(ToyboxConstants.FILE_MIME_TYPE_PDF)){
                 fileFormat = "pdf";
             }
-            else if(assetMimeType.equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_GIF)){
+            else if(assetMimeType.equalsIgnoreCase(ToyboxConstants.IMAGE_MIME_TYPE_GIF)){
                 fileFormat = "gif";
             }
             else{
@@ -543,28 +546,28 @@ public class ImportJobConfig {
             throw new IllegalArgumentException("Unknown rendition type!");
         }
 
-        if(assetMimeType.equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_GIF)){
+        if(assetMimeType.equalsIgnoreCase(ToyboxConstants.IMAGE_MIME_TYPE_GIF)){
             renditionProperties.setRenditionSettings(gifsicleSettings);
         }
-        else if(assetMimeType.startsWith(Constants.IMAGE_MIME_TYPE_PREFIX)){
+        else if(assetMimeType.startsWith(ToyboxConstants.IMAGE_MIME_TYPE_PREFIX)){
             renditionProperties.setRenditionSettings(imagemagickSettings);
         }
-        else if(assetMimeType.equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_EPS)){
+        else if(assetMimeType.equalsIgnoreCase(ToyboxConstants.IMAGE_MIME_TYPE_EPS)){
             renditionProperties.setRenditionSettings(imagemagickEpsSettings);
         }
-        else if(assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_PDF)
-                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLSX)
-                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLS)
-                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPTX)
-                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPT)
-                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOCX)
-                || assetMimeType.equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOC)){
+        else if(assetMimeType.equalsIgnoreCase(ToyboxConstants.FILE_MIME_TYPE_PDF)
+                || assetMimeType.equalsIgnoreCase(ToyboxConstants.FILE_MIME_TYPE_XLSX)
+                || assetMimeType.equalsIgnoreCase(ToyboxConstants.FILE_MIME_TYPE_XLS)
+                || assetMimeType.equalsIgnoreCase(ToyboxConstants.FILE_MIME_TYPE_PPTX)
+                || assetMimeType.equalsIgnoreCase(ToyboxConstants.FILE_MIME_TYPE_PPT)
+                || assetMimeType.equalsIgnoreCase(ToyboxConstants.FILE_MIME_TYPE_DOCX)
+                || assetMimeType.equalsIgnoreCase(ToyboxConstants.FILE_MIME_TYPE_DOC)){
             renditionProperties.setRenditionSettings(imagemagickPdfSettings);
         }
-        else if(assetMimeType.startsWith(Constants.VIDEO_MIME_TYPE_PREFIX)){
+        else if(assetMimeType.startsWith(ToyboxConstants.VIDEO_MIME_TYPE_PREFIX)){
             renditionProperties.setRenditionSettings(ffmpegVideoSettings);
         }
-        else if(assetMimeType.startsWith(Constants.AUIDO_MIME_TYPE_PREFIX)){
+        else if(assetMimeType.startsWith(ToyboxConstants.AUIDO_MIME_TYPE_PREFIX)){
             renditionProperties.setRenditionSettings(ffmpegAudioSettings);
         }
 
@@ -577,7 +580,7 @@ public class ImportJobConfig {
     private void runExecutable(Asset asset, File inputFile, File outputFile, String executable, String timeout, String renditionSettings, RenditionTypes renditionType, String executableName) throws IOException, InterruptedException {
         CommandLine cmdLine = new CommandLine(executable);
 
-        if(executableName.equalsIgnoreCase(Constants.FFMPEG)){
+        if(executableName.equalsIgnoreCase(ToyboxConstants.FFMPEG)){
             cmdLine.addArgument("-i");
         }
 
@@ -610,7 +613,7 @@ public class ImportJobConfig {
 
         int exitValue = resultHandler.getExitValue();
         if(exitValue != 0){
-            if(renditionType == RenditionTypes.Thumbnail && asset.getType().startsWith(Constants.AUIDO_MIME_TYPE_PREFIX)){
+            if(renditionType == RenditionTypes.Thumbnail && asset.getType().startsWith(ToyboxConstants.AUIDO_MIME_TYPE_PREFIX)){
                 String utilityErrorMessage = resultHandler.getException() != null ? resultHandler.getException().getLocalizedMessage() : "This audio file may have no album art to retrieve. If you would like to see a thumbnail please include an album art.";
                 String warningMessage = executableName + " failed to generate rendition of the file '" + inputFile.getAbsolutePath()
                         + "'. " + utilityErrorMessage;
@@ -641,7 +644,7 @@ public class ImportJobConfig {
                 String assetThumbnailPath = null;
 
                 if(renditionType == RenditionTypes.Preview){
-                    if(asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_PHOTOSHOP)){
+                    if(asset.getType().equalsIgnoreCase(ToyboxConstants.IMAGE_MIME_TYPE_PHOTOSHOP)){
                         // If we are creating renditions of a PDF file, we only use the first page
                         // If we are creating renditions of a PSB file, we get the top layer
                         inputFile = new File(asset.getPath() + "[0]");
@@ -655,7 +658,7 @@ public class ImportJobConfig {
                     renditionSettings = renditionProperties.getRenditionSettings();
                 }
                 else if(renditionType == RenditionTypes.Thumbnail){
-                    if(asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PDF) || asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_PHOTOSHOP)){
+                    if(asset.getType().equalsIgnoreCase(ToyboxConstants.FILE_MIME_TYPE_PDF) || asset.getType().equalsIgnoreCase(ToyboxConstants.IMAGE_MIME_TYPE_PHOTOSHOP)){
                         // If we are creating renditions of a PDF file, we only use the first page
                         // If we are creating renditions of a PSB file, we get the top layer
                         inputFile = new File(asset.getPath() + "[0]");
@@ -673,23 +676,23 @@ public class ImportJobConfig {
                 }
 
                 // Generate rendition
-                if(asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_GIF)){
-                    runExecutable(asset, inputFile, outputFile, gifsicleExecutable, gifsicleTimeout, renditionSettings, renditionType,Constants.GIFSICLE);
+                if(asset.getType().equalsIgnoreCase(ToyboxConstants.IMAGE_MIME_TYPE_GIF)){
+                    runExecutable(asset, inputFile, outputFile, gifsicleExecutable, gifsicleTimeout, renditionSettings, renditionType,ToyboxConstants.GIFSICLE);
                 }
-                else if(asset.getType().startsWith(Constants.IMAGE_MIME_TYPE_PREFIX)
-                        || asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_EPS)
-                        || asset.getType().equalsIgnoreCase(Constants.IMAGE_MIME_TYPE_PHOTOSHOP)){
-                    runExecutable(asset, inputFile, outputFile, imagemagickExecutable, imagemagickTimeout, renditionSettings, renditionType, Constants.IMAGEMAGICK);
+                else if(asset.getType().startsWith(ToyboxConstants.IMAGE_MIME_TYPE_PREFIX)
+                        || asset.getType().equalsIgnoreCase(ToyboxConstants.IMAGE_MIME_TYPE_EPS)
+                        || asset.getType().equalsIgnoreCase(ToyboxConstants.IMAGE_MIME_TYPE_PHOTOSHOP)){
+                    runExecutable(asset, inputFile, outputFile, imagemagickExecutable, imagemagickTimeout, renditionSettings, renditionType, ToyboxConstants.IMAGEMAGICK);
                 }
-                else if(asset.getType().startsWith(Constants.VIDEO_MIME_TYPE_PREFIX) || asset.getType().startsWith(Constants.AUIDO_MIME_TYPE_PREFIX)){
-                    runExecutable(asset, inputFile, outputFile, ffmpegExecutable, ffmpegTimeout, renditionSettings, renditionType, Constants.FFMPEG);
+                else if(asset.getType().startsWith(ToyboxConstants.VIDEO_MIME_TYPE_PREFIX) || asset.getType().startsWith(ToyboxConstants.AUIDO_MIME_TYPE_PREFIX)){
+                    runExecutable(asset, inputFile, outputFile, ffmpegExecutable, ffmpegTimeout, renditionSettings, renditionType, ToyboxConstants.FFMPEG);
                 }
-                else if(asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOCX)
-                        || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_DOC)
-                        || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLSX)
-                        || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLS)
-                        || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPTX)
-                        || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PPT)){
+                else if(asset.getType().equalsIgnoreCase(ToyboxConstants.FILE_MIME_TYPE_DOCX)
+                        || asset.getType().equalsIgnoreCase(ToyboxConstants.FILE_MIME_TYPE_DOC)
+                        || asset.getType().equalsIgnoreCase(ToyboxConstants.FILE_MIME_TYPE_XLSX)
+                        || asset.getType().equalsIgnoreCase(ToyboxConstants.FILE_MIME_TYPE_XLS)
+                        || asset.getType().equalsIgnoreCase(ToyboxConstants.FILE_MIME_TYPE_PPTX)
+                        || asset.getType().equalsIgnoreCase(ToyboxConstants.FILE_MIME_TYPE_PPT)){
                     LocalOfficeManager officeManager = LocalOfficeManager.install();
 
                     try{
@@ -714,16 +717,16 @@ public class ImportJobConfig {
                                     if(renditionType == RenditionTypes.Thumbnail){
                                         File pngOutput = new File(assetThumbnailPath + File.separator + asset.getId() + "." + imageThumbnailFormat);
 
-                                        if(asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLSX)
-                                                || asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_XLS)){
+                                        if(asset.getType().equalsIgnoreCase(ToyboxConstants.FILE_MIME_TYPE_XLSX)
+                                                || asset.getType().equalsIgnoreCase(ToyboxConstants.FILE_MIME_TYPE_XLS)){
                                             // Excel files are first converted to PDF so we convert them again to PNG
                                             File firstPageConfiguration = new File(outputFile.getAbsolutePath() + "[0]");
-                                            runExecutable(asset, firstPageConfiguration, pngOutput, imagemagickExecutable, imagemagickTimeout, renditionSettings, renditionType, Constants.IMAGEMAGICK);
+                                            runExecutable(asset, firstPageConfiguration, pngOutput, imagemagickExecutable, imagemagickTimeout, renditionSettings, renditionType, ToyboxConstants.IMAGEMAGICK);
                                             Files.delete(outputFile.toPath());
                                         }
                                         else{
                                             // Let's resize the output to default thumbnail/preview size
-                                            runExecutable(asset, outputFile, pngOutput, imagemagickExecutable, imagemagickTimeout, renditionSettings, renditionType, Constants.IMAGEMAGICK);
+                                            runExecutable(asset, outputFile, pngOutput, imagemagickExecutable, imagemagickTimeout, renditionSettings, renditionType, ToyboxConstants.IMAGEMAGICK);
                                         }
                                     }
                                     else{
@@ -750,9 +753,9 @@ public class ImportJobConfig {
                         LocalOfficeUtils.stopQuietly(officeManager);
                     }
                 }
-                else if(asset.getType().equalsIgnoreCase(Constants.FILE_MIME_TYPE_PDF)){
+                else if(asset.getType().equalsIgnoreCase(ToyboxConstants.FILE_MIME_TYPE_PDF)){
                     if(renditionType == RenditionTypes.Thumbnail){
-                        runExecutable(asset, inputFile, outputFile, imagemagickExecutable, imagemagickTimeout, renditionSettings, renditionType, Constants.IMAGEMAGICK);
+                        runExecutable(asset, inputFile, outputFile, imagemagickExecutable, imagemagickTimeout, renditionSettings, renditionType, ToyboxConstants.IMAGEMAGICK);
                     }
                     else{
                         Files.copy(inputFile.toPath(), outputFile.toPath());

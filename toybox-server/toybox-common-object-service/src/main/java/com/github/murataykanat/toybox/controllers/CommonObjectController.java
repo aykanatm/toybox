@@ -1,6 +1,7 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
+import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.dbo.Container;
 import com.github.murataykanat.toybox.dbo.ContainerAsset;
@@ -12,15 +13,13 @@ import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
 import com.github.murataykanat.toybox.schema.selection.SelectionContext;
-import com.github.murataykanat.toybox.schema.upload.UploadFile;
-import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
 import com.github.murataykanat.toybox.utilities.*;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cloud.client.ServiceInstance;
-import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
@@ -30,11 +29,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpSession;
 import java.io.*;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -44,20 +43,21 @@ import java.util.stream.Collectors;
 public class CommonObjectController {
     private static final Log _logger = LogFactory.getLog(CommonObjectController.class);
 
-    private static final String jobServiceLoadBalancerServiceName = "toybox-job-loadbalancer";
-    private static final String assetServiceLoadBalancerServiceName = "toybox-asset-loadbalancer";
-    private static final String notificationServiceLoadBalancerServiceName = "toybox-notification-loadbalancer";
-    private static final String folderServiceLoadBalancerServiceName = "toybox-folder-loadbalancer";
-
     @Autowired
-    private DiscoveryClient discoveryClient;
+    private AssetUtils assetUtils;
+    @Autowired
+    private ContainerUtils containerUtils;
+    @Autowired
+    private LoadbalancerUtils loadbalancerUtils;
+    @Autowired
+    private AuthenticationUtils authenticationUtils;
+    @Autowired
+    private NotificationUtils notificationUtils;
 
     @Autowired
     private AssetsRepository assetsRepository;
     @Autowired
     private AssetUserRepository assetUserRepository;
-    @Autowired
-    private UsersRepository usersRepository;
     @Autowired
     private ContainersRepository containersRepository;
     @Autowired
@@ -75,40 +75,43 @@ public class CommonObjectController {
     @RequestMapping(value = "/common-objects/download", method = RequestMethod.POST, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> downloadObjects(Authentication authentication, HttpSession session, @RequestBody SelectionContext selectionContext){
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
                     RestTemplate restTemplate = new RestTemplate();
-                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
+                    HttpHeaders headers = authenticationUtils.getHeaders(session);
 
                     HttpEntity<SelectionContext> selectionContextHttpEntity = new HttpEntity<>(selectionContext, headers);
 
-                    String jobServiceUrl = LoadbalancerUtils.getInstance().getLoadbalancerUrl(discoveryClient, jobServiceLoadBalancerServiceName);
+                    String jobServiceUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.JOB_SERVICE_LOAD_BALANCER_SERVICE_NAME);
 
-                    ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/package", selectionContextHttpEntity, JobResponse.class);
-                    if(jobResponseResponseEntity != null){
-                        _logger.debug(jobResponseResponseEntity);
-                        JobResponse jobResponse = jobResponseResponseEntity.getBody();
-                        if(jobResponse != null){
-                            _logger.debug("Job response message: " + jobResponse.getMessage());
-                            _logger.debug("Job ID: " + jobResponse.getJobId());
-                            File archiveFile = JobUtils.getInstance().getArchiveFile(jobResponse.getJobId(), headers, jobServiceUrl, exportStagingPath);
-                            if(archiveFile != null && archiveFile.exists()){
-                                InputStreamResource resource = new InputStreamResource(new FileInputStream(archiveFile));
-                                return new ResponseEntity<>(resource, HttpStatus.OK);
+                    try{
+                        ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/package", selectionContextHttpEntity, JobResponse.class);
+                        if(jobResponseResponseEntity != null){
+                            JobResponse jobResponse = jobResponseResponseEntity.getBody();
+                            if(jobResponse != null){
+                                File archiveFile = JobUtils.getInstance().getArchiveFile(jobResponse.getJobId(), headers, jobServiceUrl, exportStagingPath);
+                                if(archiveFile != null && archiveFile.exists()){
+                                    InputStreamResource resource = new InputStreamResource(new FileInputStream(archiveFile));
+                                    return new ResponseEntity<>(resource, HttpStatus.OK);
+                                }
+                                else{
+                                    if(archiveFile != null){
+                                        throw new IOException("File '" + archiveFile.getAbsolutePath() + "' does not exist!");
+                                    }
+                                    throw new IllegalArgumentException("Archive file is null!");
+                                }
                             }
                             else{
-                                if(archiveFile != null){
-                                    throw new IOException("File '" + archiveFile.getAbsolutePath() + "' does not exist!");
-                                }
-                                throw new IllegalArgumentException("Archive file is null!");
+                                throw new IllegalArgumentException("Job response is null!");
                             }
                         }
                         else{
-                            throw new IllegalArgumentException("Job response is null!");
+                            throw new IllegalArgumentException("Job response entity is null!");
                         }
                     }
-                    else{
-                        throw new IllegalArgumentException("Job response entity is null!");
+                    catch (HttpStatusCodeException httpEx){
+                        JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+                        throw new Exception("Upload was successful but import failed to start. " + responseJson.get("message").getAsString());
                     }
                 }
                 else{
@@ -138,9 +141,9 @@ public class CommonObjectController {
     public ResponseEntity<GenericResponse> deleteObjects(Authentication authentication, HttpSession session, @RequestBody SelectionContext selectionContext){
         GenericResponse genericResponse = new GenericResponse();
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
-                    User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
+                    User user = authenticationUtils.getUser(authentication);
                     if(user != null){
                         if(!(selectionContext.getSelectedAssets().isEmpty() && selectionContext.getSelectedContainers().isEmpty())){
                             // We are adding a refreshed list of assets to the list of assets which will be deleted
@@ -178,12 +181,12 @@ public class CommonObjectController {
                                     sendNotificationRequest.setId(asset.getId());
                                     sendNotificationRequest.setFromUser(user);
                                     sendNotificationRequest.setMessage(message);
-                                    NotificationUtils.getInstance().sendNotification(sendNotificationRequest, discoveryClient, session, notificationServiceLoadBalancerServiceName);
+                                    notificationUtils.sendNotification(sendNotificationRequest, session);
                                 }
                                 // We un-subscribe users from the deleted assets
                                 for(Asset asset: assetsAndVersions){
-                                    Asset actualAsset = AssetUtils.getInstance().getAsset(assetsRepository, asset.getId());
-                                    User importUser = AuthenticationUtils.getInstance().getUser(usersRepository, actualAsset.getImportedByUsername());
+                                    Asset actualAsset = assetUtils.getAsset(asset.getId());
+                                    User importUser = authenticationUtils.getUser(actualAsset.getImportedByUsername());
                                     assetUserRepository.deleteSubscriber(actualAsset.getId(), importUser.getId());
                                 }
                             }
@@ -192,11 +195,20 @@ public class CommonObjectController {
                                 // We set all the containers as deleted
                                 containersRepository.deleteContainersById("Y", selectionContext.getSelectedContainers().stream().map(Container::getId).collect(Collectors.toList()));
                                 // We send delete notification for the selected containers
-                                // TODO: Send notification for folders
+                                for(Container selectedContainer: selectionContext.getSelectedContainers()){
+                                    // Send notification
+                                    String message = "Folder '" + selectedContainer.getName() + "' is deleted by '" + user.getUsername() + "'";
+                                    SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                    sendNotificationRequest.setIsAsset(false);
+                                    sendNotificationRequest.setId(selectedContainer.getId());
+                                    sendNotificationRequest.setFromUser(user);
+                                    sendNotificationRequest.setMessage(message);
+                                    notificationUtils.sendNotification(sendNotificationRequest, session);
+                                }
                                 // We un-subscribe users from the deleted containers
                                 for(Container selectedContainer: selectionContext.getSelectedContainers()){
-                                    Container actualContainer = ContainerUtils.getInstance().getContainer(containersRepository, selectedContainer.getId());
-                                    User createUser = AuthenticationUtils.getInstance().getUser(usersRepository, actualContainer.getCreatedByUsername());
+                                    Container actualContainer = containerUtils.getContainer(selectedContainer.getId());
+                                    User createUser = authenticationUtils.getUser(actualContainer.getCreatedByUsername());
                                     containerUsersRepository.deleteSubscriber(actualContainer.getId(), createUser.getId());
                                 }
                             }
@@ -254,15 +266,15 @@ public class CommonObjectController {
     public ResponseEntity<GenericResponse> subscribeToObjects(Authentication authentication, @RequestBody SelectionContext selectionContext){
         GenericResponse genericResponse = new GenericResponse();
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
                     if(!(selectionContext.getSelectedAssets().isEmpty() && selectionContext.getSelectedContainers().isEmpty())){
-                        User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
+                        User user = authenticationUtils.getUser(authentication);
                         if(user != null){
                             int assetCount = 0;
                             int containerCount = 0;
                             for(Asset selectedAsset: selectionContext.getSelectedAssets()){
-                                if(!AssetUtils.getInstance().isSubscribed(assetUserRepository, user, selectedAsset)){
+                                if(!assetUtils.isSubscribed(assetUserRepository, user, selectedAsset)){
                                     List<Asset> nonDeletedAssetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(selectedAsset.getOriginalAssetId());
                                     if(!nonDeletedAssetsByOriginalAssetId.isEmpty()){
                                         nonDeletedAssetsByOriginalAssetId.forEach(asset -> assetUserRepository.insertSubscriber(asset.getId(), user.getId()));
@@ -271,13 +283,13 @@ public class CommonObjectController {
                                 }
                             }
                             for(Container selectedContainer: selectionContext.getSelectedContainers()){
-                                if(!ContainerUtils.getInstance().isSubscribed(containerUsersRepository, user, selectedContainer)){
+                                if(!containerUtils.isSubscribed(user, selectedContainer)){
                                     containerUsersRepository.insertSubscriber(selectedContainer.getId(), user.getId());
 
                                     List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(selectedContainer.getId());
                                     for(ContainerAsset containerAsset: containerAssetsByContainerId){
-                                        Asset actualAsset = AssetUtils.getInstance().getAsset(assetsRepository, containerAsset.getAssetId());
-                                        if(!AssetUtils.getInstance().isSubscribed(assetUserRepository, user, actualAsset)){
+                                        Asset actualAsset = assetUtils.getAsset(containerAsset.getAssetId());
+                                        if(!assetUtils.isSubscribed(assetUserRepository, user, actualAsset)){
                                             List<Asset> nonDeletedAssetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(actualAsset.getOriginalAssetId());
                                             if(!nonDeletedAssetsByOriginalAssetId.isEmpty()){
                                                 nonDeletedAssetsByOriginalAssetId.forEach(asset -> assetUserRepository.insertSubscriber(asset.getId(), user.getId()));
@@ -344,15 +356,15 @@ public class CommonObjectController {
     public ResponseEntity<GenericResponse> unsubscribeFromObjects(Authentication authentication, @RequestBody SelectionContext selectionContext){
         GenericResponse genericResponse = new GenericResponse();
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
-                    User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
+                    User user = authenticationUtils.getUser(authentication);
                     if(user != null){
                         int assetCount = 0;
                         int containerCount = 0;
 
                         for(Asset selectedAsset: selectionContext.getSelectedAssets()){
-                            if(AssetUtils.getInstance().isSubscribed(assetUserRepository, user, selectedAsset)){
+                            if(assetUtils.isSubscribed(assetUserRepository, user, selectedAsset)){
                                 List<Asset> nonDeletedAssetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(selectedAsset.getOriginalAssetId());
                                 if(!nonDeletedAssetsByOriginalAssetId.isEmpty()){
                                     nonDeletedAssetsByOriginalAssetId.forEach(asset -> assetUserRepository.deleteSubscriber(asset.getId(), user.getId()));
@@ -362,13 +374,13 @@ public class CommonObjectController {
                         }
 
                         for(Container selectedContainer: selectionContext.getSelectedContainers()){
-                            if(ContainerUtils.getInstance().isSubscribed(containerUsersRepository, user, selectedContainer)){
+                            if(containerUtils.isSubscribed(user, selectedContainer)){
                                 containerUsersRepository.deleteSubscriber(selectedContainer.getId(), user.getId());
 
                                 List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(selectedContainer.getId());
                                 for(ContainerAsset containerAsset: containerAssetsByContainerId){
-                                    Asset actualAsset = AssetUtils.getInstance().getAsset(assetsRepository, containerAsset.getAssetId());
-                                    if(AssetUtils.getInstance().isSubscribed(assetUserRepository, user, actualAsset)){
+                                    Asset actualAsset = assetUtils.getAsset(containerAsset.getAssetId());
+                                    if(assetUtils.isSubscribed(assetUserRepository, user, actualAsset)){
                                         List<Asset> nonDeletedAssetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(actualAsset.getOriginalAssetId());
                                         if(!nonDeletedAssetsByOriginalAssetId.isEmpty()){
                                             nonDeletedAssetsByOriginalAssetId.forEach(asset -> assetUserRepository.deleteSubscriber(asset.getId(), user.getId()));
@@ -423,46 +435,52 @@ public class CommonObjectController {
 
     @LogEntryExitExecutionTime
     @RequestMapping(value = "/common-objects/move", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<GenericResponse> moveItems(Authentication authentication, @RequestBody MoveAssetRequest moveAssetRequest){
+    public ResponseEntity<GenericResponse> moveItems(Authentication authentication, HttpSession session, @RequestBody MoveAssetRequest moveAssetRequest){
         GenericResponse genericResponse = new GenericResponse();
 
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(moveAssetRequest != null){
-                    SelectionContext selectionContext = moveAssetRequest.getSelectionContext();
-                    if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
-                        Container targetContainer = ContainerUtils.getInstance().getContainer(containersRepository, moveAssetRequest.getContainerId());
+                    User user = authenticationUtils.getUser(authentication.getName());
+                    if(user != null){
+                        SelectionContext selectionContext = moveAssetRequest.getSelectionContext();
+                        if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+                            Container targetContainer = containerUtils.getContainer(moveAssetRequest.getContainerId());
 
-                        List<String> assetIds = selectionContext.getSelectedAssets().stream().map(Asset::getId).collect(Collectors.toList());
-                        List<String> containerIds = selectionContext.getSelectedContainers().stream().map(Container::getId).collect(Collectors.toList());
+                            List<String> assetIds = selectionContext.getSelectedAssets().stream().map(Asset::getId).collect(Collectors.toList());
+                            List<String> containerIds = selectionContext.getSelectedContainers().stream().map(Container::getId).collect(Collectors.toList());
 
-                        int assetCount = 0;
-                        int containerCount = 0;
+                            int assetCount = 0;
+                            int containerCount = 0;
 
-                        int numberOfIgnoredAssets = AssetUtils.getInstance().moveAssets(containerAssetsRepository, assetsRepository, assetIds, targetContainer);
-                        assetCount += (assetIds.size() - numberOfIgnoredAssets);
-                        int numberOfIgnoredContainers = ContainerUtils.getInstance().moveContainers(containersRepository, containerAssetsRepository, assetsRepository,containerIds, targetContainer);
-                        containerCount += (containerIds.size() - numberOfIgnoredContainers);
+                            int numberOfIgnoredAssets = assetUtils.moveAssets(assetIds, targetContainer, user, session);
+                            assetCount += (assetIds.size() - numberOfIgnoredAssets);
+                            int numberOfIgnoredContainers = containerUtils.moveContainers(containerIds, targetContainer, user, session);
+                            containerCount += (containerIds.size() - numberOfIgnoredContainers);
 
-                        if(assetCount == 0 && containerCount == 0){
-                            genericResponse.setMessage("No asset or folder is moved because either the target folder is the same as the selected folders or the target folder is a sub folder of the selected folders.");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.NOT_MODIFIED);
-                        }
-                        else if(assetCount < 0 || containerCount < 0){
-                            throw new IllegalArgumentException("Returned asset or container is below zero!");
+                            if(assetCount == 0 && containerCount == 0){
+                                genericResponse.setMessage("No asset or folder is moved because either the target folder is the same as the selected folders or the target folder is a sub folder of the selected folders.");
+                                return new ResponseEntity<>(genericResponse, HttpStatus.NOT_MODIFIED);
+                            }
+                            else if(assetCount < 0 || containerCount < 0){
+                                throw new IllegalArgumentException("Returned asset or container is below zero!");
+                            }
+                            else{
+                                genericResponse.setMessage(generateProcessingResponse(assetCount, containerCount, " were successfully moved to the folder '" + targetContainer.getName() + "'."));
+                                return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                            }
                         }
                         else{
-                            genericResponse.setMessage(generateProcessingResponse(assetCount, containerCount, " were successfully moved to the folder '" + targetContainer.getName() + "'."));
-                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                            String errorMessage = "Selection context is not valid!";
+                            _logger.error(errorMessage);
+
+                            genericResponse.setMessage(errorMessage);
+
+                            return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                         }
                     }
                     else{
-                        String errorMessage = "Selection context is not valid!";
-                        _logger.error(errorMessage);
-
-                        genericResponse.setMessage(errorMessage);
-
-                        return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                        throw new IllegalArgumentException("User is null!");
                     }
                 }
                 else{
@@ -498,7 +516,7 @@ public class CommonObjectController {
     public ResponseEntity<GenericResponse> copyItems(Authentication authentication, HttpSession session, @RequestBody CopyAssetRequest copyAssetRequest){
         GenericResponse genericResponse = new GenericResponse();
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(copyAssetRequest != null){
                     SelectionContext selectionContext = copyAssetRequest.getSelectionContext();
                     if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
@@ -509,12 +527,9 @@ public class CommonObjectController {
                         int assetCount = 0;
                         int containerCount = 0;
 
-                        AssetUtils.getInstance().copyAssets(assetsRepository, discoveryClient, session, jobServiceLoadBalancerServiceName,
-                                sourceAssetIds, targetContainerIds, authentication.getName(), importStagingPath);
+                        assetUtils.copyAssets(session, sourceAssetIds, targetContainerIds, authentication.getName(), importStagingPath);
                         assetCount += sourceAssetIds.size();
-                        ContainerUtils.getInstance().copyContainers(discoveryClient, containersRepository, containerAssetsRepository, assetsRepository,
-                                folderServiceLoadBalancerServiceName, jobServiceLoadBalancerServiceName, session, sourceContainerIds, targetContainerIds,
-                                authentication.getName(), importStagingPath);
+                        containerUtils.copyContainers(session, sourceContainerIds, targetContainerIds, authentication.getName(), importStagingPath);
                         containerCount += sourceContainerIds.size();
 
                         genericResponse.setMessage(generateProcessingResponse(assetCount, containerCount, " started to be copied to the selected folders. This action may take a while depending on the number and size of the selected assets and folders. You can follow the progress of the copy operations in 'Jobs' section."));

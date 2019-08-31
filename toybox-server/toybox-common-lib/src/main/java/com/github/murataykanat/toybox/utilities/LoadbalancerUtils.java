@@ -3,30 +3,23 @@ package com.github.murataykanat.toybox.utilities;
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@Component
 public class LoadbalancerUtils {
     private static final Log _logger = LogFactory.getLog(LoadbalancerUtils.class);
 
-    private static LoadbalancerUtils loadbalancerUtils;
-
-    private LoadbalancerUtils(){}
-
-    public static LoadbalancerUtils getInstance(){
-        if(loadbalancerUtils != null){
-            return loadbalancerUtils;
-        }
-
-        loadbalancerUtils = new LoadbalancerUtils();
-        return loadbalancerUtils;
-    }
+    @Autowired
+    private DiscoveryClient discoveryClient;
 
     @LogEntryExitExecutionTime
-    public String getLoadbalancerUrl(DiscoveryClient discoveryClient, String loadbalancerServiceName) throws Exception {
+    public String getLoadbalancerUrl(String loadbalancerServiceName) throws Exception {
         List<ServiceInstance> instances = discoveryClient.getInstances(loadbalancerServiceName);
         if(!instances.isEmpty()){
             ServiceInstance serviceInstance = instances.get(0);
@@ -39,7 +32,7 @@ public class LoadbalancerUtils {
     }
 
     @LogEntryExitExecutionTime
-    public String getPrefix(DiscoveryClient discoveryClient, String loadbalancerServiceName) throws Exception {
+    public String getPrefix(String loadbalancerServiceName) throws Exception {
         List<ServiceInstance> instances = discoveryClient.getInstances(loadbalancerServiceName);
         if(!instances.isEmpty()){
             List<Boolean> serviceSecurity = new ArrayList<>();

@@ -1,6 +1,7 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
+import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.share.ExternalShareRequest;
 import com.github.murataykanat.toybox.schema.share.ExternalShareResponse;
@@ -32,8 +33,6 @@ import javax.servlet.http.HttpSession;
 public class ShareLoadbalancerController {
     private static final Log _logger = LogFactory.getLog(ShareLoadbalancerController.class);
 
-    private static final String shareServiceName = "toybox-share-service";
-
     @LoadBalanced
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder){
@@ -41,10 +40,9 @@ public class ShareLoadbalancerController {
     }
 
     @Autowired
-    private DiscoveryClient discoveryClient;
-
+    private LoadbalancerUtils loadbalancerUtils;
     @Autowired
-    private UsersRepository usersRepository;
+    private AuthenticationUtils authenticationUtils;
 
     @Autowired
     private RestTemplate restTemplate;
@@ -55,11 +53,11 @@ public class ShareLoadbalancerController {
     public ResponseEntity<Resource> downloadExternalShare(@PathVariable String externalShareId){
         try{
             if(StringUtils.isNotBlank(externalShareId)){
-                String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, shareServiceName);
+                String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.SHARE_SERVICE_NAME);
                 HttpHeaders headers = new HttpHeaders();
 
                 if(StringUtils.isNotBlank(prefix)){
-                    return restTemplate.exchange(prefix + shareServiceName + "/share/download/" + externalShareId, HttpMethod.GET, new HttpEntity<>(headers),Resource.class);
+                    return restTemplate.exchange(prefix + ToyboxConstants.SHARE_SERVICE_NAME + "/share/download/" + externalShareId, HttpMethod.GET, new HttpEntity<>(headers),Resource.class);
                 }
                 else{
                     throw new IllegalArgumentException("Service ID prefix is null!");
@@ -115,13 +113,13 @@ public class ShareLoadbalancerController {
         ExternalShareResponse externalShareResponse = new ExternalShareResponse();
 
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(externalShareRequest != null){
-                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                    String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, shareServiceName);
+                    HttpHeaders headers = authenticationUtils.getHeaders(session);
+                    String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.SHARE_SERVICE_NAME);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        return restTemplate.exchange(prefix + shareServiceName + "/share/external", HttpMethod.POST, new HttpEntity<>(externalShareRequest, headers), ExternalShareResponse.class);
+                        return restTemplate.exchange(prefix + ToyboxConstants.SHARE_SERVICE_NAME + "/share/external", HttpMethod.POST, new HttpEntity<>(externalShareRequest, headers), ExternalShareResponse.class);
                     }
                     else{
                         throw new IllegalArgumentException("Service ID prefix is null!");

@@ -1,17 +1,15 @@
 package com.github.murataykanat.toybox.batch.jobs;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
-import com.github.murataykanat.toybox.batch.utils.Constants;
+import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.dbo.Container;
 import com.github.murataykanat.toybox.dbo.ContainerAsset;
-import com.github.murataykanat.toybox.repositories.AssetsRepository;
 import com.github.murataykanat.toybox.repositories.ContainerAssetsRepository;
 import com.github.murataykanat.toybox.repositories.ContainersRepository;
 import com.github.murataykanat.toybox.utilities.AssetUtils;
 import com.github.murataykanat.toybox.utilities.ContainerUtils;
 import net.lingala.zip4j.ZipFile;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -43,6 +41,11 @@ import java.util.Map;
 public class PackagingJobConfig {
     private static final Log _logger = LogFactory.getLog(PackagingJobConfig.class);
 
+    @Autowired
+    private AssetUtils assetUtils;
+    @Autowired
+    private ContainerUtils containerUtils;
+
     @Value("${exportStagingPath}")
     private String exportStagingPath;
 
@@ -50,18 +53,15 @@ public class PackagingJobConfig {
     private ContainersRepository containersRepository;
 
     @Autowired
-    private AssetsRepository assetsRepository;
-
-    @Autowired
     private ContainerAssetsRepository containerAssetsRepository;
 
     @Bean
     public Job packagingJob(JobBuilderFactory jobBuilderFactory, StepBuilderFactory stepBuilderFactory){
-        Step stepCompressAssets = stepBuilderFactory.get(Constants.STEP_PACKAGING_GENERATE_ARCHIVE)
+        Step stepCompressAssets = stepBuilderFactory.get(ToyboxConstants.STEP_PACKAGING_GENERATE_ARCHIVE)
                 .tasklet(new Tasklet() {
                     @Override
                     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
-                        _logger.debug("execute() >> [" + Constants.STEP_PACKAGING_GENERATE_ARCHIVE + "]");
+                        _logger.debug("execute() >> [" + ToyboxConstants.STEP_PACKAGING_GENERATE_ARCHIVE + "]");
 
                         // Create job folder
                         Object obj = chunkContext.getStepContext().getStepExecution().getJobExecution().getExecutionContext().get("jobId");
@@ -78,14 +78,14 @@ public class PackagingJobConfig {
                                 // Copy assets to export folder
                                 Map<String, Object> jobParameters = chunkContext.getStepContext().getJobParameters();
                                 for(Map.Entry<String, Object> jobParameter: jobParameters.entrySet()){
-                                    if(jobParameter.getKey().startsWith(Constants.JOB_PARAM_PACKAGING_FILE)){
+                                    if(jobParameter.getKey().startsWith(ToyboxConstants.JOB_PARAM_PACKAGING_FILE)){
                                         String assetId = (String) jobParameter.getValue();
-                                        Asset asset = AssetUtils.getInstance().getAsset(assetsRepository, assetId);
+                                        Asset asset = assetUtils.getAsset(assetId);
                                         File inputFile = new File(asset.getPath());
                                         File outputFile = new File(jobFolderPath + File.separator + inputFile.getName());
                                         Files.copy(inputFile.toPath(), outputFile.toPath());
                                     }
-                                    else if(jobParameter.getKey().startsWith(Constants.JOB_PARAM_PACKAGING_FOLDER)){
+                                    else if(jobParameter.getKey().startsWith(ToyboxConstants.JOB_PARAM_PACKAGING_FOLDER)){
                                         String containerId = (String) jobParameter.getValue();
                                         generateFolders(containerId, jobFolderPath);
                                     }
@@ -121,13 +121,13 @@ public class PackagingJobConfig {
                             throw new IOException("Job folder '" + jobFolderPath + "' already exists!");
                         }
 
-                        _logger.debug("<< execute() " + Constants.STEP_PACKAGING_GENERATE_ARCHIVE + "]");
+                        _logger.debug("<< execute() " + ToyboxConstants.STEP_PACKAGING_GENERATE_ARCHIVE + "]");
                         return RepeatStatus.FINISHED;
                     }
                 })
                 .build();
 
-        return jobBuilderFactory.get(Constants.JOB_PACKAGING_NAME)
+        return jobBuilderFactory.get(ToyboxConstants.JOB_PACKAGING_NAME)
                 .incrementer(new RunIdIncrementer())
                 .validator(packagingValidator())
                 .flow(stepCompressAssets)
@@ -142,13 +142,13 @@ public class PackagingJobConfig {
             public void validate(JobParameters parameters) throws JobParametersInvalidException {
                 Map<String, JobParameter> parameterMap = parameters.getParameters();
                 for(Map.Entry<String, JobParameter> parameterEntry: parameterMap.entrySet()){
-                    if(parameterEntry.getKey().startsWith(Constants.JOB_PARAM_PACKAGING_FILE)){
+                    if(parameterEntry.getKey().startsWith(ToyboxConstants.JOB_PARAM_PACKAGING_FILE)){
                         String assetId = (String) parameterEntry.getValue().getValue();
                         if(StringUtils.isBlank(assetId)){
                             throw new JobParametersInvalidException("Job parameters have an blank asset ID!");
                         }
                     }
-                    if(parameterEntry.getKey().startsWith(Constants.JOB_PARAM_PACKAGING_FOLDER)){
+                    if(parameterEntry.getKey().startsWith(ToyboxConstants.JOB_PARAM_PACKAGING_FOLDER)){
                         String containerId = (String) parameterEntry.getValue().getValue();
                         if(StringUtils.isBlank(containerId)){
                             throw new JobParametersInvalidException("Job parameters have an blank container ID!");
@@ -161,7 +161,7 @@ public class PackagingJobConfig {
 
     @LogEntryExitExecutionTime
     private void generateFolders(String containerId, String parentPath) throws Exception {
-        Container container = ContainerUtils.getInstance().getContainer(containersRepository, containerId);
+        Container container = containerUtils.getContainer(containerId);
 
         String folderPath = parentPath + File.separator + container.getName();
         File folder = new File(folderPath);
@@ -170,7 +170,7 @@ public class PackagingJobConfig {
             List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(containerId);
             for(ContainerAsset containerAsset: containerAssetsByContainerId){
                 String assetId = containerAsset.getAssetId();
-                Asset asset = AssetUtils.getInstance().getAsset(assetsRepository, assetId);
+                Asset asset = assetUtils.getAsset(assetId);
 
                 File inputFile = new File(asset.getPath());
                 File outputFile = new File(folderPath + File.separator + inputFile.getName());

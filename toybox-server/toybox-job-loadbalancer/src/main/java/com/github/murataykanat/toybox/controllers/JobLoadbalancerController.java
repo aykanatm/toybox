@@ -1,6 +1,7 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
+import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.selection.SelectionContext;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
@@ -18,7 +19,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.cloud.netflix.ribbon.RibbonClient;
 import org.springframework.context.annotation.Bean;
@@ -36,8 +36,6 @@ import javax.servlet.http.HttpSession;
 public class JobLoadbalancerController {
     private static final Log _logger = LogFactory.getLog(JobLoadbalancerController.class);
 
-    private static final String jobServiceName = "toybox-job-service";
-
     @LoadBalanced
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder){
@@ -45,7 +43,9 @@ public class JobLoadbalancerController {
     }
 
     @Autowired
-    private DiscoveryClient discoveryClient;
+    private LoadbalancerUtils loadbalancerUtils;
+    @Autowired
+    private AuthenticationUtils authenticationUtils;
 
     @Autowired
     private UsersRepository usersRepository;
@@ -60,13 +60,13 @@ public class JobLoadbalancerController {
         JobResponse jobResponse = new JobResponse();
 
         try {
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(selectionContext != null){
-                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                    String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, jobServiceName);
+                    HttpHeaders headers = authenticationUtils.getHeaders(session);
+                    String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.JOB_SERVICE_NAME);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        return restTemplate.exchange(prefix + jobServiceName + "/jobs/package", HttpMethod.POST, new HttpEntity<>(selectionContext, headers), JobResponse.class);
+                        return restTemplate.exchange(prefix + ToyboxConstants.JOB_SERVICE_NAME + "/jobs/package", HttpMethod.POST, new HttpEntity<>(selectionContext, headers), JobResponse.class);
                     }
                     else{
                         throw new IllegalArgumentException("Service ID prefix is null!");
@@ -141,13 +141,13 @@ public class JobLoadbalancerController {
         JobResponse jobResponse = new JobResponse();
 
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(uploadFileLst != null){
-                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                    String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, jobServiceName);
+                    HttpHeaders headers = authenticationUtils.getHeaders(session);
+                    String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.JOB_SERVICE_NAME);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        return restTemplate.exchange(prefix + jobServiceName + "/jobs/import", HttpMethod.POST, new HttpEntity<>(uploadFileLst, headers), JobResponse.class);
+                        return restTemplate.exchange(prefix + ToyboxConstants.JOB_SERVICE_NAME + "/jobs/import", HttpMethod.POST, new HttpEntity<>(uploadFileLst, headers), JobResponse.class);
                     }
                     else{
                         throw new IllegalArgumentException("Service ID prefix is null!");
@@ -222,13 +222,13 @@ public class JobLoadbalancerController {
         RetrieveToyboxJobsResult retrieveToyboxJobsResult = new RetrieveToyboxJobsResult();
 
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(jobSearchRequest != null){
-                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                    String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, jobServiceName);
+                    HttpHeaders headers = authenticationUtils.getHeaders(session);
+                    String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.JOB_SERVICE_NAME);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        return restTemplate.exchange(prefix + jobServiceName + "/jobs/search", HttpMethod.POST, new HttpEntity<>(jobSearchRequest, headers), RetrieveToyboxJobsResult.class);
+                        return restTemplate.exchange(prefix + ToyboxConstants.JOB_SERVICE_NAME + "/jobs/search", HttpMethod.POST, new HttpEntity<>(jobSearchRequest, headers), RetrieveToyboxJobsResult.class);
                     }
                     else{
                         throw new IllegalArgumentException("Service ID prefix is null!");
@@ -303,13 +303,13 @@ public class JobLoadbalancerController {
         RetrieveToyboxJobResult retrieveToyboxJobResult = new RetrieveToyboxJobResult();
 
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(StringUtils.isNotBlank(jobInstanceId)){
-                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                    String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, jobServiceName);
+                    HttpHeaders headers = authenticationUtils.getHeaders(session);
+                    String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.JOB_SERVICE_NAME);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        return restTemplate.exchange(prefix + jobServiceName + "/jobs/" + jobInstanceId, HttpMethod.GET, new HttpEntity<>(headers), RetrieveToyboxJobResult.class);
+                        return restTemplate.exchange(prefix + ToyboxConstants.JOB_SERVICE_NAME + "/jobs/" + jobInstanceId, HttpMethod.GET, new HttpEntity<>(headers), RetrieveToyboxJobResult.class);
                     }
                     else{
                         throw new IllegalArgumentException("Service ID prefix is null!");
@@ -382,13 +382,13 @@ public class JobLoadbalancerController {
     @RequestMapping(value = "/jobs/download/{jobInstanceId}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> downloadJobResult(Authentication authentication, HttpSession session, @PathVariable String jobInstanceId){
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(StringUtils.isNotBlank(jobInstanceId)){
-                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                    String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, jobServiceName);
+                    HttpHeaders headers = authenticationUtils.getHeaders(session);
+                    String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.JOB_SERVICE_NAME);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        return restTemplate.exchange(prefix + jobServiceName + "/jobs/download/" + jobInstanceId, HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
+                        return restTemplate.exchange(prefix + ToyboxConstants.JOB_SERVICE_NAME + "/jobs/download/" + jobInstanceId, HttpMethod.GET, new HttpEntity<>(headers), Resource.class);
                     }
                     else{
                         throw new IllegalArgumentException("Service ID prefix is null!");
@@ -450,13 +450,13 @@ public class JobLoadbalancerController {
     public ResponseEntity<JobResponse> stopJob(Authentication authentication, HttpSession session, @PathVariable String jobInstanceId) {
         JobResponse jobResponse = new JobResponse();
         try {
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(StringUtils.isNotBlank(jobInstanceId)){
-                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                    String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, jobServiceName);
+                    HttpHeaders headers = authenticationUtils.getHeaders(session);
+                    String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.JOB_SERVICE_NAME);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        return restTemplate.exchange(prefix + jobServiceName + "/jobs/stop/" + jobInstanceId, HttpMethod.POST, new HttpEntity<>(headers), JobResponse.class);
+                        return restTemplate.exchange(prefix + ToyboxConstants.JOB_SERVICE_NAME + "/jobs/stop/" + jobInstanceId, HttpMethod.POST, new HttpEntity<>(headers), JobResponse.class);
                     }
                     else{
                         throw new IllegalArgumentException("Service ID prefix is null!");

@@ -1,7 +1,7 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
-import com.github.murataykanat.toybox.batch.utils.Constants;
+import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.dbo.Container;
 import com.github.murataykanat.toybox.models.job.ToyboxJob;
@@ -43,6 +43,9 @@ import java.util.stream.Collectors;
 public class JobController {
     private static final Log _logger = LogFactory.getLog(JobController.class);
 
+    @Autowired
+    private AuthenticationUtils authenticationUtils;
+
     @Value("${exportStagingPath}")
     private String exportStagingPath;
 
@@ -59,8 +62,6 @@ public class JobController {
     private JobsRepository jobsRepository;
     @Autowired
     JobStepsRepository jobStepsRepository;
-    @Autowired
-    private UsersRepository usersRepository;
 
     @LogEntryExitExecutionTime
     @RequestMapping(value = "/jobs/package", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -68,7 +69,7 @@ public class JobController {
         JobResponse jobResponse = new JobResponse();
 
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(selectionContext != null){
                     List<String> selectedAssetIds = new ArrayList<>();
                     List<String> selectedContainerIds = new ArrayList<>();
@@ -86,16 +87,16 @@ public class JobController {
 
                         for(int i = 0; i < selectedAssetIds.size(); i++){
                             String assetId = selectedAssetIds.get(i);
-                            builder.addString(Constants.JOB_PARAM_PACKAGING_FILE + "_" + i, assetId);
+                            builder.addString(ToyboxConstants.JOB_PARAM_PACKAGING_FILE + "_" + i, assetId);
                         }
 
                         for(int i = 0; i < selectedContainerIds.size(); i++){
                             String containerId = selectedContainerIds.get(i);
-                            builder.addString(Constants.JOB_PARAM_PACKAGING_FOLDER + "_" + i, containerId);
+                            builder.addString(ToyboxConstants.JOB_PARAM_PACKAGING_FOLDER + "_" + i, containerId);
                         }
 
-                        builder.addString(Constants.JOB_PARAM_USERNAME, authentication.getName());
-                        builder.addString(Constants.JOB_PARAM_SYSTEM_MILLIS, String.valueOf(System.currentTimeMillis()));
+                        builder.addString(ToyboxConstants.JOB_PARAM_USERNAME, authentication.getName());
+                        builder.addString(ToyboxConstants.JOB_PARAM_SYSTEM_MILLIS, String.valueOf(System.currentTimeMillis()));
 
                         _logger.debug("Launching job [" + packagingJob.getName() + "]...");
                         JobExecution jobExecution = jobLauncher.run(packagingJob, builder.toJobParameters());
@@ -145,7 +146,7 @@ public class JobController {
         JobResponse jobResponse = new JobResponse();
 
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(uploadFileLst != null){
                     _logger.debug("Putting values into the parameter map...");
                     List<UploadFile> uploadedFiles = uploadFileLst.getUploadFiles();
@@ -155,11 +156,11 @@ public class JobController {
 
                             for(int i = 0; i < uploadedFiles.size(); i++){
                                 UploadFile uploadedFile = uploadedFiles.get(i);
-                                builder.addString(Constants.JOB_PARAM_UPLOADED_FILE+ "_" + i, uploadedFile.getPath());
+                                builder.addString(ToyboxConstants.JOB_PARAM_UPLOADED_FILE+ "_" + i, uploadedFile.getPath());
                             }
-                            builder.addString(Constants.JOB_PARAM_USERNAME, uploadedFiles.get(0).getUsername());
-                            builder.addString(Constants.JOB_PARAM_CONTAINER_ID, uploadFileLst.getContainerId());
-                            builder.addString(Constants.JOB_PARAM_SYSTEM_MILLIS, String.valueOf(System.currentTimeMillis()));
+                            builder.addString(ToyboxConstants.JOB_PARAM_USERNAME, uploadedFiles.get(0).getUsername());
+                            builder.addString(ToyboxConstants.JOB_PARAM_CONTAINER_ID, uploadFileLst.getContainerId());
+                            builder.addString(ToyboxConstants.JOB_PARAM_SYSTEM_MILLIS, String.valueOf(System.currentTimeMillis()));
 
                             _logger.debug("Launching job [" + importJob.getName() + "]...");
                             JobExecution jobExecution = jobLauncher.run(importJob, builder.toJobParameters());
@@ -221,7 +222,7 @@ public class JobController {
         RetrieveToyboxJobsResult retrieveToyboxJobsResult = new RetrieveToyboxJobsResult();
 
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(jobSearchRequest != null){
                     String sortColumn = jobSearchRequest.getSortColumn();
                     String sortType = jobSearchRequest.getSortType();
@@ -266,7 +267,7 @@ public class JobController {
 
                         List<ToyboxJob> jobsByCurrentUser;
 
-                        if(AuthenticationUtils.getInstance().isAdminUser(authentication)){
+                        if(authenticationUtils.isAdminUser(authentication)){
                             _logger.debug("Retrieving all jobs [Admin User]...");
                             jobsByCurrentUser = jobs;
                         }
@@ -332,7 +333,7 @@ public class JobController {
         RetrieveToyboxJobResult retrieveToyboxJobResult = new RetrieveToyboxJobResult();
 
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(StringUtils.isNotBlank(jobInstanceId)){
                     List<ToyboxJob> jobs = jobsRepository.getJobsByInstanceId(jobInstanceId);
                     if(!jobs.isEmpty()){
@@ -398,7 +399,7 @@ public class JobController {
     @RequestMapping(value = "/jobs/download/{jobInstanceId}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> downloadJobResult(Authentication authentication, @PathVariable String jobInstanceId){
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(StringUtils.isNotBlank(jobInstanceId)){
                     String downloadFilePath =  exportStagingPath + File.separator + jobInstanceId + File.separator + "Download.zip";
                     File file = new File(downloadFilePath);
@@ -440,7 +441,7 @@ public class JobController {
         JobResponse jobResponse = new JobResponse();
 
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(StringUtils.isNotBlank(jobInstanceId)){
                     boolean stop = jobOperator.stop(Long.parseLong(jobInstanceId));
                     if(stop){

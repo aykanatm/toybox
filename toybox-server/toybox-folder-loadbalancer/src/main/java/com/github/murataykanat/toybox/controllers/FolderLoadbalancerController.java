@@ -1,7 +1,7 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
-import com.github.murataykanat.toybox.repositories.UsersRepository;
+import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.container.*;
@@ -15,7 +15,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.cloud.netflix.ribbon.RibbonClient;
 import org.springframework.context.annotation.Bean;
@@ -32,19 +31,16 @@ import javax.servlet.http.HttpSession;
 public class FolderLoadbalancerController {
     private static final Log _logger = LogFactory.getLog(FolderLoadbalancerController.class);
 
-    private static final String folderServiceName = "toybox-folder-service";
+    @Autowired
+    private LoadbalancerUtils loadbalancerUtils;
+    @Autowired
+    private AuthenticationUtils authenticationUtils;
 
     @LoadBalanced
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder){
         return builder.build();
     }
-
-    @Autowired
-    private DiscoveryClient discoveryClient;
-
-    @Autowired
-    private UsersRepository usersRepository;
 
     @Autowired
     private RestTemplate restTemplate;
@@ -55,13 +51,13 @@ public class FolderLoadbalancerController {
     public ResponseEntity<CreateContainerResponse> createContainer(Authentication authentication, HttpSession session, @RequestBody CreateContainerRequest createContainerRequest){
         CreateContainerResponse createContainerResponse = new CreateContainerResponse();
         try {
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(createContainerRequest != null){
-                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                    String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, folderServiceName);
+                    HttpHeaders headers = authenticationUtils.getHeaders(session);
+                    String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.FOLDER_SERVICE_NAME);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        return restTemplate.exchange(prefix + folderServiceName + "/containers", HttpMethod.POST, new HttpEntity<>(createContainerRequest, headers), CreateContainerResponse.class);
+                        return restTemplate.exchange(prefix + ToyboxConstants.FOLDER_SERVICE_NAME + "/containers", HttpMethod.POST, new HttpEntity<>(createContainerRequest, headers), CreateContainerResponse.class);
                     }
                     else{
                         throw new IllegalArgumentException("Service ID prefix is null!");
@@ -137,14 +133,14 @@ public class FolderLoadbalancerController {
     public ResponseEntity<RetrieveContainerContentsResult> retrieveContainerContents(Authentication authentication, HttpSession session, @PathVariable String containerId, @RequestBody AssetSearchRequest assetSearchRequest){
         RetrieveContainerContentsResult retrieveContainerContentsResult = new RetrieveContainerContentsResult();
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(StringUtils.isNotBlank(containerId)){
                     if(assetSearchRequest != null){
-                        HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                        String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, folderServiceName);
+                        HttpHeaders headers = authenticationUtils.getHeaders(session);
+                        String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.FOLDER_SERVICE_NAME);
 
                         if(StringUtils.isNotBlank(prefix)){
-                            return restTemplate.exchange(prefix + folderServiceName + "/containers/" + containerId + "/search", HttpMethod.POST, new HttpEntity<>(assetSearchRequest, headers), RetrieveContainerContentsResult.class);
+                            return restTemplate.exchange(prefix + ToyboxConstants.FOLDER_SERVICE_NAME + "/containers/" + containerId + "/search", HttpMethod.POST, new HttpEntity<>(assetSearchRequest, headers), RetrieveContainerContentsResult.class);
                         }
                         else{
                             throw new IllegalArgumentException("Service ID prefix is null!");
@@ -239,13 +235,13 @@ public class FolderLoadbalancerController {
     public ResponseEntity<RetrieveContainersResults> retrieveContainers(Authentication authentication, HttpSession session, @RequestBody ContainerSearchRequest containerSearchRequest){
         RetrieveContainersResults retrieveContainersResults = new RetrieveContainersResults();
         try {
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(containerSearchRequest != null){
-                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                    String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, folderServiceName);
+                    HttpHeaders headers = authenticationUtils.getHeaders(session);
+                    String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.FOLDER_SERVICE_NAME);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        return restTemplate.exchange(prefix + folderServiceName + "/containers/search", HttpMethod.POST, new HttpEntity<>(containerSearchRequest, headers), RetrieveContainersResults.class);
+                        return restTemplate.exchange(prefix + ToyboxConstants.FOLDER_SERVICE_NAME + "/containers/search", HttpMethod.POST, new HttpEntity<>(containerSearchRequest, headers), RetrieveContainersResults.class);
                     }
                     else{
                         throw new IllegalArgumentException("Service ID prefix is null!");
@@ -322,14 +318,14 @@ public class FolderLoadbalancerController {
         GenericResponse genericResponse = new GenericResponse();
 
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(StringUtils.isNotBlank(containerId)){
                     if(updateContainerRequest != null){
-                        HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                        String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, folderServiceName);
+                        HttpHeaders headers = authenticationUtils.getHeaders(session);
+                        String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.FOLDER_SERVICE_NAME);
 
                         if(StringUtils.isNotBlank(prefix)){
-                            return restTemplate.exchange(prefix + folderServiceName + "/containers/" + containerId, HttpMethod.PATCH, new HttpEntity<>(updateContainerRequest, headers), GenericResponse.class);
+                            return restTemplate.exchange(prefix + ToyboxConstants.FOLDER_SERVICE_NAME + "/containers/" + containerId, HttpMethod.PATCH, new HttpEntity<>(updateContainerRequest, headers), GenericResponse.class);
                         }
                         else{
                             throw new IllegalArgumentException("Service ID prefix is null!");

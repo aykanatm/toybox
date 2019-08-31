@@ -1,6 +1,7 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
+import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.notification.SearchNotificationsRequest;
@@ -37,8 +38,6 @@ import javax.servlet.http.HttpSession;
 public class NotificationLoadbalancerController {
     private static final Log _logger = LogFactory.getLog(NotificationLoadbalancerController.class);
 
-    private static final String notificationServiceName = "toybox-notification-service";
-
     @LoadBalanced
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder){
@@ -46,7 +45,9 @@ public class NotificationLoadbalancerController {
     }
 
     @Autowired
-    private DiscoveryClient discoveryClient;
+    private LoadbalancerUtils loadbalancerUtils;
+    @Autowired
+    private AuthenticationUtils authenticationUtils;
 
     @Autowired
     private UsersRepository usersRepository;
@@ -60,13 +61,13 @@ public class NotificationLoadbalancerController {
     public ResponseEntity<GenericResponse> sendNotification(Authentication authentication, HttpSession session, @RequestBody SendNotificationRequest sendNotificationRequest){
         GenericResponse genericResponse = new GenericResponse();
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(sendNotificationRequest != null){
-                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                    String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, notificationServiceName);
+                    HttpHeaders headers = authenticationUtils.getHeaders(session);
+                    String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.NOTIFICATION_SERVICE_NAME);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        return restTemplate.exchange(prefix + notificationServiceName + "/notifications", HttpMethod.POST, new HttpEntity<>(sendNotificationRequest, headers), GenericResponse.class);
+                        return restTemplate.exchange(prefix + ToyboxConstants.NOTIFICATION_SERVICE_NAME + "/notifications", HttpMethod.POST, new HttpEntity<>(sendNotificationRequest, headers), GenericResponse.class);
                     }
                     else{
                         throw new IllegalArgumentException("Service ID prefix is null!");
@@ -135,13 +136,13 @@ public class NotificationLoadbalancerController {
         SearchNotificationsResponse searchNotificationsResponse = new SearchNotificationsResponse();
 
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(searchNotificationsRequest != null){
-                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                    String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, notificationServiceName);
+                    HttpHeaders headers = authenticationUtils.getHeaders(session);
+                    String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.NOTIFICATION_SERVICE_NAME);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        return restTemplate.exchange(prefix + notificationServiceName + "/notifications/search", HttpMethod.POST, new HttpEntity<>(searchNotificationsRequest, headers), SearchNotificationsResponse.class);
+                        return restTemplate.exchange(prefix + ToyboxConstants.NOTIFICATION_SERVICE_NAME + "/notifications/search", HttpMethod.POST, new HttpEntity<>(searchNotificationsRequest, headers), SearchNotificationsResponse.class);
                     }
                     else{
                         throw new IllegalArgumentException("Service ID prefix is null!");
@@ -211,13 +212,13 @@ public class NotificationLoadbalancerController {
         GenericResponse genericResponse = new GenericResponse();
 
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(updateNotificationsRequest != null){
-                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                    String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, notificationServiceName);
+                    HttpHeaders headers = authenticationUtils.getHeaders(session);
+                    String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.NOTIFICATION_SERVICE_NAME);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        return restTemplate.exchange(prefix + notificationServiceName + "/notifications", HttpMethod.PATCH, new HttpEntity<>(updateNotificationsRequest, headers), GenericResponse.class);
+                        return restTemplate.exchange(prefix + ToyboxConstants.NOTIFICATION_SERVICE_NAME + "/notifications", HttpMethod.PATCH, new HttpEntity<>(updateNotificationsRequest, headers), GenericResponse.class);
                     }
                     else{
                         throw new IllegalArgumentException("Service ID prefix is null!");

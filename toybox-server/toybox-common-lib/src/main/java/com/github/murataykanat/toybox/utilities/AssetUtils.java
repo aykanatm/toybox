@@ -1,22 +1,24 @@
 package com.github.murataykanat.toybox.utilities;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
+import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.*;
-import com.github.murataykanat.toybox.repositories.AssetUserRepository;
-import com.github.murataykanat.toybox.repositories.AssetsRepository;
-import com.github.murataykanat.toybox.repositories.ContainerAssetsRepository;
+import com.github.murataykanat.toybox.repositories.*;
 import com.github.murataykanat.toybox.schema.asset.UpdateAssetRequest;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
+import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
 import com.github.murataykanat.toybox.schema.upload.UploadFile;
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpSession;
@@ -29,24 +31,27 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Component
 public class AssetUtils {
     private static Log _logger = LogFactory.getLog(AssetUtils.class);
 
-    private static AssetUtils assetUtils;
+    @Autowired
+    private LoadbalancerUtils loadbalancerUtils;
+    @Autowired
+    private NotificationUtils notificationUtils;
+    @Autowired
+    private AuthenticationUtils authenticationUtils;
 
-    private AssetUtils(){}
+    @Autowired
+    private DiscoveryClient discoveryClient;
 
-    public static AssetUtils getInstance(){
-        if(assetUtils != null){
-            return assetUtils;
-        }
-
-        assetUtils = new AssetUtils();
-        return assetUtils;
-    }
+    @Autowired
+    private AssetsRepository assetsRepository;
+    @Autowired
+    private ContainerAssetsRepository containerAssetsRepository;
 
     @LogEntryExitExecutionTime
-    public Asset getAsset(AssetsRepository assetsRepository, String assetId) throws Exception {
+    public Asset getAsset(String assetId) {
         List<Asset> assetsById = assetsRepository.getAssetsById(assetId);
         if(!assetsById.isEmpty()){
             if(assetsById.size() == 1){
@@ -74,17 +79,17 @@ public class AssetUtils {
     }
 
     @LogEntryExitExecutionTime
-    public int moveAssets(ContainerAssetsRepository containerAssetsRepository, AssetsRepository assetsRepository, List<String> assetIds, Container targetContainer) throws Exception {
+    public int moveAssets(List<String> assetIds, Container targetContainer, User user, HttpSession session) throws Exception {
         int numberOfIgnoredFiles = 0;
 
         for(String assetId: assetIds){
             boolean assetAlreadyInTargetContainer = false;
-            Asset asset = AssetUtils.getInstance().getAsset(assetsRepository, assetId);
+            Asset asset = getAsset(assetId);
 
             Asset duplicateAsset = null;
             List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(targetContainer.getId());
             for(ContainerAsset containerAsset: containerAssetsByContainerId){
-                Asset assetInContainer = AssetUtils.getInstance().getAsset(assetsRepository, containerAsset.getAssetId());
+                Asset assetInContainer = getAsset(containerAsset.getAssetId());
                 if(assetInContainer.getId().equalsIgnoreCase(asset.getId())){
                     assetAlreadyInTargetContainer = true;
                     break;
@@ -120,6 +125,15 @@ public class AssetUtils {
                     List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(asset.getOriginalAssetId());
                     containerAssetsRepository.moveAssets(targetContainer.getId(), assetsByOriginalAssetId.stream().map(Asset::getId).collect(Collectors.toList()));
                 }
+
+                // Send notification
+                String message = "Asset '" + asset.getName() + "' is moved to folder '" + targetContainer.getName() + "' by '" + user.getUsername() + "'";
+                SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                sendNotificationRequest.setIsAsset(true);
+                sendNotificationRequest.setId(asset.getId());
+                sendNotificationRequest.setFromUser(user);
+                sendNotificationRequest.setMessage(message);
+                notificationUtils.sendNotification(sendNotificationRequest, session);
             }
             else{
                 numberOfIgnoredFiles++;
@@ -131,20 +145,18 @@ public class AssetUtils {
     }
 
     @LogEntryExitExecutionTime
-    public int copyAssets(AssetsRepository assetsRepository, DiscoveryClient discoveryClient, HttpSession session,
-                          String jobServiceLoadBalancerServiceName, List<String> sourceAssetIds, List<String> targetContainerIds, String username,
-                          String importStagingPath) throws Exception {
+    public int copyAssets(HttpSession session, List<String> sourceAssetIds, List<String> targetContainerIds, String username, String importStagingPath) throws Exception {
         int numberOfFailedJobs = 0;
 
         for(String targetContainerId : targetContainerIds){
-            numberOfFailedJobs += duplicateAssets(assetsRepository, discoveryClient, session, jobServiceLoadBalancerServiceName, sourceAssetIds, importStagingPath, targetContainerId, username);
+            numberOfFailedJobs += duplicateAssets(session, sourceAssetIds, importStagingPath, targetContainerId, username);
         }
 
         return numberOfFailedJobs;
     }
 
     @LogEntryExitExecutionTime
-    private int duplicateAssets(AssetsRepository assetsRepository, DiscoveryClient discoveryClient, HttpSession session, String jobServiceLoadBalancerServiceName, List<String> assetIds, String importStagingPath, String targetContainerId, String username) throws Exception {
+    private int duplicateAssets(HttpSession session, List<String> assetIds, String importStagingPath, String targetContainerId, String username) throws Exception {
         int numberOfFailedAssets = 0;
 
         UploadFileLst uploadFileLst = new UploadFileLst();
@@ -152,7 +164,7 @@ public class AssetUtils {
 
         List<UploadFile> uploadFiles = new ArrayList<>();
         for(String assetId: assetIds){
-            Asset asset = getAsset(assetsRepository, assetId);
+            Asset asset = getAsset(assetId);
             File currentFile = new File(asset.getPath());
 
             String tempFolderName = Long.toString(System.currentTimeMillis());
@@ -185,10 +197,10 @@ public class AssetUtils {
 
         uploadFileLst.setUploadFiles(uploadFiles);
 
-        String jobServiceUrl = LoadbalancerUtils.getInstance().getLoadbalancerUrl(discoveryClient, jobServiceLoadBalancerServiceName);
+        String jobServiceUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.JOB_SERVICE_LOAD_BALANCER_SERVICE_NAME);
 
         RestTemplate restTemplate = new RestTemplate();
-        HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
+        HttpHeaders headers = authenticationUtils.getHeaders(session);
 
         HttpEntity<UploadFileLst> uploadFileLstEntity = new HttpEntity<>(uploadFileLst, headers);
         ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/import", uploadFileLstEntity, JobResponse.class);
@@ -206,8 +218,8 @@ public class AssetUtils {
     }
 
     @LogEntryExitExecutionTime
-    public Asset updateAsset(AssetsRepository assetsRepository, UpdateAssetRequest updateAssetRequest, String assetId) throws Exception {
-        Asset asset = getAsset(assetsRepository, assetId);
+    public Asset updateAsset(UpdateAssetRequest updateAssetRequest, String assetId, User user, HttpSession session) throws Exception {
+        Asset asset = getAsset(assetId);
         boolean updateChecksum = StringUtils.isNotBlank(updateAssetRequest.getChecksum());
         boolean updateDeleted = StringUtils.isNotBlank(updateAssetRequest.getDeleted());
         boolean updateExtension = StringUtils.isNotBlank(updateAssetRequest.getExtension());
@@ -264,6 +276,15 @@ public class AssetUtils {
             }
         }
 
-        return getAsset(assetsRepository, assetId);
+        // Send notification
+        String message = "Asset '" + asset.getName() + "' is updated by '" + user.getUsername() + "'";
+        SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+        sendNotificationRequest.setIsAsset(true);
+        sendNotificationRequest.setId(asset.getId());
+        sendNotificationRequest.setFromUser(user);
+        sendNotificationRequest.setMessage(message);
+        notificationUtils.sendNotification(sendNotificationRequest, session);
+
+        return getAsset(assetId);
     }
 }

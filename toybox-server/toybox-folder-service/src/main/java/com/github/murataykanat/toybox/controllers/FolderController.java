@@ -1,23 +1,21 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
+import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.*;
 import com.github.murataykanat.toybox.repositories.*;
 import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
-import com.github.murataykanat.toybox.schema.asset.UpdateAssetRequest;
 import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.container.*;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
 import com.github.murataykanat.toybox.utilities.*;
-import com.github.murataykanat.toybox.utils.Constants;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -34,14 +32,15 @@ import java.util.stream.Collectors;
 public class FolderController {
     private static final Log _logger = LogFactory.getLog(FolderController.class);
 
-    private static final String assetServiceLoadBalancerServiceName = "toybox-asset-loadbalancer";
-    private static final String notificationServiceLoadBalancerServiceName = "toybox-notification-loadbalancer";
-
     @Autowired
-    private DiscoveryClient discoveryClient;
-
+    private AssetUtils assetUtils;
     @Autowired
-    private UsersRepository usersRepository;
+    private ContainerUtils containerUtils;
+    @Autowired
+    private AuthenticationUtils authenticationUtils;
+    @Autowired
+    private NotificationUtils notificationUtils;
+
     @Autowired
     private ContainersRepository containersRepository;
     @Autowired
@@ -59,14 +58,14 @@ public class FolderController {
         CreateContainerResponse createContainerResponse = new CreateContainerResponse();
 
         try {
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(createContainerRequest != null){
                     if(StringUtils.isNotBlank(createContainerRequest.getContainerName())){
                         boolean canCreateFolder;
                         String errorMessage = "";
                         if(StringUtils.isBlank(createContainerRequest.getParentContainerId())){
-                            if(AuthenticationUtils.getInstance().isAdminUser(authentication)){
-                                Container duplicateTopLevelContainer = ContainerUtils.getInstance().findDuplicateTopLevelContainer(containersRepository, createContainerRequest.getContainerName());
+                            if(authenticationUtils.isAdminUser(authentication)){
+                                Container duplicateTopLevelContainer = containerUtils.findDuplicateTopLevelContainer(createContainerRequest.getContainerName());
                                 if(duplicateTopLevelContainer == null){
                                     canCreateFolder = true;
                                 }
@@ -82,8 +81,8 @@ public class FolderController {
                             }
                         }
                         else{
-                            Container parentContainer = ContainerUtils.getInstance().getContainer(containersRepository, createContainerRequest.getParentContainerId());
-                            Container duplicateContainer = ContainerUtils.getInstance().findDuplicateContainer(containersRepository, createContainerRequest.getParentContainerId(), createContainerRequest.getContainerName());
+                            Container parentContainer = containerUtils.getContainer(createContainerRequest.getParentContainerId());
+                            Container duplicateContainer = containerUtils.findDuplicateContainer(createContainerRequest.getParentContainerId(), createContainerRequest.getContainerName());
                             if(duplicateContainer == null){
                                 canCreateFolder = true;
                             }
@@ -159,15 +158,15 @@ public class FolderController {
     public ResponseEntity<RetrieveContainerContentsResult> retrieveContainerContents(Authentication authentication, @PathVariable String containerId, @RequestBody AssetSearchRequest assetSearchRequest){
         RetrieveContainerContentsResult retrieveContainerContentsResult = new RetrieveContainerContentsResult();
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(StringUtils.isNotBlank(containerId)){
                     if(assetSearchRequest != null){
-                        Container container = getContainer(containerId);
-                        User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
+                        Container container = containerUtils.getContainer(containerId);
+                        User user = authenticationUtils.getUser(authentication);
                         if(user != null){
                             String sortColumn = assetSearchRequest.getSortColumn();
                             String sortType = assetSearchRequest.getSortType();
-                            int offset = assetSearchRequest.getOffset();
+                            int startIndex = assetSearchRequest.getOffset();
                             int limit = assetSearchRequest.getLimit();
                             List<SearchRequestFacet> searchRequestFacetList = assetSearchRequest.getAssetSearchRequestFacetList();
 
@@ -193,7 +192,7 @@ public class FolderController {
                                 assets = allAssets;
                             }
 
-                            if(AuthenticationUtils.getInstance().isAdminUser(authentication)){
+                            if(authenticationUtils.isAdminUser(authentication)){
                                 _logger.debug("Retrieving all the items in the container [Admin User]...");
                                 containersByCurrentUser = containersRepository.getNonDeletedContainersByParentContainerId(container.getId());
                                 assetsByCurrentUser = assets.stream()
@@ -210,20 +209,9 @@ public class FolderController {
                                             assetsByCurrentUser.add(asset);
                                         }
                                         else{
-                                            List<Asset> assetsById = assetsRepository.getAssetsById(asset.getOriginalAssetId());
-                                            if(!assetsById.isEmpty()){
-                                                if(assetsById.size() == 1){
-                                                    Asset originalAsset = assetsById.get(0);
-                                                    if(originalAsset.getImportedByUsername().equalsIgnoreCase(user.getUsername())){
-                                                        assetsByCurrentUser.add(asset);
-                                                    }
-                                                }
-                                                else{
-                                                    throw new Exception("Asset with ID '" + asset.getId() + " has multiple original assets!");
-                                                }
-                                            }
-                                            else{
-                                                throw new Exception("Asset with ID '" + asset.getId() + " does not have a original asset!");
+                                            Asset originalAsset= assetUtils.getAsset(asset.getOriginalAssetId());
+                                            if(originalAsset.getImportedByUsername().equalsIgnoreCase(user.getUsername())){
+                                                assetsByCurrentUser.add(asset);
                                             }
                                         }
                                     }
@@ -250,8 +238,7 @@ public class FolderController {
 
                             // Paginate results
                             int totalRecords = containerItems.size();
-                            int startIndex = offset;
-                            int endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
+                            int endIndex = Math.min((startIndex + limit), totalRecords);
 
                             List<ContainerItem> containerItemsOnPage = containerItems.subList(startIndex, endIndex);
 
@@ -357,13 +344,13 @@ public class FolderController {
     public ResponseEntity<GenericResponse> updateContainer(Authentication authentication, HttpSession session, @RequestBody UpdateContainerRequest updateContainerRequest, @PathVariable String containerId){
         GenericResponse genericResponse = new GenericResponse();
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                if(StringUtils.isNotBlank(containerId)){
                     if(updateContainerRequest != null){
-                        User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
+                        User user = authenticationUtils.getUser(authentication);
                         if(user != null){
-                            Container oldContainer = ContainerUtils.getInstance().getContainer(containersRepository, containerId);
-                            Container container = ContainerUtils.getInstance().updateContainer(containersRepository, updateContainerRequest, containerId);
+                            Container oldContainer = containerUtils.getContainer(containerId);
+                            Container container = containerUtils.updateContainer(updateContainerRequest, containerId);
                             if(container != null){
                                 // Send notification
                                 String notification = "Folder '" + oldContainer.getName() + "' is updated by '" + user.getUsername() + "'";
@@ -372,7 +359,7 @@ public class FolderController {
                                 sendNotificationRequest.setId(oldContainer.getId());
                                 sendNotificationRequest.setFromUser(user);
                                 sendNotificationRequest.setMessage(notification);
-                                NotificationUtils.getInstance().sendNotification(sendNotificationRequest, discoveryClient, session, notificationServiceLoadBalancerServiceName);
+                                notificationUtils.sendNotification(sendNotificationRequest, session);
 
                                 String message = "Container updated successfully.";
                                 _logger.debug(message);
@@ -431,17 +418,17 @@ public class FolderController {
     public ResponseEntity<RetrieveContainersResults> retrieveContainers(Authentication authentication, @RequestBody ContainerSearchRequest containerSearchRequest){
         RetrieveContainersResults retrieveContainersResults = new RetrieveContainersResults();
         try {
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(containerSearchRequest != null){
-                    User user = AuthenticationUtils.getInstance().getUser(usersRepository, authentication);
+                    User user = authenticationUtils.getUser(authentication);
                     if(user != null){
-                        int offset = containerSearchRequest.getOffset();
+                        int startIndex = containerSearchRequest.getOffset();
                         int limit = containerSearchRequest.getLimit();
 
                         List<Container> containersByCurrentUser;
 
                         if(containerSearchRequest.getRetrieveTopLevelContainers() != null && containerSearchRequest.getRetrieveTopLevelContainers().equalsIgnoreCase("Y")){
-                            if(AuthenticationUtils.getInstance().isAdminUser(authentication)){
+                            if(authenticationUtils.isAdminUser(authentication)){
                                 _logger.debug("Retrieving the top level containers [Admin User]...");
                                 containersByCurrentUser = containersRepository.getTopLevelNonDeletedContainers();
                             }
@@ -481,11 +468,10 @@ public class FolderController {
                             SortUtils.getInstance().sortItems("des", containersByCurrentUser, Comparator.comparing(Container::getName, Comparator.nullsLast(Comparator.naturalOrder())));
 
                             int totalRecords = containersByCurrentUser.size();
-                            int startIndex = offset;
 
                             int endIndex;
                             if(limit != -1){
-                                 endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
+                                 endIndex = Math.min((startIndex + limit), totalRecords);
                             }
                             else{
                                 endIndex = totalRecords;
@@ -564,7 +550,7 @@ public class FolderController {
 
     @LogEntryExitExecutionTime
     private String generateFolderId(){
-        String containerId = RandomStringUtils.randomAlphanumeric(Constants.FOLDER_ID_LENGTH);
+        String containerId = RandomStringUtils.randomAlphanumeric(ToyboxConstants.FOLDER_ID_LENGTH);
         if(isContainerIdValid(containerId)){
             return containerId;
         }
@@ -603,13 +589,13 @@ public class FolderController {
         Breadcrumb breadcrumb = new Breadcrumb();
 
         if(StringUtils.isNotBlank(containerId) && !containerId.equalsIgnoreCase("null")){
-            container = getContainer(containerId);
+            container = containerUtils.getContainer(containerId);
             breadcrumb.setContainerId(container.getId());
             breadcrumb.setContainerName(container.getName());
             breadcrumbs.add(breadcrumb);
 
             while (StringUtils.isNotBlank(container.getParentId())){
-                container = getContainer(container.getParentId());
+                container = containerUtils.getContainer(container.getParentId());
 
                 breadcrumb = new Breadcrumb();
                 breadcrumb.setContainerId(container.getId());
@@ -633,21 +619,5 @@ public class FolderController {
         }
 
         return breadcrumbs;
-    }
-
-    @LogEntryExitExecutionTime
-    private Container getContainer(String containerId) throws Exception {
-        List<Container> containersById = containersRepository.getContainersById(containerId);
-        if(!containersById.isEmpty()){
-            if(containersById.size() == 1){
-                return containersById.get(0);
-            }
-            else{
-                throw new Exception("There are multiple containers with ID '" + containerId + "'!");
-            }
-        }
-        else{
-            throw new Exception("There is no container with ID '" + containerId + "'!");
-        }
     }
 }

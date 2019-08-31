@@ -1,7 +1,27 @@
-package com.github.murataykanat.toybox.batch.utils;
+package com.github.murataykanat.toybox.contants;
 
-public final class Constants {
-    private Constants(){}
+public final class ToyboxConstants {
+    private ToyboxConstants(){}
+
+    public static final String JOB_SERVICE_LOAD_BALANCER_SERVICE_NAME = "toybox-job-loadbalancer";
+    public static final String FOLDER_SERVICE_LOAD_BALANCER_SERVICE_NAME = "toybox-folder-loadbalancer";
+    public static final String COMMON_OBJECTS_LOAD_BALANCER_SERVICE_NAME = "toybox-common-object-loadbalancer";
+    public static final String NOTIFICATIONS_LOAD_BALANCER_SERVICE_NAME = "toybox-notification-loadbalancer";
+    public static final String SHARE_LOAD_BALANCER_SERVICE_NAME = "toybox-share-loadbalancer";
+
+    public static final String ASSET_SERVICE_NAME = "toybox-asset-service";
+    public static final String COMMON_OBJECT_SERVICE_NAME = "toybox-common-object-service";
+    public static final String FOLDER_SERVICE_NAME = "toybox-folder-service";
+    public static final String JOB_SERVICE_NAME = "toybox-job-service";
+    public static final String NOTIFICATION_SERVICE_NAME = "toybox-notification-service";
+    public static final String RENDITION_SERVICE_NAME = "toybox-rendition-service";
+    public static final String SHARE_SERVICE_NAME = "toybox-share-service";
+    public static final String USER_SERVICE_NAME = "toybox-user-service";
+
+    public static final int FOLDER_ID_LENGTH = 40;
+
+    public static final int ASSET_ID_LENGTH = 40;
+
     public static final String JOB_IMPORT_NAME = "toybox-import";
     public static final String JOB_PACKAGING_NAME = "toybox-packaging";
     public static final String JOB_DELETE_NAME = "toybox-delete";
@@ -21,8 +41,6 @@ public final class Constants {
     public static final String JOB_PARAM_DELETE_ASSET_ID = "toybox-job-param-delete-asset-id";
     public static final String JOB_PARAM_CONTAINER_ID = "toybox-job-param-container-id";
 
-    public static final int ASSET_ID_LENGTH = 40;
-
     public static final String IMAGE_MIME_TYPE_PREFIX = "image";
     public static final String VIDEO_MIME_TYPE_PREFIX = "video";
     public static final String AUIDO_MIME_TYPE_PREFIX = "audio";
@@ -41,4 +59,6 @@ public final class Constants {
     public static final String FFMPEG = "FFMpeg";
     public static final String IMAGEMAGICK = "ImageMagick";
     public static final String GIFSICLE = "Gifsicle";
+
+    public static final String TOYBOX_NOTIFICATION_EXCHANGE = "toybox-notification-exchange";
 }

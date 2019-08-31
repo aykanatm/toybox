@@ -1,6 +1,7 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
+import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.AssetUser;
 import com.github.murataykanat.toybox.dbo.ContainerUser;
 import com.github.murataykanat.toybox.dbo.User;
@@ -40,15 +41,14 @@ import java.util.stream.Collectors;
 public class NotificationController {
     private static final Log _logger = LogFactory.getLog(NotificationController.class);
 
-    private static final String topicExchangeName = "toybox-notification-exchange";
+    @Autowired
+    private AuthenticationUtils authenticationUtils;
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
     @Autowired
     private AssetUserRepository assetUserRepository;
-    @Autowired
-    private UsersRepository usersRepository;
     @Autowired
     private ContainerUsersRepository containerUsersRepository;
     @Autowired
@@ -61,13 +61,13 @@ public class NotificationController {
         int notificationCount = 0;
 
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(sendNotificationRequest != null){
                     if(sendNotificationRequest.getIsAsset()){
                         List<AssetUser> assetUsersByAssetId = assetUserRepository.findAssetUsersByAssetId(sendNotificationRequest.getId());
                         if(!assetUsersByAssetId.isEmpty()){
                             for(AssetUser assetUser: assetUsersByAssetId){
-                                User toUser = AuthenticationUtils.getInstance().getUser(usersRepository, assetUser.getUserId());
+                                User toUser = authenticationUtils.getUser(assetUser.getUserId());
                                 if(!authentication.getName().equalsIgnoreCase(toUser.getUsername())){
                                     String toUsername = toUser.getUsername();
                                     String fromUsername = sendNotificationRequest.getFromUser().getUsername();
@@ -79,7 +79,7 @@ public class NotificationController {
                                     notification.setDate(new Date());
                                     notification.setFrom(fromUsername);
 
-                                    rabbitTemplate.convertAndSend(topicExchangeName,"toybox.notification." + System.currentTimeMillis(), notification);
+                                    rabbitTemplate.convertAndSend(ToyboxConstants.TOYBOX_NOTIFICATION_EXCHANGE,"toybox.notification." + System.currentTimeMillis(), notification);
                                     notificationCount++;
                                 }
                                 else{
@@ -106,7 +106,7 @@ public class NotificationController {
                         List<ContainerUser> containerUsersByContainerId = containerUsersRepository.findContainerUsersByContainerId(sendNotificationRequest.getId());
                         if(!containerUsersByContainerId.isEmpty()){
                             for(ContainerUser containerUser: containerUsersByContainerId){
-                                User toUser = AuthenticationUtils.getInstance().getUser(usersRepository, containerUser.getUserId());
+                                User toUser = authenticationUtils.getUser(containerUser.getUserId());
                                 if(!authentication.getName().equalsIgnoreCase(toUser.getUsername())){
                                     String toUsername = toUser.getUsername();
                                     String fromUsername = sendNotificationRequest.getFromUser().getUsername();
@@ -118,7 +118,7 @@ public class NotificationController {
                                     notification.setDate(new Date());
                                     notification.setFrom(fromUsername);
 
-                                    rabbitTemplate.convertAndSend(topicExchangeName,"toybox.notification." + System.currentTimeMillis(), notification);
+                                    rabbitTemplate.convertAndSend(ToyboxConstants.TOYBOX_NOTIFICATION_EXCHANGE,"toybox.notification." + System.currentTimeMillis(), notification);
                                     notificationCount++;
                                 }
                                 else{
@@ -183,7 +183,7 @@ public class NotificationController {
         SearchNotificationsResponse searchNotificationsResponse = new SearchNotificationsResponse();
 
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(searchNotificationsRequest != null){
                     int offset = searchNotificationsRequest.getOffset();
                     int limit = searchNotificationsRequest.getLimit();
@@ -273,7 +273,7 @@ public class NotificationController {
         GenericResponse genericResponse = new GenericResponse();
 
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(updateNotificationsRequest != null){
                     if(!updateNotificationsRequest.getNotificationIds().isEmpty()){
                         if(updateNotificationsRequest.getNotificationIds().get(0) == 0){

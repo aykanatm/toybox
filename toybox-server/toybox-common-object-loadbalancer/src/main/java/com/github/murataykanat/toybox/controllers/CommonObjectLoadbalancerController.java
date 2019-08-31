@@ -1,7 +1,7 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
-import com.github.murataykanat.toybox.repositories.UsersRepository;
+import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.schema.asset.CopyAssetRequest;
 import com.github.murataykanat.toybox.schema.asset.MoveAssetRequest;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
@@ -17,7 +17,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.cloud.netflix.ribbon.RibbonClient;
 import org.springframework.context.annotation.Bean;
@@ -38,19 +37,16 @@ import javax.servlet.http.HttpSession;
 public class CommonObjectLoadbalancerController {
     private static final Log _logger = LogFactory.getLog(CommonObjectLoadbalancerController.class);
 
-    private static final String commonObjectServiceName = "toybox-common-object-service";
+    @Autowired
+    private LoadbalancerUtils loadbalancerUtils;
+    @Autowired
+    private AuthenticationUtils authenticationUtils;
 
     @LoadBalanced
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder){
         return builder.build();
     }
-
-    @Autowired
-    private DiscoveryClient discoveryClient;
-
-    @Autowired
-    private UsersRepository usersRepository;
 
     @Autowired
     private RestTemplate restTemplate;
@@ -60,13 +56,13 @@ public class CommonObjectLoadbalancerController {
     @RequestMapping(value = "/common-objects/download", method = RequestMethod.POST, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> downloadObjects(Authentication authentication, HttpSession session, @RequestBody SelectionContext selectionContext){
         try {
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
-                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                    String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, commonObjectServiceName);
+                    HttpHeaders headers = authenticationUtils.getHeaders(session);
+                    String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.COMMON_OBJECT_SERVICE_NAME);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        return restTemplate.exchange(prefix + commonObjectServiceName + "/common-objects/download", HttpMethod.POST, new HttpEntity<>(selectionContext, headers), Resource.class);
+                        return restTemplate.exchange(prefix + ToyboxConstants.COMMON_OBJECT_SERVICE_NAME + "/common-objects/download", HttpMethod.POST, new HttpEntity<>(selectionContext, headers), Resource.class);
                     }
                     else{
                         throw new IllegalArgumentException("Service ID prefix is null!");
@@ -129,13 +125,13 @@ public class CommonObjectLoadbalancerController {
         GenericResponse genericResponse = new GenericResponse();
 
         try {
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
-                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                    String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, commonObjectServiceName);
+                    HttpHeaders headers = authenticationUtils.getHeaders(session);
+                    String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.COMMON_OBJECT_SERVICE_NAME);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        return restTemplate.exchange(prefix + commonObjectServiceName + "/common-objects/delete", HttpMethod.POST, new HttpEntity<>(selectionContext, headers), GenericResponse.class);
+                        return restTemplate.exchange(prefix + ToyboxConstants.COMMON_OBJECT_SERVICE_NAME + "/common-objects/delete", HttpMethod.POST, new HttpEntity<>(selectionContext, headers), GenericResponse.class);
                     }
                     else{
                         throw new IllegalArgumentException("Service ID prefix is null!");
@@ -212,13 +208,13 @@ public class CommonObjectLoadbalancerController {
         GenericResponse genericResponse = new GenericResponse();
 
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
-                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                    String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, commonObjectServiceName);
+                    HttpHeaders headers = authenticationUtils.getHeaders(session);
+                    String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.COMMON_OBJECT_SERVICE_NAME);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        return restTemplate.exchange(prefix + commonObjectServiceName + "/common-objects/subscribe", HttpMethod.POST, new HttpEntity<>(selectionContext, headers), GenericResponse.class);
+                        return restTemplate.exchange(prefix + ToyboxConstants.COMMON_OBJECT_SERVICE_NAME + "/common-objects/subscribe", HttpMethod.POST, new HttpEntity<>(selectionContext, headers), GenericResponse.class);
                     }
                     else{
                         throw new IllegalArgumentException("Service ID prefix is null!");
@@ -295,13 +291,13 @@ public class CommonObjectLoadbalancerController {
         GenericResponse genericResponse = new GenericResponse();
 
         try {
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
-                    HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                    String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, commonObjectServiceName);
+                    HttpHeaders headers = authenticationUtils.getHeaders(session);
+                    String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.COMMON_OBJECT_SERVICE_NAME);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        return restTemplate.exchange(prefix + commonObjectServiceName + "/common-objects/unsubscribe", HttpMethod.POST, new HttpEntity<>(selectionContext, headers), GenericResponse.class);
+                        return restTemplate.exchange(prefix + ToyboxConstants.COMMON_OBJECT_SERVICE_NAME + "/common-objects/unsubscribe", HttpMethod.POST, new HttpEntity<>(selectionContext, headers), GenericResponse.class);
                     }
                     else{
                         throw new IllegalArgumentException("Service ID prefix is null!");
@@ -377,14 +373,14 @@ public class CommonObjectLoadbalancerController {
     public ResponseEntity<GenericResponse> moveItems(Authentication authentication, HttpSession session, @RequestBody MoveAssetRequest moveAssetRequest){
         GenericResponse genericResponse = new GenericResponse();
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(moveAssetRequest != null){
                     SelectionContext selectionContext = moveAssetRequest.getSelectionContext();
                     if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
-                        HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                        String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, commonObjectServiceName);
+                        HttpHeaders headers = authenticationUtils.getHeaders(session);
+                        String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.COMMON_OBJECT_SERVICE_NAME);
                         if(StringUtils.isNotBlank(prefix)){
-                            return restTemplate.exchange(prefix + commonObjectServiceName + "/common-objects/move", HttpMethod.POST, new HttpEntity<>(moveAssetRequest, headers), GenericResponse.class);
+                            return restTemplate.exchange(prefix + ToyboxConstants.COMMON_OBJECT_SERVICE_NAME + "/common-objects/move", HttpMethod.POST, new HttpEntity<>(moveAssetRequest, headers), GenericResponse.class);
                         }
                         else{
                             throw new IllegalArgumentException("Service ID prefix is null!");
@@ -479,14 +475,14 @@ public class CommonObjectLoadbalancerController {
         GenericResponse genericResponse = new GenericResponse();
 
         try{
-            if(AuthenticationUtils.getInstance().isSessionValid(usersRepository, authentication)){
+            if(authenticationUtils.isSessionValid(authentication)){
                 if(copyAssetRequest != null){
                     SelectionContext selectionContext = copyAssetRequest.getSelectionContext();
                     if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
-                        HttpHeaders headers = AuthenticationUtils.getInstance().getHeaders(session);
-                        String prefix = LoadbalancerUtils.getInstance().getPrefix(discoveryClient, commonObjectServiceName);
+                        HttpHeaders headers = authenticationUtils.getHeaders(session);
+                        String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.COMMON_OBJECT_SERVICE_NAME);
                         if(StringUtils.isNotBlank(prefix)){
-                            return restTemplate.exchange(prefix + commonObjectServiceName + "/common-objects/copy", HttpMethod.POST, new HttpEntity<>(copyAssetRequest, headers), GenericResponse.class);
+                            return restTemplate.exchange(prefix + ToyboxConstants.COMMON_OBJECT_SERVICE_NAME + "/common-objects/copy", HttpMethod.POST, new HttpEntity<>(copyAssetRequest, headers), GenericResponse.class);
                         }
                         else{
                             throw new IllegalArgumentException("Service ID prefix is null!");
