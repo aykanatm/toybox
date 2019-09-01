@@ -69,6 +69,138 @@ module.exports = {
             if(this.canNavigateToPreviousAsset){
                 this.$root.$emit('navigate-to-previous-asset', this.asset);
             }
+        },
+        assetShare:function(){
+            console.log('Opening share modal window for asset with ID "' + this.id + '"');
+            var asset = {
+                id: this.id,
+                name: this.name,
+                type: this.type,
+                originalAssetId: this.originalAssetId,
+                '@class': 'com.github.murataykanat.toybox.dbo.Asset',
+                parentContainerId: this.parentContainerId
+            }
+            var selectedAssets = [asset];
+            this.shareItems(selectedAssets);
+            this.contextMenuOpen = false;
+        },
+        assetDownload:function(){
+            console.log('Downloading the file with ID "' + this.id + '"');
+            this.getService("toybox-rendition-loadbalancer")
+                .then(response =>{
+                    if(response){
+                        return axios.get(response.data.value + '/renditions/assets/' + this.id + '/o', {responseType:'blob'})
+                            .then(response =>{
+                                console.log(response);
+                                var filename = this.name;
+                                var blob = new Blob([response.data], {type:'application/octet-stream'});
+                                saveAs(blob , filename);
+
+                                this.contextMenuOpen = false;
+                            })
+                            .catch(error => {
+                                var errorMessage;
+
+                                if(error.response){
+                                    errorMessage = error.response.data.message
+                                    if(error.response.status == 401){
+                                        window.location = '/logout';
+                                    }
+                                }
+                                else{
+                                    errorMessage = error.message;
+                                }
+
+                                console.error(errorMessage);
+                                this.$root.$emit('message-sent', 'Error', errorMessage);
+
+                                this.contextMenuOpen = false;
+                            });
+                    }
+                });
+        },
+        assetRename:function(){
+            console.log('Renaming the file with ID "' + this.id + '"');
+            var filename = this.name.substr(0, this.name.lastIndexOf('.')) || this.name;
+            this.renameItem(this.id, filename, true);
+            this.contextMenuOpen = false;
+        },
+        assetCopy:function(){
+            console.log('Opening copy modal window for asset with ID "' + this.id + '"');
+            var asset = {
+                id: this.id,
+                name: this.name,
+                type: this.type,
+                originalAssetId: this.originalAssetId,
+                '@class': 'com.github.murataykanat.toybox.dbo.Asset',
+                parentContainerId: this.parentContainerId
+            }
+            var selectedAssets= [asset];
+            this.copyItems(selectedAssets);
+            this.contextMenuOpen = false;
+        },
+        assetMove:function(){
+            console.log('Opening move modal window for asset with ID "' + this.id + '"');
+            var asset = {
+                id: this.id,
+                name: this.name,
+                type: this.type,
+                originalAssetId: this.originalAssetId,
+                '@class': 'com.github.murataykanat.toybox.dbo.Asset',
+                parentContainerId: this.parentContainerId
+            }
+            var selectedAssets= [asset];
+            this.moveItems(selectedAssets);
+            this.contextMenuOpen = false;
+        },
+        assetSubscribe:function(){
+            console.log('Subscribing to the asset with ID "' + this.id + '"');
+            this.contextMenuOpen = false;
+            var asset = {
+                id: this.id,
+                name: this.name,
+                type: this.type,
+                originalAssetId: this.originalAssetId,
+                '@class': 'com.github.murataykanat.toybox.dbo.Asset',
+                parentContainerId: this.parentContainerId
+            }
+            var selectedAssets= [asset];
+            this.subscribeToItems(selectedAssets);
+            this.contextMenuOpen = false;
+        },
+        assetUnsubscribe:function(){
+            console.log('Unsubscribing from the asset with ID "' + this.id + '"');
+            this.contextMenuOpen = false;
+            var asset = {
+                id: this.id,
+                name: this.name,
+                type: this.type,
+                originalAssetId: this.originalAssetId,
+                '@class': 'com.github.murataykanat.toybox.dbo.Asset',
+                parentContainerId: this.parentContainerId
+            }
+            var selectedAssets= [asset];
+            this.unsubscribeFromItems(selectedAssets);
+            this.contextMenuOpen = false;
+        },
+        assetDelete:function(){
+            console.log('Deleting asset with ID "' + this.id + '"');
+            var asset = {
+                id: this.id,
+                name: this.name,
+                type: this.type,
+                originalAssetId: this.originalAssetId,
+                '@class': 'com.github.murataykanat.toybox.dbo.Asset',
+                parentContainerId: this.parentContainerId
+            }
+            var selectedAssets= [asset];
+            this.deleteItems(selectedAssets);
+            this.contextMenuOpen = false;
+        },
+        assetShowVersionHistory:function(){
+            console.log('Showing version history of asset with ID "' + this.id + '"');
+            this.showVersionHistory(this.id, this.renditionUrl);
+            this.contextMenuOpen = false;
         }
     }
 }
