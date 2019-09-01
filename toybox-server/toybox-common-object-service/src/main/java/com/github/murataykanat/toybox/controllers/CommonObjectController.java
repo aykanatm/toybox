@@ -151,7 +151,10 @@ public class CommonObjectController {
                     if(user != null){
                         if(!(selectionContext.getSelectedAssets().isEmpty() && selectionContext.getSelectedContainers().isEmpty())){
                             // We are adding a refreshed list of assets to the list of assets which will be deleted
-                            List<Asset> selectedAssetsAndContainerAssets = assetsRepository.getAssetsByAssetIds(selectionContext.getSelectedAssets().stream().map(Asset::getId).collect(Collectors.toList()));
+                            List<Asset> selectedAssetsAndContainerAssets = new ArrayList<>();
+                            if(!selectionContext.getSelectedAssets().isEmpty()){
+                                selectedAssetsAndContainerAssets.addAll(assetsRepository.getAssetsByAssetIds(selectionContext.getSelectedAssets().stream().map(Asset::getId).collect(Collectors.toList())));
+                            }
 
                             // We are adding the last version of the assets inside the containers that was selected as deleted to the list of assets which will be deleted.
                             for(Container selectedContainer: selectionContext.getSelectedContainers()){
