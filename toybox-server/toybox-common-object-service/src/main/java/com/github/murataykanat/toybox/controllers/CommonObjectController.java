@@ -53,6 +53,10 @@ public class CommonObjectController {
     private AuthenticationUtils authenticationUtils;
     @Autowired
     private NotificationUtils notificationUtils;
+    @Autowired
+    private SelectionUtils selectionUtils;
+    @Autowired
+    private JobUtils jobUtils;
 
     @Autowired
     private AssetsRepository assetsRepository;
@@ -76,7 +80,7 @@ public class CommonObjectController {
     public ResponseEntity<Resource> downloadObjects(Authentication authentication, HttpSession session, @RequestBody SelectionContext selectionContext){
         try{
             if(authenticationUtils.isSessionValid(authentication)){
-                if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+                if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
                     RestTemplate restTemplate = new RestTemplate();
                     HttpHeaders headers = authenticationUtils.getHeaders(session);
 
@@ -89,7 +93,7 @@ public class CommonObjectController {
                         if(jobResponseResponseEntity != null){
                             JobResponse jobResponse = jobResponseResponseEntity.getBody();
                             if(jobResponse != null){
-                                File archiveFile = JobUtils.getInstance().getArchiveFile(jobResponse.getJobId(), headers, jobServiceUrl, exportStagingPath);
+                                File archiveFile = jobUtils.getArchiveFile(jobResponse.getJobId(), headers, jobServiceUrl, exportStagingPath);
                                 if(archiveFile != null && archiveFile.exists()){
                                     InputStreamResource resource = new InputStreamResource(new FileInputStream(archiveFile));
                                     return new ResponseEntity<>(resource, HttpStatus.OK);
@@ -142,7 +146,7 @@ public class CommonObjectController {
         GenericResponse genericResponse = new GenericResponse();
         try{
             if(authenticationUtils.isSessionValid(authentication)){
-                if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+                if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
                     User user = authenticationUtils.getUser(authentication);
                     if(user != null){
                         if(!(selectionContext.getSelectedAssets().isEmpty() && selectionContext.getSelectedContainers().isEmpty())){
@@ -267,7 +271,7 @@ public class CommonObjectController {
         GenericResponse genericResponse = new GenericResponse();
         try{
             if(authenticationUtils.isSessionValid(authentication)){
-                if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+                if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
                     if(!(selectionContext.getSelectedAssets().isEmpty() && selectionContext.getSelectedContainers().isEmpty())){
                         User user = authenticationUtils.getUser(authentication);
                         if(user != null){
@@ -357,7 +361,7 @@ public class CommonObjectController {
         GenericResponse genericResponse = new GenericResponse();
         try{
             if(authenticationUtils.isSessionValid(authentication)){
-                if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+                if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
                     User user = authenticationUtils.getUser(authentication);
                     if(user != null){
                         int assetCount = 0;
@@ -444,7 +448,7 @@ public class CommonObjectController {
                     User user = authenticationUtils.getUser(authentication.getName());
                     if(user != null){
                         SelectionContext selectionContext = moveAssetRequest.getSelectionContext();
-                        if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+                        if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
                             Container targetContainer = containerUtils.getContainer(moveAssetRequest.getContainerId());
 
                             List<String> assetIds = selectionContext.getSelectedAssets().stream().map(Asset::getId).collect(Collectors.toList());
@@ -519,7 +523,7 @@ public class CommonObjectController {
             if(authenticationUtils.isSessionValid(authentication)){
                 if(copyAssetRequest != null){
                     SelectionContext selectionContext = copyAssetRequest.getSelectionContext();
-                    if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+                    if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
                         List<String> targetContainerIds = copyAssetRequest.getContainerIds();
                         List<String> sourceAssetIds = selectionContext.getSelectedAssets().stream().map(Asset::getId).collect(Collectors.toList());
                         List<String> sourceContainerIds = selectionContext.getSelectedContainers().stream().map(Container::getId).collect(Collectors.toList());

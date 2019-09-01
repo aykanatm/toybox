@@ -41,6 +41,8 @@ public class CommonObjectLoadbalancerController {
     private LoadbalancerUtils loadbalancerUtils;
     @Autowired
     private AuthenticationUtils authenticationUtils;
+    @Autowired
+    private SelectionUtils selectionUtils;
 
     @LoadBalanced
     @Bean
@@ -57,7 +59,7 @@ public class CommonObjectLoadbalancerController {
     public ResponseEntity<Resource> downloadObjects(Authentication authentication, HttpSession session, @RequestBody SelectionContext selectionContext){
         try {
             if(authenticationUtils.isSessionValid(authentication)){
-                if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+                if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
                     HttpHeaders headers = authenticationUtils.getHeaders(session);
                     String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.COMMON_OBJECT_SERVICE_NAME);
 
@@ -97,7 +99,7 @@ public class CommonObjectLoadbalancerController {
 
     @LogEntryExitExecutionTime
     public ResponseEntity<Resource> downloadObjectsErrorFallback(Authentication authentication, HttpSession session, SelectionContext selectionContext, Throwable e){
-        if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+        if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
             String errorMessage;
             if(e.getLocalizedMessage() != null){
                 errorMessage = "Unable download selected objects. " + e.getLocalizedMessage();
@@ -126,7 +128,7 @@ public class CommonObjectLoadbalancerController {
 
         try {
             if(authenticationUtils.isSessionValid(authentication)){
-                if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+                if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
                     HttpHeaders headers = authenticationUtils.getHeaders(session);
                     String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.COMMON_OBJECT_SERVICE_NAME);
 
@@ -175,7 +177,7 @@ public class CommonObjectLoadbalancerController {
     public ResponseEntity<GenericResponse> deleteObjectsErrorFallback(Authentication authentication, HttpSession session, SelectionContext selectionContext, Throwable e){
         GenericResponse genericResponse = new GenericResponse();
 
-        if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+        if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
             String errorMessage;
             if(e.getLocalizedMessage() != null){
                 errorMessage = "Unable to delete selected objects. " + e.getLocalizedMessage();
@@ -209,7 +211,7 @@ public class CommonObjectLoadbalancerController {
 
         try{
             if(authenticationUtils.isSessionValid(authentication)){
-                if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+                if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
                     HttpHeaders headers = authenticationUtils.getHeaders(session);
                     String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.COMMON_OBJECT_SERVICE_NAME);
 
@@ -258,7 +260,7 @@ public class CommonObjectLoadbalancerController {
     public ResponseEntity<GenericResponse> subscribeToObjectsErrorFallback(HttpSession session, Authentication authentication, SelectionContext selectionContext, Throwable e){
         GenericResponse genericResponse = new GenericResponse();
 
-        if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+        if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
             String errorMessage;
             if(e.getLocalizedMessage() != null){
                 errorMessage = "Unable to subscribe to the selected objects. " + e.getLocalizedMessage();
@@ -292,7 +294,7 @@ public class CommonObjectLoadbalancerController {
 
         try {
             if(authenticationUtils.isSessionValid(authentication)){
-                if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+                if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
                     HttpHeaders headers = authenticationUtils.getHeaders(session);
                     String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.COMMON_OBJECT_SERVICE_NAME);
 
@@ -340,7 +342,7 @@ public class CommonObjectLoadbalancerController {
     public ResponseEntity<GenericResponse> unsubscribeFromObjectsErrorFallback(HttpSession session, Authentication authentication, SelectionContext selectionContext, Throwable e){
         GenericResponse genericResponse = new GenericResponse();
 
-        if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+        if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
             String errorMessage;
             if(e.getLocalizedMessage() != null){
                 errorMessage = "Unable to unsubscribe from the selected objects. " + e.getLocalizedMessage();
@@ -376,7 +378,7 @@ public class CommonObjectLoadbalancerController {
             if(authenticationUtils.isSessionValid(authentication)){
                 if(moveAssetRequest != null){
                     SelectionContext selectionContext = moveAssetRequest.getSelectionContext();
-                    if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+                    if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
                         HttpHeaders headers = authenticationUtils.getHeaders(session);
                         String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.COMMON_OBJECT_SERVICE_NAME);
                         if(StringUtils.isNotBlank(prefix)){
@@ -434,7 +436,7 @@ public class CommonObjectLoadbalancerController {
 
         if(moveAssetRequest != null){
             SelectionContext selectionContext = moveAssetRequest.getSelectionContext();
-            if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+            if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
                 String errorMessage;
                 if(e.getLocalizedMessage() != null){
                     errorMessage = "Unable to move the selected objects. " + e.getLocalizedMessage();
@@ -478,7 +480,7 @@ public class CommonObjectLoadbalancerController {
             if(authenticationUtils.isSessionValid(authentication)){
                 if(copyAssetRequest != null){
                     SelectionContext selectionContext = copyAssetRequest.getSelectionContext();
-                    if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+                    if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
                         HttpHeaders headers = authenticationUtils.getHeaders(session);
                         String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.COMMON_OBJECT_SERVICE_NAME);
                         if(StringUtils.isNotBlank(prefix)){
@@ -537,7 +539,7 @@ public class CommonObjectLoadbalancerController {
 
         if(copyAssetRequest != null){
             SelectionContext selectionContext = copyAssetRequest.getSelectionContext();
-            if(selectionContext != null && SelectionUtils.getInstance().isSelectionContextValid(selectionContext)){
+            if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
                 String errorMessage;
                 if(e.getLocalizedMessage() != null){
                     errorMessage = "Unable to copy the selected objects. " + e.getLocalizedMessage();

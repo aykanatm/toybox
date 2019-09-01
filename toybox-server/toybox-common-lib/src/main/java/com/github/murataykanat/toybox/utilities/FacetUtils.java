@@ -10,26 +10,15 @@ import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang.reflect.FieldUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+@Component
 public class FacetUtils {
     private static final Log _logger = LogFactory.getLog(FacetUtils.class);
-
-    private static FacetUtils facetUtils;
-
-    private FacetUtils(){ }
-
-    public static FacetUtils getInstance(){
-        if(facetUtils != null){
-            return facetUtils;
-        }
-
-        facetUtils = new FacetUtils();
-        return facetUtils;
-    }
 
     @LogEntryExitExecutionTime
     public <T> List<Facet>  getFacets (List<T> objects) throws IllegalAccessException {
@@ -188,7 +177,7 @@ public class FacetUtils {
                                         }
                                     }
                                     else{
-                                        throw new Exception("Lookup value " + fieldValue + " is not recognized.");
+                                        throw new IllegalArgumentException("Lookup value " + fieldValue + " is not recognized.");
                                     }
                                 }
                             }

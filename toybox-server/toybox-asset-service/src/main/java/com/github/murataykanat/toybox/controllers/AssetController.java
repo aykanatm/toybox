@@ -47,6 +47,10 @@ public class AssetController {
     private AuthenticationUtils authenticationUtils;
     @Autowired
     private NotificationUtils notificationUtils;
+    @Autowired
+    private FacetUtils facetUtils;
+    @Autowired
+    private SortUtils sortUtils;
 
     @Autowired
     private AssetsRepository assetsRepository;
@@ -131,7 +135,7 @@ public class AssetController {
                             List<Asset> assets;
 
                             if(searchRequestFacetList != null && !searchRequestFacetList.isEmpty()){
-                                assets = allAssets.stream().filter(asset -> FacetUtils.getInstance().hasFacetValue(asset, searchRequestFacetList)).collect(Collectors.toList());
+                                assets = allAssets.stream().filter(asset -> facetUtils.hasFacetValue(asset, searchRequestFacetList)).collect(Collectors.toList());
                             }
                             else{
                                 assets = allAssets;
@@ -163,15 +167,15 @@ public class AssetController {
                             }
 
                             // Set facets
-                            List<Facet> facets = FacetUtils.getInstance().getFacets(assetsByCurrentUser);
+                            List<Facet> facets = facetUtils.getFacets(assetsByCurrentUser);
                             retrieveAssetsResults.setFacets(facets);
 
                             // Sort assets
                             if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_import_date")){
-                                SortUtils.getInstance().sortItems(sortType, assetsByCurrentUser, Comparator.comparing(Asset::getImportDate, Comparator.nullsLast(Comparator.naturalOrder())));
+                                sortUtils.sortItems(sortType, assetsByCurrentUser, Comparator.comparing(Asset::getImportDate, Comparator.nullsLast(Comparator.naturalOrder())));
                             }
                             else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_name")){
-                                SortUtils.getInstance().sortItems(sortType, assetsByCurrentUser, Comparator.comparing(Asset::getName, Comparator.nullsLast(Comparator.naturalOrder())));
+                                sortUtils.sortItems(sortType, assetsByCurrentUser, Comparator.comparing(Asset::getName, Comparator.nullsLast(Comparator.naturalOrder())));
                             }
 
                             // Paginate assets
@@ -340,7 +344,7 @@ public class AssetController {
 
                                 List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(asset.getOriginalAssetId());
                                 if(!assetsByOriginalAssetId.isEmpty()){
-                                    SortUtils.getInstance().sortItems("des", assetsByOriginalAssetId, Comparator.comparing(Asset::getVersion));
+                                    sortUtils.sortItems("des", assetsByOriginalAssetId, Comparator.comparing(Asset::getVersion));
 
                                     assetVersionResponse.setAssets(assetsByOriginalAssetId);
                                     assetVersionResponse.setMessage("Asset version history retrieved successfully.");
@@ -410,7 +414,7 @@ public class AssetController {
                             Asset asset = assetUtils.getAsset(assetId);
                             List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(asset.getOriginalAssetId());
                             if(!assetsByOriginalAssetId.isEmpty()){
-                                SortUtils.getInstance().sortItems("des", assetsByOriginalAssetId, Comparator.comparing(Asset::getVersion));
+                                sortUtils.sortItems("des", assetsByOriginalAssetId, Comparator.comparing(Asset::getVersion));
                                 List<Asset> assetsToDelete = new ArrayList<>();
                                 for(Asset versionAsset: assetsByOriginalAssetId){
                                     if(versionAsset.getVersion() > revertAssetVersionRequest.getVersion()){

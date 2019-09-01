@@ -40,6 +40,10 @@ public class FolderController {
     private AuthenticationUtils authenticationUtils;
     @Autowired
     private NotificationUtils notificationUtils;
+    @Autowired
+    private FacetUtils facetUtils;
+    @Autowired
+    private SortUtils sortUtils;
 
     @Autowired
     private ContainersRepository containersRepository;
@@ -186,7 +190,7 @@ public class FolderController {
 
                             List<Asset> assets;
                             if(searchRequestFacetList != null && !searchRequestFacetList.isEmpty()){
-                                assets = allAssets.stream().filter(asset -> FacetUtils.getInstance().hasFacetValue(asset, searchRequestFacetList)).collect(Collectors.toList());
+                                assets = allAssets.stream().filter(asset -> facetUtils.hasFacetValue(asset, searchRequestFacetList)).collect(Collectors.toList());
                             }
                             else{
                                 assets = allAssets;
@@ -219,17 +223,17 @@ public class FolderController {
                             }
 
                             // Set facets
-                            List<Facet> facets = FacetUtils.getInstance().getFacets(assetsByCurrentUser);
+                            List<Facet> facets = facetUtils.getFacets(assetsByCurrentUser);
                             retrieveContainerContentsResult.setFacets(facets);
 
                             // Sort containers
-                            SortUtils.getInstance().sortItems("asc", containersByCurrentUser, Comparator.comparing(Container::getName, Comparator.nullsLast(Comparator.naturalOrder())));
+                            sortUtils.sortItems("asc", containersByCurrentUser, Comparator.comparing(Container::getName, Comparator.nullsLast(Comparator.naturalOrder())));
                             // Sort assets
                             if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_import_date")){
-                                SortUtils.getInstance().sortItems(sortType, assetsByCurrentUser, Comparator.comparing(Asset::getImportDate, Comparator.nullsLast(Comparator.naturalOrder())));
+                                sortUtils.sortItems(sortType, assetsByCurrentUser, Comparator.comparing(Asset::getImportDate, Comparator.nullsLast(Comparator.naturalOrder())));
                             }
                             else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_name")){
-                                SortUtils.getInstance().sortItems(sortType, assetsByCurrentUser, Comparator.comparing(Asset::getName, Comparator.nullsLast(Comparator.naturalOrder())));
+                                sortUtils.sortItems(sortType, assetsByCurrentUser, Comparator.comparing(Asset::getName, Comparator.nullsLast(Comparator.naturalOrder())));
                             }
 
                             // Merge containers and assets
@@ -465,7 +469,7 @@ public class FolderController {
                         }
 
                         if(!containersByCurrentUser.isEmpty()){
-                            SortUtils.getInstance().sortItems("des", containersByCurrentUser, Comparator.comparing(Container::getName, Comparator.nullsLast(Comparator.naturalOrder())));
+                            sortUtils.sortItems("des", containersByCurrentUser, Comparator.comparing(Container::getName, Comparator.nullsLast(Comparator.naturalOrder())));
 
                             int totalRecords = containersByCurrentUser.size();
 

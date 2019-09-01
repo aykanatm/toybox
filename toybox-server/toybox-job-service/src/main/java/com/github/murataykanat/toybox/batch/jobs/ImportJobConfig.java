@@ -53,6 +53,8 @@ public class ImportJobConfig {
 
     @Autowired
     private ContainerUtils containerUtils;
+    @Autowired
+    private SortUtils sortUtils;
 
     @Autowired
     private AssetsRepository assetsRepository;
@@ -395,7 +397,7 @@ public class ImportJobConfig {
             return 1;
         }
         else{
-            SortUtils.getInstance().sortItems("des", duplicateAssetsByAssetName, Comparator.comparing(Asset::getVersion, Comparator.nullsLast(Comparator.naturalOrder())));
+            sortUtils.sortItems("des", duplicateAssetsByAssetName, Comparator.comparing(Asset::getVersion, Comparator.nullsLast(Comparator.naturalOrder())));
             List<Integer> assetVersions = duplicateAssetsByAssetName.stream().map(asset -> asset.getVersion()).collect(Collectors.toList());
             return assetVersions.get(0) + 1;
         }

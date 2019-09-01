@@ -43,6 +43,10 @@ public class NotificationController {
 
     @Autowired
     private AuthenticationUtils authenticationUtils;
+    @Autowired
+    private FacetUtils facetUtils;
+    @Autowired
+    private SortUtils sortUtils;
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
@@ -206,17 +210,17 @@ public class NotificationController {
 
                         List<Notification> facetedNotifications;
                         if(searchRequestFacetList != null && !searchRequestFacetList.isEmpty()){
-                            facetedNotifications = notifications.stream().filter(notification -> FacetUtils.getInstance().hasFacetValue(notification, searchRequestFacetList)).collect(Collectors.toList());
+                            facetedNotifications = notifications.stream().filter(notification -> facetUtils.hasFacetValue(notification, searchRequestFacetList)).collect(Collectors.toList());
                         }
                         else{
                             facetedNotifications = notifications;
                         }
 
-                        List<Facet> facets = FacetUtils.getInstance().getFacets(facetedNotifications);
+                        List<Facet> facets = facetUtils.getFacets(facetedNotifications);
 
                         searchNotificationsResponse.setFacets(facets);
 
-                        SortUtils.getInstance().sortItems("des", facetedNotifications, Comparator.comparing(Notification::getDate, Comparator.nullsLast(Comparator.naturalOrder())));
+                        sortUtils.sortItems("des", facetedNotifications, Comparator.comparing(Notification::getDate, Comparator.nullsLast(Comparator.naturalOrder())));
 
                         int totalRecords = facetedNotifications.size();
                         int startIndex = offset;

@@ -8,25 +8,14 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
 
+@Component
 public class JobUtils {
     private static final Log _logger = LogFactory.getLog(JobUtils.class);
-
-    private static JobUtils jobUtils;
-
-    private JobUtils(){}
-
-    public static JobUtils getInstance(){
-        if(jobUtils != null){
-            return jobUtils;
-        }
-
-        jobUtils = new JobUtils();
-        return jobUtils;
-    }
 
     @LogEntryExitExecutionTime
     public File getArchiveFile(long jobId, HttpHeaders headers, String jobServiceUrl, String exportStagingPath) {

@@ -45,6 +45,10 @@ public class JobController {
 
     @Autowired
     private AuthenticationUtils authenticationUtils;
+    @Autowired
+    private SortUtils sortUtils;
+    @Autowired
+    private FacetUtils facetUtils;
 
     @Value("${exportStagingPath}")
     private String exportStagingPath;
@@ -236,33 +240,33 @@ public class JobController {
                         List<ToyboxJob> jobs;
 
                         if(jobSearchRequestFacetList != null && !jobSearchRequestFacetList.isEmpty()){
-                            jobs = allJobs.stream().filter(j -> FacetUtils.getInstance().hasFacetValue(j, jobSearchRequestFacetList)).collect(Collectors.toList());
+                            jobs = allJobs.stream().filter(j -> facetUtils.hasFacetValue(j, jobSearchRequestFacetList)).collect(Collectors.toList());
                         }
                         else{
                             jobs = allJobs;
                         }
 
-                        List<Facet> facets = FacetUtils.getInstance().getFacets(jobs);
+                        List<Facet> facets = facetUtils.getFacets(jobs);
 
                         retrieveToyboxJobsResult.setFacets(facets);
 
                         if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("JOB_NAME")){
-                            SortUtils.getInstance().sortItems(sortType, jobs, Comparator.comparing(ToyboxJob::getJobName, Comparator.nullsLast(Comparator.naturalOrder())));
+                            sortUtils.sortItems(sortType, jobs, Comparator.comparing(ToyboxJob::getJobName, Comparator.nullsLast(Comparator.naturalOrder())));
                         }
                         else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("JOB_TYPE")){
-                            SortUtils.getInstance().sortItems(sortType, jobs, Comparator.comparing(ToyboxJob::getJobType, Comparator.nullsLast(Comparator.naturalOrder())));
+                            sortUtils.sortItems(sortType, jobs, Comparator.comparing(ToyboxJob::getJobType, Comparator.nullsLast(Comparator.naturalOrder())));
                         }
                         else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("START_TIME")){
-                            SortUtils.getInstance().sortItems(sortType, jobs, Comparator.comparing(ToyboxJob::getStartTime, Comparator.nullsLast(Comparator.naturalOrder())));
+                            sortUtils.sortItems(sortType, jobs, Comparator.comparing(ToyboxJob::getStartTime, Comparator.nullsLast(Comparator.naturalOrder())));
                         }
                         else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("END_TIME")){
-                            SortUtils.getInstance().sortItems(sortType, jobs, Comparator.comparing(ToyboxJob::getEndTime, Comparator.nullsLast(Comparator.naturalOrder())));
+                            sortUtils.sortItems(sortType, jobs, Comparator.comparing(ToyboxJob::getEndTime, Comparator.nullsLast(Comparator.naturalOrder())));
                         }
                         else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("STATUS")){
-                            SortUtils.getInstance().sortItems(sortType, jobs, Comparator.comparing(ToyboxJob::getStatus, Comparator.nullsLast(Comparator.naturalOrder())));
+                            sortUtils.sortItems(sortType, jobs, Comparator.comparing(ToyboxJob::getStatus, Comparator.nullsLast(Comparator.naturalOrder())));
                         }
                         else{
-                            SortUtils.getInstance().sortItems(sortType, jobs, Comparator.comparing(ToyboxJob::getEndTime, Comparator.nullsLast(Comparator.naturalOrder())));
+                            sortUtils.sortItems(sortType, jobs, Comparator.comparing(ToyboxJob::getEndTime, Comparator.nullsLast(Comparator.naturalOrder())));
                         }
 
                         List<ToyboxJob> jobsByCurrentUser;
