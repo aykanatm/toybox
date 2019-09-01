@@ -3,7 +3,6 @@ package com.github.murataykanat.toybox.controllers;
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.dbo.User;
-import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.utilities.AssetUtils;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import org.apache.commons.lang.StringUtils;
@@ -13,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -25,11 +23,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.InvalidObjectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 
 @RestController
 public class RenditionController {
@@ -39,8 +35,6 @@ public class RenditionController {
     private AssetUtils assetUtils;
     @Autowired
     private AuthenticationUtils authenticationUtils;
-    @Autowired
-    private UsersRepository usersRepository;
 
     @LogEntryExitExecutionTime
     @RequestMapping(value = "/renditions/users/{username}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
@@ -52,37 +46,21 @@ public class RenditionController {
                         username = authentication.getName();
                     }
 
-                    List<User> users = usersRepository.findUsersByUsername(username);
-                    if(users != null){
-                        if(!users.isEmpty()){
-                            if(users.size() == 1){
-                                User user = users.get(0);
-                                ByteArrayResource resource;
-                                if(StringUtils.isNotBlank(user.getAvatarPath())){
-                                    Path path = Paths.get(user.getAvatarPath());
-                                    resource = new ByteArrayResource(Files.readAllBytes(path));
-                                }
-                                else{
-                                    _logger.error("User avatar path is blank!");
+                    User user = authenticationUtils.getUser(username);
 
-                                    return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-                                }
-
-                                return new ResponseEntity<>(resource, HttpStatus.OK);
-                            }
-                            else{
-                                throw new DuplicateKeyException("There are more than one asset with ID '" + username + "'");
-                            }
-                        }
-                        else{
-                            _logger.error("No user was found with username '" + username + "'");
-
-                            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-                        }
+                    ByteArrayResource resource;
+                    if(StringUtils.isNotBlank(user.getAvatarPath())){
+                        // TODO: Convert ByteArrayResource to InputStreamResource
+                        Path path = Paths.get(user.getAvatarPath());
+                        resource = new ByteArrayResource(Files.readAllBytes(path));
                     }
                     else{
-                        throw new InvalidObjectException("Users is null!");
+                        _logger.error("User avatar path is blank!");
+
+                        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                     }
+
+                    return new ResponseEntity<>(resource, HttpStatus.OK);
                 }
                 else{
                     String errorMessage = "Username parameter is blank!";
@@ -116,6 +94,7 @@ public class RenditionController {
 
                     if(renditionType.equalsIgnoreCase("t")){
                         if(StringUtils.isNotBlank(asset.getThumbnailPath())){
+                            // TODO: Convert ByteArrayResource to InputStreamResource
                             Path path = Paths.get(asset.getThumbnailPath());
                             ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
 
@@ -129,6 +108,7 @@ public class RenditionController {
                     }
                     else if(renditionType.equalsIgnoreCase("p")){
                         if(StringUtils.isNotBlank(asset.getPreviewPath())){
+                            // TODO: Convert ByteArrayResource to InputStreamResource
                             Path path = Paths.get(asset.getPreviewPath());
                             ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
 
