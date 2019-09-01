@@ -7,6 +7,7 @@ import com.github.murataykanat.toybox.repositories.*;
 import com.github.murataykanat.toybox.schema.container.CreateContainerRequest;
 import com.github.murataykanat.toybox.schema.container.CreateContainerResponse;
 import com.github.murataykanat.toybox.schema.container.UpdateContainerRequest;
+import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -32,6 +33,8 @@ public class ContainerUtils {
     private LoadbalancerUtils loadbalancerUtils;
     @Autowired
     private AuthenticationUtils authenticationUtils;
+    @Autowired
+    private NotificationUtils notificationUtils;
 
     @Autowired
     private AssetsRepository assetsRepository;
@@ -131,6 +134,15 @@ public class ContainerUtils {
                         // Container does not have any duplicates inside the target container
                         containersRepository.updateContainerParentContainerId(targetContainer.getId(), container.getId());
                     }
+
+                    // Send notification
+                    String message = "Folder '" + container.getName() + "' is moved to folder '" + targetContainer.getName() + "' by '" + user.getUsername() + "'";
+                    SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                    sendNotificationRequest.setIsAsset(false);
+                    sendNotificationRequest.setId(container.getId());
+                    sendNotificationRequest.setFromUser(user);
+                    sendNotificationRequest.setMessage(message);
+                    notificationUtils.sendNotification(sendNotificationRequest, session);
                 }
                 else{
                     numberOfIgnoredContainers++;
