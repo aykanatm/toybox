@@ -77,7 +77,7 @@ const folders = new Vue({
             else{
                 this.getItems(this.currentFolderId, this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList)
             }
-        }, 200);
+        }, 500);
     },
     methods:{
         refresh:function(){
