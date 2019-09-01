@@ -446,7 +446,13 @@ public class FolderController {
                             }
                         }
                         else{
-                            containersByCurrentUser = containersRepository.getUserFolders(user.getUsername());
+                            if(authenticationUtils.isAdminUser(authentication)){
+                                containersByCurrentUser = containersRepository.getAllNonDeletedContainers();
+                            }
+                            else{
+                                containersByCurrentUser = containersRepository.getUserFolders(user.getUsername());
+                            }
+
                             Container filterByContainer = containerSearchRequest.getContainer();
                             boolean filterById = StringUtils.isNotBlank(filterByContainer.getId());
                             boolean filterByParentId = StringUtils.isNotBlank(filterByContainer.getParentId());
@@ -508,7 +514,7 @@ public class FolderController {
                             retrieveContainersResults.setTotalRecords(totalRecords);
                             retrieveContainersResults.setContainers(containersOnPage);
 
-                            retrieveContainersResults.setMessage("Assets retrieved successfully!");
+                            retrieveContainersResults.setMessage("Folders retrieved successfully!");
                             return new ResponseEntity<>(retrieveContainersResults, HttpStatus.OK);
                         }
                         else{

@@ -25,7 +25,8 @@ module.exports = {
                     var searchRequest = {
                         'limit': -1,
                         'offset': 0,
-                        'container': container
+                        'container': container,
+                        'retrieveTopLevelContainers': 'N'
                     }
 
                     var containerServiceUrl = response.data.value
