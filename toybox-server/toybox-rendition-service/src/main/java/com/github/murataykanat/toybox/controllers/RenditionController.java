@@ -48,11 +48,10 @@ public class RenditionController {
 
                     User user = authenticationUtils.getUser(username);
 
-                    ByteArrayResource resource;
+                    InputStreamResource resource;
                     if(StringUtils.isNotBlank(user.getAvatarPath())){
-                        // TODO: Convert ByteArrayResource to InputStreamResource
-                        Path path = Paths.get(user.getAvatarPath());
-                        resource = new ByteArrayResource(Files.readAllBytes(path));
+                        File file = new File(user.getAvatarPath());
+                        resource = new InputStreamResource(new FileInputStream(file));
                     }
                     else{
                         _logger.error("User avatar path is blank!");
@@ -94,9 +93,8 @@ public class RenditionController {
 
                     if(renditionType.equalsIgnoreCase("t")){
                         if(StringUtils.isNotBlank(asset.getThumbnailPath())){
-                            // TODO: Convert ByteArrayResource to InputStreamResource
-                            Path path = Paths.get(asset.getThumbnailPath());
-                            ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
+                            File file = new File(asset.getThumbnailPath());
+                            InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
 
                             return new ResponseEntity<>(resource, HttpStatus.OK);
                         }
@@ -108,14 +106,15 @@ public class RenditionController {
                     }
                     else if(renditionType.equalsIgnoreCase("p")){
                         if(StringUtils.isNotBlank(asset.getPreviewPath())){
-                            // TODO: Convert ByteArrayResource to InputStreamResource
-                            Path path = Paths.get(asset.getPreviewPath());
-                            ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
-
-                            if(asset.getPreviewPath().endsWith("pdf")){
+                            if(asset.getPreviewPath().toLowerCase().endsWith("pdf")){
+                                // TODO: Consider another way since this will not work with large files
+                                Path path = Paths.get(asset.getPreviewPath());
+                                ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
                                 return ResponseEntity.ok().header("Content-Disposition","inline; filename=" + new File(asset.getPreviewPath()).getName()).contentType(MediaType.APPLICATION_PDF).contentLength(resource.contentLength()).body(resource);
                             }
                             else{
+                                File file = new File(asset.getPreviewPath());
+                                InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
                                 return new ResponseEntity<>(resource, HttpStatus.OK);
                             }
                         }
