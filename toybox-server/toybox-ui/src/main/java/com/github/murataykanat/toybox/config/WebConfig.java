@@ -33,9 +33,9 @@ public class WebConfig extends WebMvcConfigurerAdapter {
                 .addResourceLocations("/resources/", "file:" + toyboxHome
                         + File.separator + "ui" + File.separator
                         + "home" + File.separator  + "components" + File.separator);
-        registry.addResourceHandler("/frameworks/**")
+        registry.addResourceHandler("/thirdparty/**")
                 .addResourceLocations("/resources/", "file:" + toyboxHome
                         + File.separator + "ui" + File.separator
-                        + "frameworks" + File.separator);
+                        + "thirdparty" + File.separator);
     }
 }
