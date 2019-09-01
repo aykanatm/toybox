@@ -14,7 +14,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -41,9 +40,8 @@ public class AssetUtils {
     private NotificationUtils notificationUtils;
     @Autowired
     private AuthenticationUtils authenticationUtils;
-
     @Autowired
-    private DiscoveryClient discoveryClient;
+    private SortUtils sortUtils;
 
     @Autowired
     private AssetsRepository assetsRepository;
@@ -114,7 +112,7 @@ public class AssetUtils {
 
                     int latestVersionOfDuplicate = duplicateAsset.getVersion();
 
-                    SortUtils.getInstance().sortItems("asc", assetsByOriginalAssetId, Comparator.comparing(Asset::getVersion));
+                    sortUtils.sortItems("asc", assetsByOriginalAssetId, Comparator.comparing(Asset::getVersion));
                     for(Asset movedAsset : assetsByOriginalAssetId){
                         latestVersionOfDuplicate++;
                         assetsRepository.updateAssetVersion(latestVersionOfDuplicate, movedAsset.getId());
