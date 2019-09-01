@@ -18,7 +18,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.cloud.netflix.ribbon.RibbonClient;
 import org.springframework.context.annotation.Bean;
@@ -48,9 +47,6 @@ public class NotificationLoadbalancerController {
     private LoadbalancerUtils loadbalancerUtils;
     @Autowired
     private AuthenticationUtils authenticationUtils;
-
-    @Autowired
-    private UsersRepository usersRepository;
 
     @Autowired
     private RestTemplate restTemplate;

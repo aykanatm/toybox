@@ -48,9 +48,6 @@ public class JobLoadbalancerController {
     private AuthenticationUtils authenticationUtils;
 
     @Autowired
-    private UsersRepository usersRepository;
-
-    @Autowired
     private RestTemplate restTemplate;
 
     @LogEntryExitExecutionTime
