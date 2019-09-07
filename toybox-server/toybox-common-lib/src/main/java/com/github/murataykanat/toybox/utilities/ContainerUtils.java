@@ -229,7 +229,7 @@ public class ContainerUtils {
 
     @LogEntryExitExecutionTime
     public String createContainer(HttpSession session, String name, String parentContainerId) throws Exception {
-        String folderServiceLoadbalancerUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.FOLDER_SERVICE_LOAD_BALANCER_SERVICE_NAME);
+        String folderServiceLoadbalancerUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.FOLDER_SERVICE_LOAD_BALANCER_SERVICE_NAME, ToyboxConstants.FOLDER_SERVICE_NAME);
 
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = authenticationUtils.getHeaders(session);

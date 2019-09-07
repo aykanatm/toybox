@@ -195,7 +195,7 @@ public class AssetUtils {
 
         uploadFileLst.setUploadFiles(uploadFiles);
 
-        String jobServiceUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.JOB_SERVICE_LOAD_BALANCER_SERVICE_NAME);
+        String jobServiceUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.JOB_SERVICE_LOAD_BALANCER_SERVICE_NAME, ToyboxConstants.JOB_SERVICE_NAME);
 
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = authenticationUtils.getHeaders(session);

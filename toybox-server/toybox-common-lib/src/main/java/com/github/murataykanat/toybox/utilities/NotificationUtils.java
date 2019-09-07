@@ -30,7 +30,7 @@ public class NotificationUtils {
     public void sendNotification(SendNotificationRequest sendNotificationRequest, HttpSession session) throws Exception {
         try{
             HttpHeaders headers = authenticationUtils.getHeaders(session);
-            String loadbalancerUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.NOTIFICATIONS_LOAD_BALANCER_SERVICE_NAME);
+            String loadbalancerUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.NOTIFICATIONS_LOAD_BALANCER_SERVICE_NAME, ToyboxConstants.NOTIFICATION_SERVICE_NAME);
             HttpEntity<SendNotificationRequest> sendNotificationRequestHttpEntity = new HttpEntity<>(sendNotificationRequest, headers);
 
             RestTemplate restTemplate = new RestTemplate();
