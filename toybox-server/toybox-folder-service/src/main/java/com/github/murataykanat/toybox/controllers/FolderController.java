@@ -58,7 +58,7 @@ public class FolderController {
 
     @LogEntryExitExecutionTime
     @RequestMapping(value = "/containers", method = RequestMethod.POST)
-    public ResponseEntity<CreateContainerResponse> createContainer(Authentication authentication, @RequestBody CreateContainerRequest createContainerRequest){
+    public ResponseEntity<CreateContainerResponse> createContainer(Authentication authentication, HttpSession session, @RequestBody CreateContainerRequest createContainerRequest){
         CreateContainerResponse createContainerResponse = new CreateContainerResponse();
 
         try {
@@ -66,6 +66,9 @@ public class FolderController {
                 if(createContainerRequest != null){
                     if(StringUtils.isNotBlank(createContainerRequest.getContainerName())){
                         boolean canCreateFolder;
+                        boolean canSendNotification = false;
+                        Container parentContainer = null;
+
                         String errorMessage = "";
                         if(StringUtils.isBlank(createContainerRequest.getParentContainerId())){
                             if(authenticationUtils.isAdminUser(authentication)){
@@ -85,10 +88,11 @@ public class FolderController {
                             }
                         }
                         else{
-                            Container parentContainer = containerUtils.getContainer(createContainerRequest.getParentContainerId());
+                            parentContainer = containerUtils.getContainer(createContainerRequest.getParentContainerId());
                             Container duplicateContainer = containerUtils.findDuplicateContainer(createContainerRequest.getParentContainerId(), createContainerRequest.getContainerName());
                             if(duplicateContainer == null){
                                 canCreateFolder = true;
+                                canSendNotification = true;
                             }
                             else{
                                 canCreateFolder = false;
@@ -110,6 +114,20 @@ public class FolderController {
 
                             createContainerResponse.setContainerId(container.getId());
                             createContainerResponse.setMessage("Folder created successfully!");
+
+                            if(canSendNotification){
+                                User user = authenticationUtils.getUser(authentication.getName());
+
+                                // Send notification
+                                String message = "Folder '" + container.getName() + "' is created under the folder '" + parentContainer.getName() + "' by '" + user.getUsername() + "'";
+                                SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                sendNotificationRequest.setIsAsset(false);
+                                sendNotificationRequest.setId(parentContainer.getId());
+                                sendNotificationRequest.setFromUser(user);
+                                sendNotificationRequest.setMessage(message);
+                                notificationUtils.sendNotification(sendNotificationRequest, session);
+                            }
+
                             return new ResponseEntity<>(createContainerResponse, HttpStatus.OK);
                         }
                         else{
