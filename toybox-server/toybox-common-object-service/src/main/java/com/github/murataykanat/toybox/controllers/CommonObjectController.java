@@ -522,7 +522,7 @@ public class CommonObjectController {
     @RequestMapping(value = "/common-objects/copy", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> copyItems(Authentication authentication, HttpSession session, @RequestBody CopyAssetRequest copyAssetRequest){
         GenericResponse genericResponse = new GenericResponse();
-        // TODO: Add notifications
+
         try{
             if(authenticationUtils.isSessionValid(authentication)){
                 if(copyAssetRequest != null){

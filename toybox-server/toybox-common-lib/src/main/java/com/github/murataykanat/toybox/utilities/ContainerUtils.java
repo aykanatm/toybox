@@ -187,7 +187,6 @@ public class ContainerUtils {
 
     @LogEntryExitExecutionTime
     private void copyContainer(HttpSession session, Container sourceContainer, Container targetContainer, String username, String importStagingPath) throws Exception {
-
         Container duplicateContainer = findDuplicateContainer(targetContainer.getId(), sourceContainer.getName());
         String createdContainerId;
 
@@ -200,21 +199,33 @@ public class ContainerUtils {
             createdContainerId = createContainer(session, sourceContainer.getName(), targetContainer.getId());
         }
 
-        // We copy the contents to the target container
+
         if(StringUtils.isNotBlank(createdContainerId)){
+            Container createdContainer = getContainer(createdContainerId);
+            User user = authenticationUtils.getUser(username);
+            // Send notification
+            String message = "Folder '" + sourceContainer.getName() + "' is copied to folder '" + targetContainer.getName() + "' by '" + user.getUsername() + "'";
+            SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+            sendNotificationRequest.setIsAsset(false);
+            sendNotificationRequest.setId(sourceContainer.getId());
+            sendNotificationRequest.setFromUser(user);
+            sendNotificationRequest.setMessage(message);
+            notificationUtils.sendNotification(sendNotificationRequest, session);
+
+            // We copy the contents to the target container
             // We find and copy all the assets inside the folder to the new folder
             List<String> assetIdsInsideContainer = containerAssetsRepository.findContainerAssetsByContainerId(sourceContainer.getId()).stream().map(ContainerAsset::getAssetId).collect(Collectors.toList());
-            List<String> getNonDeletedLastVersionAssetIds = assetsRepository.getNonDeletedLastVersionAssetsByAssetIds(assetIdsInsideContainer).stream().map(Asset::getId).collect(Collectors.toList());
-            if(!getNonDeletedLastVersionAssetIds.isEmpty()){
-                List<String> singleTargetContainerId = new ArrayList<>();
-                singleTargetContainerId.add(createdContainerId);
-                assetUtils.copyAssets(session, getNonDeletedLastVersionAssetIds, singleTargetContainerId, username, importStagingPath);
+            if(!assetIdsInsideContainer.isEmpty()){
+                List<String> getNonDeletedLastVersionAssetIds = assetsRepository.getNonDeletedLastVersionAssetsByAssetIds(assetIdsInsideContainer).stream().map(Asset::getId).collect(Collectors.toList());
+                if(!getNonDeletedLastVersionAssetIds.isEmpty()){
+                    List<String> singleTargetContainerId = new ArrayList<>();
+                    singleTargetContainerId.add(createdContainerId);
+                    assetUtils.copyAssets(session, getNonDeletedLastVersionAssetIds, singleTargetContainerId, username, importStagingPath);
+                }
             }
 
             // We find the containers which are inside the container and copy them to their new paths recursively
             List<Container> nonDeletedContainersByParentContainerId = containersRepository.getNonDeletedContainersByParentContainerId(sourceContainer.getId());
-
-            Container createdContainer = getContainer(createdContainerId);
 
             if(!nonDeletedContainersByParentContainerId.isEmpty()){
                 for(Container nonDeletedContainerByParentContainerId: nonDeletedContainersByParentContainerId){

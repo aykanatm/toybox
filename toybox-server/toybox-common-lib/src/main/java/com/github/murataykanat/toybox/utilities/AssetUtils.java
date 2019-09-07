@@ -42,6 +42,8 @@ public class AssetUtils {
     private AuthenticationUtils authenticationUtils;
     @Autowired
     private SortUtils sortUtils;
+    @Autowired
+    private ContainerUtils containerUtils;
 
     @Autowired
     private AssetsRepository assetsRepository;
@@ -160,9 +162,15 @@ public class AssetUtils {
         UploadFileLst uploadFileLst = new UploadFileLst();
         uploadFileLst.setContainerId(targetContainerId);
 
+        Container targetContainer = containerUtils.getContainer(targetContainerId);
+        List<Asset> copiedAssets = new ArrayList<>();
+        User user = authenticationUtils.getUser(username);
+
         List<UploadFile> uploadFiles = new ArrayList<>();
         for(String assetId: assetIds){
             Asset asset = getAsset(assetId);
+            copiedAssets.add(asset);
+
             File currentFile = new File(asset.getPath());
 
             String tempFolderName = Long.toString(System.currentTimeMillis());
@@ -206,6 +214,16 @@ public class AssetUtils {
 
         if(successful){
             _logger.debug("Asset import job successfully started!");
+            for(Asset copiedAsset: copiedAssets){
+                // Send notification
+                String message = "Asset '" + copiedAsset.getName() + "' is copied to folder '" + targetContainer.getName() + "' by '" + user.getUsername() + "'";
+                SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                sendNotificationRequest.setIsAsset(true);
+                sendNotificationRequest.setId(copiedAsset.getId());
+                sendNotificationRequest.setFromUser(user);
+                sendNotificationRequest.setMessage(message);
+                notificationUtils.sendNotification(sendNotificationRequest, session);
+            }
         }
         else{
             _logger.error("Asset import job failed to start. " + jobResponseResponseEntity.getBody().getMessage());
