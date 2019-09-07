@@ -18,8 +18,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                     .logout()
                     .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
-                // TODO:
-                // Find a way to redirect user to http://localhost:8081/login?logout
                     .logoutSuccessUrl("/exit")
                     .deleteCookies("JSESSIONID", "TSESSION")
                     .invalidateHttpSession(true);
