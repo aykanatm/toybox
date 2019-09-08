@@ -194,18 +194,18 @@ public class ShareController {
                                         }
                                     }
 
-                                    // TODO: Make a notification for containers
-//                                    if(selectedContainers != null && !selectedContainers.isEmpty()){
-//                                        for(Container container: selectedContainers){
-//                                            // Send notification
-//                                            String message = "Folder '" + container.getName() + "' is shared externally by '" + user.getUsername() + "'";
-//                                            SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-//                                            sendNotificationRequest.setAsset(container);
-//                                            sendNotificationRequest.setFromUser(user);
-//                                            sendNotificationRequest.setMessage(message);
-//                                            NotificationUtils.getInstance().sendNotification(sendNotificationRequest, discoveryClient, session, notificationServiceLoadBalancerServiceName);
-//                                        }
-//                                    }
+                                    if(selectedContainers != null && !selectedContainers.isEmpty()){
+                                        for(Container container: selectedContainers){
+                                            // Send notification
+                                            String message = "Folder '" + container.getName() + "' is shared externally by '" + user.getUsername() + "'";
+                                            SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                            sendNotificationRequest.setIsAsset(false);
+                                            sendNotificationRequest.setId(container.getId());
+                                            sendNotificationRequest.setFromUser(user);
+                                            sendNotificationRequest.setMessage(message);
+                                            notificationUtils.sendNotification(sendNotificationRequest, session);
+                                        }
+                                    }
 
                                     return new ResponseEntity<>(externalShareResponse, HttpStatus.CREATED);
                                 }
