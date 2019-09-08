@@ -14,6 +14,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -53,6 +54,9 @@ public class FolderController {
     private AssetsRepository assetsRepository;
     @Autowired
     private AssetUserRepository assetUserRepository;
+
+    @Value("${toyboxSuperAdminUsername}")
+    private String toyboxSuperAdminUsername;
 
     @LogEntryExitExecutionTime
     @RequestMapping(value = "/containers", method = RequestMethod.POST)
@@ -211,22 +215,26 @@ public class FolderController {
                                 assets = allAssets;
                             }
 
-                            if(authenticationUtils.isAdminUser(authentication)){
-                                _logger.debug("Retrieving all the items in the container [Admin User]...");
+                            // If the current user is the owner of the container, if the container is user's main container or if the user is an admin
+                            // Get all items in the container
+                            if(authenticationUtils.isAdminUser(authentication) || container.getCreatedByUsername().equalsIgnoreCase(user.getUsername())
+                                || (container.getCreatedByUsername().equalsIgnoreCase(toyboxSuperAdminUsername) && container.getName().equalsIgnoreCase(user.getUsername()))){
                                 containersByCurrentUser = containersRepository.getNonDeletedContainersByParentContainerId(container.getId());
                                 assetsByCurrentUser = assets.stream()
                                         .filter(asset -> asset.getIsLatestVersion().equalsIgnoreCase("Y"))
                                         .collect(Collectors.toList());
                             }
+                            // If the current user is not the owner
                             else{
-                                _logger.debug("Retrieving the items of the user '" + user.getUsername() + "'...");
+                                // Get the containers which belongs to the user
                                 containersByCurrentUser = containersRepository.getNonDeletedContainersByUsernameAndParentContainerId(user.getUsername(), container.getId());
-
                                 for(Asset asset: assets){
                                     if(StringUtils.isNotBlank(asset.getImportedByUsername()) && asset.getIsLatestVersion().equalsIgnoreCase("Y")){
+                                        // Add the asset if it belongs to the user
                                         if(asset.getImportedByUsername().equalsIgnoreCase(user.getUsername())){
                                             assetsByCurrentUser.add(asset);
                                         }
+                                        // Add the asset if the original asset belongs to the user
                                         else{
                                             Asset originalAsset= assetUtils.getAsset(asset.getOriginalAssetId());
                                             if(originalAsset.getImportedByUsername().equalsIgnoreCase(user.getUsername())){
