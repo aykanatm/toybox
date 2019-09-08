@@ -4,10 +4,13 @@ import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.Container;
 import com.github.murataykanat.toybox.dbo.ContainerAsset;
+import com.github.murataykanat.toybox.dbo.ContainerUser;
 import com.github.murataykanat.toybox.models.RenditionProperties;
 import com.github.murataykanat.toybox.dbo.Asset;
+import com.github.murataykanat.toybox.repositories.AssetUserRepository;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
 import com.github.murataykanat.toybox.repositories.ContainerAssetsRepository;
+import com.github.murataykanat.toybox.repositories.ContainerUsersRepository;
 import com.github.murataykanat.toybox.utilities.AssetUtils;
 import com.github.murataykanat.toybox.utilities.ContainerUtils;
 import com.github.murataykanat.toybox.utilities.SortUtils;
@@ -59,9 +62,13 @@ public class ImportJobConfig {
 
     @Autowired
     private AssetsRepository assetsRepository;
+    @Autowired
+    private AssetUserRepository assetUserRepository;
 
     @Autowired
     private ContainerAssetsRepository containerAssetsRepository;
+    @Autowired
+    private ContainerUsersRepository containerUsersRepository;
 
     @Value("${imageThumbnailFormat}")
     private String imageThumbnailFormat;
@@ -202,6 +209,17 @@ public class ImportJobConfig {
 
                                             // Attach the asset to a folder
                                             containerAssetsRepository.attachAsset(containerId, assetId);
+
+                                            // Check if the folder is subscribed by any user
+                                            // If so add the asset as subscribed to those users
+                                            if(StringUtils.isNotBlank(containerId)){
+                                                List<ContainerUser> containerUsersByContainerId = containerUsersRepository.findContainerUsersByContainerId(containerId);
+                                                if(!containerUsersByContainerId.isEmpty()){
+                                                    containerUsersByContainerId.forEach(containerUser -> {
+                                                        assetUserRepository.insertSubscriber(assetId, containerUser.getUserId());
+                                                    });
+                                                }
+                                            }
                                         }
                                         else{
                                             throw new IOException("File " + filePath + " is not a file!");
