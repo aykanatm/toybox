@@ -1,7 +1,6 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
-import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.*;
 import com.github.murataykanat.toybox.repositories.*;
 import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
@@ -11,7 +10,6 @@ import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.container.*;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
 import com.github.murataykanat.toybox.utilities.*;
-import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -102,7 +100,6 @@ public class FolderController {
 
                         if(canCreateFolder){
                             Container container = new Container();
-                            container.setId(generateFolderId());
                             container.setName(createContainerRequest.getContainerName());
                             container.setParentId(createContainerRequest.getParentContainerId());
                             container.setCreatedByUsername(authentication.getName());
@@ -110,7 +107,7 @@ public class FolderController {
                             container.setDeleted("N");
                             container.setSystem("N");
 
-                            createContainer(container);
+                            containerUtils.createContainer(container);
 
                             createContainerResponse.setContainerId(container.getId());
                             createContainerResponse.setMessage("Folder created successfully!");
@@ -301,17 +298,17 @@ public class FolderController {
                                             assetOnPage.setParentContainerId(containerAsset.getContainerId());
                                         }
                                         else{
-                                            throw new Exception("Asset is in multiple folders!");
+                                            throw new IllegalArgumentException("Asset is in multiple folders!");
                                         }
                                     }
                                     else{
-                                        throw new Exception("Asset is not in any folder!");
+                                        throw new IllegalArgumentException("Asset is not in any folder!");
                                     }
                                 }
                             }
 
                             // Set breadcrumbs
-                            retrieveContainerContentsResult.setBreadcrumbs(generateContainerPath(container.getId()));
+                            retrieveContainerContentsResult.setBreadcrumbs(containerUtils.generateContainerPath(container.getId()));
 
                             // Finalize
                             retrieveContainerContentsResult.setTotalRecords(totalRecords);
@@ -527,7 +524,7 @@ public class FolderController {
                                 }
                             }
 
-                            retrieveContainersResults.setBreadcrumbs(generateContainerPath(null));
+                            retrieveContainersResults.setBreadcrumbs(containerUtils.generateContainerPath(null));
 
                             retrieveContainersResults.setTotalRecords(totalRecords);
                             retrieveContainersResults.setContainers(containersOnPage);
@@ -574,78 +571,5 @@ public class FolderController {
 
             return new ResponseEntity<>(retrieveContainersResults, HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
-
-    @LogEntryExitExecutionTime
-    private String generateFolderId(){
-        String containerId = RandomStringUtils.randomAlphanumeric(ToyboxConstants.FOLDER_ID_LENGTH);
-        if(isContainerIdValid(containerId)){
-            return containerId;
-        }
-        return generateFolderId();
-    }
-
-    @LogEntryExitExecutionTime
-    private boolean isContainerIdValid(String containerId){
-        List<Container> containers = containersRepository.getContainersById(containerId);
-        List<Asset> assets = assetsRepository.getAssetsById(containerId);
-        if(containers.isEmpty() && assets.isEmpty()){
-            return true;
-        }
-        else{
-            return false;
-        }
-    }
-
-    @LogEntryExitExecutionTime
-    private void createContainer(Container container){
-        _logger.debug("Container ID: " + container.getId());
-        _logger.debug("Container name: " + container.getName());
-        _logger.debug("Container parent ID: " + container.getParentId());
-        _logger.debug("Container created by username: " + container.getCreatedByUsername());
-        _logger.debug("Container creation date: " + container.getCreationDate());
-
-        containersRepository.insertContainer(container.getId(), container.getName(), container.getParentId(),
-                container.getCreatedByUsername(), container.getCreationDate(), container.getDeleted(),
-                container.getSystem());
-    }
-
-    @LogEntryExitExecutionTime
-    private List<Breadcrumb> generateContainerPath(String containerId) throws Exception {
-        List<Breadcrumb> breadcrumbs = new ArrayList<>();
-        Container container;
-        Breadcrumb breadcrumb = new Breadcrumb();
-
-        if(StringUtils.isNotBlank(containerId) && !containerId.equalsIgnoreCase("null")){
-            container = containerUtils.getContainer(containerId);
-            breadcrumb.setContainerId(container.getId());
-            breadcrumb.setContainerName(container.getName());
-            breadcrumbs.add(breadcrumb);
-
-            while (StringUtils.isNotBlank(container.getParentId())){
-                container = containerUtils.getContainer(container.getParentId());
-
-                breadcrumb = new Breadcrumb();
-                breadcrumb.setContainerId(container.getId());
-                breadcrumb.setContainerName(container.getName());
-
-                breadcrumbs.add(breadcrumb);
-            }
-
-            breadcrumb = new Breadcrumb();
-            breadcrumb.setContainerId(null);
-            breadcrumb.setContainerName("Root");
-
-            breadcrumbs.add(breadcrumb);
-        }
-        else{
-            breadcrumb = new Breadcrumb();
-            breadcrumb.setContainerId(null);
-            breadcrumb.setContainerName("Root");
-
-            breadcrumbs.add(breadcrumb);
-        }
-
-        return breadcrumbs;
     }
 }

@@ -4,10 +4,12 @@ import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.*;
 import com.github.murataykanat.toybox.repositories.*;
+import com.github.murataykanat.toybox.schema.container.Breadcrumb;
 import com.github.murataykanat.toybox.schema.container.CreateContainerRequest;
 import com.github.murataykanat.toybox.schema.container.CreateContainerResponse;
 import com.github.murataykanat.toybox.schema.container.UpdateContainerRequest;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -329,5 +331,79 @@ public class ContainerUtils {
         containersRepository.save(container);
 
         return getContainer(containerId);
+    }
+
+    @LogEntryExitExecutionTime
+    public void createContainer(Container container){
+        container.setId(generateFolderId());
+        _logger.debug("Container ID: " + container.getId());
+        _logger.debug("Container name: " + container.getName());
+        _logger.debug("Container parent ID: " + container.getParentId());
+        _logger.debug("Container created by username: " + container.getCreatedByUsername());
+        _logger.debug("Container creation date: " + container.getCreationDate());
+
+        containersRepository.insertContainer(container.getId(), container.getName(), container.getParentId(),
+                container.getCreatedByUsername(), container.getCreationDate(), container.getDeleted(),
+                container.getSystem());
+    }
+
+    @LogEntryExitExecutionTime
+    private String generateFolderId(){
+        String containerId = RandomStringUtils.randomAlphanumeric(ToyboxConstants.FOLDER_ID_LENGTH);
+        if(isContainerIdValid(containerId)){
+            return containerId;
+        }
+        return generateFolderId();
+    }
+
+    @LogEntryExitExecutionTime
+    private boolean isContainerIdValid(String containerId){
+        List<Container> containers = containersRepository.getContainersById(containerId);
+        List<Asset> assets = assetsRepository.getAssetsById(containerId);
+        if(containers.isEmpty() && assets.isEmpty()){
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    public List<Breadcrumb> generateContainerPath(String containerId) throws Exception {
+        List<Breadcrumb> breadcrumbs = new ArrayList<>();
+        Container container;
+        Breadcrumb breadcrumb = new Breadcrumb();
+
+        if(StringUtils.isNotBlank(containerId) && !containerId.equalsIgnoreCase("null")){
+            container = getContainer(containerId);
+            breadcrumb.setContainerId(container.getId());
+            breadcrumb.setContainerName(container.getName());
+            breadcrumbs.add(breadcrumb);
+
+            while (StringUtils.isNotBlank(container.getParentId())){
+                container = getContainer(container.getParentId());
+
+                breadcrumb = new Breadcrumb();
+                breadcrumb.setContainerId(container.getId());
+                breadcrumb.setContainerName(container.getName());
+
+                breadcrumbs.add(breadcrumb);
+            }
+
+            breadcrumb = new Breadcrumb();
+            breadcrumb.setContainerId(null);
+            breadcrumb.setContainerName("Root");
+
+            breadcrumbs.add(breadcrumb);
+        }
+        else{
+            breadcrumb = new Breadcrumb();
+            breadcrumb.setContainerId(null);
+            breadcrumb.setContainerName("Root");
+
+            breadcrumbs.add(breadcrumb);
+        }
+
+        return breadcrumbs;
     }
 }
