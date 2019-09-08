@@ -10,6 +10,7 @@ import com.github.murataykanat.toybox.schema.notification.SendNotificationReques
 import com.github.murataykanat.toybox.schema.upload.UploadFile;
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -47,6 +48,8 @@ public class AssetUtils {
 
     @Autowired
     private AssetsRepository assetsRepository;
+    @Autowired
+    private ContainersRepository containersRepository;
     @Autowired
     private ContainerAssetsRepository containerAssetsRepository;
 
@@ -302,5 +305,52 @@ public class AssetUtils {
         notificationUtils.sendNotification(sendNotificationRequest, session);
 
         return getAsset(assetId);
+    }
+
+    @LogEntryExitExecutionTime
+    public void createAsset(Asset asset){
+        _logger.debug("Asset:");
+        _logger.debug("Asset ID: " + asset.getId());
+        _logger.debug("Asset Extension: " + asset.getExtension());
+        _logger.debug("Asset Imported By Username: " + asset.getImportedByUsername());
+        _logger.debug("Asset Name: " + asset.getName());
+        _logger.debug("Asset Path: " + asset.getPath());
+        _logger.debug("Asset Preview Path: " + asset.getPreviewPath());
+        _logger.debug("Asset Thumbnail Path: " + asset.getThumbnailPath());
+        _logger.debug("Asset Type: " + asset.getType());
+        _logger.debug("Asset Import Date: " + asset.getImportDate());
+        _logger.debug("Deleted: " + asset.getDeleted());
+        _logger.debug("Checksum: " + asset.getChecksum());
+        _logger.debug("Is latest version: " + asset.getIsLatestVersion());
+        _logger.debug("Original Asset ID: " + asset.getOriginalAssetId());
+        _logger.debug("Version: " + asset.getVersion());
+        _logger.debug("File Size: " + asset.getFileSize());
+
+        _logger.debug("Inserting asset into the database...");
+
+        assetsRepository.insertAsset(asset.getId(), asset.getExtension(), asset.getImportedByUsername(), asset.getName(), asset.getPath(),
+                asset.getPreviewPath(), asset.getThumbnailPath(), asset.getType(), asset.getImportDate(), asset.getDeleted(), asset.getChecksum(),
+                asset.getIsLatestVersion(), asset.getOriginalAssetId(), asset.getVersion(), asset.getFileSize());
+    }
+
+    @LogEntryExitExecutionTime
+    public String generateAssetId(){
+        String assetId = RandomStringUtils.randomAlphanumeric(ToyboxConstants.ASSET_ID_LENGTH);
+        if(isAssetIdValid(assetId)){
+            return assetId;
+        }
+        return generateAssetId();
+    }
+
+    @LogEntryExitExecutionTime
+    private boolean isAssetIdValid(String assetId){
+        List<Container> containers = containersRepository.getContainersById(assetId);
+        List<Asset> assets = assetsRepository.getAssetsById(assetId);
+        if(containers.isEmpty() && assets.isEmpty()){
+            return true;
+        }
+        else{
+            return false;
+        }
     }
 }

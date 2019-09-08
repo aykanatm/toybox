@@ -8,13 +8,12 @@ import com.github.murataykanat.toybox.models.RenditionProperties;
 import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
 import com.github.murataykanat.toybox.repositories.ContainerAssetsRepository;
-import com.github.murataykanat.toybox.repositories.ContainersRepository;
+import com.github.murataykanat.toybox.utilities.AssetUtils;
 import com.github.murataykanat.toybox.utilities.ContainerUtils;
 import com.github.murataykanat.toybox.utilities.SortUtils;
 import org.apache.commons.exec.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -52,14 +51,15 @@ public class ImportJobConfig {
     private static final Log _logger = LogFactory.getLog(ImportJobConfig.class);
 
     @Autowired
+    private AssetUtils assetUtils;
+    @Autowired
     private ContainerUtils containerUtils;
     @Autowired
     private SortUtils sortUtils;
 
     @Autowired
     private AssetsRepository assetsRepository;
-    @Autowired
-    private ContainersRepository containersRepository;
+
     @Autowired
     private ContainerAssetsRepository containerAssetsRepository;
 
@@ -149,7 +149,7 @@ public class ImportJobConfig {
                                     File file = new File(filePath);
                                     if(file.exists()){
                                         if(file.isFile()){
-                                            String assetId = generateAssetId();
+                                            String assetId = assetUtils.generateAssetId();
                                             String assetFolderPath = assetRepositoryPath + File.separator + assetId;
 
                                             // Generate folder
@@ -195,7 +195,7 @@ public class ImportJobConfig {
                                             updateDuplicateAssets(assetDestination.getName(), assetId, username, containerId);
 
                                             // Add the asset to the database
-                                            insertAsset(asset);
+                                            assetUtils.createAsset(asset);
 
                                             // Add the asset to a list to move it to the next step of the job
                                             assets.add(asset);
@@ -398,35 +398,9 @@ public class ImportJobConfig {
         }
         else{
             sortUtils.sortItems("des", duplicateAssetsByAssetName, Comparator.comparing(Asset::getVersion, Comparator.nullsLast(Comparator.naturalOrder())));
-            List<Integer> assetVersions = duplicateAssetsByAssetName.stream().map(asset -> asset.getVersion()).collect(Collectors.toList());
+            List<Integer> assetVersions = duplicateAssetsByAssetName.stream().map(Asset::getVersion).collect(Collectors.toList());
             return assetVersions.get(0) + 1;
         }
-    }
-
-    @LogEntryExitExecutionTime
-    private void insertAsset(Asset asset){
-        _logger.debug("Asset:");
-        _logger.debug("Asset ID: " + asset.getId());
-        _logger.debug("Asset Extension: " + asset.getExtension());
-        _logger.debug("Asset Imported By Username: " + asset.getImportedByUsername());
-        _logger.debug("Asset Name: " + asset.getName());
-        _logger.debug("Asset Path: " + asset.getPath());
-        _logger.debug("Asset Preview Path: " + asset.getPreviewPath());
-        _logger.debug("Asset Thumbnail Path: " + asset.getThumbnailPath());
-        _logger.debug("Asset Type: " + asset.getType());
-        _logger.debug("Asset Import Date: " + asset.getImportDate());
-        _logger.debug("Deleted: " + asset.getDeleted());
-        _logger.debug("Checksum: " + asset.getChecksum());
-        _logger.debug("Is latest version: " + asset.getIsLatestVersion());
-        _logger.debug("Original Asset ID: " + asset.getOriginalAssetId());
-        _logger.debug("Version: " + asset.getVersion());
-        _logger.debug("File Size: " + asset.getFileSize());
-
-        _logger.debug("Inserting asset into the database...");
-
-        assetsRepository.insertAsset(asset.getId(), asset.getExtension(), asset.getImportedByUsername(), asset.getName(), asset.getPath(),
-                asset.getPreviewPath(), asset.getThumbnailPath(), asset.getType(), asset.getImportDate(), asset.getDeleted(), asset.getChecksum(),
-                asset.getIsLatestVersion(), asset.getOriginalAssetId(), asset.getVersion(), asset.getFileSize());
     }
 
     @LogEntryExitExecutionTime
@@ -450,35 +424,12 @@ public class ImportJobConfig {
                     .map(ContainerAsset::getAssetId)
                     .collect(Collectors.toList()));
 
-            List<Asset> duplicateAssetsByAssetName = assetsInContainer.stream()
+            return assetsInContainer.stream()
                     .filter(asset -> asset.getName().equalsIgnoreCase(assetName))
                     .collect(Collectors.toList());
-
-            return duplicateAssetsByAssetName;
         }
 
         return new ArrayList<>();
-    }
-
-    @LogEntryExitExecutionTime
-    private String generateAssetId(){
-        String assetId = RandomStringUtils.randomAlphanumeric(ToyboxConstants.ASSET_ID_LENGTH);
-        if(isAssetIdValid(assetId)){
-            return assetId;
-        }
-        return generateAssetId();
-    }
-
-    @LogEntryExitExecutionTime
-    private boolean isAssetIdValid(String assetId){
-        List<Container> containers = containersRepository.getContainersById(assetId);
-        List<Asset> assets = assetsRepository.getAssetsById(assetId);
-        if(containers.isEmpty() && assets.isEmpty()){
-            return true;
-        }
-        else{
-            return false;
-        }
     }
 
     @LogEntryExitExecutionTime
