@@ -74,7 +74,7 @@ public class AssetController {
 
                     HttpHeaders headers = authenticationUtils.getHeaders(session);
                     HttpEntity<UploadFileLst> selectedAssetsEntity = new HttpEntity<>(uploadFileLst, headers);
-                    String jobServiceUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.JOB_SERVICE_LOAD_BALANCER_SERVICE_NAME, ToyboxConstants.JOB_SERVICE_NAME);
+                    String jobServiceUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.JOB_SERVICE_LOAD_BALANCER_SERVICE_NAME, ToyboxConstants.JOB_SERVICE_NAME, session, false);
 
                     try{
                         restTemplate.postForEntity(jobServiceUrl + "/jobs/import", selectedAssetsEntity, JobResponse.class);
@@ -441,7 +441,7 @@ public class AssetController {
                                     HttpHeaders headers = authenticationUtils.getHeaders(session);
                                     HttpEntity<SelectionContext> selectedAssetsEntity = new HttpEntity<>(selectionContext, headers);
 
-                                    String loadbalancerUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.COMMON_OBJECTS_LOAD_BALANCER_SERVICE_NAME, ToyboxConstants.COMMON_OBJECT_SERVICE_NAME);
+                                    String loadbalancerUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.COMMON_OBJECTS_LOAD_BALANCER_SERVICE_NAME, ToyboxConstants.COMMON_OBJECT_SERVICE_NAME, session, false);
 
                                     try{
                                         restTemplate.postForEntity(loadbalancerUrl + "/common-objects/delete", selectedAssetsEntity, GenericResponse.class);

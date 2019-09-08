@@ -13,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpSession;
+
 @RestController
 public class ServiceController {
     private static final Log _logger = LogFactory.getLog(ServiceController.class);
@@ -24,13 +26,13 @@ public class ServiceController {
 
     @LogEntryExitExecutionTime
     @RequestMapping(value = "/services/{serviceId}", method = RequestMethod.GET)
-    public ResponseEntity<GenericFieldValue> getServiceUrl(Authentication authentication, @PathVariable String serviceId){
+    public ResponseEntity<GenericFieldValue> getServiceUrl(Authentication authentication, HttpSession session, @PathVariable String serviceId){
         try{
             GenericFieldValue serviceFieldValue = new GenericFieldValue();
 
             if(authenticationUtils.isSessionValid(authentication)){
                 if(StringUtils.isNotBlank(serviceId)){
-                    String loadbalancerUrl = loadbalancerUtils.getLoadbalancerUrl(serviceId, serviceId.replace("loadbalancer", "service"));
+                    String loadbalancerUrl = loadbalancerUtils.getLoadbalancerUrl(serviceId, serviceId.replace("loadbalancer", "service"), session, false);
 
                     String message = "Service ID '" + serviceId + "' successfully retrieved.";
                     _logger.debug(message);
