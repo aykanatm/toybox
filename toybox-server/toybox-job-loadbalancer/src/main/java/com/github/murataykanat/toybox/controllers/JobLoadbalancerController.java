@@ -3,6 +3,7 @@ package com.github.murataykanat.toybox.controllers;
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
+import com.github.murataykanat.toybox.ribbon.RibbonRetryHttpRequestFactory;
 import com.github.murataykanat.toybox.schema.selection.SelectionContext;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
 import com.github.murataykanat.toybox.schema.job.JobSearchRequest;
@@ -20,7 +21,9 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
+import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
 import org.springframework.cloud.netflix.ribbon.RibbonClient;
+import org.springframework.cloud.netflix.ribbon.SpringClientFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.Resource;
 import org.springframework.http.*;
@@ -38,8 +41,11 @@ public class JobLoadbalancerController {
 
     @LoadBalanced
     @Bean
-    public RestTemplate restTemplate(RestTemplateBuilder builder){
-        return builder.build();
+    public RestTemplate restTemplate(SpringClientFactory springClientFactory, LoadBalancerClient loadBalancerClient){
+        this.restTemplate = new RestTemplate();
+        RibbonRetryHttpRequestFactory lFactory = new RibbonRetryHttpRequestFactory(springClientFactory, loadBalancerClient);
+        restTemplate.setRequestFactory(lFactory);
+        return restTemplate;
     }
 
     @Autowired

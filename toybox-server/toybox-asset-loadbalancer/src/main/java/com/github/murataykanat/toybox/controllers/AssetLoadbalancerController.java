@@ -2,6 +2,7 @@ package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
+import com.github.murataykanat.toybox.ribbon.RibbonRetryHttpRequestFactory;
 import com.github.murataykanat.toybox.schema.asset.*;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.upload.UploadFile;
@@ -19,7 +20,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
+import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
 import org.springframework.cloud.netflix.ribbon.RibbonClient;
+import org.springframework.cloud.netflix.ribbon.SpringClientFactory;
+import org.springframework.cloud.netflix.ribbon.apache.RetryableRibbonLoadBalancingHttpClient;
+import org.springframework.cloud.netflix.ribbon.apache.RibbonApacheHttpRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
@@ -41,6 +46,9 @@ public class AssetLoadbalancerController {
     private static final Log _logger = LogFactory.getLog(AssetLoadbalancerController.class);
 
     @Autowired
+    private RestTemplate restTemplate;
+
+    @Autowired
     private LoadbalancerUtils loadbalancerUtils;
     @Autowired
     private AuthenticationUtils authenticationUtils;
@@ -50,12 +58,12 @@ public class AssetLoadbalancerController {
 
     @LoadBalanced
     @Bean
-    public RestTemplate restTemplate(RestTemplateBuilder builder){
-        return builder.build();
+    public RestTemplate restTemplate(SpringClientFactory springClientFactory, LoadBalancerClient loadBalancerClient){
+        this.restTemplate = new RestTemplate();
+        RibbonRetryHttpRequestFactory lFactory = new RibbonRetryHttpRequestFactory(springClientFactory, loadBalancerClient);
+        restTemplate.setRequestFactory(lFactory);
+        return restTemplate;
     }
-
-    @Autowired
-    private RestTemplate restTemplate;
 
     // The name "upload" must match the "name" attribute of the input in UI
     @LogEntryExitExecutionTime
