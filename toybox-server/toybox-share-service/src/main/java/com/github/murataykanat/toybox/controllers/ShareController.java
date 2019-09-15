@@ -2,10 +2,7 @@ package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
-import com.github.murataykanat.toybox.dbo.Asset;
-import com.github.murataykanat.toybox.dbo.Container;
-import com.github.murataykanat.toybox.dbo.ExternalShare;
-import com.github.murataykanat.toybox.dbo.User;
+import com.github.murataykanat.toybox.dbo.*;
 import com.github.murataykanat.toybox.repositories.ExternalSharesRepository;
 import com.github.murataykanat.toybox.schema.selection.SelectionContext;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
@@ -19,6 +16,7 @@ import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
@@ -53,6 +51,9 @@ public class ShareController {
     @Autowired
     private ExternalSharesRepository externalSharesRepository;
 
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+
     @Value("${exportStagingPath}")
     private String exportStagingPath;
 
@@ -66,6 +67,8 @@ public class ShareController {
                     if(externalSharesById.size() == 1){
                         ExternalShare externalShare = externalSharesById.get(0);
 
+                        SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+
                         boolean canDownload = false;
 
                         Date expirationDate = externalShare.getExpirationDate();
@@ -76,7 +79,6 @@ public class ShareController {
                             cal.set(Calendar.SECOND, 0);
                             Date today = cal.getTime();
 
-                            SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
                             _logger.debug("Expiration date: " + formatter.format(expirationDate));
                             _logger.debug("Today: " + formatter.format(today));
 
@@ -93,6 +95,21 @@ public class ShareController {
 
                             File archiveFile = new File(downloadFilePath);
                             if(archiveFile.exists()){
+                                if(externalShare.getNotifyWhenDownloaded().equalsIgnoreCase("Y")){
+                                    // Send notification manually (because we don't have a session)
+                                    String toUsername = externalShare.getUsername();
+                                    String fromUsername = "system";
+
+                                    Notification notification = new Notification();
+                                    notification.setUsername(toUsername);
+                                    notification.setNotification("The assets you externally shared were downloaded.");
+                                    notification.setIsRead("N");
+                                    notification.setDate(new Date());
+                                    notification.setFrom(fromUsername);
+
+                                    rabbitTemplate.convertAndSend(ToyboxConstants.TOYBOX_NOTIFICATION_EXCHANGE,"toybox.notification." + System.currentTimeMillis(), notification);
+                                }
+
                                 InputStreamResource resource = new InputStreamResource(new FileInputStream(archiveFile));
 
                                 HttpHeaders headers = new HttpHeaders();
@@ -111,7 +128,7 @@ public class ShareController {
                         }
                     }
                     else{
-                        throw new Exception("There are multiple external shares with ID '" + externalShareId + "'!");
+                        throw new IllegalArgumentException("There are multiple external shares with ID '" + externalShareId + "'!");
                     }
                 }
                 else{
