@@ -4,7 +4,7 @@ module.exports = {
         return{
             componentName: 'Share Modal Window',
             selectionContext: '',
-            users:[],
+            usersAndUsergroups:[],
             // User type
             isExternalUser: false,
             // Notification
@@ -28,9 +28,29 @@ module.exports = {
     },
     mounted:function(){
         this.$root.$on('open-share-modal-window', (selectionContext) => {
+            this.selectionContext = selectionContext;
+
+            this.isExternalUser = false;
+
+            this.notifyMe = false;
+            this.notifyOnView = false;
+            this.notifyOnEdit = false;
+            this.notifyOnDownload = false;
+            this.notifyOnShare = false;
+            this.notifyOnMoveOrCopy = false;
+
+            this.canView = true;
+            this.canEdit = false;
+            this.canDownload = false;
+            this.canShare = false;
+            this.canMoveOrCopy = false;
+
+            this.externalShareUrl = '';
+
             this.getService("toybox-user-loadbalancer")
                 .then(response => {
                     var userServiceUrl = response.data.value;
+                    // Get users
                     axios.get(userServiceUrl + "/users")
                         .then(response => {
                             console.log(response);
@@ -40,31 +60,48 @@ module.exports = {
                                 var user = users[i];
 
                                 if(this.user.username !== user.username){
-                                    this.users.push({
+                                    this.usersAndUsergroups.push({
                                         'displayName' : user.name + ' ' + user.lastname + ' (' + user.username + ')',
-                                        'userId': user.id
+                                        'id': user.id,
+                                        'isUser': true
                                     });
                                 }
                             }
 
-                            this.selectionContext = selectionContext;
+                            $('#user-dropdown').dropdown();
+                        })
+                        .catch(error => {
+                            var errorMessage;
 
-                            this.isExternalUser = false;
+                            if(error.response){
+                                errorMessage = error.response.data.message
+                                if(error.response.status == 401){
+                                    window.location = '/logout';
+                                }
+                            }
+                            else{
+                                errorMessage = error.message;
+                            }
 
-                            this.notifyMe = false;
-                            this.notifyOnView = false;
-                            this.notifyOnEdit = false;
-                            this.notifyOnDownload = false;
-                            this.notifyOnShare = false;
-                            this.notifyOnMoveOrCopy = false;
+                            console.error(errorMessage);
+                            this.$root.$emit('message-sent', 'Error', errorMessage);
+                        });
 
-                            this.canView = true;
-                            this.canEdit = false;
-                            this.canDownload = false;
-                            this.canShare = false;
-                            this.canMoveOrCopy = false;
+                    // Get user groups
+                    axios.get(userServiceUrl + "/usergroups")
+                        .then(response => {
+                            console.log(response);
+                            var usergroups = response.data.usergroups;
 
-                            this.externalShareUrl = ''
+                            for(var i = 0; i < usergroups.length; i++){
+                                var usergroup = usergroups[i];
+
+                                this.usersAndUsergroups.push({
+                                    'displayName' : usergroup.name,
+                                    'id': usergroup.id,
+                                    'isUser': false
+                                });
+                            }
 
                             $('#user-dropdown').dropdown();
                         })

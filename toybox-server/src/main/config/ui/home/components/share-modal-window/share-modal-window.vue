@@ -95,7 +95,7 @@
                     <div>
                         <select class="ui fluid search dropdown" multiple="" id="user-dropdown">
                             <option value="">User or Usergroup</option>
-                            <option v-for="user in users" v-bind:value="user.displayName" v-bind:key="user.userId">{{user.displayName}}</option>
+                            <option v-for="userOrUsergroup in usersAndUsergroups" v-bind:value="userOrUsergroup.displayName" v-bind:key="userOrUsergroup.id">{{userOrUsergroup.displayName}}</option>
                         </select>
                     </div>
                 </div>
