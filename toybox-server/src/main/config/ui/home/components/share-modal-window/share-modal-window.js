@@ -5,6 +5,8 @@ module.exports = {
             componentName: 'Share Modal Window',
             selectionContext: '',
             usersAndUsergroups:[],
+            selectedUsers:[],
+            selectedUserGroups:[],
             // User type
             isExternalUser: false,
             // Notification
@@ -28,6 +30,9 @@ module.exports = {
     },
     mounted:function(){
         this.$root.$on('open-share-modal-window', (selectionContext) => {
+            this.selectedUsers = [];
+            this.selectedUserGroups = [];
+
             this.selectionContext = selectionContext;
 
             this.isExternalUser = false;
@@ -62,13 +67,19 @@ module.exports = {
                                 if(this.user.username !== user.username){
                                     this.usersAndUsergroups.push({
                                         'displayName' : user.name + ' ' + user.lastname + ' (' + user.username + ')',
-                                        'id': user.id,
-                                        'isUser': true
+                                        'id': user.id
                                     });
                                 }
                             }
 
-                            $('#user-dropdown').dropdown();
+                            $('#user-dropdown').dropdown({
+                                onAdd: function(value){
+                                    this.addSelectedUsergroupOrUser(value);
+                                }.bind(this),
+                                onRemove: function(value) {
+                                    this.removeSelectedUsergroupOrUser(value);
+                                }.bind(this)
+                            });
                         })
                         .catch(error => {
                             var errorMessage;
@@ -98,12 +109,18 @@ module.exports = {
 
                                 this.usersAndUsergroups.push({
                                     'displayName' : usergroup.name,
-                                    'id': usergroup.id,
-                                    'isUser': false
+                                    'id': usergroup.id
                                 });
                             }
 
-                            $('#user-dropdown').dropdown();
+                            $('#user-dropdown').dropdown({
+                                onAdd: function(value){
+                                    this.addSelectedUsergroupOrUser(value);
+                                }.bind(this),
+                                onRemove: function(value) {
+                                    this.removeSelectedUsergroupOrUser(value);
+                                }.bind(this)
+                            });
                         })
                         .catch(error => {
                             var errorMessage;
@@ -259,6 +276,26 @@ module.exports = {
             }
 
             document.body.removeChild(textArea);
+        },
+        addSelectedUsergroupOrUser:function(value){
+            var regExp = /\(([^)]+)\)/;
+            var matches = regExp.exec(value);
+            if(matches){
+                this.selectedUsers.push(matches[1]);
+            }
+            else{
+                this.selectedUserGroups.push(value);
+            }
+        },
+        removeSelectedUsergroupOrUser:function(value){
+            var regExp = /\(([^)]+)\)/;
+            var matches = regExp.exec(value);
+            if(matches){
+                this.selectedUsers.splice(matches[1], 1);
+            }
+            else{
+                this.selectedUserGroups.splice(value, 1);
+            }
         }
     }
 }
