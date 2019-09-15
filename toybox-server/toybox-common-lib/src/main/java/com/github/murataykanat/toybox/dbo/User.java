@@ -50,6 +50,10 @@ public class User {
     @JoinTable(name = "user_role", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles;
 
+    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JoinTable(name = "user_usergroup", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "usergroup_id"))
+    private Set<UserGroup> usergroups;
+
     public User() {}
 
     public User(User user){
@@ -58,6 +62,7 @@ public class User {
         this.password = user.password;
         this.enabled = user.enabled;
         this.roles = user.roles;
+        this.usergroups = user.usergroups;
         this.isAccountNonExpired = user.isAccountNonExpired;
         this.isAccountNonLocked = user.isAccountNonLocked;
         this.isCredentialsNonExpired = user.isCredentialsNonExpired;
@@ -161,5 +166,13 @@ public class User {
 
     public void setAvatarPath(String avatarPath) {
         this.avatarPath = avatarPath;
+    }
+
+    public Set<UserGroup> getUsergroups() {
+        return usergroups;
+    }
+
+    public void setUsergroups(Set<UserGroup> usergroups) {
+        this.usergroups = usergroups;
     }
 }
