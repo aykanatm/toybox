@@ -2,9 +2,12 @@ package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.dbo.User;
+import com.github.murataykanat.toybox.dbo.UserGroup;
+import com.github.murataykanat.toybox.repositories.UserGroupsRepository;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import com.github.murataykanat.toybox.schema.user.RetrieveUsersResponse;
 import com.github.murataykanat.toybox.schema.user.UserResponse;
+import com.github.murataykanat.toybox.schema.usergroup.RetrieveUserGroupsResponse;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -27,6 +30,8 @@ public class UserController {
 
     @Autowired
     private UsersRepository usersRepository;
+    @Autowired
+    private UserGroupsRepository userGroupsRepository;
 
     @LogEntryExitExecutionTime
     @RequestMapping(value = "/users/me", method = RequestMethod.GET)
@@ -65,6 +70,7 @@ public class UserController {
         }
     }
 
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/users", method = RequestMethod.GET)
     public ResponseEntity<RetrieveUsersResponse> retrieveUsers(Authentication authentication){
         _logger.debug("retrieveUsers() >>");
@@ -95,6 +101,39 @@ public class UserController {
             retrieveUsersResponse.setMessage(errorMessage);
 
             return new ResponseEntity<>(retrieveUsersResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    @RequestMapping(value = "/usergroups", method = RequestMethod.GET)
+    public ResponseEntity<RetrieveUserGroupsResponse> retrieveUserGroups(Authentication authentication){
+        RetrieveUserGroupsResponse retrieveUserGroupsResponse = new RetrieveUserGroupsResponse();
+
+        try{
+            if(authenticationUtils.isSessionValid(authentication)){
+                List<UserGroup> userGroups = userGroupsRepository.findAll();
+
+                retrieveUserGroupsResponse.setUsergroups(userGroups);
+                retrieveUserGroupsResponse.setMessage("User groups retrieved successfully!");
+
+                return new ResponseEntity<>(retrieveUserGroupsResponse, HttpStatus.OK);
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                retrieveUserGroupsResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(retrieveUserGroupsResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while retrieving user groups. " + e.getLocalizedMessage();
+            _logger.debug(errorMessage, e);
+
+            retrieveUserGroupsResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(retrieveUserGroupsResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

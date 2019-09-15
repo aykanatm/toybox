@@ -5,6 +5,7 @@ import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.ribbon.RibbonRetryHttpRequestFactory;
 import com.github.murataykanat.toybox.schema.user.RetrieveUsersResponse;
 import com.github.murataykanat.toybox.schema.user.UserResponse;
+import com.github.murataykanat.toybox.schema.usergroup.RetrieveUserGroupsResponse;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import com.github.murataykanat.toybox.utilities.LoadbalancerUtils;
 import com.google.gson.Gson;
@@ -170,5 +171,66 @@ public class UserLoadbalancerController {
         retrieveUsersResponse.setMessage(errorMessage);
 
         return new ResponseEntity<>(retrieveUsersResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @LogEntryExitExecutionTime
+    @HystrixCommand(fallbackMethod = "retrieveUserGroupsErrorFallback")
+    @RequestMapping(value = "/usergroups", method = RequestMethod.GET)
+    public ResponseEntity<RetrieveUserGroupsResponse> retrieveUserGroups(Authentication authentication, HttpSession session){
+        RetrieveUserGroupsResponse retrieveUserGroupsResponse = new RetrieveUserGroupsResponse();
+
+        try{
+            if(authenticationUtils.isSessionValid(authentication)){
+                HttpHeaders headers = authenticationUtils.getHeaders(session);
+                String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.USER_SERVICE_NAME);
+
+                if(StringUtils.isNotBlank(prefix)){
+                    return restTemplate.exchange(prefix + ToyboxConstants.USER_SERVICE_NAME + "/usergroups", HttpMethod.GET, new HttpEntity<>(headers), RetrieveUserGroupsResponse.class);
+                }
+                else{
+                    throw new IllegalArgumentException("Service ID prefix is null!");
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                retrieveUserGroupsResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(retrieveUserGroupsResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            retrieveUserGroupsResponse.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(retrieveUserGroupsResponse, httpEx.getStatusCode());
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while retrieving users. " + e.getLocalizedMessage();
+            _logger.debug(errorMessage, e);
+
+            retrieveUserGroupsResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(retrieveUserGroupsResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    public ResponseEntity<RetrieveUserGroupsResponse> retrieveUserGroupsErrorFallback(Authentication authentication, HttpSession session, Throwable e){
+        RetrieveUserGroupsResponse retrieveUserGroupsResponse = new RetrieveUserGroupsResponse();
+
+        String errorMessage;
+        if(e.getLocalizedMessage() != null){
+            errorMessage = "Unable to retrieve user groups. " + e.getLocalizedMessage();
+        }
+        else{
+            errorMessage = "Unable to get response from the user service.";
+        }
+
+        _logger.error(errorMessage, e);
+
+        retrieveUserGroupsResponse.setMessage(errorMessage);
+
+        return new ResponseEntity<>(retrieveUserGroupsResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
