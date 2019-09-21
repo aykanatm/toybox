@@ -30,6 +30,12 @@ module.exports = {
     },
     mounted:function(){
         this.$root.$on('open-share-modal-window', (selectionContext) => {
+            setTimeout(() => {
+                $('#expiration-date').calendar({
+                    type: 'date'
+                });
+            }, 200);
+
             this.selectedUsers = [];
             this.selectedUserGroups = [];
 

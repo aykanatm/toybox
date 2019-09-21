@@ -103,15 +103,21 @@
                     <div style="width: 70%;">
                         <div style="padding-left: 10px;">
                             <span style="width: 19%; display: inline-block;">Usage Limit:</span>
-                            <div class="ui input" style="width: 200px;">
+                            <div class="ui input" style="width: 203px;">
                                 <input type="text" placeholder="" v-model="maxNumberOfHits">
                             </div>
                         </div>
                         <div style="margin-bottom: 10px; padding-left: 10px;">
                             <span style="width: 19%; display: inline-block;">Expiration Date:</span>
-                            <div class="ui input" style="width: 200px">
-                                <input type="date" placeholder="" v-model="expirationDate">
+                            <div class="ui calendar" id="expiration-date" style="display: inline-block; margin-top: 5px;">
+                            <div class="ui input right icon">
+                                <i class="calendar icon"></i>
+                                <input type="text" placeholder="Expiration Date" v-model="expirationDate">
                             </div>
+                            </div>
+                            <!-- <div class="ui input" >
+                                <input type="date" placeholder="" v-model="expirationDate">
+                            </div> -->
                         </div>
                         <div>
                             <div class="ui input" style="width: 80%;">
