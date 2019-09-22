@@ -2,6 +2,10 @@ package com.github.murataykanat.toybox.utilities;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.dbo.User;
+import com.github.murataykanat.toybox.dbo.UserGroup;
+import com.github.murataykanat.toybox.dbo.UserUserGroup;
+import com.github.murataykanat.toybox.repositories.UserGroupsRepository;
+import com.github.murataykanat.toybox.repositories.UserUsergroupsRepository;
 import com.github.murataykanat.toybox.repositories.UsersRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -13,6 +17,7 @@ import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpSession;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,6 +28,10 @@ public class AuthenticationUtils {
 
     @Autowired
     private UsersRepository usersRepository;
+    @Autowired
+    private UserGroupsRepository userGroupsRepository;
+    @Autowired
+    private UserUsergroupsRepository userUsergroupsRepository;
 
     @LogEntryExitExecutionTime
     public User getUser(Authentication authentication){
@@ -74,6 +83,35 @@ public class AuthenticationUtils {
             throw new IllegalArgumentException("User ID '" + userId + "' cannot be found in the system!");
         }
     }
+
+    @LogEntryExitExecutionTime
+    public UserGroup getUserGroup(String name){
+        List<UserGroup> userGroupsByName = userGroupsRepository.findUserGroupsByName(name);
+        if(!userGroupsByName.isEmpty()){
+            if(userGroupsByName.size() == 1){
+                return userGroupsByName.get(0);
+            }
+            else{
+                throw new IllegalArgumentException("There are multiple instances of the name '" + name + "'!");
+            }
+        }
+        else{
+            throw new IllegalArgumentException("User Group with the name '" + name + "' cannot be found in the system!");
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    public List<User> getUsersInUserGroup(String userGroupName){
+        UserGroup userGroup = getUserGroup(userGroupName);
+        List<UserUserGroup> userUserGroupByUserGroupId = userUsergroupsRepository.findUserUserGroupByUserGroupId(userGroup.getId());
+        if(!userUserGroupByUserGroupId.isEmpty()){
+            return usersRepository.findUsersByUserIds(userUserGroupByUserGroupId.stream().map(UserUserGroup::getUserId).collect(Collectors.toList()));
+        }
+        else{
+            return new ArrayList<>();
+        }
+    }
+
 
     @LogEntryExitExecutionTime
     public boolean isAdminUser(Authentication authentication){

@@ -9,4 +9,6 @@ import java.util.List;
 public interface UserGroupsRepository extends JpaRepository<UserGroup, Integer> {
     @Query(value = "SELECT usergroup_id, name FROM usergroups", nativeQuery = true)
     List<UserGroup> findAll();
+    @Query(value = "SELECT usergroup_id, name FROM usergroups WHERE name=?", nativeQuery = true)
+    List<UserGroup> findUserGroupsByName(String userGroupName);
 }

@@ -3,6 +3,7 @@ package com.github.murataykanat.toybox.repositories;
 import com.github.murataykanat.toybox.dbo.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,4 +18,8 @@ public interface UsersRepository extends JpaRepository<User, Integer>{
     List<User> findUsersByUserId(int userId);
     @Query(value = "SELECT user_id, password, email, enabled, account_non_expired, account_non_locked, credentials_non_expired, lastname, name, username, avatar_path FROM users", nativeQuery = true)
     List<User> findAll();
+    @Query(value = "SELECT user_id, password, email, enabled, account_non_expired, account_non_locked, credentials_non_expired, lastname, name, username, avatar_path FROM users WHERE user_id IN :userIds", nativeQuery = true)
+    List<User> findUsersByUserIds(@Param("userIds")List<Integer> userIds);
+    @Query(value = "SELECT user_id, password, email, enabled, account_non_expired, account_non_locked, credentials_non_expired, lastname, name, username, avatar_path FROM users WHERE username IN :usernames", nativeQuery = true)
+    List<User> findUsersByUsernames(@Param("usernames")List<String> usernames);
 }

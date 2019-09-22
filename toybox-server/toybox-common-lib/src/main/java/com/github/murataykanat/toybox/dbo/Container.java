@@ -1,5 +1,6 @@
 package com.github.murataykanat.toybox.dbo;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -42,6 +43,9 @@ public class Container implements Serializable, ContainerItem {
 
     @Transient
     private String subscribed;
+
+    @Transient
+    private String shared;
 
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, targetEntity = Asset.class)
     @JoinTable(name = "container_asset", joinColumns = @JoinColumn(name = "container_id"), inverseJoinColumns = @JoinColumn(name = "asset_id"))
@@ -93,6 +97,8 @@ public class Container implements Serializable, ContainerItem {
         this.deleted = deleted;
     }
 
+    @Transient
+    @JsonGetter(value = "subscribed")
     public String getSubscribed() {
         return subscribed;
     }
@@ -131,5 +137,15 @@ public class Container implements Serializable, ContainerItem {
 
     public void setSystem(String isSystem) {
         this.isSystem = isSystem;
+    }
+
+    @Transient
+    @JsonGetter(value = "shared")
+    public String getShared() {
+        return shared;
+    }
+
+    public void setShared(String shared) {
+        this.shared = shared;
     }
 }

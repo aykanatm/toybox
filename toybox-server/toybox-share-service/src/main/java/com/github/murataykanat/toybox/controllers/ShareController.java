@@ -3,15 +3,18 @@ package com.github.murataykanat.toybox.controllers;
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.*;
-import com.github.murataykanat.toybox.repositories.ExternalSharesRepository;
+import com.github.murataykanat.toybox.repositories.*;
+import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.selection.SelectionContext;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
 import com.github.murataykanat.toybox.schema.share.ExternalShareRequest;
 import com.github.murataykanat.toybox.schema.share.ExternalShareResponse;
+import com.github.murataykanat.toybox.schema.share.InternalShareRequest;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import com.github.murataykanat.toybox.utilities.LoadbalancerUtils;
 import com.github.murataykanat.toybox.utilities.NotificationUtils;
+import com.github.murataykanat.toybox.utilities.SelectionUtils;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -32,9 +35,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RefreshScope
 @RestController
@@ -47,9 +49,17 @@ public class ShareController {
     private AuthenticationUtils authenticationUtils;
     @Autowired
     private NotificationUtils notificationUtils;
+    @Autowired
+    private SelectionUtils selectionUtils;
 
     @Autowired
     private ExternalSharesRepository externalSharesRepository;
+    @Autowired
+    private UserAssetsRepository userAssetsRepository;
+    @Autowired
+    private UserContainersRepository userContainersRepository;
+    @Autowired
+    private UsersRepository usersRepository;
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
@@ -168,7 +178,7 @@ public class ShareController {
                 if(user != null){
                     if(externalShareRequest != null){
                         SelectionContext selectionContext = externalShareRequest.getSelectionContext();
-                        if(selectionContext != null){
+                        if(selectionUtils.isSelectionContextValid(selectionContext)){
                             String username = authentication.getName();
                             Date expirationDate = externalShareRequest.getExpirationDate();
                             int maxNumberOfHits = externalShareRequest.getMaxNumberOfHits();
@@ -250,7 +260,12 @@ public class ShareController {
                             }
                         }
                         else{
-                            throw new IllegalArgumentException("Selection context is null!");
+                            String errorMessage = "Selection context is not valid!";
+                            _logger.error(errorMessage);
+
+                            externalShareResponse.setMessage(errorMessage);
+
+                            return new ResponseEntity<>(externalShareResponse, HttpStatus.BAD_REQUEST);
                         }
                     }
                     else{
@@ -282,6 +297,121 @@ public class ShareController {
             externalShareResponse.setMessage(errorMessage);
 
             return new ResponseEntity<>(externalShareResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // TODO: Create loadbalancer
+    @LogEntryExitExecutionTime
+    @RequestMapping(value = "/share/internal", method = RequestMethod.POST)
+    public ResponseEntity<GenericResponse> createInternalShare(Authentication authentication, HttpSession session, @RequestBody InternalShareRequest internalShareRequest) {
+        GenericResponse genericResponse = new GenericResponse();
+
+        try{
+            if(authenticationUtils.isSessionValid(authentication)){
+                User user = authenticationUtils.getUser(authentication);
+                if(user != null){
+                    if(internalShareRequest != null){
+                        SelectionContext selectionContext = internalShareRequest.getSelectionContext();
+                        if(selectionUtils.isSelectionContextValid(selectionContext)){
+                            List<Asset> selectedAssets = selectionContext.getSelectedAssets();
+                            List<Container> selectedContainers = selectionContext.getSelectedContainers();
+                            List<String> sharedUsergroupNames = internalShareRequest.getSharedUsergroups();
+                            List<String> sharedUserNames = internalShareRequest.getSharedUsers();
+
+                            // We find all the users that are in the shared user groups
+                            List<User> sharedUsers = new ArrayList<>();
+                            for(String sharedUsergroupName: sharedUsergroupNames){
+                                List<User> usersInUserGroup = authenticationUtils.getUsersInUserGroup(sharedUsergroupName);
+                                // We exclude the current user
+                                sharedUsers.addAll(usersInUserGroup.stream().filter(u -> !u.getName().equalsIgnoreCase(user.getUsername())).collect(Collectors.toList()));
+                            }
+                            // We find the shared users
+                            if(!sharedUserNames.isEmpty()){
+                                List<User> usersByUsernames = usersRepository.findUsersByUsernames(sharedUserNames);
+                                sharedUsers.addAll(usersByUsernames);
+                            }
+
+                            // We create the unique users list to share
+                            List<User> uniqueUsers = new ArrayList<>(new HashSet<>(sharedUsers));
+
+                            // We set the containers and users as shared with all the unique users
+                            // TODO: Prevent the sharing of already shared assets/containers
+                            for(User uniqueUser: uniqueUsers){
+                                for(Asset selectedAsset: selectedAssets){
+                                    userAssetsRepository.insertSharedAsset(selectedAsset.getId(), uniqueUser.getId());
+                                }
+                                for(Container selectedContainer: selectedContainers){
+                                    userContainersRepository.insertSharedContainer(selectedContainer.getId(), uniqueUser.getId());
+                                }
+                            }
+
+                            if(selectedAssets != null && !selectedAssets.isEmpty()){
+                                for(Asset asset: selectedAssets){
+                                    // Send notification
+                                    String message = "Asset '" + asset.getName() + "' is shared internally by '" + user.getUsername() + "'";
+                                    SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                    sendNotificationRequest.setIsAsset(true);
+                                    sendNotificationRequest.setId(asset.getId());
+                                    sendNotificationRequest.setFromUser(user);
+                                    sendNotificationRequest.setMessage(message);
+                                    notificationUtils.sendNotification(sendNotificationRequest, session);
+                                }
+                            }
+
+                            if(selectedContainers != null && !selectedContainers.isEmpty()){
+                                for(Container container: selectedContainers){
+                                    // Send notification
+                                    String message = "Folder '" + container.getName() + "' is shared internally by '" + user.getUsername() + "'";
+                                    SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                    sendNotificationRequest.setIsAsset(false);
+                                    sendNotificationRequest.setId(container.getId());
+                                    sendNotificationRequest.setFromUser(user);
+                                    sendNotificationRequest.setMessage(message);
+                                    notificationUtils.sendNotification(sendNotificationRequest, session);
+                                }
+                            }
+
+                            genericResponse.setMessage("Internal share created!");
+                            return new ResponseEntity<>(genericResponse, HttpStatus.CREATED);
+                        }
+                        else{
+                            String errorMessage = "Selection context is not valid!";
+                            _logger.error(errorMessage);
+
+                            genericResponse.setMessage(errorMessage);
+
+                            return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                        }
+                    }
+                    else {
+                        String errorMessage = "Internal share request is null!";
+                        _logger.error(errorMessage);
+
+                        genericResponse.setMessage(errorMessage);
+
+                        return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                    }
+                }
+                else{
+                    throw new IllegalArgumentException("User is null!");
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while sharing assets externally. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
