@@ -70,8 +70,9 @@ module.exports = {
             }, 200);
 
             this.selectedUsers = [];
-            this.selectedUserGroups = [];
             this.usersAndUsergroups = [];
+            this.selectedUsers = [];
+            this.selectedUserGroups = [];
 
             this.isExternalUser = false;
             this.notifyMe = false;
@@ -324,7 +325,70 @@ module.exports = {
             }
         },
         share:function(){
-            // TODO: Generate internal share and close the window
+            if(this.enableExpireInternal && this.internalExpirationDate === ''){
+                this.$root.$emit('message-sent', 'Warning', "Expiration date is enabled. Please enter an expiration date.");
+            }
+            else{
+                this.getService("toybox-share-loadbalancer")
+                    .then(response =>{
+                        var shareServiceUrl = response.data.value;
+                        var internalShareRequest = {
+                            selectionContext: this.selectionContext,
+                            enableExpireInternal: this.enableExpireInternal,
+                            expirationDate: this.internalExpirationDate,
+                            notifyOnView: this.notifyOnView,
+                            notifyOnEdit: this.notifyOnEdit,
+                            notifyOnDownload: this.notifyOnDownload,
+                            notifyOnShare: this.notifyOnShare,
+                            notifyOnMoveOrCopy: this.notifyOnMoveOrCopy,
+                            canView: this.canView,
+                            canEdit: this.canEdit,
+                            canDownload: this.canDownload,
+                            canShare: this.canShare,
+                            canMoveOrCopy: this.canMoveOrCopy,
+                            sharedUsergroups: this.selectedUserGroups,
+                            sharedUsers: this.selectedUsers
+                        }
+
+                        axios.post(shareServiceUrl + "/share/internal", internalShareRequest)
+                            .then(response =>{
+                                console.log(response);
+                                this.$root.$emit('message-sent', 'Success', response.data.message);
+                            })
+                            .catch(error => {
+                                var errorMessage;
+
+                                if(error.response){
+                                    errorMessage = error.response.data.message
+                                    if(error.response.status == 401){
+                                        window.location = '/logout';
+                                    }
+                                }
+                                else{
+                                    errorMessage = error.message;
+                                }
+
+                                console.error(errorMessage);
+                                this.$root.$emit('message-sent', 'Error', errorMessage);
+                            });
+                    })
+                    .catch(error => {
+                        var errorMessage;
+
+                        if(error.response){
+                            errorMessage = error.response.data.message
+                            if(error.response.status == 401){
+                                window.location = '/logout';
+                            }
+                        }
+                        else{
+                            errorMessage = error.message;
+                        }
+
+                        console.error(errorMessage);
+                        this.$root.$emit('message-sent', 'Error', errorMessage);
+                    });
+            }
         },
         copy:function(){
             this.copyTextToClipboard(this.externalShareUrl);
