@@ -69,62 +69,67 @@ public class ShareController {
 
                         SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
 
-                        boolean canDownload = false;
+                        if(externalShare.getEnableExpireExternal().equalsIgnoreCase("Y")){
+                            Date expirationDate = externalShare.getExpirationDate();
+                            if(expirationDate != null){
+                                Calendar cal = Calendar.getInstance();
+                                cal.set(Calendar.HOUR_OF_DAY, 0);
+                                cal.set(Calendar.MINUTE, 0);
+                                cal.set(Calendar.SECOND, 0);
+                                Date today = cal.getTime();
 
-                        Date expirationDate = externalShare.getExpirationDate();
-                        if(expirationDate != null){
-                            Calendar cal = Calendar.getInstance();
-                            cal.set(Calendar.HOUR_OF_DAY, 0);
-                            cal.set(Calendar.MINUTE, 0);
-                            cal.set(Calendar.SECOND, 0);
-                            Date today = cal.getTime();
+                                _logger.debug("Expiration date: " + formatter.format(expirationDate));
+                                _logger.debug("Today: " + formatter.format(today));
 
-                            _logger.debug("Expiration date: " + formatter.format(expirationDate));
-                            _logger.debug("Today: " + formatter.format(today));
+                                if(!today.before(expirationDate)){
+                                    String errorMessage = "The external share is expired!";
+                                    _logger.error(errorMessage);
 
-                            if(today.before(expirationDate) && (externalShare.getMaxNumberOfHits() == -1 || externalShare.getMaxNumberOfHits() > 0)){
-                                canDownload = true;
-                            }
-                        }
-                        else{
-                            throw new IllegalArgumentException("Expiration date is null!");
-                        }
-
-                        if(canDownload){
-                            String downloadFilePath =  exportStagingPath + File.separator + externalShare.getJobId() + File.separator + "Download.zip";
-
-                            File archiveFile = new File(downloadFilePath);
-                            if(archiveFile.exists()){
-                                if(externalShare.getNotifyWhenDownloaded().equalsIgnoreCase("Y")){
-                                    // Send notification manually (because we don't have a session)
-                                    String toUsername = externalShare.getUsername();
-                                    String fromUsername = "system";
-
-                                    Notification notification = new Notification();
-                                    notification.setUsername(toUsername);
-                                    notification.setNotification("The assets you externally shared were downloaded.");
-                                    notification.setIsRead("N");
-                                    notification.setDate(new Date());
-                                    notification.setFrom(fromUsername);
-
-                                    rabbitTemplate.convertAndSend(ToyboxConstants.TOYBOX_NOTIFICATION_EXCHANGE,"toybox.notification." + System.currentTimeMillis(), notification);
+                                    return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
                                 }
-
-                                InputStreamResource resource = new InputStreamResource(new FileInputStream(archiveFile));
-
-                                HttpHeaders headers = new HttpHeaders();
-                                headers.set("Content-disposition", "attachment; filename=Download.zip");
-                                return new ResponseEntity<>(resource, headers, HttpStatus.OK);
                             }
                             else{
-                                throw new IOException("File path '" + downloadFilePath + "' is not valid!");
+                                throw new IllegalArgumentException("Expiration date is null!");
                             }
                         }
-                        else{
-                            String errorMessage = "Either the external share is expired or the maximum number of uses exceeded the set amount.!";
-                            _logger.error(errorMessage);
 
-                            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                        if(externalShare.getEnableUsageLimit().equalsIgnoreCase("Y")){
+                            int maxNumberOfHits = externalShare.getMaxNumberOfHits();
+                            if(maxNumberOfHits <= 0){
+                                String errorMessage = "The maximum number of uses exceeded the set amount!";
+                                _logger.error(errorMessage);
+
+                                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                            }
+                        }
+
+                        String downloadFilePath =  exportStagingPath + File.separator + externalShare.getJobId() + File.separator + "Download.zip";
+
+                        File archiveFile = new File(downloadFilePath);
+                        if(archiveFile.exists()){
+                            if(externalShare.getNotifyWhenDownloaded().equalsIgnoreCase("Y")){
+                                // Send notification manually (because we don't have a session)
+                                String toUsername = externalShare.getUsername();
+                                String fromUsername = "system";
+
+                                Notification notification = new Notification();
+                                notification.setUsername(toUsername);
+                                notification.setNotification("The assets you externally shared were downloaded.");
+                                notification.setIsRead("N");
+                                notification.setDate(new Date());
+                                notification.setFrom(fromUsername);
+
+                                rabbitTemplate.convertAndSend(ToyboxConstants.TOYBOX_NOTIFICATION_EXCHANGE,"toybox.notification." + System.currentTimeMillis(), notification);
+                            }
+
+                            InputStreamResource resource = new InputStreamResource(new FileInputStream(archiveFile));
+
+                            HttpHeaders headers = new HttpHeaders();
+                            headers.set("Content-disposition", "attachment; filename=Download.zip");
+                            return new ResponseEntity<>(resource, headers, HttpStatus.OK);
+                        }
+                        else{
+                            throw new IOException("File path '" + downloadFilePath + "' is not valid!");
                         }
                     }
                     else{
@@ -168,10 +173,20 @@ public class ShareController {
                             Date expirationDate = externalShareRequest.getExpirationDate();
                             int maxNumberOfHits = externalShareRequest.getMaxNumberOfHits();
                             String notifyWhenDownloaded = externalShareRequest.getNotifyWhenDownloaded() ? "Y" : "N";
+                            String enableExpireExternal = externalShareRequest.getEnableExpireExternal() ? "Y" : "N";
+                            String enableUsageLimit = externalShareRequest.getEnableUsageLimit() ? "Y" : "N";
 
-                            if(expirationDate == null){
+                            if(!externalShareRequest.getEnableExpireExternal()){
                                 SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss");
                                 expirationDate = simpleDateFormat.parse("12/31/9999 23:59:59");
+                            }
+                            else{
+                                Calendar calendar = Calendar.getInstance();
+                                calendar.setTime(expirationDate);
+                                calendar.set(Calendar.HOUR_OF_DAY, 0);
+                                calendar.set(Calendar.MINUTE, 0);
+                                calendar.set(Calendar.SECOND, 0);
+                                expirationDate = calendar.getTime();
                             }
 
                             RestTemplate restTemplate = new RestTemplate();
@@ -190,7 +205,7 @@ public class ShareController {
 
                                     String externalShareId = generateExternalShareId();
 
-                                    externalSharesRepository.insertExternalShare(externalShareId, username, jobResponse.getJobId(), expirationDate, maxNumberOfHits, notifyWhenDownloaded);
+                                    externalSharesRepository.insertExternalShare(externalShareId, username, jobResponse.getJobId(), expirationDate, maxNumberOfHits, notifyWhenDownloaded, enableExpireExternal, enableUsageLimit);
 
                                     externalShareResponse.setMessage("External share successfully generated.");
                                     externalShareResponse.setUrl(shareServiceUrl + "/share/download/" + externalShareId);

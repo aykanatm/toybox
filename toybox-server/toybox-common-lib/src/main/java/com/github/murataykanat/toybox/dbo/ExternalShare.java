@@ -21,9 +21,17 @@ public class ExternalShare {
     @JsonProperty("jobId")
     private long jobId;
 
+    @Column(name = "enable_expire_external")
+    @JsonProperty("enableExpireExternal")
+    private String enableExpireExternal;
+
     @Column(name = "expiration_date")
     @JsonProperty("expirationDate")
     private Date expirationDate;
+
+    @Column(name = "enable_usage_limit")
+    @JsonProperty("enableUsageLimit")
+    private String enableUsageLimit;
 
     @Column(name = "max_number_of_hits")
     @JsonProperty("maxNumberOfHits")
@@ -79,5 +87,21 @@ public class ExternalShare {
 
     public void setNotifyWhenDownloaded(String notifyWhenDownloaded) {
         this.notifyWhenDownloaded = notifyWhenDownloaded;
+    }
+
+    public String getEnableExpireExternal() {
+        return enableExpireExternal;
+    }
+
+    public void setEnableExpireExternal(String enableExpireExternal) {
+        this.enableExpireExternal = enableExpireExternal;
+    }
+
+    public String getEnableUsageLimit() {
+        return enableUsageLimit;
+    }
+
+    public void setEnableUsageLimit(String enableUsageLimit) {
+        this.enableUsageLimit = enableUsageLimit;
     }
 }
