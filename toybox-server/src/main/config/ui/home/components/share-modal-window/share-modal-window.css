@@ -31,31 +31,27 @@
 .notification-settings{
     float: left;
     width: 50%;
-    height: 50%;
+    height: 40%;
 }
 
 .permission-settings{
     float: left;
     width: 49%;
-    height: 50%;
+    height: 40%;
 }
 
 .internal-user-share{
     clear: both;
-    height: 50%;
-    background-color: #F2F2F2;
+    height: 59%;
     border-radius: 5px;
     padding: 10px;
 }
 
 .external-user-share{
     clear: both;
-    height: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: #F2F2F2;
+    height: 59%;
     border-radius: 5px;
+    padding: 5px;
 }
 
 #toybox-toggle{

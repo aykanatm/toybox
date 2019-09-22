@@ -98,35 +98,65 @@
                             <option v-for="userOrUsergroup in usersAndUsergroups" v-bind:value="userOrUsergroup.displayName" v-bind:key="userOrUsergroup.id">{{userOrUsergroup.displayName}}</option>
                         </select>
                     </div>
-                </div>
-                <div class="external-user-share" v-show="isExternalUser">
-                    <div style="width: 70%;">
-                        <div style="padding-left: 10px;">
-                            <span style="width: 19%; display: inline-block;">Usage Limit:</span>
-                            <div class="ui input" style="width: 203px;">
-                                <input type="text" placeholder="" v-model="maxNumberOfHits">
+                    <div style="margin-bottom: 5px; margin-left: 5px; font-weight: bold; margin-top: 5px;">
+                        <span>Expiration</span>
+                    </div>
+                    <div style="padding-left: 20px;">
+                        <div>
+                            <div class="ui toggle checkbox" id="toybox-toggle">
+                                <input type="checkbox" name="canexpireinternal" v-model="enableExpireInternal">
+                                <label>Enable Expiration</label>
                             </div>
                         </div>
-                        <div style="margin-bottom: 10px; padding-left: 10px;">
-                            <span style="width: 19%; display: inline-block;">Expiration Date:</span>
-                            <div class="ui calendar" id="expiration-date" style="display: inline-block; margin-top: 5px;">
+                        <div class="ui calendar" id="internal-expiration-date" style="display: inline-block; margin-top: 5px;">
                             <div class="ui input right icon">
                                 <i class="calendar icon"></i>
-                                <input type="text" placeholder="Expiration Date" v-model="expirationDate">
+                                <input type="text" id="internal-expiration-date-input" placeholder="Expiration Date">
                             </div>
-                            </div>
-                            <!-- <div class="ui input" >
-                                <input type="date" placeholder="" v-model="expirationDate">
-                            </div> -->
                         </div>
+                    </div>
+                </div>
+                <div class="external-user-share" v-show="isExternalUser">
+                    <div style="margin-bottom: 5px; margin-left: 5px; font-weight: bold; margin-top: 5px;">
+                        <span>Usage Limit</span>
+                    </div>
+                    <div style="padding-left: 20px;">
                         <div>
-                            <div class="ui input" style="width: 80%;">
-                                <input type="text" placeholder="Share URL" v-model="externalShareUrl">
+                            <div class="ui toggle checkbox" id="toybox-toggle">
+                                <input type="checkbox" name="enableusagelimit" v-model="enableUsageLimit">
+                                <label>Enable Usage Limit</label>
                             </div>
-                            <button class="ui primary button" style="width: 19%;" v-on:click.stop="copy">
-                                Copy
-                            </button>
                         </div>
+                        <div style="padding-left: 10px;">
+                            <div class="ui input">
+                                <input id="max-number-of-hits" type="number" placeholder="Maximum Usage" v-model="maxNumberOfHits">
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 5px; margin-left: 5px; font-weight: bold; margin-top: 5px;">
+                        <span>Expiration</span>
+                    </div>
+                    <div style="padding-left: 20px;">
+                        <div>
+                            <div class="ui toggle checkbox" id="toybox-toggle">
+                                <input type="checkbox" name="canexpireexternal" v-model="enableExpireExternal">
+                                <label>Expires</label>
+                            </div>
+                        </div>
+                        <div class="ui calendar" id="external-expiration-date" style="display: inline-block; margin-top: 5px;">
+                            <div class="ui input right icon">
+                                <i class="calendar icon"></i>
+                                <input type="text" id="external-expiration-date-input" placeholder="Expiration Date">
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 5px;">
+                        <div class="ui input" style="width: 80%;">
+                            <input type="text" placeholder="Share URL" v-model="externalShareUrl">
+                        </div>
+                        <button class="ui primary button" style="width: 19%;" v-on:click.stop="copy">
+                            Copy
+                        </button>
                     </div>
                 </div>
             </div>
