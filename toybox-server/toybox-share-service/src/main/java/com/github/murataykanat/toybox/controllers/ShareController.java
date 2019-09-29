@@ -300,7 +300,6 @@ public class ShareController {
         }
     }
 
-    // TODO: Create loadbalancer
     @LogEntryExitExecutionTime
     @RequestMapping(value = "/share/internal", method = RequestMethod.POST)
     public ResponseEntity<GenericResponse> createInternalShare(Authentication authentication, HttpSession session, @RequestBody InternalShareRequest internalShareRequest) {

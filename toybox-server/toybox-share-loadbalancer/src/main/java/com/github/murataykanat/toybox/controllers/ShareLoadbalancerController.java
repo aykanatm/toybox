@@ -3,8 +3,10 @@ package com.github.murataykanat.toybox.controllers;
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.ribbon.RibbonRetryHttpRequestFactory;
+import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.share.ExternalShareRequest;
 import com.github.murataykanat.toybox.schema.share.ExternalShareResponse;
+import com.github.murataykanat.toybox.schema.share.InternalShareRequest;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import com.github.murataykanat.toybox.utilities.LoadbalancerUtils;
 import com.google.gson.Gson;
@@ -188,6 +190,88 @@ public class ShareLoadbalancerController {
             externalShareResponse.setMessage(errorMessage);
 
             return new ResponseEntity<>(externalShareResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    @HystrixCommand(fallbackMethod = "createInternalShareErrorFallback")
+    @RequestMapping(value = "/share/internal", method = RequestMethod.POST)
+    public ResponseEntity<GenericResponse> createInternalShare(Authentication authentication, HttpSession session, @RequestBody InternalShareRequest internalShareRequest) {
+        GenericResponse genericResponse = new GenericResponse();
+
+        try{
+            if(authenticationUtils.isSessionValid(authentication)){
+                if(internalShareRequest != null){
+                    HttpHeaders headers = authenticationUtils.getHeaders(session);
+                    String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.SHARE_SERVICE_NAME);
+
+                    if(StringUtils.isNotBlank(prefix)){
+                        return restTemplate.exchange(prefix + ToyboxConstants.SHARE_SERVICE_NAME + "/share/internal", HttpMethod.POST, new HttpEntity<>(internalShareRequest, headers), GenericResponse.class);
+                    }
+                    else{
+                        throw new IllegalArgumentException("Service ID prefix is null!");
+                    }
+                }
+                else{
+                    String errorMessage = "Internal share request is null!";
+                    _logger.error(errorMessage);
+
+                    genericResponse.setMessage(errorMessage);
+
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            genericResponse.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(genericResponse, httpEx.getStatusCode());
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while sharing assets internally. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    public ResponseEntity<GenericResponse> createInternalShareErrorFallback(Authentication authentication, HttpSession session, InternalShareRequest internalShareRequest, Throwable e){
+        GenericResponse genericResponse = new GenericResponse();
+
+        if(internalShareRequest != null){
+            String errorMessage;
+            if(e.getLocalizedMessage() != null){
+                errorMessage = "Unable to create internal share. " + e.getLocalizedMessage();
+            }
+            else{
+                errorMessage = "Unable to get response from the share service.";
+            }
+
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        else{
+            String errorMessage = "Internal share request is null!";
+
+            _logger.error(errorMessage);
+
+            genericResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
         }
     }
 }
