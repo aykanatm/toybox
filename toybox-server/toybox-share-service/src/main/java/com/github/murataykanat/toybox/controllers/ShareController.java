@@ -335,19 +335,29 @@ public class ShareController {
                             // We create the unique users list to share
                             List<User> uniqueUsers = new ArrayList<>(new HashSet<>(sharedUsers));
 
+
                             // We set the containers and users as shared with all the unique users
-                            // TODO: Prevent the sharing of already shared assets/containers
+                            List<Asset> sharedAssets = new ArrayList<>();
+                            List<Container> sharedContainers = new ArrayList<>();
                             for(User uniqueUser: uniqueUsers){
                                 for(Asset selectedAsset: selectedAssets){
-                                    userAssetsRepository.insertSharedAsset(selectedAsset.getId(), uniqueUser.getId());
+                                    List<UserAsset> userAssetsByUserIdAndAssetId = userAssetsRepository.findUserAssetsByUserIdAndAssetId(uniqueUser.getId(), selectedAsset.getId());
+                                    if(userAssetsByUserIdAndAssetId.isEmpty()){
+                                        userAssetsRepository.insertSharedAsset(selectedAsset.getId(), uniqueUser.getId());
+                                        sharedAssets.add(selectedAsset);
+                                    }
                                 }
                                 for(Container selectedContainer: selectedContainers){
-                                    userContainersRepository.insertSharedContainer(selectedContainer.getId(), uniqueUser.getId());
+                                    List<UserContainer> userAssetsByUserIdAndContainerId = userContainersRepository.findUserAssetsByUserIdAndContainerId(uniqueUser.getId(), selectedContainer.getId());
+                                    if(userAssetsByUserIdAndContainerId.isEmpty()){
+                                        userContainersRepository.insertSharedContainer(selectedContainer.getId(), uniqueUser.getId());
+                                        sharedContainers.add(selectedContainer);
+                                    }
                                 }
                             }
 
-                            if(selectedAssets != null && !selectedAssets.isEmpty()){
-                                for(Asset asset: selectedAssets){
+                            if(!sharedAssets.isEmpty()){
+                                for(Asset asset: sharedAssets){
                                     // Send notification
                                     String message = "Asset '" + asset.getName() + "' is shared internally by '" + user.getUsername() + "'";
                                     SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
@@ -359,8 +369,8 @@ public class ShareController {
                                 }
                             }
 
-                            if(selectedContainers != null && !selectedContainers.isEmpty()){
-                                for(Container container: selectedContainers){
+                            if(!sharedContainers.isEmpty()){
+                                for(Container container: sharedContainers){
                                     // Send notification
                                     String message = "Folder '" + container.getName() + "' is shared internally by '" + user.getUsername() + "'";
                                     SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
@@ -372,8 +382,14 @@ public class ShareController {
                                 }
                             }
 
-                            genericResponse.setMessage("Internal share created!");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.CREATED);
+                            if(selectedAssets.size() == sharedAssets.size() && selectedContainers.size() == sharedContainers.size()){
+                                genericResponse.setMessage("Internal share created successfully!");
+                                return new ResponseEntity<>(genericResponse, HttpStatus.CREATED);
+                            }
+                            else{
+                                genericResponse.setMessage("Internal share created successfully. Some of the selected assets/folders were already shared with the selected users. No action was taken on those items.");
+                                return new ResponseEntity<>(genericResponse, HttpStatus.CREATED);
+                            }
                         }
                         else{
                             String errorMessage = "Selection context is not valid!";

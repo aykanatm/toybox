@@ -9,8 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 public interface UserAssetsRepository extends JpaRepository<UserAsset, Integer> {
-    @Query(value = "SELECT asset_id, user_id FROM user_asset WHERE user_id=?1", nativeQuery = true)
-    List<UserAsset> findUserAssetsByUserId(int userId);
+    @Query(value = "SELECT asset_id, user_id FROM user_asset WHERE user_id=?1 AND asset_id=?2", nativeQuery = true)
+    List<UserAsset> findUserAssetsByUserIdAndAssetId(int userId, String assetId);
     @Transactional
     @Modifying
     @Query(value = "INSERT INTO user_asset(asset_id, user_id) VALUES (?1, ?2)", nativeQuery = true)
