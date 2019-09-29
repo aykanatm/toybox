@@ -322,12 +322,14 @@ public class ShareController {
                             for(String sharedUsergroupName: sharedUsergroupNames){
                                 List<User> usersInUserGroup = authenticationUtils.getUsersInUserGroup(sharedUsergroupName);
                                 // We exclude the current user
-                                sharedUsers.addAll(usersInUserGroup.stream().filter(u -> !u.getName().equalsIgnoreCase(user.getUsername())).collect(Collectors.toList()));
+                                List<User> usersExcludingCurrentUser = usersInUserGroup.stream().filter(u -> !u.getUsername().equalsIgnoreCase(user.getUsername())).collect(Collectors.toList());
+                                sharedUsers.addAll(usersExcludingCurrentUser);
                             }
                             // We find the shared users
                             if(!sharedUserNames.isEmpty()){
                                 List<User> usersByUsernames = usersRepository.findUsersByUsernames(sharedUserNames);
-                                sharedUsers.addAll(usersByUsernames);
+                                List<User> usersExcludingCurrentUser = usersByUsernames.stream().filter(u -> !u.getUsername().equalsIgnoreCase(user.getUsername())).collect(Collectors.toList());
+                                sharedUsers.addAll(usersExcludingCurrentUser);
                             }
 
                             // We create the unique users list to share
