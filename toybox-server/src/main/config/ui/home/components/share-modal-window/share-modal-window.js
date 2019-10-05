@@ -3,6 +3,7 @@ module.exports = {
     data:function(){
         return{
             componentName: 'Share Modal Window',
+            isSharing: false,
             selectionContext: '',
             usersAndUsergroups:[],
             selectedUsers:[],
@@ -271,6 +272,7 @@ module.exports = {
                     this.$root.$emit('message-sent', 'Warning', "Expiration date is enabled. Please enter an expiration date.");
                 }
                 else{
+                    this.isSharing = true;
                     this.getService("toybox-share-loadbalancer")
                     .then(response =>{
                         var shareServiceUrl = response.data.value;
@@ -286,6 +288,7 @@ module.exports = {
                         axios.post(shareServiceUrl + "/share/external", externalShareRequest)
                             .then(response =>{
                                 console.log(response);
+                                this.isSharing = false;
                                 this.externalShareUrl = response.data.url;
                             })
                             .catch(error => {
@@ -329,6 +332,7 @@ module.exports = {
                 this.$root.$emit('message-sent', 'Warning', "Expiration date is enabled. Please enter an expiration date.");
             }
             else{
+                this.isSharing = true;
                 this.getService("toybox-share-loadbalancer")
                     .then(response =>{
                         var shareServiceUrl = response.data.value;
@@ -353,6 +357,7 @@ module.exports = {
                         axios.post(shareServiceUrl + "/share/internal", internalShareRequest)
                             .then(response =>{
                                 console.log(response);
+                                this.isSharing = false;
                                 this.$root.$emit('message-sent', 'Success', response.data.message);
                             })
                             .catch(error => {

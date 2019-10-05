@@ -2,7 +2,10 @@
     <div class="ui modal" id="toybox-share-modal-window">
         <i class="close icon"></i>
         <div class="header">Share</div>
-        <div class="content" style="height: 100%;">
+        <div class="content" style="height: 100%; position: relative;">
+            <div class="ui active inverted dimmer" style="position: absolute;" v-if="isSharing">
+                <div class="ui massive text loader">Generating the share...</div>
+            </div>
             <div class="user-selection">
                 <label style="margin-right: 10px;">Internal User</label>
                 <div class="ui toggle checkbox" id="user-selection-toggle">
@@ -162,8 +165,8 @@
             </div>
         </div>
         <div class="actions">
-            <div v-show="isExternalUser" class="ui primary button" v-on:click="generateUrl">Generate URL</div>
-            <div v-show="!isExternalUser" class="ui primary button" v-on:click="share">Share</div>
+            <div v-show="isExternalUser" v-bind:class="{'ui':true, 'primary':true, 'button':true, 'disabled':isSharing}" v-on:click="generateUrl">Generate URL</div>
+            <div v-show="!isExternalUser" v-bind:class="{'ui':true, 'primary':true, 'button':true, 'disabled':isSharing}" v-on:click="share">Share</div>
         </div>
     </div>
 </template>
