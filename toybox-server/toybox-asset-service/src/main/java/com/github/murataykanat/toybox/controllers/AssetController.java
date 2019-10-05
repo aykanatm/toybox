@@ -5,6 +5,7 @@ import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.*;
 import com.github.murataykanat.toybox.repositories.AssetUserRepository;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
+import com.github.murataykanat.toybox.repositories.UserAssetsRepository;
 import com.github.murataykanat.toybox.schema.asset.*;
 import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
@@ -56,6 +57,8 @@ public class AssetController {
     private AssetsRepository assetsRepository;
     @Autowired
     private AssetUserRepository assetUserRepository;
+    @Autowired
+    private UserAssetsRepository userAssetsRepository;
 
     @Value("${exportStagingPath}")
     private String exportStagingPath;
@@ -131,6 +134,8 @@ public class AssetController {
                         List<SearchRequestFacet> searchRequestFacetList = assetSearchRequest.getAssetSearchRequestFacetList();
 
                         List<Asset> allAssets = assetsRepository.getNonDeletedAssets();
+                        List<UserAsset> userAssetsByUserId = userAssetsRepository.findUserAssetsByUserId(user.getId());
+
                         if(!allAssets.isEmpty()){
                             List<Asset> assets;
 
@@ -153,14 +158,13 @@ public class AssetController {
 
                                 for(Asset asset: assets){
                                     if(StringUtils.isNotBlank(asset.getImportedByUsername()) && asset.getIsLatestVersion().equalsIgnoreCase("Y")){
-                                        if(asset.getImportedByUsername().equalsIgnoreCase(user.getUsername())){
+                                        Asset originalAsset = assetUtils.getAsset(asset.getOriginalAssetId());
+                                        boolean assetImportedByUser = asset.getImportedByUsername().equalsIgnoreCase(user.getUsername());
+                                        boolean originalAssetImportedByUser = originalAsset.getImportedByUsername().equalsIgnoreCase(user.getUsername());
+                                        boolean assetIsSharedWithUser = userAssetsByUserId.stream().anyMatch(userAsset -> userAsset.getAssetId().equalsIgnoreCase(asset.getId()));
+
+                                        if(assetImportedByUser || originalAssetImportedByUser || assetIsSharedWithUser){
                                             assetsByCurrentUser.add(asset);
-                                        }
-                                        else{
-                                            Asset originalAsset = assetUtils.getAsset(asset.getOriginalAssetId());
-                                            if(originalAsset.getImportedByUsername().equalsIgnoreCase(user.getUsername())){
-                                                assetsByCurrentUser.add(asset);
-                                            }
                                         }
                                     }
                                 }
@@ -184,15 +188,27 @@ public class AssetController {
 
                             List<Asset> assetsOnPage = assetsByCurrentUser.subList(startIndex, endIndex);
 
+                            // Set subscription status
                             List<AssetUser> assetUsersByUserId = assetUserRepository.findAssetUsersByUserId(user.getId());
 
-                            // Set subscription status
                             for(Asset assetOnPage: assetsOnPage){
                                 assetOnPage.setSubscribed("N");
 
-                                for(AssetUser assetUser: assetUsersByUserId){
-                                    if(assetOnPage.getId().equalsIgnoreCase(assetUser.getAssetId())){
-                                        assetOnPage.setSubscribed("Y");
+                                boolean isSubscribedAsset = assetUsersByUserId.stream().anyMatch(assetUser -> assetUser.getAssetId().equalsIgnoreCase(assetOnPage.getId()));
+                                if(isSubscribedAsset){
+                                    assetOnPage.setSubscribed("Y");
+                                    break;
+                                }
+                            }
+
+                            // Set shared status
+                            if(!authenticationUtils.isAdminUser(authentication)){
+                                for(Asset assetOnPage: assetsOnPage){
+                                    assetOnPage.setShared("N");
+
+                                    boolean isSharedAsset = userAssetsByUserId.stream().anyMatch(userAsset -> userAsset.getAssetId().equalsIgnoreCase(assetOnPage.getId()));
+                                    if(isSharedAsset){
+                                        assetOnPage.setShared("Y");
                                         break;
                                     }
                                 }
