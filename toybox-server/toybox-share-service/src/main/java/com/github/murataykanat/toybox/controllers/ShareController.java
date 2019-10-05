@@ -27,9 +27,13 @@ import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.spring4.SpringTemplateEngine;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.File;
 import java.io.FileInputStream;
@@ -64,12 +68,15 @@ public class ShareController {
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
+    @Autowired
+    private SpringTemplateEngine templateEngine;
+
     @Value("${exportStagingPath}")
     private String exportStagingPath;
 
     @LogEntryExitExecutionTime
     @RequestMapping(value = "/share/download/{externalShareId}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public ResponseEntity<Resource> downloadExternalShare(@PathVariable String externalShareId){
+    public ResponseEntity<Resource> downloadExternalShare(@PathVariable String externalShareId, HttpServletResponse response) throws IOException {
         try{
             if(StringUtils.isNotBlank(externalShareId)){
                 List<ExternalShare> externalSharesById = externalSharesRepository.getExternalSharesById(externalShareId);
@@ -92,8 +99,14 @@ public class ShareController {
                                 _logger.debug("Today: " + formatter.format(today));
 
                                 if(!today.before(expirationDate)){
-                                    String errorMessage = "The external share is expired!";
+                                    String errorMessage = "The shared content is expired. If you still would like to download this content, please contact the person who shared this content with you.";
                                     _logger.error(errorMessage);
+
+                                    Context context = new Context();
+                                    context.setVariable("error_code", HttpStatus.UNAUTHORIZED.value());
+                                    context.setVariable("error_code_reason", HttpStatus.UNAUTHORIZED.getReasonPhrase());
+                                    context.setVariable("error_message", errorMessage);
+                                    templateEngine.process("externalshare_error", context, response.getWriter());
 
                                     return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
                                 }
@@ -108,6 +121,12 @@ public class ShareController {
                             if(maxNumberOfHits <= 0){
                                 String errorMessage = "The maximum number of uses exceeded the set amount!";
                                 _logger.error(errorMessage);
+
+                                Context context = new Context();
+                                context.setVariable("error_code", HttpStatus.UNAUTHORIZED.value());
+                                context.setVariable("error_code_reason", HttpStatus.UNAUTHORIZED.getReasonPhrase());
+                                context.setVariable("error_message", "The shared content is expired. If you still would like to download this content, please contact the person who shared this content with you.");
+                                templateEngine.process("externalshare_error", context, response.getWriter());
 
                                 return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
                             }
@@ -153,22 +172,40 @@ public class ShareController {
                     }
                 }
                 else{
-                    String errorMessage = "External share ID is not found! ";
+                    String errorMessage = "The requested content cannot be found. If you still would like to download this content, please contact the person who shared this content with you.";
                     _logger.error(errorMessage);
+
+                    Context context = new Context();
+                    context.setVariable("error_code", HttpStatus.NOT_FOUND.value());
+                    context.setVariable("error_code_reason", HttpStatus.NOT_FOUND.getReasonPhrase());
+                    context.setVariable("error_message", errorMessage);
+                    templateEngine.process("externalshare_error", context, response.getWriter());
 
                     return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                 }
             }
             else{
-                String errorMessage = "External share ID is blank! ";
+                String errorMessage = "The ID that is provided to download this content is blank. Please provide a valid ID.";
                 _logger.error(errorMessage);
+
+                Context context = new Context();
+                context.setVariable("error_code", HttpStatus.BAD_REQUEST.value());
+                context.setVariable("error_code_reason", HttpStatus.BAD_REQUEST.getReasonPhrase());
+                context.setVariable("error_message", errorMessage);
+                templateEngine.process("externalshare_error", context, response.getWriter());
 
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
         }
         catch (Exception e){
-            String errorMessage = "An error occurred while downloading the shared assets. " + e.getLocalizedMessage();
+            String errorMessage = "An unexpected error occurred while downloading the shared content. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
+
+            Context context = new Context();
+            context.setVariable("error_code", HttpStatus.INTERNAL_SERVER_ERROR.value());
+            context.setVariable("error_code_reason", HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
+            context.setVariable("error_message", "An unexpected error occurred while downloading the shared content, please try again later. If the problem persists, please contact the person who shared this content with you.");
+            templateEngine.process("externalshare_error", context, response.getWriter());
 
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }

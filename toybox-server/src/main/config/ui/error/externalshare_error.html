@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1"/>
+        <link rel="stylesheet" href="/thirdparty/semantic/semantic.min.css"/>
+        <link rel="stylesheet" href="/css/error.css"/>
+        <script src="/thirdparty/jquery/jquery-3.3.1.min.js"></script>
+        <script src="/thirdparty/semantic/semantic.min.js"></script>
+    </head>
+    <body>
+        <div class="toybox-background">
+            <div class="content">
+                <div class="error-code">
+                    <span th:text="${error_code}">Error code</span>
+                </div>
+                <div class="error-code-reason">
+                    <span th:text="${error_code_reason}">Error code reason</span>
+                </div>
+                <div class="error-message">
+                    <p th:text="${error_message}">Error message</p>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
