@@ -132,6 +132,12 @@ public class ShareController {
                                 rabbitTemplate.convertAndSend(ToyboxConstants.TOYBOX_NOTIFICATION_EXCHANGE,"toybox.notification." + System.currentTimeMillis(), notification);
                             }
 
+                            if(externalShare.getEnableUsageLimit().equalsIgnoreCase("Y")){
+                                int maxNumberOfHits = externalShare.getMaxNumberOfHits();
+                                maxNumberOfHits--;
+                                externalSharesRepository.updateMaxUsage(maxNumberOfHits, externalShareId);
+                            }
+
                             InputStreamResource resource = new InputStreamResource(new FileInputStream(archiveFile));
 
                             HttpHeaders headers = new HttpHeaders();
