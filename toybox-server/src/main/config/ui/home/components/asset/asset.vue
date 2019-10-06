@@ -8,7 +8,7 @@
             <div style="float: left;">
                 <img class="ui mini circular image" v-bind:src="userAvatarUrl" style="max-width: 28px;"/> {{ importedByUsername }}
             </div>
-            <div v-show="shared === 'Y'" style="float: right; margin-top: 5px; font-size: 12pt;">
+            <div v-show="shared === 'Y'" style="float: right; margin-top: 5px; font-size: 12pt;" v-bind:title="sharedByUsername">
                 <i class="share alternate icon"></i>
             </div>
         </div>

@@ -293,6 +293,7 @@ module.exports = {
                             })
                             .catch(error => {
                                 var errorMessage;
+                                this.isSharing = false;
 
                                 if(error.response){
                                     errorMessage = error.response.data.message
@@ -310,6 +311,7 @@ module.exports = {
                     })
                     .catch(error => {
                         var errorMessage;
+                        this.isSharing = false;
 
                         if(error.response){
                             errorMessage = error.response.data.message
@@ -365,6 +367,7 @@ module.exports = {
                             })
                             .catch(error => {
                                 var errorMessage;
+                                this.isSharing = false;
 
                                 if(error.response){
                                     errorMessage = error.response.data.message
@@ -382,6 +385,7 @@ module.exports = {
                     })
                     .catch(error => {
                         var errorMessage;
+                        this.isSharing = false;
 
                         if(error.response){
                             errorMessage = error.response.data.message

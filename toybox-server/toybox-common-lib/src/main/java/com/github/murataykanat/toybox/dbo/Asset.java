@@ -68,6 +68,9 @@ public class Asset implements Serializable, ContainerItem {
     private String shared;
 
     @Transient
+    private String sharedByUsername;
+
+    @Transient
     private String parentContainerId;
 
     @Column(name = "checksum")
@@ -249,13 +252,23 @@ public class Asset implements Serializable, ContainerItem {
         this.parentContainerId = parentContainerId;
     }
 
+    @Transient
+    @JsonGetter(value = "shared")
     public String getShared() {
         return shared;
     }
 
-    @Transient
-    @JsonGetter(value = "shared")
     public void setShared(String shared) {
         this.shared = shared;
+    }
+
+    @Transient
+    @JsonGetter(value = "sharedByUsername")
+    public String getSharedByUsername() {
+        return sharedByUsername;
+    }
+
+    public void setSharedByUsername(String sharedByUsername) {
+        this.sharedByUsername = sharedByUsername;
     }
 }

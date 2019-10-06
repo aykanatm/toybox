@@ -10,7 +10,8 @@ module.exports = {
         type: String,
         subscribed: String,
         parentContainerId: String,
-        shared: String
+        shared: String,
+        sharedByUsername: String
     },
     data: function() {
         return  {

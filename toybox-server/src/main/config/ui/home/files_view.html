@@ -94,7 +94,7 @@
                             <asset v-for="asset in assets" v-bind:id="asset.id" v-bind:name="asset.name" v-bind:imported-by-username="asset.importedByUsername"
                             v-bind:extension="asset.extension" v-bind:type="asset.type" v-bind:rendition-url="renditionUrl" v-bind:subscribed="asset.subscribed"
                             v-bind:original-asset-id="asset.originalAssetId" v-bind:parent-container-id="asset.parentContainerId" v-bind:shared="asset.shared"
-                            v-bind:key="asset.id"/>
+                            v-bind:shared-by-username="asset.sharedByUsername" v-bind:key="asset.id"/>
                         </div>
                         <div class="ui right floated pagination menu toybox-pagination">
                             <a v-bind:class="{icon:true, disabled:previousPageButtonDisabled, item:true}" v-on:click="previousPage">

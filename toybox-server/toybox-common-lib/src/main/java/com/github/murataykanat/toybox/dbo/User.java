@@ -54,14 +54,6 @@ public class User {
     @JoinTable(name = "user_usergroup", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "usergroup_id"))
     private Set<UserGroup> usergroups;
 
-    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    @JoinTable(name = "user_asset", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "asset_id"))
-    private Set<Asset> sharedAssets;
-
-    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    @JoinTable(name = "user_container", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "container_id"))
-    private Set<Container> sharedContainers;
-
     public User() {}
 
     public User(User user){
@@ -78,8 +70,6 @@ public class User {
         this.name = user.name;
         this.lastname = user.lastname;
         this.avatarPath = user.avatarPath;
-        this.sharedAssets = user.sharedAssets;
-        this.sharedContainers = user.sharedContainers;
     }
 
     public int getId() {
@@ -184,21 +174,5 @@ public class User {
 
     public void setUsergroups(Set<UserGroup> usergroups) {
         this.usergroups = usergroups;
-    }
-
-    public Set<Asset> getSharedAssets() {
-        return sharedAssets;
-    }
-
-    public void setSharedAssets(Set<Asset> sharedAssets) {
-        this.sharedAssets = sharedAssets;
-    }
-
-    public Set<Container> getSharedContainers() {
-        return sharedContainers;
-    }
-
-    public void setSharedContainers(Set<Container> sharedContainers) {
-        this.sharedContainers = sharedContainers;
     }
 }

@@ -1,0 +1,209 @@
+package com.github.murataykanat.toybox.utilities;
+
+import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
+import com.github.murataykanat.toybox.dbo.*;
+import com.github.murataykanat.toybox.models.share.SharedAssets;
+import com.github.murataykanat.toybox.repositories.*;
+import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
+import com.github.murataykanat.toybox.schema.selection.SelectionContext;
+import com.github.murataykanat.toybox.schema.share.InternalShareRequest;
+import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import javax.servlet.http.HttpSession;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Component
+public class ShareUtils {
+    private static final Log _logger = LogFactory.getLog(ShareUtils.class);
+
+    @Autowired
+    private AuthenticationUtils authenticationUtils;
+    @Autowired
+    private NotificationUtils notificationUtils;
+
+    @Autowired
+    private UsersRepository usersRepository;
+    @Autowired
+    private InternalSharesRepository internalSharesRepository;
+    @Autowired
+    private InternalShareAssetsRepository internalShareAssetsRepository;
+    @Autowired
+    private InternalShareContainersRepository internalShareContainersRepository;
+    @Autowired
+    private InternalShareUsersRepository internalShareUsersRepository;
+
+    @LogEntryExitExecutionTime
+    public void createInternalShare(User user, InternalShareRequest internalShareRequest, SelectionContext selectionContext, HttpSession session) throws Exception {
+        List<Asset> selectedAssets = selectionContext.getSelectedAssets();
+        List<Container> selectedContainers = selectionContext.getSelectedContainers();
+        List<String> sharedUsergroupNames = internalShareRequest.getSharedUsergroups();
+        List<String> sharedUserNames = internalShareRequest.getSharedUsers();
+
+        // We find all the users that are in the shared user groups
+        List<User> sharedUsers = new ArrayList<>();
+        for(String sharedUsergroupName: sharedUsergroupNames){
+            List<User> usersInUserGroup = authenticationUtils.getUsersInUserGroup(sharedUsergroupName);
+            // We exclude the current user
+            List<User> usersExcludingCurrentUser = usersInUserGroup.stream().filter(u -> !u.getUsername().equalsIgnoreCase(user.getUsername())).collect(Collectors.toList());
+            sharedUsers.addAll(usersExcludingCurrentUser);
+        }
+        // We find the shared users
+        if(!sharedUserNames.isEmpty()){
+            List<User> usersByUsernames = usersRepository.findUsersByUsernames(sharedUserNames);
+            List<User> usersExcludingCurrentUser = usersByUsernames.stream().filter(u -> !u.getUsername().equalsIgnoreCase(user.getUsername())).collect(Collectors.toList());
+            sharedUsers.addAll(usersExcludingCurrentUser);
+        }
+
+        // We create the unique users list to share
+        List<User> uniqueUsers = new ArrayList<>(new HashSet<>(sharedUsers));
+
+        String internalShareId = generateInternalShareId();
+
+        Date expirationDate;
+
+        if(!internalShareRequest.getEnableExpireInternal()){
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss");
+            expirationDate = simpleDateFormat.parse("12/31/9999 23:59:59");
+        }
+        else{
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(internalShareRequest.getExpirationDate());
+            calendar.set(Calendar.HOUR_OF_DAY, 0);
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.SECOND, 0);
+            expirationDate = calendar.getTime();
+        }
+
+        String notifyOnView = internalShareRequest.getNotifyOnView() ? "Y" : "N";
+        String notifyOnEdit = internalShareRequest.getNotifyOnEdit() ? "Y" : "N";
+        String notifyOnDownload = internalShareRequest.getNotifyOnDownload() ? "Y" : "N";
+        String notifyOnShare = internalShareRequest.getNotifyOnShare() ? "Y" : "N";
+        String notifyOnMoveOrCopy = internalShareRequest.getNotifyOnMoveOrCopy() ? "Y" : "N";
+        String canView = internalShareRequest.getCanView() ? "Y" : "N";
+        String canEdit = internalShareRequest.getCanEdit() ? "Y" : "N";
+        String canDownload = internalShareRequest.getCanDownload() ? "Y" : "N";
+        String canShare = internalShareRequest.getCanShare() ? "Y" : "N";
+        String canMoveOrCopy = internalShareRequest.getCanMoveOrCopy() ? "Y" : "N";
+
+
+        internalSharesRepository.insertExternalShare(internalShareId, user.getUsername(), expirationDate, notifyOnView,
+                notifyOnEdit, notifyOnDownload, notifyOnShare, notifyOnMoveOrCopy, canView, canEdit, canDownload, canShare, canMoveOrCopy);
+
+        List<Asset> sharedAssets = new ArrayList<>();
+        List<Container> sharedContainers = new ArrayList<>();
+
+        for(User uniqueUser: uniqueUsers){
+            List<InternalShareUser> internalShareUsersByInternalShareIdAndUserId = internalShareUsersRepository.findInternalShareUsersByInternalShareIdAndUserId(internalShareId, uniqueUser.getId());
+            if(internalShareUsersByInternalShareIdAndUserId.isEmpty()){
+                internalShareUsersRepository.insertShareUser(internalShareId, uniqueUser.getId());
+            }
+        }
+
+        for(Asset selectedAsset: selectedAssets){
+            List<InternalShareAsset> internalShareAssetByInternalShareIdAndAssetId = internalShareAssetsRepository.findInternalShareAssetByInternalShareIdAndAssetId(internalShareId, selectedAsset.getId());
+            if(internalShareAssetByInternalShareIdAndAssetId.isEmpty()){
+                internalShareAssetsRepository.insertSharedAsset(internalShareId, selectedAsset.getId());
+                sharedAssets.add(selectedAsset);
+            }
+        }
+
+        for(Container selectedContainer: selectedContainers){
+            List<InternalShareContainer> internalShareContainersByInternalShareIdAndContainerId = internalShareContainersRepository.findInternalShareContainersByInternalShareIdAndContainerId(internalShareId, selectedContainer.getId());
+            if(internalShareContainersByInternalShareIdAndContainerId.isEmpty()){
+                internalShareContainersRepository.insertSharedContainer(internalShareId, selectedContainer.getId());
+                sharedContainers.add(selectedContainer);
+            }
+        }
+
+        if(!sharedAssets.isEmpty()){
+            for(Asset asset: sharedAssets){
+                // Send notification
+                String message = "Asset '" + asset.getName() + "' is shared internally by '" + user.getUsername() + "'";
+                SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                sendNotificationRequest.setIsAsset(true);
+                sendNotificationRequest.setId(asset.getId());
+                sendNotificationRequest.setFromUser(user);
+                sendNotificationRequest.setMessage(message);
+                notificationUtils.sendNotification(sendNotificationRequest, session);
+            }
+        }
+
+        if(!sharedContainers.isEmpty()){
+            for(Container container: sharedContainers){
+                // Send notification
+                String message = "Folder '" + container.getName() + "' is shared internally by '" + user.getUsername() + "'";
+                SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                sendNotificationRequest.setIsAsset(false);
+                sendNotificationRequest.setId(container.getId());
+                sendNotificationRequest.setFromUser(user);
+                sendNotificationRequest.setMessage(message);
+                notificationUtils.sendNotification(sendNotificationRequest, session);
+            }
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    public List<SharedAssets> getSharedAssets(int userId){
+        List<SharedAssets> sharedAssetsLst = new ArrayList<>();
+
+        // We find all the internal shares that were shared with the user
+        List<InternalShareUser> internalShareUsersByUserId = internalShareUsersRepository.findInternalShareUsersByUserId(userId);
+        // We iterate over the each internal share that was shared with the user
+        for(InternalShareUser internalShareUser: internalShareUsersByUserId){
+            // We find the internal share
+            List<InternalShare> internalSharesById = internalSharesRepository.getInternalSharesById(internalShareUser.getInternalShareId());
+            if(!internalSharesById.isEmpty()){
+                if(internalSharesById.size() == 1){
+                    // If the internal share exists and it is unique
+                    InternalShare internalShare = internalSharesById.get(0);
+
+                    // We find the assets that are linked to the external share
+                    List<InternalShareAsset> internalShareAssetByInternalShareId = internalShareAssetsRepository.findInternalShareAssetByInternalShareId(internalShare.getInternalShareId());
+                    List<String> sharedAssetIds = internalShareAssetByInternalShareId.stream().map(InternalShareAsset::getAssetId).collect(Collectors.toList());
+
+                    // We add the assets and the username who shared those assets to the shared asset list
+                    SharedAssets sharedAssets = new SharedAssets();
+                    sharedAssets.setUsername(internalShare.getUsername());
+                    sharedAssets.setAssetIds(sharedAssetIds);
+
+                    sharedAssetsLst.add(sharedAssets);
+                }
+                else{
+                    throw new IllegalArgumentException("There are multiple instances of internal share ID '" + internalShareUser.getInternalShareId() + "' in the database!");
+                }
+            }
+            else{
+                throw new IllegalArgumentException("Internal share ID '" + internalShareUser.getInternalShareId() + "' does not exist in the database!");
+            }
+        }
+
+        return sharedAssetsLst;
+    }
+
+    @LogEntryExitExecutionTime
+    private String generateInternalShareId(){
+        String internalShareId = RandomStringUtils.randomAlphanumeric(40);
+        if(isInternalShareIdValid(internalShareId)){
+            return internalShareId;
+        }
+        return generateInternalShareId();
+    }
+
+    @LogEntryExitExecutionTime
+    private boolean isInternalShareIdValid(String externalShareId){
+        List<InternalShare> internalSharesById = internalSharesRepository.getInternalSharesById(externalShareId);
+        if(internalSharesById.isEmpty()){
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+}

@@ -6,20 +6,20 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "user_asset")
-public class UserAsset {
+@Table(name = "internal_share_assets")
+public class InternalShareAsset {
     @Id
-    @Column(name = "user_id")
-    private int userId;
+    @Column(name = "internal_share_id")
+    private String internalShareId;
     @Column(name = "asset_id")
     private String assetId;
 
-    public int getUserId() {
-        return userId;
+    public String getInternalShareId() {
+        return internalShareId;
     }
 
-    public void setUserId(int userId) {
-        this.userId = userId;
+    public void setInternalShareId(String internalShareId) {
+        this.internalShareId = internalShareId;
     }
 
     public String getAssetId() {

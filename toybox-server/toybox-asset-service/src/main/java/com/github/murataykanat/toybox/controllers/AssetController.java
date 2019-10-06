@@ -3,9 +3,9 @@ package com.github.murataykanat.toybox.controllers;
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.*;
+import com.github.murataykanat.toybox.models.share.SharedAssets;
 import com.github.murataykanat.toybox.repositories.AssetUserRepository;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
-import com.github.murataykanat.toybox.repositories.UserAssetsRepository;
 import com.github.murataykanat.toybox.schema.asset.*;
 import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
@@ -52,13 +52,13 @@ public class AssetController {
     private FacetUtils facetUtils;
     @Autowired
     private SortUtils sortUtils;
+    @Autowired
+    private ShareUtils shareUtils;
 
     @Autowired
     private AssetsRepository assetsRepository;
     @Autowired
     private AssetUserRepository assetUserRepository;
-    @Autowired
-    private UserAssetsRepository userAssetsRepository;
 
     @Value("${exportStagingPath}")
     private String exportStagingPath;
@@ -134,7 +134,7 @@ public class AssetController {
                         List<SearchRequestFacet> searchRequestFacetList = assetSearchRequest.getAssetSearchRequestFacetList();
 
                         List<Asset> allAssets = assetsRepository.getNonDeletedAssets();
-                        List<UserAsset> userAssetsByUserId = userAssetsRepository.findUserAssetsByUserId(user.getId());
+                        List<SharedAssets> sharedAssetsLst = shareUtils.getSharedAssets(user.getId());
 
                         if(!allAssets.isEmpty()){
                             List<Asset> assets;
@@ -161,7 +161,13 @@ public class AssetController {
                                         Asset originalAsset = assetUtils.getAsset(asset.getOriginalAssetId());
                                         boolean assetImportedByUser = asset.getImportedByUsername().equalsIgnoreCase(user.getUsername());
                                         boolean originalAssetImportedByUser = originalAsset.getImportedByUsername().equalsIgnoreCase(user.getUsername());
-                                        boolean assetIsSharedWithUser = userAssetsByUserId.stream().anyMatch(userAsset -> userAsset.getAssetId().equalsIgnoreCase(asset.getId()));
+                                        boolean assetIsSharedWithUser = false;
+                                        for(SharedAssets sharedAssets: sharedAssetsLst){
+                                            assetIsSharedWithUser = sharedAssets.getAssetIds().stream().anyMatch(assetId -> assetId.equalsIgnoreCase(asset.getId()));
+                                            if(assetIsSharedWithUser){
+                                                break;
+                                            }
+                                        }
 
                                         if(assetImportedByUser || originalAssetImportedByUser || assetIsSharedWithUser){
                                             assetsByCurrentUser.add(asset);
@@ -206,10 +212,13 @@ public class AssetController {
                                 for(Asset assetOnPage: assetsOnPage){
                                     assetOnPage.setShared("N");
 
-                                    boolean isSharedAsset = userAssetsByUserId.stream().anyMatch(userAsset -> userAsset.getAssetId().equalsIgnoreCase(assetOnPage.getId()));
-                                    if(isSharedAsset){
-                                        assetOnPage.setShared("Y");
-                                        break;
+                                    for(SharedAssets sharedAssets: sharedAssetsLst){
+                                        boolean isSharedAsset = sharedAssets.getAssetIds().stream().anyMatch(assetId -> assetId.equalsIgnoreCase(assetOnPage.getId()));
+                                        if(isSharedAsset){
+                                            assetOnPage.setShared("Y");
+                                            assetOnPage.setSharedByUsername(sharedAssets.getUsername());
+                                            break;
+                                        }
                                     }
                                 }
                             }

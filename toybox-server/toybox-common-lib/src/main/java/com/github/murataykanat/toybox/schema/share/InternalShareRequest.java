@@ -1,5 +1,6 @@
 package com.github.murataykanat.toybox.schema.share;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.murataykanat.toybox.schema.selection.SelectionContext;
 
@@ -16,6 +17,7 @@ public class InternalShareRequest implements Serializable {
     private List<String> sharedUsers;
     @JsonProperty("enableExpireInternal")
     private boolean enableExpireInternal;
+    @JsonFormat(pattern="MM/dd/yyyy")
     @JsonProperty("expirationDate")
     private Date expirationDate;
     @JsonProperty("notifyOnView")
