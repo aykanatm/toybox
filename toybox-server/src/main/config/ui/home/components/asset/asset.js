@@ -9,7 +9,8 @@ module.exports = {
         renditionUrl: String,
         type: String,
         subscribed: String,
-        parentContainerId: String
+        parentContainerId: String,
+        shared: String
     },
     data: function() {
         return  {

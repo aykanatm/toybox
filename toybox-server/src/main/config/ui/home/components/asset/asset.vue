@@ -5,9 +5,14 @@
             <img/>
         </div>
         <div class="content" style="height: 50px;">
-            <img class="ui mini circular image" v-bind:src="userAvatarUrl" style="max-width: 28px;"/> {{ importedByUsername }}
+            <div style="float: left;">
+                <img class="ui mini circular image" v-bind:src="userAvatarUrl" style="max-width: 28px;"/> {{ importedByUsername }}
+            </div>
+            <div v-show="shared === 'Y'" style="float: right; margin-top: 5px; font-size: 12pt;">
+                <i class="share alternate icon"></i>
+            </div>
         </div>
-        <div class="ui fluid image" style="z-index: 1;">
+        <div class="ui fluid image" style="z-index: 1; clear: both;">
             <div class="ui blue ribbon label" style="font-size: 1em;">
                 <i v-if="isImage" class="file image icon"></i>
                 <i v-else-if="isPdf" class="file pdf icon"></i>
