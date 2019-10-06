@@ -331,6 +331,9 @@ module.exports = {
             if(this.enableExpireInternal && this.internalExpirationDate === ''){
                 this.$root.$emit('message-sent', 'Warning', "Expiration date is enabled. Please enter an expiration date.");
             }
+            else if(this.selectedUsers.length == 0 && this.selectedUserGroups.length == 0){
+                this.$root.$emit('message-sent', 'Warning', "No user or user group is selected. Please select a user or a user group.");
+            }
             else{
                 this.isSharing = true;
                 this.getService("toybox-share-loadbalancer")
