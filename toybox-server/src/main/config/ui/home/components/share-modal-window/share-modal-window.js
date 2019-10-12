@@ -363,6 +363,7 @@ module.exports = {
                             .then(response =>{
                                 console.log(response);
                                 this.isSharing = false;
+                                $(this.$el).modal('hide');
                                 this.$root.$emit('message-sent', 'Success', response.data.message);
                             })
                             .catch(error => {
