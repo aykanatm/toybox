@@ -1,20 +1,29 @@
 package com.github.murataykanat.toybox.utilities;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
+import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.*;
 import com.github.murataykanat.toybox.models.share.SharedAssets;
 import com.github.murataykanat.toybox.repositories.*;
+import com.github.murataykanat.toybox.schema.job.JobResponse;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
 import com.github.murataykanat.toybox.schema.selection.SelectionContext;
+import com.github.murataykanat.toybox.schema.share.ExternalShareRequest;
+import com.github.murataykanat.toybox.schema.share.ExternalShareResponse;
 import com.github.murataykanat.toybox.schema.share.InternalShareRequest;
 import org.apache.commons.lang.RandomStringUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpSession;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -27,9 +36,12 @@ public class ShareUtils {
     private AuthenticationUtils authenticationUtils;
     @Autowired
     private NotificationUtils notificationUtils;
+    @Autowired
+    private LoadbalancerUtils loadbalancerUtils;
 
     @Autowired
     private UsersRepository usersRepository;
+
     @Autowired
     private InternalSharesRepository internalSharesRepository;
     @Autowired
@@ -38,6 +50,94 @@ public class ShareUtils {
     private InternalShareContainersRepository internalShareContainersRepository;
     @Autowired
     private InternalShareUsersRepository internalShareUsersRepository;
+
+    @Autowired
+    private ExternalSharesRepository externalSharesRepository;
+
+    @LogEntryExitExecutionTime
+    public ExternalShareResponse createExternalShare(User user, ExternalShareRequest externalShareRequest, SelectionContext selectionContext, HttpSession session) throws Exception {
+        ExternalShareResponse externalShareResponse = new ExternalShareResponse();
+
+        String username = user.getUsername();
+        Date expirationDate = externalShareRequest.getExpirationDate();
+        int maxNumberOfHits = externalShareRequest.getMaxNumberOfHits();
+        String notifyWhenDownloaded = externalShareRequest.getNotifyWhenDownloaded() ? "Y" : "N";
+        String enableExpireExternal = externalShareRequest.getEnableExpireExternal() ? "Y" : "N";
+        String enableUsageLimit = externalShareRequest.getEnableUsageLimit() ? "Y" : "N";
+
+        if(!externalShareRequest.getEnableExpireExternal()){
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss");
+            expirationDate = simpleDateFormat.parse("12/31/9999 23:59:59");
+        }
+        else{
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(expirationDate);
+            calendar.set(Calendar.HOUR_OF_DAY, 0);
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.SECOND, 0);
+            expirationDate = calendar.getTime();
+        }
+
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = authenticationUtils.getHeaders(session);
+
+        HttpEntity<SelectionContext> selectionContextEntity = new HttpEntity<>(selectionContext, headers);
+        String jobServiceUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.JOB_SERVICE_LOAD_BALANCER_SERVICE_NAME, ToyboxConstants.JOB_SERVICE_NAME, session, false);
+        String shareServiceUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.SHARE_LOAD_BALANCER_SERVICE_NAME, ToyboxConstants.SHARE_SERVICE_NAME, session, false);
+
+        ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/package", selectionContextEntity, JobResponse.class);
+        if(jobResponseResponseEntity != null){
+            JobResponse jobResponse = jobResponseResponseEntity.getBody();
+            if(jobResponse != null){
+                _logger.debug("Job response message: " + jobResponse.getMessage());
+                _logger.debug("Job ID: " + jobResponse.getJobId());
+
+                String externalShareId = generateExternalShareId();
+
+                externalSharesRepository.insertExternalShare(externalShareId, username, jobResponse.getJobId(), expirationDate, maxNumberOfHits, notifyWhenDownloaded, enableExpireExternal, enableUsageLimit);
+
+                externalShareResponse.setMessage("External share successfully generated.");
+                externalShareResponse.setUrl(shareServiceUrl + "/share/download/" + externalShareId);
+
+                List<Asset> selectedAssets = externalShareRequest.getSelectionContext().getSelectedAssets();
+                List<Container> selectedContainers = externalShareRequest.getSelectionContext().getSelectedContainers();
+
+                if(selectedAssets != null && !selectedAssets.isEmpty()){
+                    for(Asset asset: selectedAssets){
+                        // Send notification
+                        String message = "Asset '" + asset.getName() + "' is shared externally by '" + user.getUsername() + "'";
+                        SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                        sendNotificationRequest.setIsAsset(true);
+                        sendNotificationRequest.setId(asset.getId());
+                        sendNotificationRequest.setFromUser(user);
+                        sendNotificationRequest.setMessage(message);
+                        notificationUtils.sendNotification(sendNotificationRequest, session);
+                    }
+                }
+
+                if(selectedContainers != null && !selectedContainers.isEmpty()){
+                    for(Container container: selectedContainers){
+                        // Send notification
+                        String message = "Folder '" + container.getName() + "' is shared externally by '" + user.getUsername() + "'";
+                        SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                        sendNotificationRequest.setIsAsset(false);
+                        sendNotificationRequest.setId(container.getId());
+                        sendNotificationRequest.setFromUser(user);
+                        sendNotificationRequest.setMessage(message);
+                        notificationUtils.sendNotification(sendNotificationRequest, session);
+                    }
+                }
+
+                return externalShareResponse;
+            }
+            else{
+                throw new IllegalArgumentException("Job response is null!");
+            }
+        }
+        else{
+            throw new IllegalArgumentException("Job response entity is null!");
+        }
+    }
 
     @LogEntryExitExecutionTime
     public void createInternalShare(User user, InternalShareRequest internalShareRequest, SelectionContext selectionContext, HttpSession session) throws Exception {
@@ -200,6 +300,26 @@ public class ShareUtils {
     private boolean isInternalShareIdValid(String externalShareId){
         List<InternalShare> internalSharesById = internalSharesRepository.getInternalSharesById(externalShareId);
         if(internalSharesById.isEmpty()){
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    private String generateExternalShareId(){
+        String externalShareId = RandomStringUtils.randomAlphanumeric(40);
+        if(isExternalShareIdValid(externalShareId)){
+            return externalShareId;
+        }
+        return generateExternalShareId();
+    }
+
+    @LogEntryExitExecutionTime
+    private boolean isExternalShareIdValid(String externalShareId){
+        List<ExternalShare> externalSharesById = externalSharesRepository.getExternalSharesById(externalShareId);
+        if(externalSharesById.isEmpty()){
             return true;
         }
         else{
