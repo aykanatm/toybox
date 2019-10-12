@@ -80,7 +80,11 @@ public class ContainerUtils {
     }
 
     public List<Container> getContainersByContainerIds(List<String> containerIds){
-        return containersRepository.getContainersByContainerIds(containerIds);
+        if(!containerIds.isEmpty()){
+            return containersRepository.getContainersByContainerIds(containerIds);
+        }
+
+        return new ArrayList<>();
     }
 
     public String getParentContainerId(Asset asset){

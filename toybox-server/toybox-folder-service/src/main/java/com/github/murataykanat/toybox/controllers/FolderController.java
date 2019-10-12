@@ -209,14 +209,6 @@ public class FolderController {
                                 allAssets = new ArrayList<>();
                             }
 
-                            List<Asset> assets;
-                            if(searchRequestFacetList != null && !searchRequestFacetList.isEmpty()){
-                                assets = allAssets.stream().filter(asset -> facetUtils.hasFacetValue(asset, searchRequestFacetList)).collect(Collectors.toList());
-                            }
-                            else{
-                                assets = allAssets;
-                            }
-
                             boolean isUserMainContainer = (container.getCreatedByUsername().equalsIgnoreCase(toyboxSuperAdminUsername) && container.getName().equalsIgnoreCase(user.getUsername()));
                             if(isUserMainContainer){
                                 containersByCurrentUser = containersRepository.getNonDeletedContainersByParentContainerId(container.getId());
@@ -230,14 +222,11 @@ public class FolderController {
                                 containersByCurrentUser = containersRepository.getNonDeletedContainersByParentContainerId(container.getId());
                             }
 
-                            assetsByCurrentUser = assets.stream()
+                            assetsByCurrentUser = allAssets.stream()
                                     .filter(asset -> asset.getIsLatestVersion().equalsIgnoreCase("Y"))
                                     .collect(Collectors.toList());
 
 
-                            // Set facets
-                            List<Facet> facets = facetUtils.getFacets(assetsByCurrentUser);
-                            retrieveContainerContentsResult.setFacets(facets);
 
                             // Sort containers
                             sortUtils.sortItems("asc", containersByCurrentUser, Comparator.comparing(Container::getName, Comparator.nullsLast(Comparator.naturalOrder())));
@@ -248,6 +237,57 @@ public class FolderController {
                             else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_name")){
                                 sortUtils.sortItems(sortType, assetsByCurrentUser, Comparator.comparing(Asset::getName, Comparator.nullsLast(Comparator.naturalOrder())));
                             }
+
+                            for(Asset userAsset: assetsByCurrentUser){
+                                if(!authenticationUtils.isAdminUser(authentication)){
+                                    List<SharedAssets> sharedAssetsLst = shareUtils.getSharedAssets(user.getId());
+
+                                    userAsset.setShared("N");
+
+                                    for(SharedAssets sharedAssets: sharedAssetsLst){
+                                        boolean isSharedAsset = sharedAssets.getAssetIds().stream().anyMatch(assetId -> assetId.equalsIgnoreCase(userAsset.getId()));
+                                        if(isSharedAsset){
+                                            userAsset.setShared("Y");
+                                            userAsset.setSharedByUsername(sharedAssets.getUsername());
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+
+                            for(Container userContainer: containersByCurrentUser){
+                                if(!authenticationUtils.isAdminUser(authentication)){
+                                    List<SharedContainers> sharedContainerLst = shareUtils.getSharedContainers(user.getId());
+
+                                    userContainer.setShared("N");
+
+                                    for(SharedContainers sharedContainers: sharedContainerLst){
+                                        boolean isSharedContainer = sharedContainers.getContainerIds().stream().anyMatch(cid -> cid.equalsIgnoreCase(userContainer.getId()));
+                                        if(isSharedContainer){
+                                            userContainer.setShared("Y");
+                                            userContainer.setSharedByUsername(sharedContainers.getUsername());
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Filter assets
+                            if(searchRequestFacetList != null && !searchRequestFacetList.isEmpty()){
+                                assetsByCurrentUser = assetsByCurrentUser.stream().filter(asset -> facetUtils.hasFacetValue(asset, searchRequestFacetList)).collect(Collectors.toList());
+                            }
+                            // Filter containers
+                            if(searchRequestFacetList != null && !searchRequestFacetList.isEmpty()){
+                                containersByCurrentUser = containersByCurrentUser.stream().filter(userContainer -> facetUtils.hasFacetValue(userContainer, searchRequestFacetList)).collect(Collectors.toList());
+                            }
+
+                            // Set facets
+                            List<Facet> assetFacets = facetUtils.getFacets(assetsByCurrentUser);
+                            List<Facet> containerFacets = facetUtils.getFacets(containersByCurrentUser);
+
+                            List<Facet> commonFacets = facetUtils.getCommonFacets(assetFacets, containerFacets);
+
+                            retrieveContainerContentsResult.setFacets(commonFacets);
 
                             // Merge containers and assets
                             List<ContainerItem> containerItems = new ArrayList<>(containersByCurrentUser);
@@ -269,21 +309,6 @@ public class FolderController {
                                 if(containerItemClass.getName().equalsIgnoreCase("com.github.murataykanat.toybox.dbo.Container")){
                                     Container containerOnPage = (Container) containerItem;
 
-                                    if(!authenticationUtils.isAdminUser(authentication)){
-                                        List<SharedContainers> sharedContainerLst = shareUtils.getSharedContainers(user.getId());
-
-                                        containerOnPage.setShared("N");
-
-                                        for(SharedContainers sharedContainers: sharedContainerLst){
-                                            boolean isSharedAsset = sharedContainers.getContainerIds().stream().anyMatch(assetId -> assetId.equalsIgnoreCase(containerOnPage.getId()));
-                                            if(isSharedAsset){
-                                                containerOnPage.setShared("Y");
-                                                containerOnPage.setSharedByUsername(sharedContainers.getUsername());
-                                                break;
-                                            }
-                                        }
-                                    }
-
                                     containerOnPage.setSubscribed("N");
                                     for(ContainerUser containerUser: containerUsersByUserId){
                                         if(containerOnPage.getId().equalsIgnoreCase(containerUser.getContainerId())){
@@ -300,21 +325,6 @@ public class FolderController {
                                         if(assetOnPage.getId().equalsIgnoreCase(assetUser.getAssetId())){
                                             assetOnPage.setSubscribed("Y");
                                             break;
-                                        }
-                                    }
-
-                                    if(!authenticationUtils.isAdminUser(authentication)){
-                                        List<SharedAssets> sharedAssetsLst = shareUtils.getSharedAssets(user.getId());
-
-                                        assetOnPage.setShared("N");
-
-                                        for(SharedAssets sharedAssets: sharedAssetsLst){
-                                            boolean isSharedAsset = sharedAssets.getAssetIds().stream().anyMatch(assetId -> assetId.equalsIgnoreCase(assetOnPage.getId()));
-                                            if(isSharedAsset){
-                                                assetOnPage.setShared("Y");
-                                                assetOnPage.setSharedByUsername(sharedAssets.getUsername());
-                                                break;
-                                            }
                                         }
                                     }
 

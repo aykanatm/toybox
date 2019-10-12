@@ -3,6 +3,9 @@ package com.github.murataykanat.toybox.dbo;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.murataykanat.toybox.models.annotations.FacetColumnName;
+import com.github.murataykanat.toybox.models.annotations.FacetDataType;
+import com.github.murataykanat.toybox.models.annotations.FacetDefaultLookup;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -27,10 +30,14 @@ public class Container implements Serializable, ContainerItem {
 
     @Column(name = "container_created_by_username")
     @JsonProperty("createdByUsername")
+    @FacetColumnName("Username")
     private String createdByUsername;
 
     @Column(name = "container_creation_date")
     @JsonProperty("creationDate")
+    @FacetColumnName("Import Date")
+    @FacetDataType(value = "Date")
+    @FacetDefaultLookup(values = {"Today","Past 7 days","Past 30 days"})
     private Date creationDate;
 
     @Column(name = "deleted")
@@ -45,6 +52,7 @@ public class Container implements Serializable, ContainerItem {
     private String subscribed;
 
     @Transient
+    @FacetColumnName("Shared")
     private String shared;
 
     @Transient

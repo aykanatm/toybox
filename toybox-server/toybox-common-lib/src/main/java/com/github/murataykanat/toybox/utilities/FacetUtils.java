@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class FacetUtils {
@@ -198,6 +199,32 @@ public class FacetUtils {
         catch (Exception e){
             String errorMessage = "An error occurred while determining if the job has the facet value. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
+        }
+
+        return result;
+    }
+
+    @LogEntryExitExecutionTime
+    public List<Facet> getCommonFacets(List<Facet> facetList1, List<Facet> facetList2){
+        List<Facet> result = new ArrayList<>();
+        List<Facet> allFacets = new ArrayList<>();
+
+        allFacets.addAll(facetList1);
+        allFacets.addAll(facetList2);
+
+        for(Facet facet: allFacets){
+            List<Facet> facetsWithName = allFacets.stream().filter(f -> f.getName().equalsIgnoreCase(facet.getName())).collect(Collectors.toList());
+            if(!facetsWithName.isEmpty()){
+                boolean isInResultsAlready = result.stream().anyMatch(f -> f.getName().equalsIgnoreCase(facet.getName()));
+                if(!isInResultsAlready){
+                    if(facetsWithName.size() > 1){
+                        facetsWithName.stream().max(Comparator.comparing(f -> f.getLookups().size(), Comparator.nullsLast(Comparator.naturalOrder()))).ifPresent(result::add);
+                    }
+                    else{
+                        result.add(facet);
+                    }
+                }
+            }
         }
 
         return result;

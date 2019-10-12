@@ -137,34 +137,31 @@ public class AssetController {
                         List<SharedAssets> sharedAssetsLst = shareUtils.getSharedAssets(user.getId());
 
                         if(!allAssets.isEmpty()){
-                            List<Asset> assets;
-
-                            if(searchRequestFacetList != null && !searchRequestFacetList.isEmpty()){
-                                assets = allAssets.stream().filter(asset -> facetUtils.hasFacetValue(asset, searchRequestFacetList)).collect(Collectors.toList());
-                            }
-                            else{
-                                assets = allAssets;
-                            }
-
                             List<Asset> assetsByCurrentUser = new ArrayList<>();
+
                             if(authenticationUtils.isAdminUser(authentication)){
                                 _logger.debug("Retrieving all assets [Admin User]...");
-                                assetsByCurrentUser = assets.stream()
+                                assetsByCurrentUser = allAssets.stream()
                                         .filter(asset -> asset.getIsLatestVersion().equalsIgnoreCase("Y"))
                                         .collect(Collectors.toList());
                             }
                             else{
                                 _logger.debug("Retrieving assets of the user '" + user.getUsername() + "'...");
 
-                                for(Asset asset: assets){
+                                for(Asset asset: allAssets){
                                     if(StringUtils.isNotBlank(asset.getImportedByUsername()) && asset.getIsLatestVersion().equalsIgnoreCase("Y")){
                                         Asset originalAsset = assetUtils.getAsset(asset.getOriginalAssetId());
                                         boolean assetImportedByUser = asset.getImportedByUsername().equalsIgnoreCase(user.getUsername());
                                         boolean originalAssetImportedByUser = originalAsset.getImportedByUsername().equalsIgnoreCase(user.getUsername());
                                         boolean assetIsSharedWithUser = false;
+
+                                        asset.setShared("N");
+
                                         for(SharedAssets sharedAssets: sharedAssetsLst){
                                             assetIsSharedWithUser = sharedAssets.getAssetIds().stream().anyMatch(assetId -> assetId.equalsIgnoreCase(asset.getId()));
                                             if(assetIsSharedWithUser){
+                                                asset.setShared("Y");
+                                                asset.setSharedByUsername(sharedAssets.getUsername());
                                                 break;
                                             }
                                         }
@@ -174,6 +171,10 @@ public class AssetController {
                                         }
                                     }
                                 }
+                            }
+
+                            if(searchRequestFacetList != null && !searchRequestFacetList.isEmpty()){
+                                assetsByCurrentUser = assetsByCurrentUser.stream().filter(asset -> facetUtils.hasFacetValue(asset, searchRequestFacetList)).collect(Collectors.toList());
                             }
 
                             // Set facets
@@ -204,22 +205,6 @@ public class AssetController {
                                 if(isSubscribedAsset){
                                     assetOnPage.setSubscribed("Y");
                                     break;
-                                }
-                            }
-
-                            // Set shared status
-                            if(!authenticationUtils.isAdminUser(authentication)){
-                                for(Asset assetOnPage: assetsOnPage){
-                                    assetOnPage.setShared("N");
-
-                                    for(SharedAssets sharedAssets: sharedAssetsLst){
-                                        boolean isSharedAsset = sharedAssets.getAssetIds().stream().anyMatch(assetId -> assetId.equalsIgnoreCase(assetOnPage.getId()));
-                                        if(isSharedAsset){
-                                            assetOnPage.setShared("Y");
-                                            assetOnPage.setSharedByUsername(sharedAssets.getUsername());
-                                            break;
-                                        }
-                                    }
                                 }
                             }
 
