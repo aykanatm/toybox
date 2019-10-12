@@ -4,6 +4,7 @@ import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.*;
 import com.github.murataykanat.toybox.models.share.SharedAssets;
+import com.github.murataykanat.toybox.models.share.SharedContainers;
 import com.github.murataykanat.toybox.repositories.*;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
@@ -17,13 +18,11 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpSession;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -38,6 +37,8 @@ public class ShareUtils {
     private NotificationUtils notificationUtils;
     @Autowired
     private LoadbalancerUtils loadbalancerUtils;
+    @Autowired
+    private ContainerUtils containerUtils;
 
     @Autowired
     private UsersRepository usersRepository;
@@ -219,6 +220,15 @@ public class ShareUtils {
             if(internalShareContainersByInternalShareIdAndContainerId.isEmpty()){
                 internalShareContainersRepository.insertSharedContainer(internalShareId, selectedContainer.getId());
                 sharedContainers.add(selectedContainer);
+
+                List<Asset> containerAssets = containerUtils.getContainerAssets(selectedContainer.getId());
+                for(Asset asset: containerAssets){
+                    List<InternalShareAsset> internalShareAssetByInternalShareIdAndAssetId = internalShareAssetsRepository.findInternalShareAssetByInternalShareIdAndAssetId(internalShareId, asset.getId());
+                    if(internalShareAssetByInternalShareIdAndAssetId.isEmpty()){
+                        internalShareAssetsRepository.insertSharedAsset(internalShareId, asset.getId());
+                        sharedAssets.add(asset);
+                    }
+                }
             }
         }
 
@@ -285,6 +295,44 @@ public class ShareUtils {
         }
 
         return sharedAssetsLst;
+    }
+
+    @LogEntryExitExecutionTime
+    public List<SharedContainers> getSharedContainers(int userId){
+        List<SharedContainers> sharedContainersLst = new ArrayList<>();
+
+        // We find all the internal shares that were shared with the user
+        List<InternalShareUser> internalShareUsersByUserId = internalShareUsersRepository.findInternalShareUsersByUserId(userId);
+        // We iterate over the each internal share that was shared with the user
+        for(InternalShareUser internalShareUser: internalShareUsersByUserId){
+            // We find the internal share
+            List<InternalShare> internalSharesById = internalSharesRepository.getInternalSharesById(internalShareUser.getInternalShareId());
+            if(!internalSharesById.isEmpty()){
+                if(internalSharesById.size() == 1){
+                    // If the internal share exists and it is unique
+                    InternalShare internalShare = internalSharesById.get(0);
+
+                    // We find the containers that are linked to the external share
+                    List<InternalShareContainer> internalShareContainersByInternalShareId = internalShareContainersRepository.findInternalShareContainersByInternalShareId(internalShare.getInternalShareId());
+                    List<String> sharedContainerIds = internalShareContainersByInternalShareId.stream().map(InternalShareContainer::getContainerId).collect(Collectors.toList());
+
+                    // We add the assets and the username who shared those assets to the shared asset list
+                    SharedContainers sharedContainers = new SharedContainers();
+                    sharedContainers.setUsername(internalShare.getUsername());
+                    sharedContainers.setContainerIds(sharedContainerIds);
+
+                    sharedContainersLst.add(sharedContainers);
+                }
+                else{
+                    throw new IllegalArgumentException("There are multiple instances of internal share ID '" + internalShareUser.getInternalShareId() + "' in the database!");
+                }
+            }
+            else{
+                throw new IllegalArgumentException("Internal share ID '" + internalShareUser.getInternalShareId() + "' does not exist in the database!");
+            }
+        }
+
+        return sharedContainersLst;
     }
 
     @LogEntryExitExecutionTime

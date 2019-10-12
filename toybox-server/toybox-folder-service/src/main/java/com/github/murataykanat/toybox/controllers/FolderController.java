@@ -2,6 +2,8 @@ package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.dbo.*;
+import com.github.murataykanat.toybox.models.share.SharedAssets;
+import com.github.murataykanat.toybox.models.share.SharedContainers;
 import com.github.murataykanat.toybox.repositories.*;
 import com.github.murataykanat.toybox.schema.asset.AssetSearchRequest;
 import com.github.murataykanat.toybox.schema.common.Facet;
@@ -32,8 +34,6 @@ public class FolderController {
     private static final Log _logger = LogFactory.getLog(FolderController.class);
 
     @Autowired
-    private AssetUtils assetUtils;
-    @Autowired
     private ContainerUtils containerUtils;
     @Autowired
     private AuthenticationUtils authenticationUtils;
@@ -43,6 +43,8 @@ public class FolderController {
     private FacetUtils facetUtils;
     @Autowired
     private SortUtils sortUtils;
+    @Autowired
+    private ShareUtils shareUtils;
 
     @Autowired
     private ContainersRepository containersRepository;
@@ -194,7 +196,7 @@ public class FolderController {
                             List<SearchRequestFacet> searchRequestFacetList = assetSearchRequest.getAssetSearchRequestFacetList();
 
                             List<Container> containersByCurrentUser;
-                            List<Asset> assetsByCurrentUser = new ArrayList<>();
+                            List<Asset> assetsByCurrentUser;
 
                             List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(container.getId());
                             List<String> containerAssetIdsByContainerId = containerAssetsByContainerId.stream().map(ContainerAsset::getAssetId).collect(Collectors.toList());
@@ -215,35 +217,23 @@ public class FolderController {
                                 assets = allAssets;
                             }
 
-                            // If the current user is the owner of the container, if the container is user's main container or if the user is an admin
-                            // Get all items in the container
-                            if(authenticationUtils.isAdminUser(authentication) || container.getCreatedByUsername().equalsIgnoreCase(user.getUsername())
-                                || (container.getCreatedByUsername().equalsIgnoreCase(toyboxSuperAdminUsername) && container.getName().equalsIgnoreCase(user.getUsername()))){
+                            boolean isUserMainContainer = (container.getCreatedByUsername().equalsIgnoreCase(toyboxSuperAdminUsername) && container.getName().equalsIgnoreCase(user.getUsername()));
+                            if(isUserMainContainer){
                                 containersByCurrentUser = containersRepository.getNonDeletedContainersByParentContainerId(container.getId());
-                                assetsByCurrentUser = assets.stream()
-                                        .filter(asset -> asset.getIsLatestVersion().equalsIgnoreCase("Y"))
-                                        .collect(Collectors.toList());
-                            }
-                            // If the current user is not the owner
-                            else{
-                                // Get the containers which belongs to the user
-                                containersByCurrentUser = containersRepository.getNonDeletedContainersByUsernameAndParentContainerId(user.getUsername(), container.getId());
-                                for(Asset asset: assets){
-                                    if(StringUtils.isNotBlank(asset.getImportedByUsername()) && asset.getIsLatestVersion().equalsIgnoreCase("Y")){
-                                        // Add the asset if it belongs to the user
-                                        if(asset.getImportedByUsername().equalsIgnoreCase(user.getUsername())){
-                                            assetsByCurrentUser.add(asset);
-                                        }
-                                        // Add the asset if the original asset belongs to the user
-                                        else{
-                                            Asset originalAsset= assetUtils.getAsset(asset.getOriginalAssetId());
-                                            if(originalAsset.getImportedByUsername().equalsIgnoreCase(user.getUsername())){
-                                                assetsByCurrentUser.add(asset);
-                                            }
-                                        }
-                                    }
+                                List<SharedContainers> sharedContainersLst = shareUtils.getSharedContainers(user.getId());
+                                for(SharedContainers sharedContainers: sharedContainersLst){
+                                    List<Container> containersByContainerIds = containerUtils.getContainersByContainerIds(sharedContainers.getContainerIds());
+                                    containersByCurrentUser.addAll(containersByContainerIds);
                                 }
                             }
+                            else{
+                                containersByCurrentUser = containersRepository.getNonDeletedContainersByParentContainerId(container.getId());
+                            }
+
+                            assetsByCurrentUser = assets.stream()
+                                    .filter(asset -> asset.getIsLatestVersion().equalsIgnoreCase("Y"))
+                                    .collect(Collectors.toList());
+
 
                             // Set facets
                             List<Facet> facets = facetUtils.getFacets(assetsByCurrentUser);
@@ -279,6 +269,21 @@ public class FolderController {
                                 if(containerItemClass.getName().equalsIgnoreCase("com.github.murataykanat.toybox.dbo.Container")){
                                     Container containerOnPage = (Container) containerItem;
 
+                                    if(!authenticationUtils.isAdminUser(authentication)){
+                                        List<SharedContainers> sharedContainerLst = shareUtils.getSharedContainers(user.getId());
+
+                                        containerOnPage.setShared("N");
+
+                                        for(SharedContainers sharedContainers: sharedContainerLst){
+                                            boolean isSharedAsset = sharedContainers.getContainerIds().stream().anyMatch(assetId -> assetId.equalsIgnoreCase(containerOnPage.getId()));
+                                            if(isSharedAsset){
+                                                containerOnPage.setShared("Y");
+                                                containerOnPage.setSharedByUsername(sharedContainers.getUsername());
+                                                break;
+                                            }
+                                        }
+                                    }
+
                                     containerOnPage.setSubscribed("N");
                                     for(ContainerUser containerUser: containerUsersByUserId){
                                         if(containerOnPage.getId().equalsIgnoreCase(containerUser.getContainerId())){
@@ -295,6 +300,21 @@ public class FolderController {
                                         if(assetOnPage.getId().equalsIgnoreCase(assetUser.getAssetId())){
                                             assetOnPage.setSubscribed("Y");
                                             break;
+                                        }
+                                    }
+
+                                    if(!authenticationUtils.isAdminUser(authentication)){
+                                        List<SharedAssets> sharedAssetsLst = shareUtils.getSharedAssets(user.getId());
+
+                                        assetOnPage.setShared("N");
+
+                                        for(SharedAssets sharedAssets: sharedAssetsLst){
+                                            boolean isSharedAsset = sharedAssets.getAssetIds().stream().anyMatch(assetId -> assetId.equalsIgnoreCase(assetOnPage.getId()));
+                                            if(isSharedAsset){
+                                                assetOnPage.setShared("Y");
+                                                assetOnPage.setSharedByUsername(sharedAssets.getUsername());
+                                                break;
+                                            }
                                         }
                                     }
 

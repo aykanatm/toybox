@@ -79,6 +79,10 @@ public class ContainerUtils {
         }
     }
 
+    public List<Container> getContainersByContainerIds(List<String> containerIds){
+        return containersRepository.getContainersByContainerIds(containerIds);
+    }
+
     public String getParentContainerId(Asset asset){
         List<ContainerAsset> containerAssetsByAssetId = containerAssetsRepository.findContainerAssetsByAssetId(asset.getId());
         if(!containerAssetsByAssetId.isEmpty()){
@@ -405,5 +409,14 @@ public class ContainerUtils {
         }
 
         return breadcrumbs;
+    }
+
+    public List<Asset> getContainerAssets(String containerId){
+        List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(containerId);
+        List<String> assetIds = containerAssetsByContainerId.stream().map(ContainerAsset::getAssetId).collect(Collectors.toList());
+        if(!assetIds.isEmpty()){
+            return assetUtils.getAssetsByAssetIds(assetIds);
+        }
+        return new ArrayList<>();
     }
 }

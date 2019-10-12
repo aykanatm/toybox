@@ -69,6 +69,10 @@ public class AssetUtils {
         }
     }
 
+    public List<Asset> getAssetsByAssetIds(List<String> assetIds){
+        return assetsRepository.getAssetsByAssetIds(assetIds);
+    }
+
     @LogEntryExitExecutionTime
     public boolean isSubscribed(AssetUserRepository assetUserRepository, User user, Asset asset){
         List<AssetUser> assetUsersByUserId = assetUserRepository.findAssetUsersByUserId(user.getId());

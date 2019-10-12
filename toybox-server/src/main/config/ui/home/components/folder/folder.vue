@@ -5,7 +5,12 @@
             <img/>
         </div>
         <div class="content" style="height: 50px;">
-            <img class="ui mini circular image" v-bind:src="userAvatarUrl" style="max-width: 28px;"/> {{ createdByUsername }}
+            <div style="float: left;">
+                <img class="ui mini circular image" v-bind:src="userAvatarUrl" style="max-width: 28px;"/> {{ createdByUsername }}
+            </div>
+            <div v-show="shared === 'Y'" style="float: right; margin-top: 5px; font-size: 12pt;" v-bind:title="sharedByUsername">
+                <i class="share alternate icon"></i>
+            </div>
         </div>
         <div class="toybox-card-img">
             <div style="height: 100%; width: 100%; position: relative;">

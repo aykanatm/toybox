@@ -5,7 +5,9 @@ module.exports = {
         name: String,
         createdByUsername: String,
         subscribed: String,
-        renditionUrl: String
+        renditionUrl: String,
+        shared: String,
+        sharedByUsername: String
     },
     data: function() {
         return  {
