@@ -230,6 +230,18 @@ module.exports = {
                 this.canShare = false;
                 this.canMoveOrCopy = false;
             }
+            else{
+                this.notifyOnView = false;
+                this.notifyOnEdit = false;
+                this.notifyOnShare = false;
+                this.notifyOnMoveOrCopy = false;
+
+                this.canView = true;
+                this.canEdit = false;
+                this.canDownload = false;
+                this.canShare = false;
+                this.canMoveOrCopy = false;
+            }
         },
         enableExpireInternal:function(value){
             if(value){
