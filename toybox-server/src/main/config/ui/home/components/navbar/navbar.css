@@ -32,8 +32,8 @@
 }
 
 .toybox-notification-label{
-    left: 90% !important;
     top: 5% !important;
+    right: 17% !important;
 }
 
 .toybox-notification-feed{
