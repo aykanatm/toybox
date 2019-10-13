@@ -23,8 +23,6 @@ import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
 import org.springframework.cloud.netflix.ribbon.RibbonClient;
 import org.springframework.cloud.netflix.ribbon.SpringClientFactory;
-import org.springframework.cloud.netflix.ribbon.apache.RetryableRibbonLoadBalancingHttpClient;
-import org.springframework.cloud.netflix.ribbon.apache.RibbonApacheHttpRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
@@ -47,6 +45,8 @@ public class AssetLoadbalancerController {
 
     @Autowired
     private RestTemplate restTemplate;
+    @Autowired
+    private RestTemplate defaultRestTemplate;
 
     @Autowired
     private LoadbalancerUtils loadbalancerUtils;
@@ -63,6 +63,12 @@ public class AssetLoadbalancerController {
         RibbonRetryHttpRequestFactory lFactory = new RibbonRetryHttpRequestFactory(springClientFactory, loadBalancerClient);
         restTemplate.setRequestFactory(lFactory);
         return restTemplate;
+    }
+
+    @LoadBalanced
+    @Bean
+    public RestTemplate defaultRestTemplate(RestTemplateBuilder restTemplateBuilder){
+        return restTemplateBuilder.build();
     }
 
     // The name "upload" must match the "name" attribute of the input in UI
@@ -291,7 +297,10 @@ public class AssetLoadbalancerController {
                         String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.ASSET_SERVICE_NAME);
 
                         if(StringUtils.isNotBlank(prefix)){
-                            return restTemplate.exchange(prefix + ToyboxConstants.ASSET_SERVICE_NAME + "/assets/" + assetId, HttpMethod.PATCH, new HttpEntity<>(updateAssetRequest, headers), GenericResponse.class);
+                            // TODO:
+                            //  RibbonRetryHttpRequestFactory does not support PATCH requests (https://github.com/Netflix/ribbon/issues/285)
+                            //  Issue will be fixed when the project is upgraded to the latest version of Spring Cloud
+                            return defaultRestTemplate.exchange(prefix + ToyboxConstants.ASSET_SERVICE_NAME + "/assets/" + assetId, HttpMethod.PATCH, new HttpEntity<>(updateAssetRequest, headers), GenericResponse.class);
                         }
                         else{
                             throw new IllegalArgumentException("Service ID prefix is null!");
