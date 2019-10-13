@@ -61,7 +61,7 @@
                     <div class="permission-types">
                         <div>
                             <div class="ui toggle checkbox" id="toybox-toggle">
-                                <input type="checkbox" name="notifymeonview" v-model="canView" v-bind:disabled="isExternalUser">
+                                <input type="checkbox" name="notifymeonview" v-model="canView" disabled="true">
                                 <label>View</label>
                             </div>
                         </div>
