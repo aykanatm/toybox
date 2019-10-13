@@ -121,14 +121,16 @@ public class FolderController {
                             if(canSendNotification){
                                 User user = authenticationUtils.getUser(authentication.getName());
 
-                                // Send notification
-                                String message = "Folder '" + container.getName() + "' is created under the folder '" + parentContainer.getName() + "' by '" + user.getUsername() + "'";
-                                SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                                sendNotificationRequest.setIsAsset(false);
-                                sendNotificationRequest.setId(parentContainer.getId());
-                                sendNotificationRequest.setFromUser(user);
-                                sendNotificationRequest.setMessage(message);
-                                notificationUtils.sendNotification(sendNotificationRequest, session);
+                                // Send notification for subscribers
+                                List<User> subscribers = containerUtils.getSubscribers(container.getId());
+                                for(User subscriber: subscribers){
+                                    String message = "Folder '" + container.getName() + "' is created under the folder '" + parentContainer.getName() + "' by '" + user.getUsername() + "'";
+                                    SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                    sendNotificationRequest.setFromUsername(user.getUsername());
+                                    sendNotificationRequest.setToUsername(subscriber.getUsername());
+                                    sendNotificationRequest.setMessage(message);
+                                    notificationUtils.sendNotification(sendNotificationRequest, session);
+                                }
                             }
 
                             return new ResponseEntity<>(createContainerResponse, HttpStatus.OK);
@@ -409,14 +411,16 @@ public class FolderController {
                             Container oldContainer = containerUtils.getContainer(containerId);
                             Container container = containerUtils.updateContainer(updateContainerRequest, containerId);
                             if(container != null){
-                                // Send notification
-                                String notification = "Folder '" + oldContainer.getName() + "' is updated by '" + user.getUsername() + "'";
-                                SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                                sendNotificationRequest.setIsAsset(false);
-                                sendNotificationRequest.setId(oldContainer.getId());
-                                sendNotificationRequest.setFromUser(user);
-                                sendNotificationRequest.setMessage(notification);
-                                notificationUtils.sendNotification(sendNotificationRequest, session);
+                                // Send notification for subscribers
+                                List<User> subscribers = containerUtils.getSubscribers(container.getId());
+                                for(User subscriber: subscribers){
+                                    String message = "Folder '" + oldContainer.getName() + "' is updated by '" + user.getUsername() + "'";
+                                    SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                    sendNotificationRequest.setFromUsername(user.getUsername());
+                                    sendNotificationRequest.setToUsername(subscriber.getUsername());
+                                    sendNotificationRequest.setMessage(message);
+                                    notificationUtils.sendNotification(sendNotificationRequest, session);
+                                }
 
                                 String message = "Container updated successfully.";
                                 _logger.debug(message);

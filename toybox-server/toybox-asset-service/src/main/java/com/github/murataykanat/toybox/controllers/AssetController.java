@@ -276,15 +276,6 @@ public class AssetController {
                             Asset oldAsset = assetUtils.getAsset(assetId);
                             Asset asset = assetUtils.updateAsset(updateAssetRequest, assetId, user, session);
                             if(asset != null){
-                                // Send notification
-                                String notification = "Asset '" + oldAsset.getName() + "' is updated by '" + user.getUsername() + "'";
-                                SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                                sendNotificationRequest.setIsAsset(true);
-                                sendNotificationRequest.setId(oldAsset.getId());
-                                sendNotificationRequest.setFromUser(user);
-                                sendNotificationRequest.setMessage(notification);
-                                notificationUtils.sendNotification(sendNotificationRequest, session);
-
                                 String message = "Asset updated successfully.";
                                 _logger.debug(message);
 
@@ -457,14 +448,16 @@ public class AssetController {
                                         restTemplate.postForEntity(loadbalancerUrl + "/common-objects/delete", selectedAssetsEntity, GenericResponse.class);
                                         genericResponse.setMessage("Asset was successfully reverted to version " + revertAssetVersionRequest.getVersion() + ".");
 
-                                        // Send notification
-                                        String notification = "Asset '" + asset.getName() + "' is reverted to version '" + revertAssetVersionRequest.getVersion() + "' by '" + user.getUsername() + "'";
-                                        SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                                        sendNotificationRequest.setIsAsset(true);
-                                        sendNotificationRequest.setId(asset.getId());
-                                        sendNotificationRequest.setFromUser(user);
-                                        sendNotificationRequest.setMessage(notification);
-                                        notificationUtils.sendNotification(sendNotificationRequest, session);
+                                        // Send notification for subscribers
+                                        List<User> subscribers = assetUtils.getSubscribers(asset.getId());
+                                        for(User subscriber: subscribers){
+                                            String message = "Asset '" + asset.getName() + "' is reverted to version '" + revertAssetVersionRequest.getVersion() + "' by '" + user.getUsername() + "'";
+                                            SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                            sendNotificationRequest.setFromUsername(user.getUsername());
+                                            sendNotificationRequest.setToUsername(subscriber.getUsername());
+                                            sendNotificationRequest.setMessage(message);
+                                            notificationUtils.sendNotification(sendNotificationRequest, session);
+                                        }
 
                                         return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                                     }

@@ -1,28 +1,16 @@
 package com.github.murataykanat.toybox.schema.notification;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.github.murataykanat.toybox.dbo.Asset;
-import com.github.murataykanat.toybox.dbo.User;
 
 import java.io.Serializable;
 
 public class SendNotificationRequest implements Serializable {
     @JsonProperty("fromUser")
-    private User fromUser;
-    @JsonProperty("id")
-    private String id;
+    private String fromUsername;
+    @JsonProperty("toUser")
+    private String toUsername;
     @JsonProperty("message")
     private String message;
-    @JsonProperty("isAsset")
-    private boolean isAsset;
-
-    public User getFromUser() {
-        return fromUser;
-    }
-
-    public void setFromUser(User fromUser) {
-        this.fromUser = fromUser;
-    }
 
     public String getMessage() {
         return message;
@@ -32,19 +20,19 @@ public class SendNotificationRequest implements Serializable {
         this.message = message;
     }
 
-    public String getId() {
-        return id;
+    public String getToUsername() {
+        return toUsername;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setToUsername(String toUsername) {
+        this.toUsername = toUsername;
     }
 
-    public boolean getIsAsset() {
-        return isAsset;
+    public String getFromUsername() {
+        return fromUsername;
     }
 
-    public void setIsAsset(boolean isAsset) {
-        this.isAsset = isAsset;
+    public void setFromUsername(String fromUsername) {
+        this.fromUsername = fromUsername;
     }
 }

@@ -145,14 +145,16 @@ public class ContainerUtils {
                         containersRepository.updateContainerParentContainerId(targetContainer.getId(), container.getId());
                     }
 
-                    // Send notification
-                    String message = "Folder '" + container.getName() + "' is moved to folder '" + targetContainer.getName() + "' by '" + user.getUsername() + "'";
-                    SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                    sendNotificationRequest.setIsAsset(false);
-                    sendNotificationRequest.setId(container.getId());
-                    sendNotificationRequest.setFromUser(user);
-                    sendNotificationRequest.setMessage(message);
-                    notificationUtils.sendNotification(sendNotificationRequest, session);
+                    // Send notification for subscribers
+                    List<User> subscribers = getSubscribers(container.getId());
+                    for(User subscriber: subscribers){
+                        String message = "Folder '" + container.getName() + "' is moved to folder '" + targetContainer.getName() + "' by '" + user.getUsername() + "'";
+                        SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                        sendNotificationRequest.setFromUsername(user.getUsername());
+                        sendNotificationRequest.setToUsername(subscriber.getUsername());
+                        sendNotificationRequest.setMessage(message);
+                        notificationUtils.sendNotification(sendNotificationRequest, session);
+                    }
                 }
                 else{
                     numberOfIgnoredContainers++;
@@ -213,14 +215,17 @@ public class ContainerUtils {
         if(StringUtils.isNotBlank(createdContainerId)){
             Container createdContainer = getContainer(createdContainerId);
             User user = authenticationUtils.getUser(username);
-            // Send notification
-            String message = "Folder '" + sourceContainer.getName() + "' is copied to folder '" + targetContainer.getName() + "' by '" + user.getUsername() + "'";
-            SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-            sendNotificationRequest.setIsAsset(false);
-            sendNotificationRequest.setId(sourceContainer.getId());
-            sendNotificationRequest.setFromUser(user);
-            sendNotificationRequest.setMessage(message);
-            notificationUtils.sendNotification(sendNotificationRequest, session);
+
+            // Send notification for subscribers
+            List<User> subscribers = getSubscribers(sourceContainer.getId());
+            for(User subscriber: subscribers){
+                String message = "Folder '" + sourceContainer.getName() + "' is copied to folder '" + targetContainer.getName() + "' by '" + user.getUsername() + "'";
+                SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                sendNotificationRequest.setFromUsername(user.getUsername());
+                sendNotificationRequest.setToUsername(subscriber.getUsername());
+                sendNotificationRequest.setMessage(message);
+                notificationUtils.sendNotification(sendNotificationRequest, session);
+            }
 
             // We copy the contents to the target container
             // We find and copy all the assets inside the folder to the new folder
@@ -353,6 +358,20 @@ public class ContainerUtils {
         containersRepository.insertContainer(container.getId(), container.getName(), container.getParentId(),
                 container.getCreatedByUsername(), container.getCreationDate(), container.getDeleted(),
                 container.getSystem());
+    }
+
+    @LogEntryExitExecutionTime
+    public List<User> getSubscribers(String containerId){
+        List<User> subscribers = new ArrayList<>();
+
+        List<ContainerUser> containerUsersByContainerId = containerUsersRepository.findContainerUsersByContainerId(containerId);
+
+        for(ContainerUser containerUser: containerUsersByContainerId){
+            User user = authenticationUtils.getUser(containerUser.getUserId());
+            subscribers.add(user);
+        }
+
+        return subscribers;
     }
 
     @LogEntryExitExecutionTime

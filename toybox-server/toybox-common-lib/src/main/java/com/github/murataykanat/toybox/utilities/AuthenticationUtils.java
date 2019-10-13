@@ -69,7 +69,7 @@ public class AuthenticationUtils {
     }
 
     @LogEntryExitExecutionTime
-    public User getUser(int userId) throws Exception {
+    public User getUser(int userId) {
         List<User> toUsersByUserId = usersRepository.findUsersByUserId(userId);
         if(!toUsersByUserId.isEmpty()){
             if(toUsersByUserId.size() == 1){

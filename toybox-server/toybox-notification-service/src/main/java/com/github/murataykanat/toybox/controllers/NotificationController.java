@@ -2,9 +2,6 @@ package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
-import com.github.murataykanat.toybox.dbo.AssetUser;
-import com.github.murataykanat.toybox.dbo.ContainerUser;
-import com.github.murataykanat.toybox.dbo.User;
 import com.github.murataykanat.toybox.repositories.*;
 import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
@@ -52,10 +49,6 @@ public class NotificationController {
     private RabbitTemplate rabbitTemplate;
 
     @Autowired
-    private AssetUserRepository assetUserRepository;
-    @Autowired
-    private ContainerUsersRepository containerUsersRepository;
-    @Autowired
     private NotificationsRepository notificationsRepository;
 
     @LogEntryExitExecutionTime
@@ -67,84 +60,32 @@ public class NotificationController {
         try{
             if(authenticationUtils.isSessionValid(authentication)){
                 if(sendNotificationRequest != null){
-                    if(sendNotificationRequest.getIsAsset()){
-                        List<AssetUser> assetUsersByAssetId = assetUserRepository.findAssetUsersByAssetId(sendNotificationRequest.getId());
-                        if(!assetUsersByAssetId.isEmpty()){
-                            for(AssetUser assetUser: assetUsersByAssetId){
-                                User toUser = authenticationUtils.getUser(assetUser.getUserId());
-                                if(!authentication.getName().equalsIgnoreCase(toUser.getUsername())){
-                                    String toUsername = toUser.getUsername();
-                                    String fromUsername = sendNotificationRequest.getFromUser().getUsername();
+                    String toUsername = sendNotificationRequest.getToUsername();
+                    String fromUsername = sendNotificationRequest.getFromUsername();
 
-                                    Notification notification = new Notification();
-                                    notification.setUsername(toUsername);
-                                    notification.setNotification(sendNotificationRequest.getMessage());
-                                    notification.setIsRead("N");
-                                    notification.setDate(new Date());
-                                    notification.setFrom(fromUsername);
+                    if(!authentication.getName().equalsIgnoreCase(toUsername)){
+                        Notification notification = new Notification();
+                        notification.setUsername(toUsername);
+                        notification.setNotification(sendNotificationRequest.getMessage());
+                        notification.setIsRead("N");
+                        notification.setDate(new Date());
+                        notification.setFrom(fromUsername);
 
-                                    rabbitTemplate.convertAndSend(ToyboxConstants.TOYBOX_NOTIFICATION_EXCHANGE,"toybox.notification." + System.currentTimeMillis(), notification);
-                                    notificationCount++;
-                                }
-                                else{
-                                    _logger.debug("Users cannot send notification to themselves. Skipping...");
-                                }
-                            }
-
-                            if(notificationCount > 0){
-                                genericResponse.setMessage(notificationCount + " notification(s) were sent successfully!");
-                            }
-                            else{
-                                genericResponse.setMessage("No notifications were sent.");
-                            }
-
-                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
-                        }
-                        else{
-                            _logger.debug("No users associated with asset with ID '" + sendNotificationRequest.getId() + "' is found.");
-
-                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
-                        }
+                        rabbitTemplate.convertAndSend(ToyboxConstants.TOYBOX_NOTIFICATION_EXCHANGE,"toybox.notification." + System.currentTimeMillis(), notification);
+                        notificationCount++;
                     }
                     else{
-                        List<ContainerUser> containerUsersByContainerId = containerUsersRepository.findContainerUsersByContainerId(sendNotificationRequest.getId());
-                        if(!containerUsersByContainerId.isEmpty()){
-                            for(ContainerUser containerUser: containerUsersByContainerId){
-                                User toUser = authenticationUtils.getUser(containerUser.getUserId());
-                                if(!authentication.getName().equalsIgnoreCase(toUser.getUsername())){
-                                    String toUsername = toUser.getUsername();
-                                    String fromUsername = sendNotificationRequest.getFromUser().getUsername();
-
-                                    Notification notification = new Notification();
-                                    notification.setUsername(toUsername);
-                                    notification.setNotification(sendNotificationRequest.getMessage());
-                                    notification.setIsRead("N");
-                                    notification.setDate(new Date());
-                                    notification.setFrom(fromUsername);
-
-                                    rabbitTemplate.convertAndSend(ToyboxConstants.TOYBOX_NOTIFICATION_EXCHANGE,"toybox.notification." + System.currentTimeMillis(), notification);
-                                    notificationCount++;
-                                }
-                                else{
-                                    _logger.debug("Users cannot send notification to themselves. Skipping...");
-                                }
-                            }
-
-                            if(notificationCount > 0){
-                                genericResponse.setMessage(notificationCount + " notification(s) were sent successfully!");
-                            }
-                            else{
-                                genericResponse.setMessage("No notifications were sent.");
-                            }
-
-                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
-                        }
-                        else{
-                            _logger.debug("No users associated with container with ID '" + sendNotificationRequest.getId() + "' is found.");
-
-                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
-                        }
+                        _logger.debug("Users cannot send notification to themselves. Skipping...");
                     }
+
+                    if(notificationCount > 0){
+                        genericResponse.setMessage(notificationCount + " notification(s) were sent successfully!");
+                    }
+                    else{
+                        genericResponse.setMessage("No notifications were sent.");
+                    }
+
+                    return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                 }
                 else{
                     String errorMessage = "Notification request parameter is null!";

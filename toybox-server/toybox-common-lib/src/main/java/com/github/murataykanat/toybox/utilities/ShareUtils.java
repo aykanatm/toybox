@@ -39,6 +39,8 @@ public class ShareUtils {
     private LoadbalancerUtils loadbalancerUtils;
     @Autowired
     private ContainerUtils containerUtils;
+    @Autowired
+    private AssetUtils assetUtils;
 
     @Autowired
     private UsersRepository usersRepository;
@@ -105,27 +107,31 @@ public class ShareUtils {
 
                 if(selectedAssets != null && !selectedAssets.isEmpty()){
                     for(Asset asset: selectedAssets){
-                        // Send notification
-                        String message = "Asset '" + asset.getName() + "' is shared externally by '" + user.getUsername() + "'";
-                        SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                        sendNotificationRequest.setIsAsset(true);
-                        sendNotificationRequest.setId(asset.getId());
-                        sendNotificationRequest.setFromUser(user);
-                        sendNotificationRequest.setMessage(message);
-                        notificationUtils.sendNotification(sendNotificationRequest, session);
+                        // Send notification for subscribers
+                        List<User> subscribers = assetUtils.getSubscribers(asset.getId());
+                        for(User subscriber: subscribers){
+                            String message = "Asset '" + asset.getName() + "' is shared externally by '" + user.getUsername() + "'";
+                            SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                            sendNotificationRequest.setFromUsername(user.getUsername());
+                            sendNotificationRequest.setToUsername(subscriber.getUsername());
+                            sendNotificationRequest.setMessage(message);
+                            notificationUtils.sendNotification(sendNotificationRequest, session);
+                        }
                     }
                 }
 
                 if(selectedContainers != null && !selectedContainers.isEmpty()){
                     for(Container container: selectedContainers){
-                        // Send notification
-                        String message = "Folder '" + container.getName() + "' is shared externally by '" + user.getUsername() + "'";
-                        SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                        sendNotificationRequest.setIsAsset(false);
-                        sendNotificationRequest.setId(container.getId());
-                        sendNotificationRequest.setFromUser(user);
-                        sendNotificationRequest.setMessage(message);
-                        notificationUtils.sendNotification(sendNotificationRequest, session);
+                        // Send notification for subscribers
+                        List<User> subscribers = containerUtils.getSubscribers(container.getId());
+                        for(User subscriber: subscribers){
+                            String message = "Folder '" + container.getName() + "' is shared externally by '" + user.getUsername() + "'";
+                            SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                            sendNotificationRequest.setFromUsername(user.getUsername());
+                            sendNotificationRequest.setToUsername(subscriber.getUsername());
+                            sendNotificationRequest.setMessage(message);
+                            notificationUtils.sendNotification(sendNotificationRequest, session);
+                        }
                     }
                 }
 
@@ -234,27 +240,31 @@ public class ShareUtils {
 
         if(!sharedAssets.isEmpty()){
             for(Asset asset: sharedAssets){
-                // Send notification
-                String message = "Asset '" + asset.getName() + "' is shared internally by '" + user.getUsername() + "'";
-                SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                sendNotificationRequest.setIsAsset(true);
-                sendNotificationRequest.setId(asset.getId());
-                sendNotificationRequest.setFromUser(user);
-                sendNotificationRequest.setMessage(message);
-                notificationUtils.sendNotification(sendNotificationRequest, session);
+                // Send notification for subscribers
+                List<User> subscribers = assetUtils.getSubscribers(asset.getId());
+                for(User subscriber: subscribers){
+                    String message = "Asset '" + asset.getName() + "' is shared internally by '" + user.getUsername() + "'";
+                    SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                    sendNotificationRequest.setFromUsername(user.getUsername());
+                    sendNotificationRequest.setToUsername(subscriber.getUsername());
+                    sendNotificationRequest.setMessage(message);
+                    notificationUtils.sendNotification(sendNotificationRequest, session);
+                }
             }
         }
 
         if(!sharedContainers.isEmpty()){
             for(Container container: sharedContainers){
-                // Send notification
-                String message = "Folder '" + container.getName() + "' is shared internally by '" + user.getUsername() + "'";
-                SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                sendNotificationRequest.setIsAsset(false);
-                sendNotificationRequest.setId(container.getId());
-                sendNotificationRequest.setFromUser(user);
-                sendNotificationRequest.setMessage(message);
-                notificationUtils.sendNotification(sendNotificationRequest, session);
+                // Send notification for subscribers
+                List<User> subscribers = containerUtils.getSubscribers(container.getId());
+                for(User subscriber: subscribers){
+                    String message = "Folder '" + container.getName() + "' is shared internally by '" + user.getUsername() + "'";
+                    SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                    sendNotificationRequest.setFromUsername(user.getUsername());
+                    sendNotificationRequest.setToUsername(subscriber.getUsername());
+                    sendNotificationRequest.setMessage(message);
+                    notificationUtils.sendNotification(sendNotificationRequest, session);
+                }
             }
         }
     }
@@ -274,7 +284,7 @@ public class ShareUtils {
                     // If the internal share exists and it is unique
                     InternalShare internalShare = internalSharesById.get(0);
 
-                    // We find the assets that are linked to the external share
+                    // We find the assets that are linked to the internal share
                     List<InternalShareAsset> internalShareAssetByInternalShareId = internalShareAssetsRepository.findInternalShareAssetByInternalShareId(internalShare.getInternalShareId());
                     List<String> sharedAssetIds = internalShareAssetByInternalShareId.stream().map(InternalShareAsset::getAssetId).collect(Collectors.toList());
 
@@ -312,7 +322,7 @@ public class ShareUtils {
                     // If the internal share exists and it is unique
                     InternalShare internalShare = internalSharesById.get(0);
 
-                    // We find the containers that are linked to the external share
+                    // We find the containers that are linked to the internal share
                     List<InternalShareContainer> internalShareContainersByInternalShareId = internalShareContainersRepository.findInternalShareContainersByInternalShareId(internalShare.getInternalShareId());
                     List<String> sharedContainerIds = internalShareContainersByInternalShareId.stream().map(InternalShareContainer::getContainerId).collect(Collectors.toList());
 
@@ -336,6 +346,53 @@ public class ShareUtils {
     }
 
     @LogEntryExitExecutionTime
+    public List<InternalShare> getInternalShares(int userId, String id, boolean isAsset){
+        List<InternalShare> internalShares = new ArrayList<>();
+
+        // We find all the internal shares that were shared with the user
+        List<InternalShareUser> internalShareUsersByUserId = internalShareUsersRepository.findInternalShareUsersByUserId(userId);
+        // We iterate over the each internal share that was shared with the user
+        for(InternalShareUser internalShareUser: internalShareUsersByUserId){
+            // We find the internal share
+            List<InternalShare> internalSharesById = internalSharesRepository.getInternalSharesById(internalShareUser.getInternalShareId());
+            if(!internalSharesById.isEmpty()){
+                if(internalSharesById.size() == 1){
+                    // If the internal share exists and it is unique
+                    InternalShare internalShare = internalSharesById.get(0);
+
+                    if(isAsset){
+                        // We find the assets that are linked to the external share
+                        List<InternalShareAsset> internalShareAssetByInternalShareId = internalShareAssetsRepository.findInternalShareAssetByInternalShareId(internalShare.getInternalShareId());
+                        List<String> sharedAssetIds = internalShareAssetByInternalShareId.stream().map(InternalShareAsset::getAssetId).collect(Collectors.toList());
+
+                        boolean isAssetSharedWithUser = sharedAssetIds.stream().anyMatch(aid -> aid.equalsIgnoreCase(id));
+                        if(isAssetSharedWithUser){
+                            internalShares.add(internalShare);
+                        }
+                    }
+                    else{
+                        // We find the containers that are linked to the internal share
+                        List<InternalShareContainer> internalShareContainersByInternalShareId = internalShareContainersRepository.findInternalShareContainersByInternalShareId(internalShare.getInternalShareId());
+                        List<String> sharedContainerIds = internalShareContainersByInternalShareId.stream().map(InternalShareContainer::getContainerId).collect(Collectors.toList());
+
+                        boolean isContainerSharedWithUser = sharedContainerIds.stream().anyMatch(cid -> cid.equalsIgnoreCase(id));
+                        if(isContainerSharedWithUser){
+                            internalShares.add(internalShare);
+                        }
+                    }
+                }
+                else{
+                    throw new IllegalArgumentException("There are multiple instances of internal share ID '" + internalShareUser.getInternalShareId() + "' in the database!");
+                }
+            }
+            else{
+                throw new IllegalArgumentException("Internal share ID '" + internalShareUser.getInternalShareId() + "' does not exist in the database!");
+            }
+        }
+        return internalShares;
+    }
+
+    @LogEntryExitExecutionTime
     private String generateInternalShareId(){
         String internalShareId = RandomStringUtils.randomAlphanumeric(40);
         if(isInternalShareIdValid(internalShareId)){
@@ -347,12 +404,7 @@ public class ShareUtils {
     @LogEntryExitExecutionTime
     private boolean isInternalShareIdValid(String externalShareId){
         List<InternalShare> internalSharesById = internalSharesRepository.getInternalSharesById(externalShareId);
-        if(internalSharesById.isEmpty()){
-            return true;
-        }
-        else{
-            return false;
-        }
+        return internalSharesById.isEmpty();
     }
 
     @LogEntryExitExecutionTime
@@ -367,11 +419,6 @@ public class ShareUtils {
     @LogEntryExitExecutionTime
     private boolean isExternalShareIdValid(String externalShareId){
         List<ExternalShare> externalSharesById = externalSharesRepository.getExternalSharesById(externalShareId);
-        if(externalSharesById.isEmpty()){
-            return true;
-        }
-        else{
-            return false;
-        }
+        return externalSharesById.isEmpty();
     }
 }

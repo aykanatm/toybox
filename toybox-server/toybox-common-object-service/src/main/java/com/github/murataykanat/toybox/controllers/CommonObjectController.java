@@ -181,14 +181,16 @@ public class CommonObjectController {
                                 assetsRepository.deleteAssetById("Y",assetsAndVersions.stream().map(Asset::getId).collect(Collectors.toList()));
                                 // We send delete notification for the selected assets
                                 for(Asset asset: selectedAssetsAndContainerAssets){
-                                    // Send notification
-                                    String message = "Asset '" + asset.getName() + "' is deleted by '" + user.getUsername() + "'";
-                                    SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                                    sendNotificationRequest.setIsAsset(true);
-                                    sendNotificationRequest.setId(asset.getId());
-                                    sendNotificationRequest.setFromUser(user);
-                                    sendNotificationRequest.setMessage(message);
-                                    notificationUtils.sendNotification(sendNotificationRequest, session);
+                                    // Send notification for subscribers
+                                    List<User> subscribers = assetUtils.getSubscribers(asset.getId());
+                                    for(User subscriber: subscribers){
+                                        String message = "Asset '" + asset.getName() + "' is deleted by '" + user.getUsername() + "'";
+                                        SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                        sendNotificationRequest.setFromUsername(user.getUsername());
+                                        sendNotificationRequest.setToUsername(subscriber.getUsername());
+                                        sendNotificationRequest.setMessage(message);
+                                        notificationUtils.sendNotification(sendNotificationRequest, session);
+                                    }
                                 }
                                 // We un-subscribe users from the deleted assets
                                 for(Asset asset: assetsAndVersions){
@@ -203,14 +205,16 @@ public class CommonObjectController {
                                 containersRepository.deleteContainersById("Y", selectionContext.getSelectedContainers().stream().map(Container::getId).collect(Collectors.toList()));
                                 // We send delete notification for the selected containers
                                 for(Container selectedContainer: selectionContext.getSelectedContainers()){
-                                    // Send notification
-                                    String message = "Folder '" + selectedContainer.getName() + "' is deleted by '" + user.getUsername() + "'";
-                                    SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                                    sendNotificationRequest.setIsAsset(false);
-                                    sendNotificationRequest.setId(selectedContainer.getId());
-                                    sendNotificationRequest.setFromUser(user);
-                                    sendNotificationRequest.setMessage(message);
-                                    notificationUtils.sendNotification(sendNotificationRequest, session);
+                                    // Send notification for subscribers
+                                    List<User> subscribers = containerUtils.getSubscribers(selectedContainer.getId());
+                                    for(User subscriber: subscribers){
+                                        String message = "Folder '" + selectedContainer.getName() + "' is deleted by '" + user.getUsername() + "'";
+                                        SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                        sendNotificationRequest.setFromUsername(user.getUsername());
+                                        sendNotificationRequest.setToUsername(subscriber.getUsername());
+                                        sendNotificationRequest.setMessage(message);
+                                        notificationUtils.sendNotification(sendNotificationRequest, session);
+                                    }
                                 }
                                 // We un-subscribe users from the deleted containers
                                 for(Container selectedContainer: selectionContext.getSelectedContainers()){
