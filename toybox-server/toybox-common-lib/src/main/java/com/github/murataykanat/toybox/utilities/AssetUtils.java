@@ -45,9 +45,13 @@ public class AssetUtils {
     private SortUtils sortUtils;
     @Autowired
     private ContainerUtils containerUtils;
+    @Autowired
+    private ShareUtils shareUtils;
 
     @Autowired
     private AssetsRepository assetsRepository;
+    @Autowired
+    private AssetUserRepository assetUserRepository;
     @Autowired
     private ContainersRepository containersRepository;
     @Autowired
@@ -133,14 +137,16 @@ public class AssetUtils {
                     containerAssetsRepository.moveAssets(targetContainer.getId(), assetsByOriginalAssetId.stream().map(Asset::getId).collect(Collectors.toList()));
                 }
 
-                // Send notification
-                String message = "Asset '" + asset.getName() + "' is moved to folder '" + targetContainer.getName() + "' by '" + user.getUsername() + "'";
-                SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                sendNotificationRequest.setIsAsset(true);
-                sendNotificationRequest.setId(asset.getId());
-                sendNotificationRequest.setFromUser(user);
-                sendNotificationRequest.setMessage(message);
-                notificationUtils.sendNotification(sendNotificationRequest, session);
+                // Send notification for subscribers
+                List<User> subscribers = getSubscribers(asset.getId());
+                for(User subscriber: subscribers){
+                    String message = "Asset '" + asset.getName() + "' is moved to folder '" + targetContainer.getName() + "' by '" + user.getUsername() + "'";
+                    SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                    sendNotificationRequest.setFromUsername(user.getUsername());
+                    sendNotificationRequest.setToUsername(subscriber.getUsername());
+                    sendNotificationRequest.setMessage(message);
+                    notificationUtils.sendNotification(sendNotificationRequest, session);
+                }
             }
             else{
                 numberOfIgnoredFiles++;
@@ -222,14 +228,16 @@ public class AssetUtils {
         if(successful){
             _logger.debug("Asset import job successfully started!");
             for(Asset copiedAsset: copiedAssets){
-                // Send notification
-                String message = "Asset '" + copiedAsset.getName() + "' is copied to folder '" + targetContainer.getName() + "' by '" + user.getUsername() + "'";
-                SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                sendNotificationRequest.setIsAsset(true);
-                sendNotificationRequest.setId(copiedAsset.getId());
-                sendNotificationRequest.setFromUser(user);
-                sendNotificationRequest.setMessage(message);
-                notificationUtils.sendNotification(sendNotificationRequest, session);
+                // Send notification for subscribers
+                List<User> subscribers = getSubscribers(copiedAsset.getId());
+                for(User subscriber: subscribers){
+                    String message = "Asset '" + copiedAsset.getName() + "' is copied to folder '" + targetContainer.getName() + "' by '" + user.getUsername() + "'";
+                    SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                    sendNotificationRequest.setFromUsername(user.getUsername());
+                    sendNotificationRequest.setToUsername(subscriber.getUsername());
+                    sendNotificationRequest.setMessage(message);
+                    notificationUtils.sendNotification(sendNotificationRequest, session);
+                }
             }
         }
         else{
@@ -299,14 +307,30 @@ public class AssetUtils {
             }
         }
 
-        // Send notification
         String message = "Asset '" + asset.getName() + "' is updated by '" + user.getUsername() + "'";
-        SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-        sendNotificationRequest.setIsAsset(true);
-        sendNotificationRequest.setId(asset.getId());
-        sendNotificationRequest.setFromUser(user);
-        sendNotificationRequest.setMessage(message);
-        notificationUtils.sendNotification(sendNotificationRequest, session);
+
+        // Send notification for subscribers
+        List<User> subscribers = getSubscribers(asset.getId());
+        for(User subscriber: subscribers){
+
+            SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+            sendNotificationRequest.setFromUsername(user.getUsername());
+            sendNotificationRequest.setToUsername(subscriber.getUsername());
+            sendNotificationRequest.setMessage(message);
+            notificationUtils.sendNotification(sendNotificationRequest, session);
+        }
+
+        // Send notification for asset owners
+        List<InternalShare> internalShares = shareUtils.getInternalShares(user.getId(), assetId, true);
+        for(InternalShare internalShare: internalShares){
+            if(internalShare.getNotifyOnEdit().equalsIgnoreCase("Y")){
+                SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                sendNotificationRequest.setFromUsername(user.getUsername());
+                sendNotificationRequest.setToUsername(internalShare.getUsername());
+                sendNotificationRequest.setMessage(message);
+                notificationUtils.sendNotification(sendNotificationRequest, session);
+            }
+        }
 
         return getAsset(assetId);
     }
@@ -335,6 +359,19 @@ public class AssetUtils {
         assetsRepository.insertAsset(asset.getId(), asset.getExtension(), asset.getImportedByUsername(), asset.getName(), asset.getPath(),
                 asset.getPreviewPath(), asset.getThumbnailPath(), asset.getType(), asset.getImportDate(), asset.getDeleted(), asset.getChecksum(),
                 asset.getIsLatestVersion(), asset.getOriginalAssetId(), asset.getVersion(), asset.getFileSize());
+    }
+
+    @LogEntryExitExecutionTime
+    public List<User> getSubscribers(String assetId) {
+        List<User> subscribers = new ArrayList<>();
+
+        List<AssetUser> assetUsersByAssetId = assetUserRepository.findAssetUsersByAssetId(assetId);
+        for(AssetUser assetUser: assetUsersByAssetId){
+            User user = authenticationUtils.getUser(assetUser.getUserId());
+            subscribers.add(user);
+        }
+
+        return subscribers;
     }
 
     @LogEntryExitExecutionTime
