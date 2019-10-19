@@ -37,6 +37,8 @@ public class ContainerUtils {
     private AuthenticationUtils authenticationUtils;
     @Autowired
     private NotificationUtils notificationUtils;
+    @Autowired
+    private ShareUtils shareUtils;
 
     @Autowired
     private AssetsRepository assetsRepository;
@@ -145,15 +147,27 @@ public class ContainerUtils {
                         containersRepository.updateContainerParentContainerId(targetContainer.getId(), container.getId());
                     }
 
+                    String message = "Folder '" + container.getName() + "' is moved to folder '" + targetContainer.getName() + "' by '" + user.getUsername() + "'";
                     // Send notification for subscribers
                     List<User> subscribers = getSubscribers(container.getId());
                     for(User subscriber: subscribers){
-                        String message = "Folder '" + container.getName() + "' is moved to folder '" + targetContainer.getName() + "' by '" + user.getUsername() + "'";
                         SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
                         sendNotificationRequest.setFromUsername(user.getUsername());
                         sendNotificationRequest.setToUsername(subscriber.getUsername());
                         sendNotificationRequest.setMessage(message);
                         notificationUtils.sendNotification(sendNotificationRequest, session);
+                    }
+
+                    // Send notification for container owners
+                    List<InternalShare> internalShares = shareUtils.getInternalShares(user.getId(), containerId, false);
+                    for(InternalShare internalShare: internalShares){
+                        if(internalShare.getNotifyOnMoveOrCopy().equalsIgnoreCase("Y")){
+                            SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                            sendNotificationRequest.setFromUsername(user.getUsername());
+                            sendNotificationRequest.setToUsername(internalShare.getUsername());
+                            sendNotificationRequest.setMessage(message);
+                            notificationUtils.sendNotification(sendNotificationRequest, session);
+                        }
                     }
                 }
                 else{
@@ -216,15 +230,28 @@ public class ContainerUtils {
             Container createdContainer = getContainer(createdContainerId);
             User user = authenticationUtils.getUser(username);
 
+            String message = "Folder '" + sourceContainer.getName() + "' is copied to folder '" + targetContainer.getName() + "' by '" + user.getUsername() + "'";
+
             // Send notification for subscribers
             List<User> subscribers = getSubscribers(sourceContainer.getId());
             for(User subscriber: subscribers){
-                String message = "Folder '" + sourceContainer.getName() + "' is copied to folder '" + targetContainer.getName() + "' by '" + user.getUsername() + "'";
                 SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
                 sendNotificationRequest.setFromUsername(user.getUsername());
                 sendNotificationRequest.setToUsername(subscriber.getUsername());
                 sendNotificationRequest.setMessage(message);
                 notificationUtils.sendNotification(sendNotificationRequest, session);
+            }
+
+            // Send notification for container owners
+            List<InternalShare> internalShares = shareUtils.getInternalShares(user.getId(), sourceContainer.getId(), false);
+            for(InternalShare internalShare: internalShares){
+                if(internalShare.getNotifyOnMoveOrCopy().equalsIgnoreCase("Y")){
+                    SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                    sendNotificationRequest.setFromUsername(user.getUsername());
+                    sendNotificationRequest.setToUsername(internalShare.getUsername());
+                    sendNotificationRequest.setMessage(message);
+                    notificationUtils.sendNotification(sendNotificationRequest, session);
+                }
             }
 
             // We copy the contents to the target container
