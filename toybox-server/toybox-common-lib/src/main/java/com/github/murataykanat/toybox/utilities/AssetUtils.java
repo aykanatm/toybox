@@ -137,15 +137,28 @@ public class AssetUtils {
                     containerAssetsRepository.moveAssets(targetContainer.getId(), assetsByOriginalAssetId.stream().map(Asset::getId).collect(Collectors.toList()));
                 }
 
+                String message = "Asset '" + asset.getName() + "' is moved to folder '" + targetContainer.getName() + "' by '" + user.getUsername() + "'";
+
                 // Send notification for subscribers
                 List<User> subscribers = getSubscribers(asset.getId());
                 for(User subscriber: subscribers){
-                    String message = "Asset '" + asset.getName() + "' is moved to folder '" + targetContainer.getName() + "' by '" + user.getUsername() + "'";
                     SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
                     sendNotificationRequest.setFromUsername(user.getUsername());
                     sendNotificationRequest.setToUsername(subscriber.getUsername());
                     sendNotificationRequest.setMessage(message);
                     notificationUtils.sendNotification(sendNotificationRequest, session);
+                }
+
+                // Send notification for asset owners
+                List<InternalShare> internalShares = shareUtils.getInternalShares(user.getId(), assetId, true);
+                for(InternalShare internalShare: internalShares){
+                    if(internalShare.getNotifyOnMoveOrCopy().equalsIgnoreCase("Y")){
+                        SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                        sendNotificationRequest.setFromUsername(user.getUsername());
+                        sendNotificationRequest.setToUsername(internalShare.getUsername());
+                        sendNotificationRequest.setMessage(message);
+                        notificationUtils.sendNotification(sendNotificationRequest, session);
+                    }
                 }
             }
             else{
