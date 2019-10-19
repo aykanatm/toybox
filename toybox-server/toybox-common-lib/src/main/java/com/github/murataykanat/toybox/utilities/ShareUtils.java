@@ -188,20 +188,18 @@ public class ShareUtils {
             expirationDate = calendar.getTime();
         }
 
-        String notifyOnView = internalShareRequest.getNotifyOnView() ? "Y" : "N";
         String notifyOnEdit = internalShareRequest.getNotifyOnEdit() ? "Y" : "N";
         String notifyOnDownload = internalShareRequest.getNotifyOnDownload() ? "Y" : "N";
         String notifyOnShare = internalShareRequest.getNotifyOnShare() ? "Y" : "N";
         String notifyOnMoveOrCopy = internalShareRequest.getNotifyOnMoveOrCopy() ? "Y" : "N";
-        String canView = internalShareRequest.getCanView() ? "Y" : "N";
         String canEdit = internalShareRequest.getCanEdit() ? "Y" : "N";
         String canDownload = internalShareRequest.getCanDownload() ? "Y" : "N";
         String canShare = internalShareRequest.getCanShare() ? "Y" : "N";
         String canMoveOrCopy = internalShareRequest.getCanMoveOrCopy() ? "Y" : "N";
 
 
-        internalSharesRepository.insertExternalShare(internalShareId, user.getUsername(), expirationDate, notifyOnView,
-                notifyOnEdit, notifyOnDownload, notifyOnShare, notifyOnMoveOrCopy, canView, canEdit, canDownload, canShare, canMoveOrCopy);
+        internalSharesRepository.insertExternalShare(internalShareId, user.getUsername(), expirationDate,
+                notifyOnEdit, notifyOnDownload, notifyOnShare, notifyOnMoveOrCopy, canEdit, canDownload, canShare, canMoveOrCopy);
 
         List<Asset> sharedAssets = new ArrayList<>();
         List<Container> sharedContainers = new ArrayList<>();

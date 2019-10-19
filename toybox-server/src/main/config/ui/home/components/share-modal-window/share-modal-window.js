@@ -12,13 +12,11 @@ module.exports = {
             isExternalUser: false,
             // Notification
             notifyMe: false,
-            notifyOnView: false,
             notifyOnEdit: false,
             notifyOnDownload: false,
             notifyOnShare: false,
             notifyOnMoveOrCopy: false,
             // Share permissions
-            canView: true,
             canEdit: false,
             canDownload: false,
             canShare: false,
@@ -77,12 +75,10 @@ module.exports = {
 
             this.isExternalUser = false;
             this.notifyMe = false;
-            this.notifyOnView = false;
             this.notifyOnEdit = false;
             this.notifyOnDownload = false;
             this.notifyOnShare = false;
             this.notifyOnMoveOrCopy = false;
-            this.canView = true;
             this.canEdit = false;
             this.canDownload = false;
             this.canShare = false;
@@ -210,7 +206,6 @@ module.exports = {
     watch:{
         notifyMe:function(value){
             if(!value){
-                this.notifyOnView = false;
                 this.notifyOnEdit = false;
                 this.notifyOnDownload = false;
                 this.notifyOnShare = false;
@@ -219,24 +214,20 @@ module.exports = {
         },
         isExternalUser:function(value){
             if(value){
-                this.notifyOnView = false;
                 this.notifyOnEdit = false;
                 this.notifyOnShare = false;
                 this.notifyOnMoveOrCopy = false;
 
-                this.canView = false;
                 this.canEdit = false;
                 this.canDownload = true;
                 this.canShare = false;
                 this.canMoveOrCopy = false;
             }
             else{
-                this.notifyOnView = false;
                 this.notifyOnEdit = false;
                 this.notifyOnShare = false;
                 this.notifyOnMoveOrCopy = false;
 
-                this.canView = true;
                 this.canEdit = false;
                 this.canDownload = false;
                 this.canShare = false;
@@ -357,12 +348,10 @@ module.exports = {
                             selectionContext: this.selectionContext,
                             enableExpireInternal: this.enableExpireInternal,
                             expirationDate: this.internalExpirationDate,
-                            notifyOnView: this.notifyOnView,
                             notifyOnEdit: this.notifyOnEdit,
                             notifyOnDownload: this.notifyOnDownload,
                             notifyOnShare: this.notifyOnShare,
                             notifyOnMoveOrCopy: this.notifyOnMoveOrCopy,
-                            canView: this.canView,
                             canEdit: this.canEdit,
                             canDownload: this.canDownload,
                             canShare: this.canShare,

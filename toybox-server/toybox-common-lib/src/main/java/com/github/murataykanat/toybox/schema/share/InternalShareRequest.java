@@ -20,8 +20,6 @@ public class InternalShareRequest implements Serializable {
     @JsonFormat(pattern="MM/dd/yyyy")
     @JsonProperty("expirationDate")
     private Date expirationDate;
-    @JsonProperty("notifyOnView")
-    private boolean notifyOnView;
     @JsonProperty("notifyOnEdit")
     private boolean notifyOnEdit;
     @JsonProperty("notifyOnDownload")
@@ -30,8 +28,6 @@ public class InternalShareRequest implements Serializable {
     private boolean notifyOnShare;
     @JsonProperty("notifyOnMoveOrCopy")
     private boolean notifyOnMoveOrCopy;
-    @JsonProperty("canView")
-    private boolean canView;
     @JsonProperty("canEdit")
     private boolean canEdit;
     @JsonProperty("canDownload")
@@ -65,14 +61,6 @@ public class InternalShareRequest implements Serializable {
         this.expirationDate = expirationDate;
     }
 
-    public boolean getNotifyOnView() {
-        return notifyOnView;
-    }
-
-    public void setNotifyOnView(boolean notifyOnView) {
-        this.notifyOnView = notifyOnView;
-    }
-
     public boolean getNotifyOnEdit() {
         return notifyOnEdit;
     }
@@ -103,14 +91,6 @@ public class InternalShareRequest implements Serializable {
 
     public void setNotifyOnMoveOrCopy(boolean notifyOnMoveOrCopy) {
         this.notifyOnMoveOrCopy = notifyOnMoveOrCopy;
-    }
-
-    public boolean getCanView() {
-        return canView;
-    }
-
-    public void setCanView(boolean canView) {
-        this.canView = canView;
     }
 
     public boolean getCanEdit() {

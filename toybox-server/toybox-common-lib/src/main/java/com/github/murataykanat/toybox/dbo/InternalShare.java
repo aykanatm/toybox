@@ -22,10 +22,6 @@ public class InternalShare {
     @JsonProperty("expirationDate")
     private Date expirationDate;
 
-    @Column(name = "notify_on_view")
-    @JsonProperty("notifyOnView")
-    private String notifyOnView;
-
     @Column(name = "notify_on_edit")
     @JsonProperty("notifyOnEdit")
     private String notifyOnEdit;
@@ -41,10 +37,6 @@ public class InternalShare {
     @Column(name = "notify_on_move_or_copy")
     @JsonProperty("notifyOnMoveOrCopy")
     private String notifyOnMoveOrCopy;
-
-    @Column(name = "can_view")
-    @JsonProperty("canView")
-    private String canView;
 
     @Column(name = "can_edit")
     @JsonProperty("canEdit")
@@ -98,14 +90,6 @@ public class InternalShare {
         this.expirationDate = expirationDate;
     }
 
-    public String getNotifyOnView() {
-        return notifyOnView;
-    }
-
-    public void setNotifyOnView(String notifyOnView) {
-        this.notifyOnView = notifyOnView;
-    }
-
     public String getNotifyOnEdit() {
         return notifyOnEdit;
     }
@@ -136,14 +120,6 @@ public class InternalShare {
 
     public void setNotifyOnMoveOrCopy(String notifyOnMoveOrCopy) {
         this.notifyOnMoveOrCopy = notifyOnMoveOrCopy;
-    }
-
-    public String getCanView() {
-        return canView;
-    }
-
-    public void setCanView(String canView) {
-        this.canView = canView;
     }
 
     public String getCanEdit() {

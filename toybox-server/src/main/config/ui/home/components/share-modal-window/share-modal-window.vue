@@ -24,12 +24,6 @@
                     <div class="notification-types">
                         <div>
                             <div class="ui toggle checkbox" id="toybox-toggle">
-                                <input type="checkbox" name="notifymeonview" v-model="notifyOnView" v-bind:disabled="isExternalUser || !notifyMe">
-                                <label>View</label>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="ui toggle checkbox" id="toybox-toggle">
                                 <input type="checkbox" name="notifymeonedit" v-model="notifyOnEdit" v-bind:disabled="isExternalUser || !notifyMe">
                                 <label>Edit</label>
                             </div>
@@ -59,12 +53,6 @@
                         <span>Permissions</span>
                     </div>
                     <div class="permission-types">
-                        <div>
-                            <div class="ui toggle checkbox" id="toybox-toggle">
-                                <input type="checkbox" name="notifymeonview" v-model="canView" disabled="true">
-                                <label>View</label>
-                            </div>
-                        </div>
                         <div>
                             <div class="ui toggle checkbox" id="toybox-toggle">
                                 <input type="checkbox" name="notifymeonedit" v-model="canEdit" v-bind:disabled="isExternalUser">
