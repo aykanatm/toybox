@@ -2,10 +2,7 @@ package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
-import com.github.murataykanat.toybox.dbo.Asset;
-import com.github.murataykanat.toybox.dbo.Container;
-import com.github.murataykanat.toybox.dbo.ContainerAsset;
-import com.github.murataykanat.toybox.dbo.User;
+import com.github.murataykanat.toybox.dbo.*;
 import com.github.murataykanat.toybox.repositories.*;
 import com.github.murataykanat.toybox.schema.asset.CopyAssetRequest;
 import com.github.murataykanat.toybox.schema.asset.MoveAssetRequest;
@@ -57,6 +54,8 @@ public class CommonObjectController {
     private SelectionUtils selectionUtils;
     @Autowired
     private JobUtils jobUtils;
+    @Autowired
+    private ShareUtils shareUtils;
 
     @Autowired
     private AssetsRepository assetsRepository;
@@ -80,49 +79,90 @@ public class CommonObjectController {
     public ResponseEntity<Resource> downloadObjects(Authentication authentication, HttpSession session, @RequestBody SelectionContext selectionContext){
         try{
             if(authenticationUtils.isSessionValid(authentication)){
-                if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
-                    RestTemplate restTemplate = new RestTemplate();
-                    HttpHeaders headers = authenticationUtils.getHeaders(session);
+                User user = authenticationUtils.getUser(authentication);
+                if(user != null){
+                    if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
+                        RestTemplate restTemplate = new RestTemplate();
+                        HttpHeaders headers = authenticationUtils.getHeaders(session);
 
-                    HttpEntity<SelectionContext> selectionContextHttpEntity = new HttpEntity<>(selectionContext, headers);
+                        HttpEntity<SelectionContext> selectionContextHttpEntity = new HttpEntity<>(selectionContext, headers);
 
-                    String jobServiceUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.JOB_SERVICE_LOAD_BALANCER_SERVICE_NAME, ToyboxConstants.JOB_SERVICE_NAME, session, false);
+                        String jobServiceUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.JOB_SERVICE_LOAD_BALANCER_SERVICE_NAME, ToyboxConstants.JOB_SERVICE_NAME, session, false);
 
-                    try{
-                        ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/package", selectionContextHttpEntity, JobResponse.class);
-                        if(jobResponseResponseEntity != null){
-                            JobResponse jobResponse = jobResponseResponseEntity.getBody();
-                            if(jobResponse != null){
-                                File archiveFile = jobUtils.getArchiveFile(jobResponse.getJobId(), headers, jobServiceUrl, exportStagingPath);
-                                if(archiveFile != null && archiveFile.exists()){
-                                    InputStreamResource resource = new InputStreamResource(new FileInputStream(archiveFile));
-                                    return new ResponseEntity<>(resource, HttpStatus.OK);
+                        try{
+                            ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/package", selectionContextHttpEntity, JobResponse.class);
+                            if(jobResponseResponseEntity != null){
+                                JobResponse jobResponse = jobResponseResponseEntity.getBody();
+                                if(jobResponse != null){
+                                    File archiveFile = jobUtils.getArchiveFile(jobResponse.getJobId(), headers, jobServiceUrl, exportStagingPath);
+                                    if(archiveFile != null && archiveFile.exists()){
+
+                                        List<Asset> selectedAssets = selectionContext.getSelectedAssets();
+                                        List<Container> selectedContainers = selectionContext.getSelectedContainers();
+
+                                        for(Asset selectedAsset: selectedAssets){
+                                            // Send notification for asset owners
+                                            List<InternalShare> internalShares = shareUtils.getInternalShares(user.getId(), selectedAsset.getId(), true);
+                                            for(InternalShare internalShare: internalShares){
+                                                if(internalShare.getNotifyOnDownload().equalsIgnoreCase("Y")){
+                                                    String message = "Asset '" + selectedAsset.getName() + "' is downloaded by '" + user.getUsername() + "'";
+                                                    SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                                    sendNotificationRequest.setFromUsername(user.getUsername());
+                                                    sendNotificationRequest.setToUsername(internalShare.getUsername());
+                                                    sendNotificationRequest.setMessage(message);
+                                                    notificationUtils.sendNotification(sendNotificationRequest, session);
+                                                }
+                                            }
+                                        }
+
+                                        for(Container selectedContainer: selectedContainers){
+                                            // Send notification for container owners
+                                            List<InternalShare> internalShares = shareUtils.getInternalShares(user.getId(), selectedContainer.getId(), false);
+                                            for(InternalShare internalShare: internalShares){
+                                                if(internalShare.getNotifyOnDownload().equalsIgnoreCase("Y")){
+                                                    String message = "Folder '" + selectedContainer.getName() + "' is downloaded by '" + user.getUsername() + "'";
+                                                    SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                                    sendNotificationRequest.setFromUsername(user.getUsername());
+                                                    sendNotificationRequest.setToUsername(internalShare.getUsername());
+                                                    sendNotificationRequest.setMessage(message);
+                                                    notificationUtils.sendNotification(sendNotificationRequest, session);
+                                                }
+                                            }
+                                        }
+
+
+                                        InputStreamResource resource = new InputStreamResource(new FileInputStream(archiveFile));
+                                        return new ResponseEntity<>(resource, HttpStatus.OK);
+                                    }
+                                    else{
+                                        if(archiveFile != null){
+                                            throw new IOException("File '" + archiveFile.getAbsolutePath() + "' does not exist!");
+                                        }
+                                        throw new IllegalArgumentException("Archive file is null!");
+                                    }
                                 }
                                 else{
-                                    if(archiveFile != null){
-                                        throw new IOException("File '" + archiveFile.getAbsolutePath() + "' does not exist!");
-                                    }
-                                    throw new IllegalArgumentException("Archive file is null!");
+                                    throw new IllegalArgumentException("Job response is null!");
                                 }
                             }
                             else{
-                                throw new IllegalArgumentException("Job response is null!");
+                                throw new IllegalArgumentException("Job response entity is null!");
                             }
                         }
-                        else{
-                            throw new IllegalArgumentException("Job response entity is null!");
+                        catch (HttpStatusCodeException httpEx){
+                            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+                            throw new Exception("Upload was successful but import failed to start. " + responseJson.get("message").getAsString());
                         }
                     }
-                    catch (HttpStatusCodeException httpEx){
-                        JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
-                        throw new Exception("Upload was successful but import failed to start. " + responseJson.get("message").getAsString());
+                    else{
+                        String errorMessage = "Selection context is not valid!";
+                        _logger.error(errorMessage);
+
+                        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
                     }
                 }
                 else{
-                    String errorMessage = "Selection context is not valid!";
-                    _logger.error(errorMessage);
-
-                    return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+                    throw new IllegalArgumentException("User is null!");
                 }
             }
             else{
