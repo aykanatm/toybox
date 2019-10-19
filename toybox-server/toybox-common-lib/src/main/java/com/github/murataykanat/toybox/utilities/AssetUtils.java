@@ -241,15 +241,28 @@ public class AssetUtils {
         if(successful){
             _logger.debug("Asset import job successfully started!");
             for(Asset copiedAsset: copiedAssets){
+                String message = "Asset '" + copiedAsset.getName() + "' is copied to folder '" + targetContainer.getName() + "' by '" + user.getUsername() + "'";
+
                 // Send notification for subscribers
                 List<User> subscribers = getSubscribers(copiedAsset.getId());
                 for(User subscriber: subscribers){
-                    String message = "Asset '" + copiedAsset.getName() + "' is copied to folder '" + targetContainer.getName() + "' by '" + user.getUsername() + "'";
                     SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
                     sendNotificationRequest.setFromUsername(user.getUsername());
                     sendNotificationRequest.setToUsername(subscriber.getUsername());
                     sendNotificationRequest.setMessage(message);
                     notificationUtils.sendNotification(sendNotificationRequest, session);
+                }
+
+                // Send notification for asset owners
+                List<InternalShare> internalShares = shareUtils.getInternalShares(user.getId(), copiedAsset.getId(), true);
+                for(InternalShare internalShare: internalShares){
+                    if(internalShare.getNotifyOnMoveOrCopy().equalsIgnoreCase("Y")){
+                        SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                        sendNotificationRequest.setFromUsername(user.getUsername());
+                        sendNotificationRequest.setToUsername(internalShare.getUsername());
+                        sendNotificationRequest.setMessage(message);
+                        notificationUtils.sendNotification(sendNotificationRequest, session);
+                    }
                 }
             }
         }
