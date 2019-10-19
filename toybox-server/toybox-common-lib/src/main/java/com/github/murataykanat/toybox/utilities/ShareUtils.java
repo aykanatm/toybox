@@ -107,30 +107,56 @@ public class ShareUtils {
 
                 if(selectedAssets != null && !selectedAssets.isEmpty()){
                     for(Asset asset: selectedAssets){
+                        String message = "Asset '" + asset.getName() + "' is shared externally by '" + user.getUsername() + "'";
+
                         // Send notification for subscribers
                         List<User> subscribers = assetUtils.getSubscribers(asset.getId());
                         for(User subscriber: subscribers){
-                            String message = "Asset '" + asset.getName() + "' is shared externally by '" + user.getUsername() + "'";
                             SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
                             sendNotificationRequest.setFromUsername(user.getUsername());
                             sendNotificationRequest.setToUsername(subscriber.getUsername());
                             sendNotificationRequest.setMessage(message);
                             notificationUtils.sendNotification(sendNotificationRequest, session);
                         }
+
+                        // Send notification for asset owners
+                        List<InternalShare> internalShares = getInternalShares(user.getId(), asset.getId(), true);
+                        for(InternalShare internalShare: internalShares){
+                            if(internalShare.getNotifyOnShare().equalsIgnoreCase("Y")){
+                                SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                sendNotificationRequest.setFromUsername(user.getUsername());
+                                sendNotificationRequest.setToUsername(internalShare.getUsername());
+                                sendNotificationRequest.setMessage(message);
+                                notificationUtils.sendNotification(sendNotificationRequest, session);
+                            }
+                        }
                     }
                 }
 
                 if(selectedContainers != null && !selectedContainers.isEmpty()){
                     for(Container container: selectedContainers){
+                        String message = "Folder '" + container.getName() + "' is shared externally by '" + user.getUsername() + "'";
+
                         // Send notification for subscribers
                         List<User> subscribers = containerUtils.getSubscribers(container.getId());
                         for(User subscriber: subscribers){
-                            String message = "Folder '" + container.getName() + "' is shared externally by '" + user.getUsername() + "'";
                             SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
                             sendNotificationRequest.setFromUsername(user.getUsername());
                             sendNotificationRequest.setToUsername(subscriber.getUsername());
                             sendNotificationRequest.setMessage(message);
                             notificationUtils.sendNotification(sendNotificationRequest, session);
+                        }
+
+                        // Send notification for asset owners
+                        List<InternalShare> internalShares = getInternalShares(user.getId(), container.getId(), false);
+                        for(InternalShare internalShare: internalShares){
+                            if(internalShare.getNotifyOnShare().equalsIgnoreCase("Y")){
+                                SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                sendNotificationRequest.setFromUsername(user.getUsername());
+                                sendNotificationRequest.setToUsername(internalShare.getUsername());
+                                sendNotificationRequest.setMessage(message);
+                                notificationUtils.sendNotification(sendNotificationRequest, session);
+                            }
                         }
                     }
                 }
@@ -239,29 +265,55 @@ public class ShareUtils {
         if(!sharedAssets.isEmpty()){
             for(Asset asset: sharedAssets){
                 // Send notification for subscribers
+                String message = "Asset '" + asset.getName() + "' is shared internally by '" + user.getUsername() + "'";
+
                 List<User> subscribers = assetUtils.getSubscribers(asset.getId());
                 for(User subscriber: subscribers){
-                    String message = "Asset '" + asset.getName() + "' is shared internally by '" + user.getUsername() + "'";
                     SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
                     sendNotificationRequest.setFromUsername(user.getUsername());
                     sendNotificationRequest.setToUsername(subscriber.getUsername());
                     sendNotificationRequest.setMessage(message);
                     notificationUtils.sendNotification(sendNotificationRequest, session);
                 }
+
+                // Send notification for asset owners
+                List<InternalShare> internalShares = getInternalShares(user.getId(), asset.getId(), true);
+                for(InternalShare internalShare: internalShares){
+                    if(internalShare.getNotifyOnShare().equalsIgnoreCase("Y")){
+                        SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                        sendNotificationRequest.setFromUsername(user.getUsername());
+                        sendNotificationRequest.setToUsername(internalShare.getUsername());
+                        sendNotificationRequest.setMessage(message);
+                        notificationUtils.sendNotification(sendNotificationRequest, session);
+                    }
+                }
             }
         }
 
         if(!sharedContainers.isEmpty()){
             for(Container container: sharedContainers){
+                String message = "Folder '" + container.getName() + "' is shared internally by '" + user.getUsername() + "'";
+
                 // Send notification for subscribers
                 List<User> subscribers = containerUtils.getSubscribers(container.getId());
                 for(User subscriber: subscribers){
-                    String message = "Folder '" + container.getName() + "' is shared internally by '" + user.getUsername() + "'";
                     SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
                     sendNotificationRequest.setFromUsername(user.getUsername());
                     sendNotificationRequest.setToUsername(subscriber.getUsername());
                     sendNotificationRequest.setMessage(message);
                     notificationUtils.sendNotification(sendNotificationRequest, session);
+                }
+
+                // Send notification for asset owners
+                List<InternalShare> internalShares = getInternalShares(user.getId(), container.getId(), false);
+                for(InternalShare internalShare: internalShares){
+                    if(internalShare.getNotifyOnShare().equalsIgnoreCase("Y")){
+                        SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                        sendNotificationRequest.setFromUsername(user.getUsername());
+                        sendNotificationRequest.setToUsername(internalShare.getUsername());
+                        sendNotificationRequest.setMessage(message);
+                        notificationUtils.sendNotification(sendNotificationRequest, session);
+                    }
                 }
             }
         }
