@@ -353,8 +353,10 @@ public class ContainerUtils {
     }
 
     @LogEntryExitExecutionTime
-    public Container updateContainer(UpdateContainerRequest updateContainerRequest, String containerId){
+    public Container updateContainer(UpdateContainerRequest updateContainerRequest, String containerId, User user, HttpSession session) throws Exception {
         Container container = getContainer(containerId);
+        String oldContainerName = container.getName();
+
         boolean updateCreatedByUserName = StringUtils.isNotBlank(updateContainerRequest.getCreatedByUsername());
         boolean updateCreationDate = updateContainerRequest.getCreationDate() != null;
         boolean updateDeleted = StringUtils.isNotBlank(updateContainerRequest.getDeleted());
@@ -369,6 +371,30 @@ public class ContainerUtils {
         container.setName(updateName ? updateContainerRequest.getName() : container.getName());
         container.setParentId(updateParentId ? updateContainerRequest.getParentId() : container.getParentId());
         containersRepository.save(container);
+
+        String message = "Folder '" + oldContainerName + "' is updated by '" + user.getUsername() + "'";
+
+        // Send notification for subscribers
+        List<User> subscribers = getSubscribers(container.getId());
+        for(User subscriber: subscribers){
+            SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+            sendNotificationRequest.setFromUsername(user.getUsername());
+            sendNotificationRequest.setToUsername(subscriber.getUsername());
+            sendNotificationRequest.setMessage(message);
+            notificationUtils.sendNotification(sendNotificationRequest, session);
+        }
+
+        // Send notification for container owners
+        List<InternalShare> internalShares = shareUtils.getInternalShares(user.getId(), container.getId(), false);
+        for(InternalShare internalShare: internalShares){
+            if(internalShare.getNotifyOnEdit().equalsIgnoreCase("Y")){
+                SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                sendNotificationRequest.setFromUsername(user.getUsername());
+                sendNotificationRequest.setToUsername(internalShare.getUsername());
+                sendNotificationRequest.setMessage(message);
+                notificationUtils.sendNotification(sendNotificationRequest, session);
+            }
+        }
 
         return getContainer(containerId);
     }

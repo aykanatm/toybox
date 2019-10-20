@@ -408,20 +408,8 @@ public class FolderController {
                     if(updateContainerRequest != null){
                         User user = authenticationUtils.getUser(authentication);
                         if(user != null){
-                            Container oldContainer = containerUtils.getContainer(containerId);
-                            Container container = containerUtils.updateContainer(updateContainerRequest, containerId);
+                            Container container = containerUtils.updateContainer(updateContainerRequest, containerId, user, session);
                             if(container != null){
-                                // Send notification for subscribers
-                                List<User> subscribers = containerUtils.getSubscribers(container.getId());
-                                for(User subscriber: subscribers){
-                                    String message = "Folder '" + oldContainer.getName() + "' is updated by '" + user.getUsername() + "'";
-                                    SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                                    sendNotificationRequest.setFromUsername(user.getUsername());
-                                    sendNotificationRequest.setToUsername(subscriber.getUsername());
-                                    sendNotificationRequest.setMessage(message);
-                                    notificationUtils.sendNotification(sendNotificationRequest, session);
-                                }
-
                                 String message = "Container updated successfully.";
                                 _logger.debug(message);
 
