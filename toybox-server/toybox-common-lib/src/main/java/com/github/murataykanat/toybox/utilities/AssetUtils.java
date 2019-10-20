@@ -150,7 +150,7 @@ public class AssetUtils {
                 }
 
                 // Send notification for asset owners
-                List<InternalShare> internalShares = shareUtils.getInternalShares(user.getId(), assetId, true);
+                List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), assetId, true);
                 for(InternalShare internalShare: internalShares){
                     if(internalShare.getNotifyOnMoveOrCopy().equalsIgnoreCase("Y")){
                         SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
@@ -254,7 +254,7 @@ public class AssetUtils {
                 }
 
                 // Send notification for asset owners
-                List<InternalShare> internalShares = shareUtils.getInternalShares(user.getId(), copiedAsset.getId(), true);
+                List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), copiedAsset.getId(), true);
                 for(InternalShare internalShare: internalShares){
                     if(internalShare.getNotifyOnMoveOrCopy().equalsIgnoreCase("Y")){
                         SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
@@ -347,7 +347,7 @@ public class AssetUtils {
         }
 
         // Send notification for asset owners
-        List<InternalShare> internalShares = shareUtils.getInternalShares(user.getId(), assetId, true);
+        List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), assetId, true);
         for(InternalShare internalShare: internalShares){
             if(internalShare.getNotifyOnEdit().equalsIgnoreCase("Y")){
                 SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();

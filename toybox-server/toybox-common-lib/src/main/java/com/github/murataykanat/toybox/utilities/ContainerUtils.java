@@ -159,7 +159,7 @@ public class ContainerUtils {
                     }
 
                     // Send notification for container owners
-                    List<InternalShare> internalShares = shareUtils.getInternalShares(user.getId(), containerId, false);
+                    List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), containerId, false);
                     for(InternalShare internalShare: internalShares){
                         if(internalShare.getNotifyOnMoveOrCopy().equalsIgnoreCase("Y")){
                             SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
@@ -243,7 +243,7 @@ public class ContainerUtils {
             }
 
             // Send notification for container owners
-            List<InternalShare> internalShares = shareUtils.getInternalShares(user.getId(), sourceContainer.getId(), false);
+            List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), sourceContainer.getId(), false);
             for(InternalShare internalShare: internalShares){
                 if(internalShare.getNotifyOnMoveOrCopy().equalsIgnoreCase("Y")){
                     SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
@@ -385,7 +385,7 @@ public class ContainerUtils {
         }
 
         // Send notification for container owners
-        List<InternalShare> internalShares = shareUtils.getInternalShares(user.getId(), container.getId(), false);
+        List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), container.getId(), false);
         for(InternalShare internalShare: internalShares){
             if(internalShare.getNotifyOnEdit().equalsIgnoreCase("Y")){
                 SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();

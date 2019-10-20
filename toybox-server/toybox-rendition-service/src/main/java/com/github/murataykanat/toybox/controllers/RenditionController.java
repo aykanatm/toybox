@@ -140,7 +140,7 @@ public class RenditionController {
                         else if(renditionType.equalsIgnoreCase("o")){
                             if(StringUtils.isNotBlank(asset.getPath())){
                                 // Send notification for asset owners
-                                List<InternalShare> internalShares = shareUtils.getInternalShares(user.getId(), asset.getId(), true);
+                                List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), asset.getId(), true);
                                 for(InternalShare internalShare: internalShares){
                                     if(internalShare.getNotifyOnDownload().equalsIgnoreCase("Y")){
                                         String message = "Asset '" + asset.getName() + "' is downloaded by '" + user.getUsername() + "'";

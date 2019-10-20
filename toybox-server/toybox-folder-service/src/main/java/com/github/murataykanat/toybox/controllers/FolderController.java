@@ -242,34 +242,38 @@ public class FolderController {
 
                             for(Asset userAsset: assetsByCurrentUser){
                                 if(!authenticationUtils.isAdminUser(authentication)){
-                                    List<SharedAssets> sharedAssetsLst = shareUtils.getSharedAssets(user.getId());
-
-                                    userAsset.setShared("N");
-
-                                    for(SharedAssets sharedAssets: sharedAssetsLst){
-                                        boolean isSharedAsset = sharedAssets.getAssetIds().stream().anyMatch(assetId -> assetId.equalsIgnoreCase(userAsset.getId()));
-                                        if(isSharedAsset){
+                                    boolean assetSharedWithUser = shareUtils.isAssetSharedWithUser(user.getId(), userAsset.getId());
+                                    if(assetSharedWithUser){
+                                        User sourceUser = shareUtils.getSourceUser(user.getId(), userAsset.getId(), true);
+                                        if(sourceUser != null){
                                             userAsset.setShared("Y");
-                                            userAsset.setSharedByUsername(sharedAssets.getUsername());
-                                            break;
+                                            userAsset.setSharedByUsername(sourceUser.getUsername());
                                         }
+                                        else{
+                                            throw new IllegalArgumentException("Source user is null!");
+                                        }
+                                    }
+                                    else{
+                                        userAsset.setShared("N");
                                     }
                                 }
                             }
 
                             for(Container userContainer: containersByCurrentUser){
                                 if(!authenticationUtils.isAdminUser(authentication)){
-                                    List<SharedContainers> sharedContainerLst = shareUtils.getSharedContainers(user.getId());
-
-                                    userContainer.setShared("N");
-
-                                    for(SharedContainers sharedContainers: sharedContainerLst){
-                                        boolean isSharedContainer = sharedContainers.getContainerIds().stream().anyMatch(cid -> cid.equalsIgnoreCase(userContainer.getId()));
-                                        if(isSharedContainer){
+                                    boolean containerSharedWithUser = shareUtils.isContainerSharedWithUser(user.getId(), userContainer.getId());
+                                    if(containerSharedWithUser){
+                                        User sourceUser = shareUtils.getSourceUser(user.getId(), userContainer.getId(), false);
+                                        if(sourceUser != null){
                                             userContainer.setShared("Y");
-                                            userContainer.setSharedByUsername(sharedContainers.getUsername());
-                                            break;
+                                            userContainer.setSharedByUsername(sourceUser.getUsername());
                                         }
+                                        else{
+                                            throw new IllegalArgumentException("Source user is null!");
+                                        }
+                                    }
+                                    else{
+                                        userContainer.setShared("N");
                                     }
                                 }
                             }

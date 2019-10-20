@@ -120,7 +120,7 @@ public class ShareUtils {
                         }
 
                         // Send notification for asset owners
-                        List<InternalShare> internalShares = getInternalShares(user.getId(), asset.getId(), true);
+                        List<InternalShare> internalShares = getInternalSharesWithTargetUser(user.getId(), asset.getId(), true);
                         for(InternalShare internalShare: internalShares){
                             if(internalShare.getNotifyOnShare().equalsIgnoreCase("Y")){
                                 SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
@@ -148,7 +148,7 @@ public class ShareUtils {
                         }
 
                         // Send notification for asset owners
-                        List<InternalShare> internalShares = getInternalShares(user.getId(), container.getId(), false);
+                        List<InternalShare> internalShares = getInternalSharesWithTargetUser(user.getId(), container.getId(), false);
                         for(InternalShare internalShare: internalShares){
                             if(internalShare.getNotifyOnShare().equalsIgnoreCase("Y")){
                                 SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
@@ -277,7 +277,7 @@ public class ShareUtils {
                 }
 
                 // Send notification for asset owners
-                List<InternalShare> internalShares = getInternalShares(user.getId(), asset.getId(), true);
+                List<InternalShare> internalShares = getInternalSharesWithTargetUser(user.getId(), asset.getId(), true);
                 for(InternalShare internalShare: internalShares){
                     if(internalShare.getNotifyOnShare().equalsIgnoreCase("Y")){
                         SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
@@ -305,7 +305,7 @@ public class ShareUtils {
                 }
 
                 // Send notification for asset owners
-                List<InternalShare> internalShares = getInternalShares(user.getId(), container.getId(), false);
+                List<InternalShare> internalShares = getInternalSharesWithTargetUser(user.getId(), container.getId(), false);
                 for(InternalShare internalShare: internalShares){
                     if(internalShare.getNotifyOnShare().equalsIgnoreCase("Y")){
                         SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
@@ -358,7 +358,46 @@ public class ShareUtils {
     }
 
     @LogEntryExitExecutionTime
-    public boolean isSharedAsset(int userId, String assetId){
+    public User getSourceUser(int targetUserId, String id, boolean isAsset) throws Exception {
+        List<InternalShareUser> internalShareUsersByUserId = internalShareUsersRepository.findInternalShareUsersByUserId(targetUserId);
+        for(InternalShareUser internalShareUser: internalShareUsersByUserId){
+            InternalShareItem match;
+
+            if(isAsset){
+                List<InternalShareAsset> internalShareAssetByInternalShareId = internalShareAssetsRepository.findInternalShareAssetByInternalShareId(internalShareUser.getInternalShareId());
+                match = internalShareAssetByInternalShareId.stream().filter(internalShareAsset -> internalShareAsset.getAssetId().equalsIgnoreCase(id)).findFirst().orElse(null);
+
+            }
+            else{
+                List<InternalShareContainer> internalShareContainersByInternalShareId = internalShareContainersRepository.findInternalShareContainersByInternalShareId(internalShareUser.getInternalShareId());
+                match = internalShareContainersByInternalShareId.stream().filter(internalShareContainer -> internalShareContainer.getContainerId().equalsIgnoreCase(id)).findFirst().orElse(null);
+            }
+
+            if(match != null){
+                List<InternalShare> internalSharesById = internalSharesRepository.getInternalSharesById(match.getInternalShareId());
+                if(!internalSharesById.isEmpty()){
+                    if(internalSharesById.size() == 1){
+                        InternalShare internalShare = internalSharesById.get(0);
+                        return authenticationUtils.getUser(internalShare.getUsername());
+                    }
+                    else{
+                        throw new IllegalArgumentException("There are multiple instances of internal share ID '" + internalShareUser.getInternalShareId() + "' in the database!");
+                    }
+                }
+                else{
+                    throw new IllegalArgumentException("Internal share ID '" + internalShareUser.getInternalShareId() + "' does not exist in the database!");
+                }
+            }
+            else{
+                throw new IllegalArgumentException("Match is null!");
+            }
+        }
+
+        return null;
+    }
+
+    @LogEntryExitExecutionTime
+    public boolean isAssetSharedWithUser(int userId, String assetId){
         List<SharedAssets> sharedAssetsLst = getSharedAssets(userId);
         for(SharedAssets sharedAssets: sharedAssetsLst){
             List<String> assetIds = sharedAssets.getAssetIds();
@@ -371,7 +410,8 @@ public class ShareUtils {
         return false;
     }
 
-    public boolean isSharedContainer(int userId, String containerId){
+    @LogEntryExitExecutionTime
+    public boolean isContainerSharedWithUser(int userId, String containerId){
         List<SharedContainers> sharedContainersLst = getSharedContainers(userId);
         for(SharedContainers sharedContainers: sharedContainersLst){
             List<String> containerIds = sharedContainers.getContainerIds();
@@ -423,11 +463,37 @@ public class ShareUtils {
     }
 
     @LogEntryExitExecutionTime
-    public List<InternalShare> getInternalShares(int userId, String id, boolean isAsset){
+    public List<InternalShare> getInternalSharesWithSourceUser(int sourceUserId, String id, boolean isAsset){
+        List<InternalShare> internalShares = new ArrayList<>();
+
+        User user = authenticationUtils.getUser(sourceUserId);
+        List<InternalShare> internalSharesByUsername = internalSharesRepository.getInternalSharesByUsername(user.getUsername());
+        for(InternalShare internalShare: internalSharesByUsername){
+            if(isAsset){
+                List<InternalShareAsset> internalShareAssetByInternalShareId = internalShareAssetsRepository.findInternalShareAssetByInternalShareId(internalShare.getInternalShareId());
+                boolean isMatch = internalShareAssetByInternalShareId.stream().anyMatch(internalShareAsset -> internalShareAsset.getAssetId().equalsIgnoreCase(id));
+                if(isMatch){
+                    internalShares.add(internalShare);
+                }
+            }
+            else{
+                List<InternalShareContainer> internalShareContainersByContainerId = internalShareContainersRepository.findInternalShareContainersByContainerId(id);
+                boolean isMatch = internalShareContainersByContainerId.stream().anyMatch(internalShareContainer -> internalShareContainer.getContainerId().equalsIgnoreCase(id));
+                if(isMatch){
+                    internalShares.add(internalShare);
+                }
+            }
+        }
+
+        return internalShares;
+    }
+
+    @LogEntryExitExecutionTime
+    public List<InternalShare> getInternalSharesWithTargetUser(int targetUserId, String id, boolean isAsset){
         List<InternalShare> internalShares = new ArrayList<>();
 
         // We find all the internal shares that were shared with the user
-        List<InternalShareUser> internalShareUsersByUserId = internalShareUsersRepository.findInternalShareUsersByUserId(userId);
+        List<InternalShareUser> internalShareUsersByUserId = internalShareUsersRepository.findInternalShareUsersByUserId(targetUserId);
         // We iterate over the each internal share that was shared with the user
         for(InternalShareUser internalShareUser: internalShareUsersByUserId){
             // We find the internal share
@@ -438,22 +504,14 @@ public class ShareUtils {
                     InternalShare internalShare = internalSharesById.get(0);
 
                     if(isAsset){
-                        // We find the assets that are linked to the external share
-                        List<InternalShareAsset> internalShareAssetByInternalShareId = internalShareAssetsRepository.findInternalShareAssetByInternalShareId(internalShare.getInternalShareId());
-                        List<String> sharedAssetIds = internalShareAssetByInternalShareId.stream().map(InternalShareAsset::getAssetId).collect(Collectors.toList());
-
-                        boolean isAssetSharedWithUser = sharedAssetIds.stream().anyMatch(aid -> aid.equalsIgnoreCase(id));
-                        if(isAssetSharedWithUser){
+                        // We check if the asset is shared with the user
+                        if(isAssetSharedWithUser(targetUserId, id)){
                             internalShares.add(internalShare);
                         }
                     }
                     else{
-                        // We find the containers that are linked to the internal share
-                        List<InternalShareContainer> internalShareContainersByInternalShareId = internalShareContainersRepository.findInternalShareContainersByInternalShareId(internalShare.getInternalShareId());
-                        List<String> sharedContainerIds = internalShareContainersByInternalShareId.stream().map(InternalShareContainer::getContainerId).collect(Collectors.toList());
-
-                        boolean isContainerSharedWithUser = sharedContainerIds.stream().anyMatch(cid -> cid.equalsIgnoreCase(id));
-                        if(isContainerSharedWithUser){
+                        // We check if the container is shared with the user
+                        if(isContainerSharedWithUser(targetUserId, id)){
                             internalShares.add(internalShare);
                         }
                     }
@@ -467,6 +525,10 @@ public class ShareUtils {
             }
         }
         return internalShares;
+    }
+
+    public void addAssetToInternalShare(String assetId, String shareId){
+        internalShareAssetsRepository.insertSharedAsset(shareId, assetId);
     }
 
     @LogEntryExitExecutionTime

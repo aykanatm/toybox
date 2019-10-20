@@ -7,10 +7,10 @@ import javax.persistence.Table;
 
 @Entity
 @Table(name = "internal_share_containers")
-public class InternalShareContainer {
-    @Id
+public class InternalShareContainer implements InternalShareItem{
     @Column(name = "internal_share_id")
     private String internalShareId;
+    @Id
     @Column(name = "container_id")
     private String containerId;
 

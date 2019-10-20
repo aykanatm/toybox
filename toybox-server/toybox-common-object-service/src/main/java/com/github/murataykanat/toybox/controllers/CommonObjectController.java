@@ -3,7 +3,6 @@ package com.github.murataykanat.toybox.controllers;
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.*;
-import com.github.murataykanat.toybox.models.share.SharedAssets;
 import com.github.murataykanat.toybox.repositories.*;
 import com.github.murataykanat.toybox.schema.asset.CopyAssetRequest;
 import com.github.murataykanat.toybox.schema.asset.MoveAssetRequest;
@@ -103,7 +102,7 @@ public class CommonObjectController {
 
                                         for(Asset selectedAsset: selectedAssets){
                                             // Send notification for asset owners
-                                            List<InternalShare> internalShares = shareUtils.getInternalShares(user.getId(), selectedAsset.getId(), true);
+                                            List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), selectedAsset.getId(), true);
                                             for(InternalShare internalShare: internalShares){
                                                 if(internalShare.getNotifyOnDownload().equalsIgnoreCase("Y")){
                                                     String message = "Asset '" + selectedAsset.getName() + "' is downloaded by '" + user.getUsername() + "'";
@@ -118,7 +117,7 @@ public class CommonObjectController {
 
                                         for(Container selectedContainer: selectedContainers){
                                             // Send notification for container owners
-                                            List<InternalShare> internalShares = shareUtils.getInternalShares(user.getId(), selectedContainer.getId(), false);
+                                            List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), selectedContainer.getId(), false);
                                             for(InternalShare internalShare: internalShares){
                                                 if(internalShare.getNotifyOnDownload().equalsIgnoreCase("Y")){
                                                     String message = "Folder '" + selectedContainer.getName() + "' is downloaded by '" + user.getUsername() + "'";
@@ -192,8 +191,8 @@ public class CommonObjectController {
                     if(user != null){
                         if(!(selectionContext.getSelectedAssets().isEmpty() && selectionContext.getSelectedContainers().isEmpty())){
                             // We filter out the selected shared assets
-                            List<Asset> nonSharedSelectedAssets = selectionContext.getSelectedAssets().stream().filter(asset -> !shareUtils.isSharedAsset(user.getId(), asset.getId())).collect(Collectors.toList());
-                            List<Container> nonSharedSelectedContainers = selectionContext.getSelectedContainers().stream().filter(container -> !shareUtils.isSharedContainer(user.getId(), container.getId())).collect(Collectors.toList());
+                            List<Asset> nonSharedSelectedAssets = selectionContext.getSelectedAssets().stream().filter(asset -> !shareUtils.isAssetSharedWithUser(user.getId(), asset.getId())).collect(Collectors.toList());
+                            List<Container> nonSharedSelectedContainers = selectionContext.getSelectedContainers().stream().filter(container -> !shareUtils.isContainerSharedWithUser(user.getId(), container.getId())).collect(Collectors.toList());
 
                             // We are adding a refreshed list of assets to the list of assets which will be deleted
                             List<Asset> selectedAssetsAndContainerAssets = new ArrayList<>();
@@ -206,7 +205,7 @@ public class CommonObjectController {
                                 List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(selectedContainer.getId());
                                 if(!containerAssetsByContainerId.isEmpty()){
                                     List<String> containerAssetIds = containerAssetsByContainerId.stream().map(ContainerAsset::getAssetId).collect(Collectors.toList());
-                                    List<String> nonSharedContainerAssetIds = containerAssetIds.stream().filter(assetId -> !shareUtils.isSharedAsset(user.getId(), assetId)).collect(Collectors.toList());
+                                    List<String> nonSharedContainerAssetIds = containerAssetIds.stream().filter(assetId -> !shareUtils.isAssetSharedWithUser(user.getId(), assetId)).collect(Collectors.toList());
                                     List<Asset> assetsByAssetIds = assetsRepository.getNonDeletedLastVersionAssetsByAssetIds(nonSharedContainerAssetIds);
                                     selectedAssetsAndContainerAssets.addAll(assetsByAssetIds);
                                 }
