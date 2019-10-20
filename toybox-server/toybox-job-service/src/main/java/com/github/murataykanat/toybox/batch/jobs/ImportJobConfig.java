@@ -2,18 +2,13 @@ package com.github.murataykanat.toybox.batch.jobs;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
-import com.github.murataykanat.toybox.dbo.Container;
-import com.github.murataykanat.toybox.dbo.ContainerAsset;
-import com.github.murataykanat.toybox.dbo.ContainerUser;
+import com.github.murataykanat.toybox.dbo.*;
 import com.github.murataykanat.toybox.models.RenditionProperties;
-import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.repositories.AssetUserRepository;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
 import com.github.murataykanat.toybox.repositories.ContainerAssetsRepository;
 import com.github.murataykanat.toybox.repositories.ContainerUsersRepository;
-import com.github.murataykanat.toybox.utilities.AssetUtils;
-import com.github.murataykanat.toybox.utilities.ContainerUtils;
-import com.github.murataykanat.toybox.utilities.SortUtils;
+import com.github.murataykanat.toybox.utilities.*;
 import org.apache.commons.exec.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -59,6 +54,10 @@ public class ImportJobConfig {
     private ContainerUtils containerUtils;
     @Autowired
     private SortUtils sortUtils;
+    @Autowired
+    private ShareUtils shareUtils;
+    @Autowired
+    private AuthenticationUtils authenticationUtils;
 
     @Autowired
     private AssetsRepository assetsRepository;
@@ -210,14 +209,24 @@ public class ImportJobConfig {
                                             // Attach the asset to a folder
                                             containerAssetsRepository.attachAsset(containerId, assetId);
 
-                                            // Check if the folder is subscribed by any user
-                                            // If so add the asset as subscribed to those users
+
                                             if(StringUtils.isNotBlank(containerId)){
+                                                // Check if the folder is subscribed by any user
+                                                // If so add the asset as subscribed to those users
+
                                                 List<ContainerUser> containerUsersByContainerId = containerUsersRepository.findContainerUsersByContainerId(containerId);
                                                 if(!containerUsersByContainerId.isEmpty()){
                                                     containerUsersByContainerId.forEach(containerUser -> {
                                                         assetUserRepository.insertSubscriber(assetId, containerUser.getUserId());
                                                     });
+                                                }
+
+                                                // Check if the folder is shared by this user
+                                                // If so add the asset to the share
+                                                User user = authenticationUtils.getUser(username);
+                                                List<InternalShare> internalShares = shareUtils.getInternalSharesWithSourceUser(user.getId(), containerId, false);
+                                                for(InternalShare internalShare: internalShares){
+                                                    shareUtils.addAssetToInternalShare(assetId, internalShare.getInternalShareId());
                                                 }
                                             }
                                         }
