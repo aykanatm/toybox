@@ -273,9 +273,17 @@ public class CommonObjectController {
                             int numberOfDeletedAssets = selectedAssetsAndContainerAssets.size();
                             int numberOfDeletedContainers = nonSharedSelectedContainers.size();
 
-                            genericResponse.setMessage(generateProcessingResponse(numberOfDeletedAssets, numberOfDeletedContainers, " deleted successfully."));
+                            String failureMessage = "You do not have the permission to delete the selected assets and/or folders.";
+                            String message = generateProcessingResponse(numberOfDeletedAssets, numberOfDeletedContainers, " deleted successfully.", failureMessage);
 
-                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                            genericResponse.setMessage(message);
+
+                            if(message.equalsIgnoreCase(failureMessage)){
+                                return new ResponseEntity<>(genericResponse, HttpStatus.FORBIDDEN);
+                            }
+                            else{
+                                return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                            }
                         }
                         else{
                             String warningMessage = "No assets or folders are selected!";
@@ -358,12 +366,10 @@ public class CommonObjectController {
                                 }
                             }
 
-                            if(assetCount > 0 || containerCount > 0){
-                                genericResponse.setMessage(generateProcessingResponse(assetCount, containerCount, " subscribed successfully."));
-                            }
-                            else{
-                                genericResponse.setMessage("Selected assets were already subscribed.");
-                            }
+                            String failureMessage = "Selected assets were already subscribed.";
+                            String message = generateProcessingResponse(assetCount, containerCount, " unsubscribed successfully.", failureMessage);
+
+                            genericResponse.setMessage(message);
 
                             return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                         }
@@ -449,12 +455,10 @@ public class CommonObjectController {
                             }
                         }
 
-                        if(assetCount > 0 || containerCount > 0){
-                            genericResponse.setMessage(generateProcessingResponse(assetCount, containerCount, " unsubscribed successfully."));
-                        }
-                        else{
-                            genericResponse.setMessage("Selected assets were already unsubscribed.");
-                        }
+                        String failureMessage = "Selected assets were already unsubscribed.";
+                        String message = generateProcessingResponse(assetCount, containerCount, " unsubscribed successfully.", failureMessage);
+
+                        genericResponse.setMessage(message);
 
                         return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                     }
@@ -523,8 +527,17 @@ public class CommonObjectController {
                                 throw new IllegalArgumentException("Returned asset or container is below zero!");
                             }
                             else{
-                                genericResponse.setMessage(generateProcessingResponse(assetCount, containerCount, " were successfully moved to the folder '" + targetContainer.getName() + "'."));
-                                return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                String failureMessage = "You do not have the permission to move the selected assets and/or folders.";
+                                String message = generateProcessingResponse(assetCount, containerCount, " were successfully moved to the folder '" + targetContainer.getName() + "'.", failureMessage);
+
+                                genericResponse.setMessage(message);
+
+                                if(message.equalsIgnoreCase(failureMessage)){
+                                    return new ResponseEntity<>(genericResponse, HttpStatus.FORBIDDEN);
+                                }
+                                else{
+                                    return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                }
                             }
                         }
                         else{
@@ -590,9 +603,18 @@ public class CommonObjectController {
                         containerUtils.copyContainers(session, sourceContainerIds, targetContainerIds, authentication.getName(), importStagingPath);
                         containerCount += sourceContainerIds.size();
 
-                        genericResponse.setMessage(generateProcessingResponse(assetCount, containerCount, " started to be copied to the selected folders. This action may take a while depending on the number and size of the selected assets and folders. You can follow the progress of the copy operations in 'Jobs' section."));
+                        String failureMessage = "You do not have the permission to copy the selected assets and/or folders.";
+                        String message = generateProcessingResponse(assetCount, containerCount, " started to be copied to the selected folders. This action may take a while depending on the number and size of the selected assets and folders. You can follow the progress of the copy operations in 'Jobs' section.", failureMessage);
 
-                        return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                        genericResponse.setMessage(message);
+
+                        if(message.equalsIgnoreCase(failureMessage)){
+                            return new ResponseEntity<>(genericResponse, HttpStatus.FORBIDDEN);
+                        }
+                        else{
+                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                        }
+
                     }
                     else{
                         String errorMessage = "Selection context is not valid!";
@@ -632,9 +654,10 @@ public class CommonObjectController {
     }
 
     @LogEntryExitExecutionTime
-    private String generateProcessingResponse(int assetCount, int containerCount, String endOfMessage){
+    private String generateProcessingResponse(int assetCount, int containerCount, String endOfMessage, String failureMessage){
         boolean hasProcessedAssets = assetCount > 0;
         boolean hasProcessedContainers = containerCount > 0;
+
         String assetSuffix = assetCount > 1 ? "s" : "";
         String containerSuffix = containerCount > 1 ? "s" :"";
         String assetMessage = hasProcessedAssets ? (assetCount + " asset" + assetSuffix) : "";
@@ -642,19 +665,20 @@ public class CommonObjectController {
 
         String message = "";
         if(hasProcessedAssets && hasProcessedContainers){
-            message = assetMessage + " and " + containerMessage;
+            message = assetMessage + " and " + containerMessage + endOfMessage;
         }
         else if(hasProcessedAssets){
-            message = assetMessage;
+            message = assetMessage + endOfMessage;
         }
         else if(hasProcessedContainers){
-            message = containerMessage;
+            message = containerMessage + endOfMessage;
+        }
+        else if(!hasProcessedAssets && !hasProcessedContainers){
+            message = failureMessage;
         }
         else{
             throw new IllegalArgumentException("Unexpected input received while generating the processing response! [Asset count: " + assetCount + "][Container count: " + containerCount + "]");
         }
-
-        message += endOfMessage;
 
         return message;
     }

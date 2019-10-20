@@ -21,13 +21,20 @@ var itemActionsMixin = {
                                 if(error.response.status == 401){
                                     window.location = '/logout';
                                 }
+                                else if(error.response.status == 403){
+                                    this.$root.$emit('message-sent', 'Warning', errorMessage);
+                                }
+                                else{
+                                    console.error(errorMessage);
+                                    this.$root.$emit('message-sent', 'Error', errorMessage);
+                                }
                             }
                             else{
                                 errorMessage = error.message;
-                            }
 
-                            console.error(errorMessage);
-                            this.$root.$emit('message-sent', 'Error', errorMessage);
+                                console.error(errorMessage);
+                                this.$root.$emit('message-sent', 'Error', errorMessage);
+                            }
                         });
                 }
             })
@@ -52,13 +59,20 @@ var itemActionsMixin = {
                                     if(error.response.status == 401){
                                         window.location = '/logout';
                                     }
+                                    else if(error.response.status == 403){
+                                        this.$root.$emit('message-sent', 'Warning', errorMessage);
+                                    }
+                                    else{
+                                        console.error(errorMessage);
+                                        this.$root.$emit('message-sent', 'Error', errorMessage);
+                                    }
                                 }
                                 else{
                                     errorMessage = error.message;
-                                }
 
-                                console.error(errorMessage);
-                                this.$root.$emit('message-sent', 'Error', errorMessage);
+                                    console.error(errorMessage);
+                                    this.$root.$emit('message-sent', 'Error', errorMessage);
+                                }
                             });
                     }
                 })
@@ -89,13 +103,20 @@ var itemActionsMixin = {
                                 if(error.response.status == 401){
                                     window.location = '/logout';
                                 }
+                                else if(error.response.status == 403){
+                                    this.$root.$emit('message-sent', 'Warning', errorMessage);
+                                }
+                                else{
+                                    console.error(errorMessage);
+                                    this.$root.$emit('message-sent', 'Error', errorMessage);
+                                }
                             }
                             else{
                                 errorMessage = error.message;
-                            }
 
-                            console.error(errorMessage);
-                            this.$root.$emit('message-sent', 'Error', errorMessage);
+                                console.error(errorMessage);
+                                this.$root.$emit('message-sent', 'Error', errorMessage);
+                            }
                         });
                 }
             })
@@ -122,13 +143,20 @@ var itemActionsMixin = {
                                 if(error.response.status == 401){
                                     window.location = '/logout';
                                 }
+                                else if(error.response.status == 403){
+                                    this.$root.$emit('message-sent', 'Warning', errorMessage);
+                                }
+                                else{
+                                    console.error(errorMessage);
+                                    this.$root.$emit('message-sent', 'Error', errorMessage);
+                                }
                             }
                             else{
                                 errorMessage = error.message;
-                            }
 
-                            console.error(errorMessage);
-                            this.$root.$emit('message-sent', 'Error', errorMessage);
+                                console.error(errorMessage);
+                                this.$root.$emit('message-sent', 'Error', errorMessage);
+                            }
                         });
                 }
             });
@@ -167,13 +195,20 @@ var itemActionsMixin = {
                     if(error.response.status == 401){
                         window.location = '/logout';
                     }
+                    else if(error.response.status == 403){
+                        this.$root.$emit('message-sent', 'Warning', errorMessage);
+                    }
+                    else{
+                        console.error(errorMessage);
+                        this.$root.$emit('message-sent', 'Error', errorMessage);
+                    }
                 }
                 else{
                     errorMessage = error.message;
-                }
 
-                console.error(errorMessage);
-                this.$root.$emit('message-sent', 'Error', errorMessage);
+                    console.error(errorMessage);
+                    this.$root.$emit('message-sent', 'Error', errorMessage);
+                }
             });
         },
         generateSelectionContext(selectedItems){
