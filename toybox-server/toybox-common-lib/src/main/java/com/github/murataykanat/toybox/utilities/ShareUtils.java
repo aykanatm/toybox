@@ -358,6 +358,33 @@ public class ShareUtils {
     }
 
     @LogEntryExitExecutionTime
+    public boolean isSharedAsset(int userId, String assetId){
+        List<SharedAssets> sharedAssetsLst = getSharedAssets(userId);
+        for(SharedAssets sharedAssets: sharedAssetsLst){
+            List<String> assetIds = sharedAssets.getAssetIds();
+            boolean isShared = assetIds.stream().anyMatch(s -> s.equalsIgnoreCase(assetId));
+            if(isShared){
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public boolean isSharedContainer(int userId, String containerId){
+        List<SharedContainers> sharedContainersLst = getSharedContainers(userId);
+        for(SharedContainers sharedContainers: sharedContainersLst){
+            List<String> containerIds = sharedContainers.getContainerIds();
+            boolean isShared = containerIds.stream().anyMatch(s -> s.equalsIgnoreCase(containerId));
+            if(isShared){
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    @LogEntryExitExecutionTime
     public List<SharedContainers> getSharedContainers(int userId){
         List<SharedContainers> sharedContainersLst = new ArrayList<>();
 

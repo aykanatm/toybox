@@ -3,6 +3,7 @@ package com.github.murataykanat.toybox.controllers;
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.*;
+import com.github.murataykanat.toybox.models.share.SharedAssets;
 import com.github.murataykanat.toybox.repositories.*;
 import com.github.murataykanat.toybox.schema.asset.CopyAssetRequest;
 import com.github.murataykanat.toybox.schema.asset.MoveAssetRequest;
@@ -190,18 +191,23 @@ public class CommonObjectController {
                     User user = authenticationUtils.getUser(authentication);
                     if(user != null){
                         if(!(selectionContext.getSelectedAssets().isEmpty() && selectionContext.getSelectedContainers().isEmpty())){
+                            // We filter out the selected shared assets
+                            List<Asset> nonSharedSelectedAssets = selectionContext.getSelectedAssets().stream().filter(asset -> !shareUtils.isSharedAsset(user.getId(), asset.getId())).collect(Collectors.toList());
+                            List<Container> nonSharedSelectedContainers = selectionContext.getSelectedContainers().stream().filter(container -> !shareUtils.isSharedContainer(user.getId(), container.getId())).collect(Collectors.toList());
+
                             // We are adding a refreshed list of assets to the list of assets which will be deleted
                             List<Asset> selectedAssetsAndContainerAssets = new ArrayList<>();
-                            if(!selectionContext.getSelectedAssets().isEmpty()){
-                                selectedAssetsAndContainerAssets.addAll(assetsRepository.getAssetsByAssetIds(selectionContext.getSelectedAssets().stream().map(Asset::getId).collect(Collectors.toList())));
+                            if(!nonSharedSelectedAssets.isEmpty()){
+                                selectedAssetsAndContainerAssets.addAll(assetsRepository.getAssetsByAssetIds(nonSharedSelectedAssets.stream().map(Asset::getId).collect(Collectors.toList())));
                             }
 
-                            // We are adding the last version of the assets inside the containers that was selected as deleted to the list of assets which will be deleted.
-                            for(Container selectedContainer: selectionContext.getSelectedContainers()){
+                            // We are adding the non-shared last version of the assets inside the containers that was selected as deleted to the list of assets which will be deleted.
+                            for(Container selectedContainer: nonSharedSelectedContainers){
                                 List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(selectedContainer.getId());
                                 if(!containerAssetsByContainerId.isEmpty()){
                                     List<String> containerAssetIds = containerAssetsByContainerId.stream().map(ContainerAsset::getAssetId).collect(Collectors.toList());
-                                    List<Asset> assetsByAssetIds = assetsRepository.getNonDeletedLastVersionAssetsByAssetIds(containerAssetIds);
+                                    List<String> nonSharedContainerAssetIds = containerAssetIds.stream().filter(assetId -> !shareUtils.isSharedAsset(user.getId(), assetId)).collect(Collectors.toList());
+                                    List<Asset> assetsByAssetIds = assetsRepository.getNonDeletedLastVersionAssetsByAssetIds(nonSharedContainerAssetIds);
                                     selectedAssetsAndContainerAssets.addAll(assetsByAssetIds);
                                 }
                             }
@@ -240,11 +246,11 @@ public class CommonObjectController {
                                 }
                             }
 
-                            if(!selectionContext.getSelectedContainers().isEmpty()){
-                                // We set all the containers as deleted
-                                containersRepository.deleteContainersById("Y", selectionContext.getSelectedContainers().stream().map(Container::getId).collect(Collectors.toList()));
+                            if(!nonSharedSelectedContainers.isEmpty()){
+                                // We set all the non-shared containers as deleted
+                                containersRepository.deleteContainersById("Y", nonSharedSelectedContainers.stream().map(Container::getId).collect(Collectors.toList()));
                                 // We send delete notification for the selected containers
-                                for(Container selectedContainer: selectionContext.getSelectedContainers()){
+                                for(Container selectedContainer: nonSharedSelectedContainers){
                                     // Send notification for subscribers
                                     List<User> subscribers = containerUtils.getSubscribers(selectedContainer.getId());
                                     for(User subscriber: subscribers){
@@ -257,7 +263,7 @@ public class CommonObjectController {
                                     }
                                 }
                                 // We un-subscribe users from the deleted containers
-                                for(Container selectedContainer: selectionContext.getSelectedContainers()){
+                                for(Container selectedContainer: nonSharedSelectedContainers){
                                     Container actualContainer = containerUtils.getContainer(selectedContainer.getId());
                                     User createUser = authenticationUtils.getUser(actualContainer.getCreatedByUsername());
                                     containerUsersRepository.deleteSubscriber(actualContainer.getId(), createUser.getId());
@@ -265,7 +271,7 @@ public class CommonObjectController {
                             }
 
                             int numberOfDeletedAssets = selectedAssetsAndContainerAssets.size();
-                            int numberOfDeletedContainers = selectionContext.getSelectedContainers().size();
+                            int numberOfDeletedContainers = nonSharedSelectedContainers.size();
 
                             genericResponse.setMessage(generateProcessingResponse(numberOfDeletedAssets, numberOfDeletedContainers, " deleted successfully."));
 
