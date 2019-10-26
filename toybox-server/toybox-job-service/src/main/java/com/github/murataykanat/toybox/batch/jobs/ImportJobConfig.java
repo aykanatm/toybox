@@ -221,10 +221,9 @@ public class ImportJobConfig {
                                                     });
                                                 }
 
-                                                // Check if the folder is shared by this user
-                                                // If so add the asset to the share
-                                                User user = authenticationUtils.getUser(username);
-                                                List<InternalShare> internalShares = shareUtils.getInternalSharesWithSourceUser(user.getId(), containerId, false);
+                                                // Check if the folder is shared
+                                                // If so add the asset to the shares
+                                                List<InternalShare> internalShares = shareUtils.getInternalSharesContainingItem(containerId, false);
                                                 for(InternalShare internalShare: internalShares){
                                                     shareUtils.addAssetToInternalShare(assetId, internalShare.getInternalShareId());
                                                 }

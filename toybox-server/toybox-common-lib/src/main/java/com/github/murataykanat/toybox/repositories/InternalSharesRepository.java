@@ -14,6 +14,9 @@ public interface InternalSharesRepository extends JpaRepository<InternalShare, S
     @Query(value = "SELECT internal_share_id, username, expiration_date, notify_on_edit, notify_on_download, notify_on_share, notify_on_move_or_copy, can_edit, can_download, can_share, can_move_or_copy FROM internal_shares WHERE internal_share_id=?1", nativeQuery = true)
     List<InternalShare> getInternalSharesById(String internalShareId);
 
+    @Query(value = "SELECT internal_share_id, username, expiration_date, notify_on_edit, notify_on_download, notify_on_share, notify_on_move_or_copy, can_edit, can_download, can_share, can_move_or_copy FROM internal_shares WHERE internal_share_id IN :internalShareIds", nativeQuery = true)
+    List<InternalShare> getInternalSharesByIds(@Param("internalShareIds")List<String> internalShareIds);
+
     @Query(value = "SELECT internal_share_id, username, expiration_date, notify_on_edit, notify_on_download, notify_on_share, notify_on_move_or_copy, can_edit, can_download, can_share, can_move_or_copy FROM internal_shares WHERE username=?1", nativeQuery = true)
     List<InternalShare> getInternalSharesByUsername(String username);
 

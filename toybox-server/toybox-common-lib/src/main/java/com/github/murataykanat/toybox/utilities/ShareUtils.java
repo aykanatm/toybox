@@ -463,6 +463,27 @@ public class ShareUtils {
     }
 
     @LogEntryExitExecutionTime
+    public List<InternalShare> getInternalSharesContainingItem(String id, boolean isAsset){
+        List<InternalShare> internalShares = new ArrayList<>();
+        List<String> internalShareIds;
+
+        if(isAsset){
+            List<InternalShareAsset> internalShareAssetByAssetId = internalShareAssetsRepository.findInternalShareAssetByAssetId(id);
+            internalShareIds = internalShareAssetByAssetId.stream().map(InternalShareAsset::getInternalShareId).collect(Collectors.toList());
+        }
+        else{
+            List<InternalShareContainer> internalShareContainersByContainerId = internalShareContainersRepository.findInternalShareContainersByContainerId(id);
+            internalShareIds = internalShareContainersByContainerId.stream().map(InternalShareContainer::getInternalShareId).collect(Collectors.toList());
+        }
+
+        if(!internalShareIds.isEmpty()){
+            internalShares = internalSharesRepository.getInternalSharesByIds(internalShareIds);
+        }
+
+        return internalShares;
+    }
+
+    @LogEntryExitExecutionTime
     public List<InternalShare> getInternalSharesWithSourceUser(int sourceUserId, String id, boolean isAsset){
         List<InternalShare> internalShares = new ArrayList<>();
 
