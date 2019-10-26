@@ -56,8 +56,6 @@ public class ImportJobConfig {
     private SortUtils sortUtils;
     @Autowired
     private ShareUtils shareUtils;
-    @Autowired
-    private AuthenticationUtils authenticationUtils;
 
     @Autowired
     private AssetsRepository assetsRepository;
@@ -177,8 +175,8 @@ public class ImportJobConfig {
 
                                             // Generate database entry
                                             String checksum = calculateChecksum(assetDestination.getAbsolutePath());
-                                            String originalAssetId = getOriginalAssetId(assetDestination.getName(), assetId, username, containerId);
-                                            int latestVersion = getLatestVersion(assetDestination.getName(), username, containerId);
+                                            String originalAssetId = getOriginalAssetId(assetDestination.getName(), assetId, containerId);
+                                            int latestVersion = getLatestVersion(assetDestination.getName(), containerId);
 
                                             Asset asset = new Asset();
                                             asset.setId(assetId);
@@ -197,11 +195,14 @@ public class ImportJobConfig {
                                             asset.setVersion(latestVersion);
                                             asset.setFileSize(FileUtils.byteCountToDisplaySize(assetSource.length()));
 
-                                            // Update previous versions of the asset
-                                            updateDuplicateAssets(assetDestination.getName(), assetId, username, containerId);
-
                                             // Add the asset to the database
                                             assetUtils.createAsset(asset);
+
+                                            // Update internal shares
+                                            updateInternalShares(asset.getId(), asset.getName(), containerId);
+
+                                            // Update previous versions of the asset
+                                            updateDuplicateAssets(assetDestination.getName(), assetId, containerId);
 
                                             // Add the asset to a list to move it to the next step of the job
                                             assets.add(asset);
@@ -400,8 +401,8 @@ public class ImportJobConfig {
     }
 
     @LogEntryExitExecutionTime
-    private String getOriginalAssetId(String assetName, String assetId, String username, String containerId){
-        List<Asset> duplicateAssetsByAssetName = getDuplicateAssets(assetName, username, containerId);
+    private String getOriginalAssetId(String assetName, String assetId, String containerId){
+        List<Asset> duplicateAssetsByAssetName = getDuplicateAssets(assetName, containerId);
         if(duplicateAssetsByAssetName.isEmpty()){
             return assetId;
         }
@@ -416,8 +417,8 @@ public class ImportJobConfig {
     }
 
     @LogEntryExitExecutionTime
-    private int getLatestVersion(String assetName, String username, String containerId){
-        List<Asset> duplicateAssetsByAssetName = getDuplicateAssets(assetName, username, containerId);
+    private int getLatestVersion(String assetName, String containerId){
+        List<Asset> duplicateAssetsByAssetName = getDuplicateAssets(assetName, containerId);
 
         if(duplicateAssetsByAssetName.isEmpty()){
             return 1;
@@ -429,9 +430,23 @@ public class ImportJobConfig {
         }
     }
 
+    private void updateInternalShares(String assetId, String assetName, String containerId){
+        List<Asset> duplicateAssetsByAssetName = getDuplicateAssets(assetName, containerId);
+        List<Asset> duplicateLastVersionAssets = duplicateAssetsByAssetName.stream().filter(asset -> asset.getIsLatestVersion().equalsIgnoreCase("Y")).collect(Collectors.toList());
+        if(!duplicateLastVersionAssets.isEmpty()){
+            if(duplicateLastVersionAssets.size() == 1){
+                Asset oldAsset = duplicateLastVersionAssets.get(0);
+                shareUtils.updateInternalShareAsset(assetId, oldAsset.getId());
+            }
+            else{
+                throw new IllegalArgumentException("There are more than one asset which are set as the latest version of '" + assetName + "'!");
+            }
+        }
+    }
+
     @LogEntryExitExecutionTime
-    private void updateDuplicateAssets(String assetName, String assetId, String username, String containerId){
-        List<Asset> duplicateAssetsByAssetName = getDuplicateAssets(assetName, username, containerId);
+    private void updateDuplicateAssets(String assetName, String assetId, String containerId){
+        List<Asset> duplicateAssetsByAssetName = getDuplicateAssets(assetName, containerId);
 
         if(!duplicateAssetsByAssetName.isEmpty()){
             List<String> assetIds = duplicateAssetsByAssetName.stream()
@@ -443,7 +458,7 @@ public class ImportJobConfig {
     }
 
     @LogEntryExitExecutionTime
-    private List<Asset> getDuplicateAssets(String assetName, String username, String containerId){
+    private List<Asset> getDuplicateAssets(String assetName, String containerId){
         List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(containerId);
         if(!containerAssetsByContainerId.isEmpty()){
             List<Asset> assetsInContainer = assetsRepository.getAssetsByAssetIds(containerAssetsByContainerId.stream()

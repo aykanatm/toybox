@@ -548,8 +548,17 @@ public class ShareUtils {
         return internalShares;
     }
 
+    @LogEntryExitExecutionTime
+    public void updateInternalShareAsset(String newAssetId, String oldAssetId){
+        internalShareAssetsRepository.updateSharedAssets(newAssetId, oldAssetId);
+    }
+
+    @LogEntryExitExecutionTime
     public void addAssetToInternalShare(String assetId, String shareId){
-        internalShareAssetsRepository.insertSharedAsset(shareId, assetId);
+        List<InternalShareAsset> internalShareAssetByInternalShareIdAndAssetId = internalShareAssetsRepository.findInternalShareAssetByInternalShareIdAndAssetId(shareId, assetId);
+        if(internalShareAssetByInternalShareIdAndAssetId.isEmpty()){
+            internalShareAssetsRepository.insertSharedAsset(shareId, assetId);
+        }
     }
 
     @LogEntryExitExecutionTime

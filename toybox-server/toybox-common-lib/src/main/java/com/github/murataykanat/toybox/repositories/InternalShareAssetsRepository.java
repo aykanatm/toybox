@@ -25,6 +25,11 @@ public interface InternalShareAssetsRepository extends JpaRepository<InternalSha
 
     @Transactional
     @Modifying
+    @Query(value = "UPDATE internal_share_assets SET asset_id=?1 WHERE asset_id=?2", nativeQuery = true)
+    int updateSharedAssets(String newAssetId, String oldAssetId);
+
+    @Transactional
+    @Modifying
     @Query(value = "DELETE FROM internal_share_assets WHERE internal_share_id=?1 AND asset_id=?2", nativeQuery = true)
     int deleteSharedAssetByInternalShareIdAndAssetId(String internalShareId, String assetId);
 }
