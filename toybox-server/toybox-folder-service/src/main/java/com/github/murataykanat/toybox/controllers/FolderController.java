@@ -223,8 +223,25 @@ public class FolderController {
                                 containersByCurrentUser = containersRepository.getNonDeletedContainersByParentContainerId(container.getId());
                                 List<SharedContainers> sharedContainersLst = shareUtils.getSharedContainers(user.getId());
                                 for(SharedContainers sharedContainers: sharedContainersLst){
+                                    List<Container> containersToAdd = new ArrayList<>();
                                     List<Container> containersByContainerIds = containerUtils.getContainersByContainerIds(sharedContainers.getContainerIds());
-                                    containersByCurrentUser.addAll(containersByContainerIds);
+
+                                    // If the container's parent container is on the list, exclude it
+                                    for(Container containerToAdd: containersByContainerIds){
+                                        boolean addContainer = true;
+
+                                        for(Container containerToCheck: containersByContainerIds){
+                                            if(containerToAdd.getParentId().equalsIgnoreCase(containerToCheck.getId())){
+                                                addContainer = false;
+                                                break;
+                                            }
+                                        }
+
+                                        if(addContainer){
+                                            containersToAdd.add(containerToAdd);
+                                        }
+                                    }
+                                    containersByCurrentUser.addAll(containersToAdd);
                                 }
                             }
                             else{
