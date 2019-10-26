@@ -115,6 +115,13 @@ public class FolderController {
 
                             containerUtils.createContainer(container);
 
+                            // Check if the parent folder is shared
+                            // If so add the folder to the shares
+                            List<InternalShare> internalShares = shareUtils.getInternalSharesContainingItem(container.getParentId(), false);
+                            for(InternalShare internalShare: internalShares){
+                                shareUtils.addContainerToInternalShare(container.getId(), internalShare.getInternalShareId());
+                            }
+
                             createContainerResponse.setContainerId(container.getId());
                             createContainerResponse.setMessage("Folder created successfully!");
 

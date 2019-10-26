@@ -562,6 +562,14 @@ public class ShareUtils {
     }
 
     @LogEntryExitExecutionTime
+    public void addContainerToInternalShare(String containerId, String shareId){
+        List<InternalShareContainer> internalShareContainersByInternalShareIdAndContainerId = internalShareContainersRepository.findInternalShareContainersByInternalShareIdAndContainerId(shareId, containerId);
+        if(internalShareContainersByInternalShareIdAndContainerId.isEmpty()){
+            internalShareContainersRepository.insertSharedContainer(shareId, containerId);
+        }
+    }
+
+    @LogEntryExitExecutionTime
     private String generateInternalShareId(){
         String internalShareId = RandomStringUtils.randomAlphanumeric(40);
         if(isInternalShareIdValid(internalShareId)){
