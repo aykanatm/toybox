@@ -118,7 +118,7 @@ public class AssetLoadbalancerController {
                         uploadFileLst.setUploadFiles(uploadFiles);
                         uploadFileLst.setMessage("Files uploaded successfully!");
 
-                        return restTemplate.exchange(prefix + ToyboxConstants.ASSET_SERVICE_NAME + "/assets/upload", HttpMethod.POST, new HttpEntity<>(uploadFileLst, headers), GenericResponse.class);
+                        return defaultRestTemplate.exchange(prefix + ToyboxConstants.ASSET_SERVICE_NAME + "/assets/upload", HttpMethod.POST, new HttpEntity<>(uploadFileLst, headers), GenericResponse.class);
                     }
                     else{
                         throw new IllegalArgumentException("Service ID prefix is null!");
