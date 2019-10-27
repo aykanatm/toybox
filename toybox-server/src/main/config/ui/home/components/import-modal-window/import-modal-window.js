@@ -118,7 +118,12 @@ module.exports = {
                     if(response){
                         return axios.post(response.data.value + "/assets/upload", formData, config)
                         .then(response =>{
-                            this.$root.$emit('message-sent', 'Success', response.data.message);
+                            if(response){
+                                this.$root.$emit('message-sent', 'Success', response.data.message);
+                            }
+                            else{
+                                this.$root.$emit('message-sent', 'Error', "There was no response from the asset loadbalancer!");
+                            }
                         })
                         .catch(error => {
                             var errorMessage;
@@ -136,6 +141,9 @@ module.exports = {
                             console.error(errorMessage);
                             this.$root.$emit('message-sent', 'Error', errorMessage);
                         });
+                    }
+                    else{
+                        this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
                     }
                 });
         }

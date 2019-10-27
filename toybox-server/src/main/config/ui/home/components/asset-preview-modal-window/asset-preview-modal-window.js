@@ -117,6 +117,9 @@ module.exports = {
                                 this.contextMenuOpen = false;
                             });
                     }
+                    else{
+                        this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
+                    }
                 });
         },
         assetRename:function(){

@@ -98,90 +98,105 @@ module.exports = {
 
             this.getService("toybox-user-loadbalancer")
                 .then(response => {
-                    var userServiceUrl = response.data.value;
-                    // Get users
-                    axios.get(userServiceUrl + "/users")
-                        .then(response => {
-                            console.log(response);
-                            var users = response.data.users;
+                    if(response){
+                        var userServiceUrl = response.data.value;
+                        // Get users
+                        axios.get(userServiceUrl + "/users")
+                            .then(response => {
+                                if(response){
+                                    console.log(response);
+                                    var users = response.data.users;
 
-                            for(var i = 0; i < users.length; i++){
-                                var user = users[i];
+                                    for(var i = 0; i < users.length; i++){
+                                        var user = users[i];
 
-                                if(this.user.username !== user.username){
-                                    this.usersAndUsergroups.push({
-                                        'displayName' : user.name + ' ' + user.lastname + ' (' + user.username + ')',
-                                        'id': user.id
+                                        if(this.user.username !== user.username){
+                                            this.usersAndUsergroups.push({
+                                                'displayName' : user.name + ' ' + user.lastname + ' (' + user.username + ')',
+                                                'id': user.id
+                                            });
+                                        }
+                                    }
+
+                                    $('#user-dropdown').dropdown({
+                                        onAdd: function(value){
+                                            this.addSelectedUsergroupOrUser(value);
+                                        }.bind(this),
+                                        onRemove: function(value) {
+                                            this.removeSelectedUsergroupOrUser(value);
+                                        }.bind(this)
                                     });
                                 }
-                            }
-
-                            $('#user-dropdown').dropdown({
-                                onAdd: function(value){
-                                    this.addSelectedUsergroupOrUser(value);
-                                }.bind(this),
-                                onRemove: function(value) {
-                                    this.removeSelectedUsergroupOrUser(value);
-                                }.bind(this)
-                            });
-                        })
-                        .catch(error => {
-                            var errorMessage;
-
-                            if(error.response){
-                                errorMessage = error.response.data.message
-                                if(error.response.status == 401){
-                                    window.location = '/logout';
+                                else{
+                                    this.$root.$emit('message-sent', 'Error', "There was no response from the user loadbalancer!");
                                 }
-                            }
-                            else{
-                                errorMessage = error.message;
-                            }
+                            })
+                            .catch(error => {
+                                var errorMessage;
 
-                            console.error(errorMessage);
-                            this.$root.$emit('message-sent', 'Error', errorMessage);
-                        });
-
-                    // Get user groups
-                    axios.get(userServiceUrl + "/usergroups")
-                        .then(response => {
-                            console.log(response);
-                            var usergroups = response.data.usergroups;
-
-                            for(var i = 0; i < usergroups.length; i++){
-                                var usergroup = usergroups[i];
-
-                                this.usersAndUsergroups.push({
-                                    'displayName' : usergroup.name,
-                                    'id': usergroup.id
-                                });
-                            }
-
-                            $('#user-dropdown').dropdown({
-                                onAdd: function(value){
-                                    this.addSelectedUsergroupOrUser(value);
-                                }.bind(this),
-                                onRemove: function(value) {
-                                    this.removeSelectedUsergroupOrUser(value);
-                                }.bind(this)
-                            });
-                        })
-                        .catch(error => {
-                            var errorMessage;
-
-                            if(error.response){
-                                errorMessage = error.response.data.message
-                                if(error.response.status == 401){
-                                    window.location = '/logout';
+                                if(error.response){
+                                    errorMessage = error.response.data.message
+                                    if(error.response.status == 401){
+                                        window.location = '/logout';
+                                    }
                                 }
-                            }
-                            else{
-                                errorMessage = error.message;
-                            }
+                                else{
+                                    errorMessage = error.message;
+                                }
 
-                            console.error(errorMessage);
-                            this.$root.$emit('message-sent', 'Error', errorMessage);
-                        });
+                                console.error(errorMessage);
+                                this.$root.$emit('message-sent', 'Error', errorMessage);
+                            });
+
+                        // Get user groups
+                        axios.get(userServiceUrl + "/usergroups")
+                            .then(response => {
+                                if(response){
+                                    console.log(response);
+                                    var usergroups = response.data.usergroups;
+
+                                    for(var i = 0; i < usergroups.length; i++){
+                                        var usergroup = usergroups[i];
+
+                                        this.usersAndUsergroups.push({
+                                            'displayName' : usergroup.name,
+                                            'id': usergroup.id
+                                        });
+                                    }
+
+                                    $('#user-dropdown').dropdown({
+                                        onAdd: function(value){
+                                            this.addSelectedUsergroupOrUser(value);
+                                        }.bind(this),
+                                        onRemove: function(value) {
+                                            this.removeSelectedUsergroupOrUser(value);
+                                        }.bind(this)
+                                    });
+                                }
+                                else{
+                                    this.$root.$emit('message-sent', 'Error', "There was no response from the user loadbalancer!");
+                                }
+                            })
+                            .catch(error => {
+                                var errorMessage;
+
+                                if(error.response){
+                                    errorMessage = error.response.data.message
+                                    if(error.response.status == 401){
+                                        window.location = '/logout';
+                                    }
+                                }
+                                else{
+                                    errorMessage = error.message;
+                                }
+
+                                console.error(errorMessage);
+                                this.$root.$emit('message-sent', 'Error', errorMessage);
+                            });
+                    }
+                    else{
+                        this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
+                    }
                 })
                 .catch(error => {
                     var errorMessage;
@@ -278,39 +293,49 @@ module.exports = {
                     this.isSharing = true;
                     this.getService("toybox-share-loadbalancer")
                     .then(response =>{
-                        var shareServiceUrl = response.data.value;
-                        var externalShareRequest = {
-                            selectionContext: this.selectionContext,
-                            enableExpireExternal: this.enableExpireExternal,
-                            expirationDate: this.externalExpirationDate,
-                            enableUsageLimit: this.enableUsageLimit,
-                            maxNumberOfHits: this.maxNumberOfHits,
-                            notifyWhenDownloaded: this.notifyOnDownload
-                        }
+                        if(response){
+                            var shareServiceUrl = response.data.value;
+                            var externalShareRequest = {
+                                selectionContext: this.selectionContext,
+                                enableExpireExternal: this.enableExpireExternal,
+                                expirationDate: this.externalExpirationDate,
+                                enableUsageLimit: this.enableUsageLimit,
+                                maxNumberOfHits: this.maxNumberOfHits,
+                                notifyWhenDownloaded: this.notifyOnDownload
+                            }
 
-                        axios.post(shareServiceUrl + "/share/external", externalShareRequest)
-                            .then(response =>{
-                                console.log(response);
-                                this.isSharing = false;
-                                this.externalShareUrl = response.data.url;
-                            })
-                            .catch(error => {
-                                var errorMessage;
-                                this.isSharing = false;
-
-                                if(error.response){
-                                    errorMessage = error.response.data.message
-                                    if(error.response.status == 401){
-                                        window.location = '/logout';
+                            axios.post(shareServiceUrl + "/share/external", externalShareRequest)
+                                .then(response =>{
+                                    if(response){
+                                        console.log(response);
+                                        this.isSharing = false;
+                                        this.externalShareUrl = response.data.url;
                                     }
-                                }
-                                else{
-                                    errorMessage = error.message;
-                                }
+                                    else{
+                                        this.$root.$emit('message-sent', 'Error', "There was no response from the share loadbalancer!");
+                                    }
+                                })
+                                .catch(error => {
+                                    var errorMessage;
+                                    this.isSharing = false;
 
-                                console.error(errorMessage);
-                                this.$root.$emit('message-sent', 'Error', errorMessage);
-                            });
+                                    if(error.response){
+                                        errorMessage = error.response.data.message
+                                        if(error.response.status == 401){
+                                            window.location = '/logout';
+                                        }
+                                    }
+                                    else{
+                                        errorMessage = error.message;
+                                    }
+
+                                    console.error(errorMessage);
+                                    this.$root.$emit('message-sent', 'Error', errorMessage);
+                                });
+                        }
+                        else{
+                            this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
+                        }
                     })
                     .catch(error => {
                         var errorMessage;
@@ -343,47 +368,57 @@ module.exports = {
                 this.isSharing = true;
                 this.getService("toybox-share-loadbalancer")
                     .then(response =>{
-                        var shareServiceUrl = response.data.value;
-                        var internalShareRequest = {
-                            selectionContext: this.selectionContext,
-                            enableExpireInternal: this.enableExpireInternal,
-                            expirationDate: this.internalExpirationDate,
-                            notifyOnEdit: this.notifyOnEdit,
-                            notifyOnDownload: this.notifyOnDownload,
-                            notifyOnShare: this.notifyOnShare,
-                            notifyOnMoveOrCopy: this.notifyOnMoveOrCopy,
-                            canEdit: this.canEdit,
-                            canDownload: this.canDownload,
-                            canShare: this.canShare,
-                            canMoveOrCopy: this.canMoveOrCopy,
-                            sharedUsergroups: this.selectedUserGroups,
-                            sharedUsers: this.selectedUsers
-                        }
+                        if(response){
+                            var shareServiceUrl = response.data.value;
+                            var internalShareRequest = {
+                                selectionContext: this.selectionContext,
+                                enableExpireInternal: this.enableExpireInternal,
+                                expirationDate: this.internalExpirationDate,
+                                notifyOnEdit: this.notifyOnEdit,
+                                notifyOnDownload: this.notifyOnDownload,
+                                notifyOnShare: this.notifyOnShare,
+                                notifyOnMoveOrCopy: this.notifyOnMoveOrCopy,
+                                canEdit: this.canEdit,
+                                canDownload: this.canDownload,
+                                canShare: this.canShare,
+                                canMoveOrCopy: this.canMoveOrCopy,
+                                sharedUsergroups: this.selectedUserGroups,
+                                sharedUsers: this.selectedUsers
+                            }
 
-                        axios.post(shareServiceUrl + "/share/internal", internalShareRequest)
-                            .then(response =>{
-                                console.log(response);
-                                this.isSharing = false;
-                                $(this.$el).modal('hide');
-                                this.$root.$emit('message-sent', 'Success', response.data.message);
-                            })
-                            .catch(error => {
-                                var errorMessage;
-                                this.isSharing = false;
-
-                                if(error.response){
-                                    errorMessage = error.response.data.message
-                                    if(error.response.status == 401){
-                                        window.location = '/logout';
+                            axios.post(shareServiceUrl + "/share/internal", internalShareRequest)
+                                .then(response =>{
+                                    if(response){
+                                        console.log(response);
+                                        this.isSharing = false;
+                                        $(this.$el).modal('hide');
+                                        this.$root.$emit('message-sent', 'Success', response.data.message);
                                     }
-                                }
-                                else{
-                                    errorMessage = error.message;
-                                }
+                                    else{
+                                        this.$root.$emit('message-sent', 'Error', "There was no response from the share loadbalancer!");
+                                    }
+                                })
+                                .catch(error => {
+                                    var errorMessage;
+                                    this.isSharing = false;
 
-                                console.error(errorMessage);
-                                this.$root.$emit('message-sent', 'Error', errorMessage);
-                            });
+                                    if(error.response){
+                                        errorMessage = error.response.data.message
+                                        if(error.response.status == 401){
+                                            window.location = '/logout';
+                                        }
+                                    }
+                                    else{
+                                        errorMessage = error.message;
+                                    }
+
+                                    console.error(errorMessage);
+                                    this.$root.$emit('message-sent', 'Error', errorMessage);
+                                });
+                        }
+                        else{
+                            this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
+                        }
                     })
                     .catch(error => {
                         var errorMessage;

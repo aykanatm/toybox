@@ -34,7 +34,12 @@ const folders = new Vue({
 
         this.getService("toybox-rendition-loadbalancer")
             .then(response => {
-                this.renditionUrl = response.data.value;
+                if(response){
+                    this.renditionUrl = response.data.value;
+                }
+                else{
+                    this.$root.$emit('message-sent', 'Error', "There was no response from the rendition loadbalancer!");
+                }
             });
 
         // Initialize accordions
@@ -117,6 +122,10 @@ const folders = new Vue({
                             this.$root.$emit('message-sent', 'Error', errorMessage);
                         });
                 }
+                else{
+                    this.isLoading = false;
+                    this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
+                }
             })
             .then(response => {
                 console.log(response);
@@ -141,6 +150,10 @@ const folders = new Vue({
 
                     this.updateButtons();
                     this.updatePagination(this.currentPage, this.totalPages, offset, limit, this.totalRecords);
+                }
+                else{
+                    this.isLoading = false;
+                    this.$root.$emit('message-sent', 'Error', "There was no response from the folder loadbalancer!");
                 }
             });
         },
@@ -187,6 +200,10 @@ const folders = new Vue({
                                 this.$root.$emit('message-sent', 'Error', errorMessage);
                             });
                     }
+                    else{
+                        this.isLoading = false;
+                        this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
+                    }
                 })
                 .then(response => {
                     console.log(response);
@@ -213,94 +230,105 @@ const folders = new Vue({
                         this.updateButtons();
                         this.updatePagination(this.currentPage, this.totalPages, offset, limit, this.totalRecords);
                     }
+                    else{
+                        this.isLoading = false;
+                        this.$root.$emit('message-sent', 'Error', "There was no response from the folder loadbalancer!");
+                    }
                 });
             }
             else{
                 this.getService("toybox-folder-loadbalancer")
                     .then(response => {
-                        var container ={
-                            '@class': 'com.github.murataykanat.toybox.dbo.Container',
-                            'name': this.user.username,
-                            'isSystem': 'Y'
-                        }
+                        if(response){
+                            var container ={
+                                '@class': 'com.github.murataykanat.toybox.dbo.Container',
+                                'name': this.user.username,
+                                'isSystem': 'Y'
+                            }
 
-                        var searchRequest = {
-                            'limit': limit,
-                            'offset': offset,
-                            'container': container
-                        }
+                            var searchRequest = {
+                                'limit': limit,
+                                'offset': offset,
+                                'container': container
+                            }
 
-                        var containerServiceUrl = response.data.value
+                            var containerServiceUrl = response.data.value
 
-                        axios.post(containerServiceUrl + "/containers/search", searchRequest)
+                            axios.post(containerServiceUrl + "/containers/search", searchRequest)
                             .then(response => {
-                                var containers = response.data.containers;
-                                if(containers.length > 0){
-                                    if(containers.length == 1){
-                                        var userContainer = containers[0];
-                                        var searchRequest = {
-                                            'limit': limit,
-                                            'offset': offset,
-                                            'sortType': sortType,
-                                            'sortColumn': sortColumn,
-                                            'assetSearchRequestFacetList': searchRequestFacetList
-                                        };
+                                if(response){
+                                    var containers = response.data.containers;
+                                    if(containers.length > 0){
+                                        if(containers.length == 1){
+                                            var userContainer = containers[0];
+                                            var searchRequest = {
+                                                'limit': limit,
+                                                'offset': offset,
+                                                'sortType': sortType,
+                                                'sortColumn': sortColumn,
+                                                'assetSearchRequestFacetList': searchRequestFacetList
+                                            };
 
-                                        axios.post(containerServiceUrl + '/containers/' + userContainer.id + '/search', searchRequest)
-                                            .then(response => {
-                                                console.log(response);
-                                                if(response){
+                                            axios.post(containerServiceUrl + '/containers/' + userContainer.id + '/search', searchRequest)
+                                                .then(response => {
+                                                    console.log(response);
+                                                    if(response){
+                                                        this.isLoading = false;
+                                                        this.items = response.data.containerItems;
+                                                        this.facets = response.data.facets;
+                                                        this.updateBreadcrumbs(response.data.breadcrumbs);
+
+                                                        if(this.items == null || this.items.length == 0){
+                                                            this.displayMessage('Information','You do not have any files or folders.');
+                                                            this.totalRecords = 0;
+                                                            this.totalPages = 0;
+                                                            this.currentPage = 0;
+                                                        }
+                                                        else{
+                                                            this.totalRecords = response.data.totalRecords;
+                                                            this.totalPages = Math.ceil(this.totalRecords / this.limit);
+                                                            this.currentPage = Math.ceil((offset / limit) + 1);
+                                                        }
+
+                                                        this.currentFolderId = userContainer.id;
+
+                                                        this.updateButtons();
+                                                        this.updatePagination(this.currentPage, this.totalPages, offset, limit, this.totalRecords);
+                                                    }
+                                                })
+                                                .catch(error => {
                                                     this.isLoading = false;
-                                                    this.items = response.data.containerItems;
-                                                    this.facets = response.data.facets;
-                                                    this.updateBreadcrumbs(response.data.breadcrumbs);
+                                                    var errorMessage;
 
-                                                    if(this.items == null || this.items.length == 0){
-                                                        this.displayMessage('Information','You do not have any files or folders.');
-                                                        this.totalRecords = 0;
-                                                        this.totalPages = 0;
-                                                        this.currentPage = 0;
+                                                    if(error.response){
+                                                        errorMessage = error.response.data.message
+                                                        if(error.response.status == 401){
+                                                            window.location = '/logout';
+                                                        }
                                                     }
                                                     else{
-                                                        this.totalRecords = response.data.totalRecords;
-                                                        this.totalPages = Math.ceil(this.totalRecords / this.limit);
-                                                        this.currentPage = Math.ceil((offset / limit) + 1);
+                                                        errorMessage = error.message;
                                                     }
 
-                                                    this.currentFolderId = userContainer.id;
-
-                                                    this.updateButtons();
-                                                    this.updatePagination(this.currentPage, this.totalPages, offset, limit, this.totalRecords);
-                                                }
-                                            })
-                                            .catch(error => {
-                                                this.isLoading = false;
-                                                var errorMessage;
-
-                                                if(error.response){
-                                                    errorMessage = error.response.data.message
-                                                    if(error.response.status == 401){
-                                                        window.location = '/logout';
-                                                    }
-                                                }
-                                                else{
-                                                    errorMessage = error.message;
-                                                }
-
-                                                console.error(errorMessage);
-                                                this.$root.$emit('message-sent', 'Error', errorMessage);
-                                            });
+                                                    console.error(errorMessage);
+                                                    this.$root.$emit('message-sent', 'Error', errorMessage);
+                                                });
+                                        }
+                                        else{
+                                            this.isLoading = false;
+                                            var errorMessage = 'There are multiple root folders for user "' + user.username + '"';
+                                            this.$root.$emit('message-sent', 'Error', errorMessage);
+                                        }
                                     }
                                     else{
                                         this.isLoading = false;
-                                        var errorMessage = 'There are multiple root folders for user "' + user.username + '"';
+                                        var errorMessage = 'There is no root folder for user "' + user.username + '"';
                                         this.$root.$emit('message-sent', 'Error', errorMessage);
                                     }
                                 }
                                 else{
                                     this.isLoading = false;
-                                    var errorMessage = 'There is no root folder for user "' + user.username + '"';
-                                    this.$root.$emit('message-sent', 'Error', errorMessage);
+                                    this.$root.$emit('message-sent', 'Error', "There was no response from the folder loadbalancer!");
                                 }
                             })
                             .catch(error => {
@@ -320,7 +348,12 @@ const folders = new Vue({
                                 console.error(errorMessage);
                                 this.$root.$emit('message-sent', 'Error', errorMessage);
                             });
-                        })
+                        }
+                        else{
+                            this.isLoading = false;
+                            this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
+                        }
+                    });
             }
         },
         onItemSelectionChanged:function(item){
@@ -423,6 +456,9 @@ const folders = new Vue({
             .then(response => {
                 if(response){
                     this.$root.$emit('open-create-container-modal-window', this.currentFolderId, response.data.value);
+                }
+                else{
+                    this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
                 }
             })
             .catch(error => {

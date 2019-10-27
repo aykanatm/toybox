@@ -113,12 +113,17 @@ module.exports = {
                     if(response){
                         return axios.get(response.data.value + '/renditions/assets/' + this.id + '/o', {responseType:'blob'})
                             .then(response =>{
-                                console.log(response);
-                                var filename = this.name;
-                                var blob = new Blob([response.data], {type:'application/octet-stream'});
-                                saveAs(blob , filename);
+                                if(response){
+                                    console.log(response);
+                                    var filename = this.name;
+                                    var blob = new Blob([response.data], {type:'application/octet-stream'});
+                                    saveAs(blob , filename);
 
-                                this.contextMenuOpen = false;
+                                    this.contextMenuOpen = false;
+                                }
+                                else{
+                                    this.$root.$emit('message-sent', 'Error', "There was no response from the rendition loadbalancer!");
+                                }
                             })
                             .catch(error => {
                                 var errorMessage;
@@ -138,6 +143,9 @@ module.exports = {
 
                                 this.contextMenuOpen = false;
                             });
+                    }
+                    else{
+                        this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
                     }
                 });
         },

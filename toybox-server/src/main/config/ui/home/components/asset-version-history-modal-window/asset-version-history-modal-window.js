@@ -23,8 +23,13 @@ module.exports = {
         retrieveVersionHistory(){
             axios.get(this.assetUrl + '/assets/' + this.assetId + '/versions')
                 .then(response => {
-                    console.log(response.data);
-                    this.versionHistoryAssets = response.data.assets;
+                    if(response){
+                        console.log(response.data);
+                        this.versionHistoryAssets = response.data.assets;
+                    }
+                    else{
+                        this.$root.$emit('message-sent', 'Error', "There was no response from the asset loadbalancer!");
+                    }
                 })
                 .catch(error => {
                     var errorMessage;

@@ -8,10 +8,15 @@ var itemActionsMixin = {
                 if(response){
                     return axios.post(response.data.value + '/common-objects/delete', selectionContext)
                         .then(response => {
-                            console.log(response);
-                            this.$root.$emit('message-sent', 'Success', response.data.message);
-                            this.$root.$emit('refresh-assets');
-                            this.$root.$emit('refresh-items');
+                            if(response){
+                                console.log(response);
+                                this.$root.$emit('message-sent', 'Success', response.data.message);
+                                this.$root.$emit('refresh-assets');
+                                this.$root.$emit('refresh-items');
+                            }
+                            else{
+                                this.$root.$emit('message-sent', 'Error', "There was no response from the common object loadbalancer!");
+                            }
                         })
                         .catch(error => {
                             var errorMessage;
@@ -37,6 +42,9 @@ var itemActionsMixin = {
                             }
                         });
                 }
+                else{
+                    this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
+                }
             })
         },
         subscribeToItems(selectedItems){
@@ -47,9 +55,14 @@ var itemActionsMixin = {
                     if(response){
                         return axios.post(response.data.value + '/common-objects/subscribe', selectionContext)
                             .then(response => {
-                                this.$root.$emit('message-sent', 'Success', response.data.message);
-                                this.$root.$emit('refresh-assets');
-                                this.$root.$emit('refresh-items');
+                                if(response){
+                                    this.$root.$emit('message-sent', 'Success', response.data.message);
+                                    this.$root.$emit('refresh-assets');
+                                    this.$root.$emit('refresh-items');
+                                }
+                                else{
+                                    this.$root.$emit('message-sent', 'Error', "There was no response from the common object loadbalancer!");
+                                }
                             })
                             .catch(error => {
                                 var errorMessage;
@@ -75,6 +88,9 @@ var itemActionsMixin = {
                                 }
                             });
                     }
+                    else{
+                        this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
+                    }
                 })
         },
         unsubscribeFromItems(selectedItems){
@@ -85,14 +101,19 @@ var itemActionsMixin = {
                 if(response){
                     return axios.post(response.data.value + '/common-objects/unsubscribe', selectionContext)
                         .then(response => {
-                            console.log(response);
-                            if(response.status != 204){
-                                this.$root.$emit('message-sent', 'Success', response.data.message);
-                                this.$root.$emit('refresh-assets');
-                                this.$root.$emit('refresh-items');
+                            if(response){
+                                console.log(response);
+                                if(response.status != 204){
+                                    this.$root.$emit('message-sent', 'Success', response.data.message);
+                                    this.$root.$emit('refresh-assets');
+                                    this.$root.$emit('refresh-items');
+                                }
+                                else{
+                                    this.$root.$emit('message-sent', 'Information', 'Selected assets were already unsubscribed.');
+                                }
                             }
                             else{
-                                this.$root.$emit('message-sent', 'Information', 'Selected assets were already unsubscribed.');
+                                this.$root.$emit('message-sent', 'Error', "There was no response from the common object loadbalancer!");
                             }
                         })
                         .catch(error => {
@@ -119,6 +140,9 @@ var itemActionsMixin = {
                             }
                         });
                 }
+                else{
+                    this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
+                }
             })
         },
         downloadItems(selectedItems){
@@ -130,10 +154,15 @@ var itemActionsMixin = {
                 if(response){
                     return axios.post(response.data.value + '/common-objects/download', selectionContext, {responseType:'blob'})
                         .then(response =>{
-                            console.log(response);
-                            var filename = 'Download.zip';
-                            var blob = new Blob([response.data], {type:'application/octet-stream'});
-                            saveAs(blob , filename);
+                            if(response){
+                                console.log(response);
+                                var filename = 'Download.zip';
+                                var blob = new Blob([response.data], {type:'application/octet-stream'});
+                                saveAs(blob , filename);
+                            }
+                            else{
+                                this.$root.$emit('message-sent', 'Error', "There was no response from the common object loadbalancer!");
+                            }
                         })
                         .catch(error => {
                             var errorMessage;
@@ -158,6 +187,9 @@ var itemActionsMixin = {
                                 this.$root.$emit('message-sent', 'Error', errorMessage);
                             }
                         });
+                }
+                else{
+                    this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
                 }
             });
         },

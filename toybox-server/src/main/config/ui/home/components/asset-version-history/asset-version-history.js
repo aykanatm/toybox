@@ -62,9 +62,14 @@ module.exports = {
             }
             axios.post(this.assetUrl + '/assets/' + this.id + '/revert', revertToVersionRequest)
                 .then(response => {
-                    console.log(response.data);
-                    this.$root.$emit('message-sent', 'Success', response.data.message);
-                    this.$root.$emit('refresh-asset-version-history');
+                    if(response){
+                        console.log(response.data);
+                        this.$root.$emit('message-sent', 'Success', response.data.message);
+                        this.$root.$emit('refresh-asset-version-history');
+                    }
+                    else{
+                        this.$root.$emit('message-sent', 'Error', "There was no response from the asset loadbalancer!");
+                    }
                 })
                 .catch(error => {
                     var errorMessage;

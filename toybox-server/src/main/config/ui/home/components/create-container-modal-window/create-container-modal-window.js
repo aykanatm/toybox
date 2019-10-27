@@ -25,8 +25,13 @@ module.exports = {
 
             axios.post(this.containerUrl + '/containers', createContainerRequest)
                 .then(response => {
-                    this.$root.$emit('message-sent', 'Success', response.data.message);
-                    $(this.$el).modal('hide');
+                    if(response){
+                        this.$root.$emit('message-sent', 'Success', response.data.message);
+                        $(this.$el).modal('hide');
+                    }
+                    else{
+                        this.$root.$emit('message-sent', 'Error', "There was no response from the folder loadbalancer!");
+                    }
                 })
                 .catch(error => {
                     var errorMessage;

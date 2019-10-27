@@ -20,8 +20,13 @@ module.exports = {
     mounted: function(){
         this.getService("toybox-rendition-loadbalancer")
             .then(response => {
-                var renditionUrl = response.data.value;
-                this.avatarUrl = renditionUrl + '/renditions/users/' + this.fromUsername;
+                if(response){
+                    var renditionUrl = response.data.value;
+                    this.avatarUrl = renditionUrl + '/renditions/users/' + this.fromUsername;
+                }
+                else{
+                    this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
+                }
             })
             .catch(error => {
                 var errorMessage;
@@ -79,24 +84,29 @@ module.exports = {
 
                         return axios.patch(response.data.value + '/notifications', notificationUpdateRequest)
                             .then(response => {
-                                console.log(response);
-                                this.$root.$emit('message-sent', 'Success', response.data.message);
+                                if(response){
+                                    console.log(response);
+                                    this.$root.$emit('message-sent', 'Success', response.data.message);
 
-                                var isNavbar = false;
-                                var paths = event.path;
-                                for(var i = 0; i < paths.length; i++){
-                                    var path = paths[i];
-                                    if(path.className === 'ui simple dropdown item toybox-navbar-item'){
-                                        isNavbar = true;
-                                        break;
+                                    var isNavbar = false;
+                                    var paths = event.path;
+                                    for(var i = 0; i < paths.length; i++){
+                                        var path = paths[i];
+                                        if(path.className === 'ui simple dropdown item toybox-navbar-item'){
+                                            isNavbar = true;
+                                            break;
+                                        }
+                                    }
+
+                                    if(isNavbar){
+                                        this.$root.$emit('notifications-updated', null, '*', new Date(), 'N', 0, 100, this.searchRequestFacetList, isNavbar);
+                                    }
+                                    else{
+                                        this.$root.$emit('refresh-notifications');
                                     }
                                 }
-
-                                if(isNavbar){
-                                    this.$root.$emit('notifications-updated', null, '*', new Date(), 'N', 0, 100, this.searchRequestFacetList, isNavbar);
-                                }
                                 else{
-                                    this.$root.$emit('refresh-notifications');
+                                    this.$root.$emit('message-sent', 'Error', "There was no response from the notification loadbalancer!");
                                 }
                             })
                             .catch(error => {
@@ -115,6 +125,9 @@ module.exports = {
                                 console.error(errorMessage);
                                 this.$root.$emit('message-sent', 'Error', errorMessage);
                             });
+                    }
+                    else{
+                        this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
                     }
                 })
                 .catch(error => {

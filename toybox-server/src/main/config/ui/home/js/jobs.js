@@ -51,6 +51,10 @@ const jobs = new Vue({
                                 this.$root.$emit('message-sent', 'Error', errorMessage);
                             });
                 }
+                else{
+                    this.isLoading = false;
+                    this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
+                }
             })
             .then(response => {
                 console.log(response);
@@ -74,6 +78,10 @@ const jobs = new Vue({
 
                     this.updatePagination(this.currentPage, this.totalPages, this.offset, this.limit, this.totalRecords);
                     this.updateSortStatus(this.sortType, this.sortColumn);
+                }
+                else{
+                    this.isLoading = false;
+                    this.$root.$emit('message-sent', 'Error', "There was no response from the job loadbalancer!");
                 }
             });
         },

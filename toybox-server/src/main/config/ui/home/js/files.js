@@ -31,7 +31,12 @@ const files = new Vue({
 
         this.getService("toybox-rendition-loadbalancer")
             .then(response => {
-                this.renditionUrl = response.data.value;
+                if(response){
+                    this.renditionUrl = response.data.value;
+                }
+                else{
+                    this.$root.$emit('message-sent', 'Error', "There was no response from the rendition loadbalancer!");
+                }
             });
 
         // Initialize accordions
@@ -101,6 +106,10 @@ const files = new Vue({
                             this.$root.$emit('message-sent', 'Error', errorMessage);
                         });
                 }
+                else{
+                    this.isLoading = false;
+                    this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
+                }
             })
             .then(response => {
                 console.log(response);
@@ -123,6 +132,10 @@ const files = new Vue({
                     }
 
                     this.updatePagination(this.currentPage, this.totalPages, offset, limit, this.totalRecords);
+                }
+                else{
+                    this.isLoading = false;
+                    this.$root.$emit('message-sent', 'Error', "There was no response from the aseet loadbalancer!");
                 }
             });
         },

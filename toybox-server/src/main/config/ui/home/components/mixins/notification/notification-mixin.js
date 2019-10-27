@@ -21,52 +21,57 @@ var notificationMixin = {
 
                     return axios.post(response.data.value + "/notifications/search", searchRequest)
                         .then(response => {
-                            if(response.status == 204){
-                                this.notifications = [];
-                                if(!fromNavbar){
-                                    this.facets = [];
-                                    this.totalRecords = 0;
-                                    this.totalPages = 0;
-                                    this.currentPage = 0;
-                                    this.$root.$emit('message-sent', 'Information', 'You do not have any notifications.');
-                                }
-                            }
-                            else{
-                                this.notifications = response.data.notifications;
-                                if(!fromNavbar){
-                                    this.facets = response.data.facets;
-                                    this.totalRecords = response.data.totalRecords;
-                                    this.totalPages = Math.ceil(this.totalRecords / this.limit);
-                                    this.currentPage = Math.ceil((this.offset / this.limit) + 1);
-                                }
-                            }
-
-                            if(this.totalRecords == 0){
-                                this.startIndex = 0;
-                                this.endIndex = 0
-                            }
-                            else{
-                                this.startIndex = this.offset + 1;
-                                this.endIndex = (this.offset + this.limit) < this.totalRecords ? (this.offset + this.limit) : this.totalRecords;
-                            }
-
-                            if(this.currentPage == 1){
-                                if(this.totalPages != 1){
-                                    this.nextPageButtonDisabled = false;
-                                    this.previousPageButtonDisabled = true;
+                            if(response){
+                                if(response.status == 204){
+                                    this.notifications = [];
+                                    if(!fromNavbar){
+                                        this.facets = [];
+                                        this.totalRecords = 0;
+                                        this.totalPages = 0;
+                                        this.currentPage = 0;
+                                        this.$root.$emit('message-sent', 'Information', 'You do not have any notifications.');
+                                    }
                                 }
                                 else{
+                                    this.notifications = response.data.notifications;
+                                    if(!fromNavbar){
+                                        this.facets = response.data.facets;
+                                        this.totalRecords = response.data.totalRecords;
+                                        this.totalPages = Math.ceil(this.totalRecords / this.limit);
+                                        this.currentPage = Math.ceil((this.offset / this.limit) + 1);
+                                    }
+                                }
+
+                                if(this.totalRecords == 0){
+                                    this.startIndex = 0;
+                                    this.endIndex = 0
+                                }
+                                else{
+                                    this.startIndex = this.offset + 1;
+                                    this.endIndex = (this.offset + this.limit) < this.totalRecords ? (this.offset + this.limit) : this.totalRecords;
+                                }
+
+                                if(this.currentPage == 1){
+                                    if(this.totalPages != 1){
+                                        this.nextPageButtonDisabled = false;
+                                        this.previousPageButtonDisabled = true;
+                                    }
+                                    else{
+                                        this.nextPageButtonDisabled = true;
+                                        this.previousPageButtonDisabled = true;
+                                    }
+                                }
+                                else if(this.currentPage == this.totalPages){
                                     this.nextPageButtonDisabled = true;
-                                    this.previousPageButtonDisabled = true;
+                                    this.previousPageButtonDisabled = false;
+                                }
+                                else{
+                                    this.nextPageButtonDisabled = false;
+                                    this.previousPageButtonDisabled = false;
                                 }
                             }
-                            else if(this.currentPage == this.totalPages){
-                                this.nextPageButtonDisabled = true;
-                                this.previousPageButtonDisabled = false;
-                            }
                             else{
-                                this.nextPageButtonDisabled = false;
-                                this.previousPageButtonDisabled = false;
+                                this.$root.$emit('message-sent', 'Error', "There was no response from the notification loadbalancer!");
                             }
                         })
                         .catch(error => {
@@ -85,6 +90,9 @@ var notificationMixin = {
                             console.error(errorMessage);
                             this.$root.$emit('message-sent', 'Error', errorMessage);
                         });
+                }
+                else{
+                    this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
                 }
             })
             .catch(error => {
@@ -146,6 +154,9 @@ var notificationMixin = {
                                 console.error(errorMessage);
                                 this.$root.$emit('message-sent', 'Error', errorMessage);
                             });
+                    }
+                    else{
+                        this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
                     }
                 })
                 .catch(error => {
