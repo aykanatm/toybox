@@ -248,15 +248,21 @@ public class ShareUtils {
         for(Container selectedContainer: selectedContainers){
             List<InternalShareContainer> internalShareContainersByInternalShareIdAndContainerId = internalShareContainersRepository.findInternalShareContainersByInternalShareIdAndContainerId(internalShareId, selectedContainer.getId());
             if(internalShareContainersByInternalShareIdAndContainerId.isEmpty()){
-                internalShareContainersRepository.insertSharedContainer(internalShareId, selectedContainer.getId());
-                sharedContainers.add(selectedContainer);
+                List<Container> containersToAdd = containerUtils.getSubContainerTree(new ArrayList<>(), selectedContainer.getId());
+                containersToAdd.add(selectedContainer);
 
-                List<Asset> containerAssets = containerUtils.getContainerAssets(selectedContainer.getId());
-                for(Asset asset: containerAssets){
-                    List<InternalShareAsset> internalShareAssetByInternalShareIdAndAssetId = internalShareAssetsRepository.findInternalShareAssetByInternalShareIdAndAssetId(internalShareId, asset.getId());
-                    if(internalShareAssetByInternalShareIdAndAssetId.isEmpty()){
-                        internalShareAssetsRepository.insertSharedAsset(internalShareId, asset.getId());
-                        sharedAssets.add(asset);
+                for (Container containerToAdd: containersToAdd){
+                    internalShareContainersRepository.insertSharedContainer(internalShareId, containerToAdd.getId());
+                    sharedContainers.add(containerToAdd);
+
+                    List<Asset> containerAssets = containerUtils.getContainerAssets(containerToAdd.getId());
+
+                    for(Asset asset: containerAssets){
+                        List<InternalShareAsset> internalShareAssetByInternalShareIdAndAssetId = internalShareAssetsRepository.findInternalShareAssetByInternalShareIdAndAssetId(internalShareId, asset.getId());
+                        if(internalShareAssetByInternalShareIdAndAssetId.isEmpty()){
+                            internalShareAssetsRepository.insertSharedAsset(internalShareId, asset.getId());
+                            sharedAssets.add(asset);
+                        }
                     }
                 }
             }

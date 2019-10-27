@@ -22,7 +22,12 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpSession;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @Component
@@ -89,6 +94,7 @@ public class ContainerUtils {
         return new ArrayList<>();
     }
 
+    @LogEntryExitExecutionTime
     public String getParentContainerId(Asset asset){
         List<ContainerAsset> containerAssetsByAssetId = containerAssetsRepository.findContainerAssetsByAssetId(asset.getId());
         if(!containerAssetsByAssetId.isEmpty()){
@@ -102,6 +108,29 @@ public class ContainerUtils {
         else{
             throw new IllegalArgumentException("Asset is not in any folder!");
         }
+    }
+
+    @LogEntryExitExecutionTime
+    public List<Container> getSubContainerTree(List<Container> result, String containerId){
+        List<Container> nonDeletedContainersByParentContainerId = containersRepository.getNonDeletedContainersByParentContainerId(containerId);
+
+        if(nonDeletedContainersByParentContainerId.isEmpty()){
+            return result;
+        }
+
+        result.addAll(nonDeletedContainersByParentContainerId);
+
+        for (Container container: nonDeletedContainersByParentContainerId){
+            result.addAll(getSubContainerTree(result, container.getId()));
+        }
+
+        return result.stream().filter(distinctByKey(Container::getId)).collect(Collectors.toList());
+    }
+
+    @LogEntryExitExecutionTime
+    private static <T> Predicate<T> distinctByKey(Function<? super T, ?> keyExtractor) {
+        Set<Object> seen = ConcurrentHashMap.newKeySet();
+        return t -> seen.add(keyExtractor.apply(t));
     }
 
     @LogEntryExitExecutionTime
