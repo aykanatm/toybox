@@ -45,6 +45,8 @@ public class FolderController {
     private SortUtils sortUtils;
     @Autowired
     private ShareUtils shareUtils;
+    @Autowired
+    private AssetUtils assetUtils;
 
     @Autowired
     private ContainersRepository containersRepository;
@@ -220,6 +222,31 @@ public class FolderController {
 
                             boolean isUserMainContainer = (container.getCreatedByUsername().equalsIgnoreCase(toyboxSuperAdminUsername) && container.getName().equalsIgnoreCase(user.getUsername()));
                             if(isUserMainContainer){
+                                // If we are in the main container add the assets which are shared by other users and in their main container
+                                List<SharedAssets> sharedAssetsLst = shareUtils.getSharedAssets(user.getId());
+                                for(SharedAssets sharedAssets: sharedAssetsLst){
+                                    List<String> assetIds = sharedAssets.getAssetIds();
+                                    for(String assetId: assetIds){
+                                        List<ContainerAsset> containerAssetsByAssetId = containerAssetsRepository.findContainerAssetsByAssetId(assetId);
+                                        if(!containerAssetsByAssetId.isEmpty()){
+                                            if(containerAssetsByAssetId.size() == 1){
+                                                ContainerAsset containerAsset = containerAssetsByAssetId.get(0);
+                                                Container assetContainer = containerUtils.getContainer(containerAsset.getContainerId());
+                                                if(assetContainer.getSystem().equalsIgnoreCase("Y")){
+                                                    Asset asset = assetUtils.getAsset(assetId);
+                                                    allAssets.add(asset);
+                                                }
+                                            }
+                                            else{
+                                                throw new IllegalArgumentException("Asset with ID '" + assetId + "' is in multiple containers!");
+                                            }
+                                        }
+                                        else{
+                                            throw new IllegalArgumentException("Asset with ID '" + assetId + "' is not in any container!");
+                                        }
+                                    }
+                                }
+
                                 containersByCurrentUser = containersRepository.getNonDeletedContainersByParentContainerId(container.getId());
                                 List<SharedContainers> sharedContainersLst = shareUtils.getSharedContainers(user.getId());
                                 for(SharedContainers sharedContainers: sharedContainersLst){
