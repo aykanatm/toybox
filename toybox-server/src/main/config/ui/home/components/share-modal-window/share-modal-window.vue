@@ -42,7 +42,7 @@
                         </div>
                         <div>
                             <div class="ui toggle checkbox" id="toybox-toggle">
-                                <input type="checkbox" name="notifymeoncopy" v-model="notifyOnMoveOrCopy" v-bind:disabled="isExternalUser || !notifyMe">
+                                <input type="checkbox" name="notifymeoncopy" v-model="notifyOnCopy" v-bind:disabled="isExternalUser || !notifyMe">
                                 <label>Copy</label>
                             </div>
                         </div>
