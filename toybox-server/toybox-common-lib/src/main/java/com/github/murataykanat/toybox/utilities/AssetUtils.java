@@ -148,18 +148,6 @@ public class AssetUtils {
                     sendNotificationRequest.setMessage(message);
                     notificationUtils.sendNotification(sendNotificationRequest, session);
                 }
-
-                // Send notification for asset owners
-                List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), assetId, true);
-                for(InternalShare internalShare: internalShares){
-                    if(internalShare.getNotifyOnMoveOrCopy().equalsIgnoreCase("Y")){
-                        SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                        sendNotificationRequest.setFromUsername(user.getUsername());
-                        sendNotificationRequest.setToUsername(internalShare.getUsername());
-                        sendNotificationRequest.setMessage(message);
-                        notificationUtils.sendNotification(sendNotificationRequest, session);
-                    }
-                }
             }
             else{
                 numberOfIgnoredFiles++;
@@ -256,7 +244,7 @@ public class AssetUtils {
                 // Send notification for asset owners
                 List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), copiedAsset.getId(), true);
                 for(InternalShare internalShare: internalShares){
-                    if(internalShare.getNotifyOnMoveOrCopy().equalsIgnoreCase("Y")){
+                    if(internalShare.getNotifyOnCopy().equalsIgnoreCase("Y")){
                         SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
                         sendNotificationRequest.setFromUsername(user.getUsername());
                         sendNotificationRequest.setToUsername(internalShare.getUsername());

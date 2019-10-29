@@ -15,12 +15,12 @@ module.exports = {
             notifyOnEdit: false,
             notifyOnDownload: false,
             notifyOnShare: false,
-            notifyOnMoveOrCopy: false,
+            notifyOnCopy: false,
             // Share permissions
             canEdit: false,
             canDownload: false,
             canShare: false,
-            canMoveOrCopy: false,
+            canCopy: false,
             // Models
             enableExpireInternal: false,
             enableExpireExternal: false,
@@ -78,11 +78,11 @@ module.exports = {
             this.notifyOnEdit = false;
             this.notifyOnDownload = false;
             this.notifyOnShare = false;
-            this.notifyOnMoveOrCopy = false;
+            this.notifyOnCopy = false;
             this.canEdit = false;
             this.canDownload = false;
             this.canShare = false;
-            this.canMoveOrCopy = false;
+            this.canCopy = false;
             this.enableExpireInternal = false;
             this.enableExpireExternal = false;
             this.enableUsageLimit = false;
@@ -224,29 +224,29 @@ module.exports = {
                 this.notifyOnEdit = false;
                 this.notifyOnDownload = false;
                 this.notifyOnShare = false;
-                this.notifyOnMoveOrCopy = false;
+                this.notifyOnCopy = false;
             }
         },
         isExternalUser:function(value){
             if(value){
                 this.notifyOnEdit = false;
                 this.notifyOnShare = false;
-                this.notifyOnMoveOrCopy = false;
+                this.notifyOnCopy = false;
 
                 this.canEdit = false;
                 this.canDownload = true;
                 this.canShare = false;
-                this.canMoveOrCopy = false;
+                this.canCopy = false;
             }
             else{
                 this.notifyOnEdit = false;
                 this.notifyOnShare = false;
-                this.notifyOnMoveOrCopy = false;
+                this.notifyOnCopy = false;
 
                 this.canEdit = false;
                 this.canDownload = false;
                 this.canShare = false;
-                this.canMoveOrCopy = false;
+                this.canCopy = false;
             }
         },
         enableExpireInternal:function(value){
@@ -377,11 +377,11 @@ module.exports = {
                                 notifyOnEdit: this.notifyOnEdit,
                                 notifyOnDownload: this.notifyOnDownload,
                                 notifyOnShare: this.notifyOnShare,
-                                notifyOnMoveOrCopy: this.notifyOnMoveOrCopy,
+                                notifyOnCopy: this.notifyOnCopy,
                                 canEdit: this.canEdit,
                                 canDownload: this.canDownload,
                                 canShare: this.canShare,
-                                canMoveOrCopy: this.canMoveOrCopy,
+                                canCopy: this.canCopy,
                                 sharedUsergroups: this.selectedUserGroups,
                                 sharedUsers: this.selectedUsers
                             }

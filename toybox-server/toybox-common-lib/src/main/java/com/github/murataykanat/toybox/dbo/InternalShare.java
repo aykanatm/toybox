@@ -34,9 +34,9 @@ public class InternalShare {
     @JsonProperty("notifyOnShare")
     private String notifyOnShare;
 
-    @Column(name = "notify_on_move_or_copy")
-    @JsonProperty("notifyOnMoveOrCopy")
-    private String notifyOnMoveOrCopy;
+    @Column(name = "notify_on_copy")
+    @JsonProperty("notifyOnCopy")
+    private String notifyOnCopy;
 
     @Column(name = "can_edit")
     @JsonProperty("canEdit")
@@ -50,9 +50,9 @@ public class InternalShare {
     @JsonProperty("canShare")
     private String canShare;
 
-    @Column(name = "can_move_or_copy")
-    @JsonProperty("canMoveOrCopy")
-    private String canMoveOrCopy;
+    @Column(name = "can_copy")
+    @JsonProperty("canCopy")
+    private String canCopy;
 
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinTable(name = "internal_share_assets", joinColumns = @JoinColumn(name = "internal_share_id"), inverseJoinColumns = @JoinColumn(name = "asset_id"))
@@ -114,14 +114,6 @@ public class InternalShare {
         this.notifyOnShare = notifyOnShare;
     }
 
-    public String getNotifyOnMoveOrCopy() {
-        return notifyOnMoveOrCopy;
-    }
-
-    public void setNotifyOnMoveOrCopy(String notifyOnMoveOrCopy) {
-        this.notifyOnMoveOrCopy = notifyOnMoveOrCopy;
-    }
-
     public String getCanEdit() {
         return canEdit;
     }
@@ -136,14 +128,6 @@ public class InternalShare {
 
     public void setCanDownload(String canDownload) {
         this.canDownload = canDownload;
-    }
-
-    public String getCanMoveOrCopy() {
-        return canMoveOrCopy;
-    }
-
-    public void setCanMoveOrCopy(String canMoveOrCopy) {
-        this.canMoveOrCopy = canMoveOrCopy;
     }
 
     public String getCanShare() {
@@ -176,5 +160,21 @@ public class InternalShare {
 
     public void setUsers(Set<User> users) {
         this.users = users;
+    }
+
+    public String getCanCopy() {
+        return canCopy;
+    }
+
+    public void setCanCopy(String canCopy) {
+        this.canCopy = canCopy;
+    }
+
+    public String getNotifyOnCopy() {
+        return notifyOnCopy;
+    }
+
+    public void setNotifyOnCopy(String notifyOnCopy) {
+        this.notifyOnCopy = notifyOnCopy;
     }
 }

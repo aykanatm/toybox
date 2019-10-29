@@ -42,8 +42,8 @@
                         </div>
                         <div>
                             <div class="ui toggle checkbox" id="toybox-toggle">
-                                <input type="checkbox" name="notifymeoncopyormove" v-model="notifyOnMoveOrCopy" v-bind:disabled="isExternalUser || !notifyMe">
-                                <label>Copy or Move</label>
+                                <input type="checkbox" name="notifymeoncopy" v-model="notifyOnMoveOrCopy" v-bind:disabled="isExternalUser || !notifyMe">
+                                <label>Copy</label>
                             </div>
                         </div>
                     </div>
@@ -55,26 +55,26 @@
                     <div class="permission-types">
                         <div>
                             <div class="ui toggle checkbox" id="toybox-toggle">
-                                <input type="checkbox" name="notifymeonedit" v-model="canEdit" v-bind:disabled="isExternalUser">
+                                <input type="checkbox" name="canedit" v-model="canEdit" v-bind:disabled="isExternalUser">
                                 <label>Edit</label>
                             </div>
                         </div>
                         <div>
                             <div class="ui toggle checkbox" id="toybox-toggle">
-                                <input type="checkbox" name="notifymeondownload" v-model="canDownload" v-bind:disabled="isExternalUser">
+                                <input type="checkbox" name="candownload" v-model="canDownload" v-bind:disabled="isExternalUser">
                                 <label>Download</label>
                             </div>
                         </div>
                         <div>
                             <div class="ui toggle checkbox" id="toybox-toggle">
-                                <input type="checkbox" name="notifymeonshare" v-model="canShare" v-bind:disabled="isExternalUser">
+                                <input type="checkbox" name="canshare" v-model="canShare" v-bind:disabled="isExternalUser">
                                 <label>Share</label>
                             </div>
                         </div>
                         <div>
                             <div class="ui toggle checkbox" id="toybox-toggle">
-                                <input type="checkbox" name="notifymeoncopyormove" v-model="canMoveOrCopy" v-bind:disabled="isExternalUser">
-                                <label>Copy or Move</label>
+                                <input type="checkbox" name="cancopy" v-model="canCopy" v-bind:disabled="isExternalUser">
+                                <label>Copy</label>
                             </div>
                         </div>
                     </div>

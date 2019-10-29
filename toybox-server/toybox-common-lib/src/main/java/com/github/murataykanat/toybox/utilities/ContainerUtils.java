@@ -22,7 +22,6 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpSession;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -186,18 +185,6 @@ public class ContainerUtils {
                         sendNotificationRequest.setMessage(message);
                         notificationUtils.sendNotification(sendNotificationRequest, session);
                     }
-
-                    // Send notification for container owners
-                    List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), containerId, false);
-                    for(InternalShare internalShare: internalShares){
-                        if(internalShare.getNotifyOnMoveOrCopy().equalsIgnoreCase("Y")){
-                            SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                            sendNotificationRequest.setFromUsername(user.getUsername());
-                            sendNotificationRequest.setToUsername(internalShare.getUsername());
-                            sendNotificationRequest.setMessage(message);
-                            notificationUtils.sendNotification(sendNotificationRequest, session);
-                        }
-                    }
                 }
                 else{
                     numberOfIgnoredContainers++;
@@ -274,7 +261,7 @@ public class ContainerUtils {
             // Send notification for container owners
             List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), sourceContainer.getId(), false);
             for(InternalShare internalShare: internalShares){
-                if(internalShare.getNotifyOnMoveOrCopy().equalsIgnoreCase("Y")){
+                if(internalShare.getNotifyOnCopy().equalsIgnoreCase("Y")){
                     SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
                     sendNotificationRequest.setFromUsername(user.getUsername());
                     sendNotificationRequest.setToUsername(internalShare.getUsername());
