@@ -68,7 +68,6 @@ module.exports = {
                 });
             }, 200);
 
-            this.selectedUsers = [];
             this.usersAndUsergroups = [];
             this.selectedUsers = [];
             this.selectedUserGroups = [];
@@ -94,6 +93,18 @@ module.exports = {
             $('#max-number-of-hits').attr('disabled', true);
             this.maxNumberOfHits = '';
 
+
+            $('#user-dropdown').dropdown({
+                onAdd: function(value){
+                    this.addSelectedUsergroupOrUser(value);
+                }.bind(this),
+                onRemove: function(value) {
+                    this.removeSelectedUsergroupOrUser(value);
+                }.bind(this)
+            });
+
+            $('#user-dropdown').dropdown('clear');
+
             this.selectionContext = selectionContext;
 
             this.getService("toybox-user-loadbalancer")
@@ -117,15 +128,6 @@ module.exports = {
                                             });
                                         }
                                     }
-
-                                    $('#user-dropdown').dropdown({
-                                        onAdd: function(value){
-                                            this.addSelectedUsergroupOrUser(value);
-                                        }.bind(this),
-                                        onRemove: function(value) {
-                                            this.removeSelectedUsergroupOrUser(value);
-                                        }.bind(this)
-                                    });
                                 }
                                 else{
                                     this.$root.$emit('message-sent', 'Error', "There was no response from the user loadbalancer!");
@@ -163,15 +165,6 @@ module.exports = {
                                             'id': usergroup.id
                                         });
                                     }
-
-                                    $('#user-dropdown').dropdown({
-                                        onAdd: function(value){
-                                            this.addSelectedUsergroupOrUser(value);
-                                        }.bind(this),
-                                        onRemove: function(value) {
-                                            this.removeSelectedUsergroupOrUser(value);
-                                        }.bind(this)
-                                    });
                                 }
                                 else{
                                     this.$root.$emit('message-sent', 'Error', "There was no response from the user loadbalancer!");
