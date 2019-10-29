@@ -548,7 +548,8 @@ const folders = new Vue({
                     originalAssetId:item.originalAssetId,
                     '@class': itemClass,
                     parentContainerId: item.parentContainerId,
-                    shared: item.shared
+                    shared: item.shared,
+                    sharedByUsername: item.sharedByUsername
                 });
             }
 

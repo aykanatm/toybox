@@ -177,21 +177,48 @@ public class ShareUtils {
         List<Asset> selectedAssets = selectionContext.getSelectedAssets();
         List<Container> selectedContainers = selectionContext.getSelectedContainers();
         List<String> sharedUsergroupNames = internalShareRequest.getSharedUsergroups();
-        List<String> sharedUserNames = internalShareRequest.getSharedUsers();
+        List<String> sharedUsernames = internalShareRequest.getSharedUsers();
 
         // We find all the users that are in the shared user groups
         List<User> sharedUsers = new ArrayList<>();
+        List<User> usersToIgnore = new ArrayList<>();
+
+        usersToIgnore.add(user);
+
+        for(Asset selectedAsset: selectedAssets){
+            if(selectedAsset.getShared().equalsIgnoreCase("Y")){
+                usersToIgnore.add(authenticationUtils.getUser(selectedAsset.getSharedByUsername()));
+            }
+        }
+
+        for(Container selectedContainer: selectedContainers){
+            if(selectedContainer.getShared().equalsIgnoreCase("Y")){
+                usersToIgnore.add(authenticationUtils.getUser(selectedContainer.getSharedByUsername()));
+            }
+        }
+
         for(String sharedUsergroupName: sharedUsergroupNames){
             List<User> usersInUserGroup = authenticationUtils.getUsersInUserGroup(sharedUsergroupName);
-            // We exclude the current user
-            List<User> usersExcludingCurrentUser = usersInUserGroup.stream().filter(u -> !u.getUsername().equalsIgnoreCase(user.getUsername())).collect(Collectors.toList());
-            sharedUsers.addAll(usersExcludingCurrentUser);
+            for(User userInUserGroup: usersInUserGroup){
+                boolean ignoreUser = false;
+                for(User userToIgnore: usersToIgnore){
+                    if(userInUserGroup.getId() == userToIgnore.getId()){
+                        ignoreUser = true;
+                        break;
+                    }
+                }
+
+                if(!ignoreUser){
+                    sharedUsers.add(userInUserGroup);
+                }
+            }
         }
+
         // We find the shared users
-        if(!sharedUserNames.isEmpty()){
-            List<User> usersByUsernames = usersRepository.findUsersByUsernames(sharedUserNames);
-            List<User> usersExcludingCurrentUser = usersByUsernames.stream().filter(u -> !u.getUsername().equalsIgnoreCase(user.getUsername())).collect(Collectors.toList());
-            sharedUsers.addAll(usersExcludingCurrentUser);
+        if(!sharedUsernames.isEmpty()){
+            List<User> usersByUsernames = usersRepository.findUsersByUsernames(sharedUsernames);
+            List<User> usersToShare = usersByUsernames.stream().filter(u -> !u.getUsername().equalsIgnoreCase(user.getUsername())).collect(Collectors.toList());
+            sharedUsers.addAll(usersToShare);
         }
 
         // We create the unique users list to share

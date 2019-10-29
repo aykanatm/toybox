@@ -32,6 +32,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RefreshScope
 @RestController
@@ -205,8 +206,16 @@ public class ShareController {
                     if(externalShareRequest != null){
                         SelectionContext selectionContext = externalShareRequest.getSelectionContext();
                         if(selectionUtils.isSelectionContextValid(selectionContext)){
-                            externalShareResponse = shareUtils.createExternalShare(user, externalShareRequest, selectionContext, session);
-                            return new ResponseEntity<>(externalShareResponse, HttpStatus.CREATED);
+                            if(!(selectionContext.getSelectedAssets().isEmpty() && selectionContext.getSelectedContainers().isEmpty())){
+                                externalShareResponse = shareUtils.createExternalShare(user, externalShareRequest, selectionContext, session);
+                                return new ResponseEntity<>(externalShareResponse, HttpStatus.CREATED);
+                            }
+                            else{
+                                String errorMessage = "No assets or folders are selected!";
+                                _logger.error(errorMessage);
+
+                                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+                            }
                         }
                         else{
                             String errorMessage = "Selection context is not valid!";
@@ -260,11 +269,65 @@ public class ShareController {
                 if(user != null){
                     if(internalShareRequest != null){
                         SelectionContext selectionContext = internalShareRequest.getSelectionContext();
-                        if(selectionUtils.isSelectionContextValid(selectionContext)){
-                            shareUtils.createInternalShare(user, internalShareRequest, selectionContext, session);
+                        if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
+                            if(!(selectionContext.getSelectedAssets().isEmpty() && selectionContext.getSelectedContainers().isEmpty())){
+                                List<String> sharedUsers = internalShareRequest.getSharedUsers();
 
-                            genericResponse.setMessage("Internal share created successfully!");
-                            return new ResponseEntity<>(genericResponse, HttpStatus.CREATED);
+                                boolean containsOriginalSharer = false;
+
+                                for(Asset selectedAsset: selectionContext.getSelectedAssets()){
+                                    if(selectedAsset.getShared().equalsIgnoreCase("Y")){
+                                        for(String sharedUsername: sharedUsers){
+                                            if(selectedAsset.getSharedByUsername().equalsIgnoreCase(sharedUsername)){
+                                                containsOriginalSharer = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+
+                                    if(containsOriginalSharer){
+                                        break;
+                                    }
+                                }
+
+                                for(Container selectedContainer: selectionContext.getSelectedContainers()){
+                                    if(selectedContainer.getShared().equalsIgnoreCase("Y")){
+                                        for(String sharedUsername: sharedUsers){
+                                            if(selectedContainer.getSharedByUsername().equalsIgnoreCase(sharedUsername)){
+                                                containsOriginalSharer = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+
+                                    if(containsOriginalSharer){
+                                        break;
+                                    }
+                                }
+
+                                if(!containsOriginalSharer){
+                                    shareUtils.createInternalShare(user, internalShareRequest, selectionContext, session);
+
+                                    genericResponse.setMessage("Internal share created successfully!");
+                                    return new ResponseEntity<>(genericResponse, HttpStatus.CREATED);
+                                }
+                                else{
+                                    String errorMessage = "You cannot share the asset or folder with its original sharer!";
+                                    _logger.error(errorMessage);
+
+                                    genericResponse.setMessage(errorMessage);
+
+                                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                                }
+                            }
+                            else{
+                                String errorMessage = "No assets or folders are selected!";
+                                _logger.error(errorMessage);
+
+                                genericResponse.setMessage(errorMessage);
+
+                                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                            }
                         }
                         else{
                             String errorMessage = "Selection context is not valid!";

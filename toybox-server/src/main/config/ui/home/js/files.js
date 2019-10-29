@@ -298,7 +298,8 @@ const files = new Vue({
                     originalAssetId:asset.originalAssetId,
                     '@class': 'com.github.murataykanat.toybox.dbo.Asset',
                     parentContainerId: asset.parentContainerId,
-                    shared: asset.shared
+                    shared: asset.shared,
+                    sharedByUsername: asset.sharedByUsername
                 });
             }
 

@@ -121,7 +121,28 @@ module.exports = {
                                     for(var i = 0; i < users.length; i++){
                                         var user = users[i];
 
-                                        if(this.user.username !== user.username){
+                                        var isSelf = this.user.username === user.username;
+                                        var isOriginalSharer = false;
+
+                                        for(var j = 0; j < this.selectionContext.selectedAssets.length; j++){
+                                            var selectedAsset = this.selectionContext.selectedAssets[j];
+                                            if(selectedAsset.shared === "Y" && selectedAsset.sharedByUsername === user.username){
+                                                isOriginalSharer = true;
+                                                break;
+                                            }
+                                        }
+
+                                        if(!isOriginalSharer){
+                                            for(var j = 0; j < this.selectionContext.selectedContainers.length; j++){
+                                                var selectedContainer = this.selectionContext.selectedContainers[j];
+                                                if(selectedContainer.shared === "Y" && selectedContainer.sharedByUsername === user.username){
+                                                    isOriginalSharer = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+                                        if(!isSelf && !isOriginalSharer){
                                             this.usersAndUsergroups.push({
                                                 'displayName' : user.name + ' ' + user.lastname + ' (' + user.username + ')',
                                                 'id': user.id
