@@ -16,7 +16,15 @@ const files = new Vue({
         sortedAscByAssetImportDate: false,
         sortedDesByAssetImportDate: false,
         // Services
-        renditionUrl: ''
+        renditionUrl: '',
+        // Permissions
+        canShare: false,
+        canDownload: false,
+        canCopy: false,
+        canMove: false,
+        canSubscribe: false,
+        canUnsubscribe: false,
+        canDelete: false,
     },
     mounted:function(){
         var csrfHeader = $("meta[name='_csrf_header']").attr("content");
@@ -28,6 +36,8 @@ const files = new Vue({
             'XSRF-TOKEN': csrfToken
         }
         axios.defaults.withCredentials = true;
+
+        this.selectedAssets = [];
 
         this.getService("toybox-rendition-loadbalancer")
             .then(response => {
@@ -72,6 +82,46 @@ const files = new Vue({
         this.$root.$on('refresh-assets', this.refreshAssets);
 
         this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
+    },
+    watch:{
+        selectedAssets(after, before){
+            this.canShare = true;
+            this.canDownload = true;
+            this.canCopy = true;
+            this.canMove = true;
+            this.canSubscribe = true;
+            this.canUnsubscribe = true;
+            this.canDelete = true;
+
+            if(after.length != 0){
+                for(var i = 0; i < after.length ; i++){
+                    var asset = after[i];
+                    if(asset.shared === 'Y'){
+                        this.canDelete = false;
+                        this.canMove = false;
+                    }
+
+                    if(asset.subscribed === 'Y'){
+                        this.canUnsubscribe = true;
+                        this.canSubscribe = false;
+                    }
+                    else{
+                        this.canUnsubscribe = false;
+                        this.canSubscribe = true;
+                    }
+                }
+            }
+            else{
+                this.canShare = false;
+                this.canDownload = false;
+                this.canCopy = false;
+                this.canMove = false;
+                this.canSubscribe = false;
+                this.canUnsubscribe = false;
+                this.canDelete = false;
+            }
+        },
+        deep: true
     },
     methods:{
         getAssets(offset, limit, sortType, sortColumn, username, searchRequestFacetList){
@@ -241,7 +291,15 @@ const files = new Vue({
             for(var i = 0; i < this.selectedAssets.length; i++)
             {
                 var asset = this.selectedAssets[i];
-                selectedAssets.push({id:asset.id, name:asset.name, type:asset.type, originalAssetId:asset.originalAssetId, '@class': 'com.github.murataykanat.toybox.dbo.Asset', parentContainerId: asset.parentContainerId});
+                selectedAssets.push({
+                    id:asset.id,
+                    name:asset.name,
+                    type:asset.type,
+                    originalAssetId:asset.originalAssetId,
+                    '@class': 'com.github.murataykanat.toybox.dbo.Asset',
+                    parentContainerId: asset.parentContainerId,
+                    shared: asset.shared
+                });
             }
 
             return selectedAssets;

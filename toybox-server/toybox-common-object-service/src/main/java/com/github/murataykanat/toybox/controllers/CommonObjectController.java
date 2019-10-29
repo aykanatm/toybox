@@ -190,98 +190,110 @@ public class CommonObjectController {
                     User user = authenticationUtils.getUser(authentication);
                     if(user != null){
                         if(!(selectionContext.getSelectedAssets().isEmpty() && selectionContext.getSelectedContainers().isEmpty())){
-                            // We filter out the selected shared assets
-                            List<Asset> nonSharedSelectedAssets = selectionContext.getSelectedAssets().stream().filter(asset -> !shareUtils.isAssetSharedWithUser(user.getId(), asset.getId())).collect(Collectors.toList());
-                            List<Container> nonSharedSelectedContainers = selectionContext.getSelectedContainers().stream().filter(container -> !shareUtils.isContainerSharedWithUser(user.getId(), container.getId())).collect(Collectors.toList());
+                            boolean hasSharedAssets = selectionContext.getSelectedAssets().stream().anyMatch(asset -> asset.getShared().equalsIgnoreCase("Y"));
+                            boolean hasSharedContainers = selectionContext.getSelectedContainers().stream().anyMatch(container -> container.getShared().equalsIgnoreCase("Y"));
+                            if(!hasSharedAssets && !hasSharedContainers){
+                                // We filter out the selected shared assets
+                                List<Asset> nonSharedSelectedAssets = selectionContext.getSelectedAssets().stream().filter(asset -> !shareUtils.isAssetSharedWithUser(user.getId(), asset.getId())).collect(Collectors.toList());
+                                List<Container> nonSharedSelectedContainers = selectionContext.getSelectedContainers().stream().filter(container -> !shareUtils.isContainerSharedWithUser(user.getId(), container.getId())).collect(Collectors.toList());
 
-                            // We are adding a refreshed list of assets to the list of assets which will be deleted
-                            List<Asset> selectedAssetsAndContainerAssets = new ArrayList<>();
-                            if(!nonSharedSelectedAssets.isEmpty()){
-                                selectedAssetsAndContainerAssets.addAll(assetsRepository.getAssetsByAssetIds(nonSharedSelectedAssets.stream().map(Asset::getId).collect(Collectors.toList())));
-                            }
-
-                            // We are adding the non-shared last version of the assets inside the containers that was selected as deleted to the list of assets which will be deleted.
-                            for(Container selectedContainer: nonSharedSelectedContainers){
-                                List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(selectedContainer.getId());
-                                if(!containerAssetsByContainerId.isEmpty()){
-                                    List<String> containerAssetIds = containerAssetsByContainerId.stream().map(ContainerAsset::getAssetId).collect(Collectors.toList());
-                                    List<String> nonSharedContainerAssetIds = containerAssetIds.stream().filter(assetId -> !shareUtils.isAssetSharedWithUser(user.getId(), assetId)).collect(Collectors.toList());
-                                    List<Asset> assetsByAssetIds = assetsRepository.getNonDeletedLastVersionAssetsByAssetIds(nonSharedContainerAssetIds);
-                                    selectedAssetsAndContainerAssets.addAll(assetsByAssetIds);
+                                // We are adding a refreshed list of assets to the list of assets which will be deleted
+                                List<Asset> selectedAssetsAndContainerAssets = new ArrayList<>();
+                                if(!nonSharedSelectedAssets.isEmpty()){
+                                    selectedAssetsAndContainerAssets.addAll(assetsRepository.getAssetsByAssetIds(nonSharedSelectedAssets.stream().map(Asset::getId).collect(Collectors.toList())));
                                 }
-                            }
 
-                            // We create another list for the final asset list
-                            List<Asset> assetsAndVersions = new ArrayList<>(selectedAssetsAndContainerAssets);
-                            // We find all the non-deleted versions of the assets if the selected asset is the latest version and add them to a list
-                            for(Asset selectedAsset: selectedAssetsAndContainerAssets){
-                                if(selectedAsset.getIsLatestVersion().equalsIgnoreCase("Y")){
-                                    List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(selectedAsset.getOriginalAssetId());
-                                    assetsAndVersions.addAll(assetsByOriginalAssetId);
-                                }
-                            }
-
-                            if(!assetsAndVersions.isEmpty()){
-                                // We set all the assets as deleted
-                                assetsRepository.deleteAssetById("Y",assetsAndVersions.stream().map(Asset::getId).collect(Collectors.toList()));
-                                // We send delete notification for the selected assets
-                                for(Asset asset: selectedAssetsAndContainerAssets){
-                                    // Send notification for subscribers
-                                    List<User> subscribers = assetUtils.getSubscribers(asset.getId());
-                                    for(User subscriber: subscribers){
-                                        String message = "Asset '" + asset.getName() + "' is deleted by '" + user.getUsername() + "'";
-                                        SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                                        sendNotificationRequest.setFromUsername(user.getUsername());
-                                        sendNotificationRequest.setToUsername(subscriber.getUsername());
-                                        sendNotificationRequest.setMessage(message);
-                                        notificationUtils.sendNotification(sendNotificationRequest, session);
+                                // We are adding the non-shared last version of the assets inside the containers that was selected as deleted to the list of assets which will be deleted.
+                                for(Container selectedContainer: nonSharedSelectedContainers){
+                                    List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(selectedContainer.getId());
+                                    if(!containerAssetsByContainerId.isEmpty()){
+                                        List<String> containerAssetIds = containerAssetsByContainerId.stream().map(ContainerAsset::getAssetId).collect(Collectors.toList());
+                                        List<String> nonSharedContainerAssetIds = containerAssetIds.stream().filter(assetId -> !shareUtils.isAssetSharedWithUser(user.getId(), assetId)).collect(Collectors.toList());
+                                        List<Asset> assetsByAssetIds = assetsRepository.getNonDeletedLastVersionAssetsByAssetIds(nonSharedContainerAssetIds);
+                                        selectedAssetsAndContainerAssets.addAll(assetsByAssetIds);
                                     }
                                 }
-                                // We un-subscribe users from the deleted assets
-                                for(Asset asset: assetsAndVersions){
-                                    Asset actualAsset = assetUtils.getAsset(asset.getId());
-                                    User importUser = authenticationUtils.getUser(actualAsset.getImportedByUsername());
-                                    assetUserRepository.deleteSubscriber(actualAsset.getId(), importUser.getId());
-                                }
-                            }
 
-                            if(!nonSharedSelectedContainers.isEmpty()){
-                                // We set all the non-shared containers as deleted
-                                containersRepository.deleteContainersById("Y", nonSharedSelectedContainers.stream().map(Container::getId).collect(Collectors.toList()));
-                                // We send delete notification for the selected containers
-                                for(Container selectedContainer: nonSharedSelectedContainers){
-                                    // Send notification for subscribers
-                                    List<User> subscribers = containerUtils.getSubscribers(selectedContainer.getId());
-                                    for(User subscriber: subscribers){
-                                        String message = "Folder '" + selectedContainer.getName() + "' is deleted by '" + user.getUsername() + "'";
-                                        SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                                        sendNotificationRequest.setFromUsername(user.getUsername());
-                                        sendNotificationRequest.setToUsername(subscriber.getUsername());
-                                        sendNotificationRequest.setMessage(message);
-                                        notificationUtils.sendNotification(sendNotificationRequest, session);
+                                // We create another list for the final asset list
+                                List<Asset> assetsAndVersions = new ArrayList<>(selectedAssetsAndContainerAssets);
+                                // We find all the non-deleted versions of the assets if the selected asset is the latest version and add them to a list
+                                for(Asset selectedAsset: selectedAssetsAndContainerAssets){
+                                    if(selectedAsset.getIsLatestVersion().equalsIgnoreCase("Y")){
+                                        List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(selectedAsset.getOriginalAssetId());
+                                        assetsAndVersions.addAll(assetsByOriginalAssetId);
                                     }
                                 }
-                                // We un-subscribe users from the deleted containers
-                                for(Container selectedContainer: nonSharedSelectedContainers){
-                                    Container actualContainer = containerUtils.getContainer(selectedContainer.getId());
-                                    User createUser = authenticationUtils.getUser(actualContainer.getCreatedByUsername());
-                                    containerUsersRepository.deleteSubscriber(actualContainer.getId(), createUser.getId());
+
+                                if(!assetsAndVersions.isEmpty()){
+                                    // We set all the assets as deleted
+                                    assetsRepository.deleteAssetById("Y",assetsAndVersions.stream().map(Asset::getId).collect(Collectors.toList()));
+                                    // We send delete notification for the selected assets
+                                    for(Asset asset: selectedAssetsAndContainerAssets){
+                                        // Send notification for subscribers
+                                        List<User> subscribers = assetUtils.getSubscribers(asset.getId());
+                                        for(User subscriber: subscribers){
+                                            String message = "Asset '" + asset.getName() + "' is deleted by '" + user.getUsername() + "'";
+                                            SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                            sendNotificationRequest.setFromUsername(user.getUsername());
+                                            sendNotificationRequest.setToUsername(subscriber.getUsername());
+                                            sendNotificationRequest.setMessage(message);
+                                            notificationUtils.sendNotification(sendNotificationRequest, session);
+                                        }
+                                    }
+                                    // We un-subscribe users from the deleted assets
+                                    for(Asset asset: assetsAndVersions){
+                                        Asset actualAsset = assetUtils.getAsset(asset.getId());
+                                        User importUser = authenticationUtils.getUser(actualAsset.getImportedByUsername());
+                                        assetUserRepository.deleteSubscriber(actualAsset.getId(), importUser.getId());
+                                    }
                                 }
-                            }
 
-                            int numberOfDeletedAssets = selectedAssetsAndContainerAssets.size();
-                            int numberOfDeletedContainers = nonSharedSelectedContainers.size();
+                                if(!nonSharedSelectedContainers.isEmpty()){
+                                    // We set all the non-shared containers as deleted
+                                    containersRepository.deleteContainersById("Y", nonSharedSelectedContainers.stream().map(Container::getId).collect(Collectors.toList()));
+                                    // We send delete notification for the selected containers
+                                    for(Container selectedContainer: nonSharedSelectedContainers){
+                                        // Send notification for subscribers
+                                        List<User> subscribers = containerUtils.getSubscribers(selectedContainer.getId());
+                                        for(User subscriber: subscribers){
+                                            String message = "Folder '" + selectedContainer.getName() + "' is deleted by '" + user.getUsername() + "'";
+                                            SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                            sendNotificationRequest.setFromUsername(user.getUsername());
+                                            sendNotificationRequest.setToUsername(subscriber.getUsername());
+                                            sendNotificationRequest.setMessage(message);
+                                            notificationUtils.sendNotification(sendNotificationRequest, session);
+                                        }
+                                    }
+                                    // We un-subscribe users from the deleted containers
+                                    for(Container selectedContainer: nonSharedSelectedContainers){
+                                        Container actualContainer = containerUtils.getContainer(selectedContainer.getId());
+                                        User createUser = authenticationUtils.getUser(actualContainer.getCreatedByUsername());
+                                        containerUsersRepository.deleteSubscriber(actualContainer.getId(), createUser.getId());
+                                    }
+                                }
 
-                            String failureMessage = "You do not have the permission to delete the selected assets and/or folders.";
-                            String message = generateProcessingResponse(numberOfDeletedAssets, numberOfDeletedContainers, " deleted successfully.", failureMessage);
+                                int numberOfDeletedAssets = selectedAssetsAndContainerAssets.size();
+                                int numberOfDeletedContainers = nonSharedSelectedContainers.size();
 
-                            genericResponse.setMessage(message);
+                                String failureMessage = "You do not have the permission to delete the selected assets and/or folders.";
+                                String message = generateProcessingResponse(numberOfDeletedAssets, numberOfDeletedContainers, " deleted successfully.", failureMessage);
 
-                            if(message.equalsIgnoreCase(failureMessage)){
-                                return new ResponseEntity<>(genericResponse, HttpStatus.FORBIDDEN);
+                                genericResponse.setMessage(message);
+
+                                if(message.equalsIgnoreCase(failureMessage)){
+                                    return new ResponseEntity<>(genericResponse, HttpStatus.FORBIDDEN);
+                                }
+                                else{
+                                    return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                }
                             }
                             else{
-                                return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                String errorMessage = "You do not have the permission to delete one of the selected items!";
+                                _logger.error(errorMessage);
+
+                                genericResponse.setMessage(errorMessage);
+
+                                return new ResponseEntity<>(genericResponse, HttpStatus.FORBIDDEN);
                             }
                         }
                         else{
@@ -505,38 +517,50 @@ public class CommonObjectController {
                     if(user != null){
                         SelectionContext selectionContext = moveAssetRequest.getSelectionContext();
                         if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
-                            Container targetContainer = containerUtils.getContainer(moveAssetRequest.getContainerId());
+                            boolean hasSharedAssets = selectionContext.getSelectedAssets().stream().anyMatch(asset -> asset.getShared().equalsIgnoreCase("Y"));
+                            boolean hasSharedContainers = selectionContext.getSelectedContainers().stream().anyMatch(container -> container.getShared().equalsIgnoreCase("Y"));
+                            if(!hasSharedAssets && !hasSharedContainers){
+                                Container targetContainer = containerUtils.getContainer(moveAssetRequest.getContainerId());
 
-                            List<String> assetIds = selectionContext.getSelectedAssets().stream().map(Asset::getId).collect(Collectors.toList());
-                            List<String> containerIds = selectionContext.getSelectedContainers().stream().map(Container::getId).collect(Collectors.toList());
+                                List<String> assetIds = selectionContext.getSelectedAssets().stream().map(Asset::getId).collect(Collectors.toList());
+                                List<String> containerIds = selectionContext.getSelectedContainers().stream().map(Container::getId).collect(Collectors.toList());
 
-                            int assetCount = 0;
-                            int containerCount = 0;
+                                int assetCount = 0;
+                                int containerCount = 0;
 
-                            int numberOfIgnoredAssets = assetUtils.moveAssets(assetIds, targetContainer, user, session);
-                            assetCount += (assetIds.size() - numberOfIgnoredAssets);
-                            int numberOfIgnoredContainers = containerUtils.moveContainers(containerIds, targetContainer, user, session);
-                            containerCount += (containerIds.size() - numberOfIgnoredContainers);
+                                int numberOfIgnoredAssets = assetUtils.moveAssets(assetIds, targetContainer, user, session);
+                                assetCount += (assetIds.size() - numberOfIgnoredAssets);
+                                int numberOfIgnoredContainers = containerUtils.moveContainers(containerIds, targetContainer, user, session);
+                                containerCount += (containerIds.size() - numberOfIgnoredContainers);
 
-                            if(assetCount == 0 && containerCount == 0){
-                                genericResponse.setMessage("No asset or folder is moved because either the target folder is the same as the selected folders or the target folder is a sub folder of the selected folders.");
-                                return new ResponseEntity<>(genericResponse, HttpStatus.NOT_MODIFIED);
-                            }
-                            else if(assetCount < 0 || containerCount < 0){
-                                throw new IllegalArgumentException("Returned asset or container is below zero!");
-                            }
-                            else{
-                                String failureMessage = "You do not have the permission to move the selected assets and/or folders.";
-                                String message = generateProcessingResponse(assetCount, containerCount, " were successfully moved to the folder '" + targetContainer.getName() + "'.", failureMessage);
-
-                                genericResponse.setMessage(message);
-
-                                if(message.equalsIgnoreCase(failureMessage)){
-                                    return new ResponseEntity<>(genericResponse, HttpStatus.FORBIDDEN);
+                                if(assetCount == 0 && containerCount == 0){
+                                    genericResponse.setMessage("No asset or folder is moved because either the target folder is the same as the selected folders or the target folder is a sub folder of the selected folders.");
+                                    return new ResponseEntity<>(genericResponse, HttpStatus.NOT_MODIFIED);
+                                }
+                                else if(assetCount < 0 || containerCount < 0){
+                                    throw new IllegalArgumentException("Returned asset or container is below zero!");
                                 }
                                 else{
-                                    return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                    String failureMessage = "You do not have the permission to move the selected assets and/or folders.";
+                                    String message = generateProcessingResponse(assetCount, containerCount, " were successfully moved to the folder '" + targetContainer.getName() + "'.", failureMessage);
+
+                                    genericResponse.setMessage(message);
+
+                                    if(message.equalsIgnoreCase(failureMessage)){
+                                        return new ResponseEntity<>(genericResponse, HttpStatus.FORBIDDEN);
+                                    }
+                                    else{
+                                        return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                    }
                                 }
+                            }
+                            else{
+                                String errorMessage = "You do not have the permission to move one of the selected items!";
+                                _logger.error(errorMessage);
+
+                                genericResponse.setMessage(errorMessage);
+
+                                return new ResponseEntity<>(genericResponse, HttpStatus.FORBIDDEN);
                             }
                         }
                         else{

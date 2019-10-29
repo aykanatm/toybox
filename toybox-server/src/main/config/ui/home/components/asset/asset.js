@@ -100,7 +100,8 @@ module.exports = {
                 type: this.type,
                 originalAssetId: this.originalAssetId,
                 '@class': 'com.github.murataykanat.toybox.dbo.Asset',
-                parentContainerId: this.parentContainerId
+                parentContainerId: this.parentContainerId,
+                shared: this.shared
             }
             var selectedAssets = [asset];
             this.shareItems(selectedAssets);
@@ -163,7 +164,8 @@ module.exports = {
                 type: this.type,
                 originalAssetId: this.originalAssetId,
                 '@class': 'com.github.murataykanat.toybox.dbo.Asset',
-                parentContainerId: this.parentContainerId
+                parentContainerId: this.parentContainerId,
+                shared: this.shared
             }
             var selectedAssets= [asset];
             this.copyItems(selectedAssets);
@@ -177,7 +179,8 @@ module.exports = {
                 type: this.type,
                 originalAssetId: this.originalAssetId,
                 '@class': 'com.github.murataykanat.toybox.dbo.Asset',
-                parentContainerId: this.parentContainerId
+                parentContainerId: this.parentContainerId,
+                shared: this.shared
             }
             var selectedAssets= [asset];
             this.moveItems(selectedAssets);
@@ -192,7 +195,8 @@ module.exports = {
                 type: this.type,
                 originalAssetId: this.originalAssetId,
                 '@class': 'com.github.murataykanat.toybox.dbo.Asset',
-                parentContainerId: this.parentContainerId
+                parentContainerId: this.parentContainerId,
+                shared: this.shared
             }
             var selectedAssets= [asset];
             this.subscribeToItems(selectedAssets);
@@ -207,7 +211,8 @@ module.exports = {
                 type: this.type,
                 originalAssetId: this.originalAssetId,
                 '@class': 'com.github.murataykanat.toybox.dbo.Asset',
-                parentContainerId: this.parentContainerId
+                parentContainerId: this.parentContainerId,
+                shared: this.shared
             }
             var selectedAssets= [asset];
             this.unsubscribeFromItems(selectedAssets);
@@ -221,7 +226,8 @@ module.exports = {
                 type: this.type,
                 originalAssetId: this.originalAssetId,
                 '@class': 'com.github.murataykanat.toybox.dbo.Asset',
-                parentContainerId: this.parentContainerId
+                parentContainerId: this.parentContainerId,
+                shared: this.shared
             }
             var selectedAssets= [asset];
             this.deleteItems(selectedAssets);

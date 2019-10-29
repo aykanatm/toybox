@@ -60,7 +60,8 @@ module.exports = {
                 type: this.type,
                 originalAssetId: this.originalAssetId,
                 '@class': 'com.github.murataykanat.toybox.dbo.Container',
-                parentContainerId: this.parentContainerId
+                parentContainerId: this.parentContainerId,
+                shared: this.shared
             }
             var selectedFolders = [folder];
             this.shareItems(selectedFolders);
@@ -73,7 +74,8 @@ module.exports = {
                 type: this.type,
                 originalAssetId: this.originalAssetId,
                 '@class': 'com.github.murataykanat.toybox.dbo.Container',
-                parentContainerId: this.parentContainerId
+                parentContainerId: this.parentContainerId,
+                shared: this.shared
             }
             var selectedFolders = [folder];
             this.downloadItems(selectedFolders);
@@ -90,7 +92,8 @@ module.exports = {
                 type: this.type,
                 originalAssetId: this.originalAssetId,
                 '@class': 'com.github.murataykanat.toybox.dbo.Container',
-                parentContainerId: this.parentContainerId
+                parentContainerId: this.parentContainerId,
+                shared: this.shared
             }
             var selectedFolders = [folder];
             this.copyItems(selectedFolders);
@@ -103,7 +106,8 @@ module.exports = {
                 type: this.type,
                 originalAssetId: this.originalAssetId,
                 '@class': 'com.github.murataykanat.toybox.dbo.Container',
-                parentContainerId: this.parentContainerId
+                parentContainerId: this.parentContainerId,
+                shared: this.shared
             }
             var selectedFolders = [folder];
             this.moveItems(selectedFolders);
@@ -116,7 +120,8 @@ module.exports = {
                 type: this.type,
                 originalAssetId: this.originalAssetId,
                 '@class': 'com.github.murataykanat.toybox.dbo.Container',
-                parentContainerId: this.parentContainerId
+                parentContainerId: this.parentContainerId,
+                shared: this.shared
             }
             var selectedFolders = [folder];
             this.subscribeToItems(selectedFolders);
@@ -129,7 +134,8 @@ module.exports = {
                 type: this.type,
                 originalAssetId: this.originalAssetId,
                 '@class': 'com.github.murataykanat.toybox.dbo.Container',
-                parentContainerId: this.parentContainerId
+                parentContainerId: this.parentContainerId,
+                shared: this.shared
             }
             var selectedFolders = [folder];
             this.unsubscribeFromItems(selectedFolders);
@@ -142,7 +148,8 @@ module.exports = {
                 type: this.type,
                 originalAssetId: this.originalAssetId,
                 '@class': 'com.github.murataykanat.toybox.dbo.Container',
-                parentContainerId: this.parentContainerId
+                parentContainerId: this.parentContainerId,
+                shared: this.shared
             }
             var selectedFolders = [folder];
             this.deleteItems(selectedFolders);

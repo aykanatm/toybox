@@ -54,25 +54,25 @@
                                 <button class="ui button" v-on:click.stop="uploadNewFile" v-bind:disabled="!canUploadFile">
                                     <i class="cloud upload icon"></i> New File
                                 </button>
-                                <button class="ui button" v-on:click.stop="itemsShare" v-bind:disabled="selectedItems.length == 0">
+                                <button class="ui button" v-on:click.stop="itemsShare" v-bind:disabled="!canShare">
                                     <i class="share alternate icon"></i> Share
                                 </button>
-                                <button class="ui button" v-on:click.stop="itemsDownload" v-bind:disabled="selectedItems.length == 0">
+                                <button class="ui button" v-on:click.stop="itemsDownload" v-bind:disabled="!canDownload">
                                     <i class="download icon"></i> Download
                                 </button>
-                                <button class="ui button" v-on:click.stop="itemsCopy" v-bind:disabled="selectedItems.length == 0">
+                                <button class="ui button" v-on:click.stop="itemsCopy" v-bind:disabled="!canCopy">
                                     <i class="copy icon"></i> Copy
                                 </button>
-                                <button class="ui button" v-on:click.stop="itemsMove" v-bind:disabled="selectedItems.length == 0">
+                                <button class="ui button" v-on:click.stop="itemsMove" v-bind:disabled="!canMove">
                                     <i class="external alternate icon"></i> Move
                                 </button>
-                                <button class="ui button" v-on:click.stop="itemsSubscribe" v-bind:disabled="selectedItems.length == 0">
+                                <button class="ui button" v-on:click.stop="itemsSubscribe" v-bind:disabled="!canSubscribe">
                                     <i class="eye icon"></i> Subscribe
                                 </button>
-                                <button class="ui button" v-on:click.stop="itemsUnsubscribe" v-bind:disabled="selectedItems.length == 0">
+                                <button class="ui button" v-on:click.stop="itemsUnsubscribe" v-bind:disabled="!canUnsubscribe">
                                     <i class="eye slash icon"></i> Unsubscribe
                                 </button>
-                                <button class="ui button" v-on:click.stop="itemsDelete" v-bind:disabled="selectedItems.length == 0">
+                                <button class="ui button" v-on:click.stop="itemsDelete" v-bind:disabled="!canDelete">
                                     <i class="trash icon"></i> Delete
                                 </button>
                             </div>

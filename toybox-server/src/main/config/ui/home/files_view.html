@@ -48,31 +48,25 @@
                         <div class="ui grid gallery-top-menu">
                             <div class="ui basic buttons">
                                 <!-- Top menu buttons -->
-                                <button class="ui button" v-on:click.stop="assetsShare" v-bind:disabled="selectedAssets.length == 0">
+                                <button class="ui button" v-on:click.stop="assetsShare" v-bind:disabled="!canShare">
                                     <i class="share alternate icon"></i> Share
                                 </button>
-                                <button class="ui button" v-on:click.stop="assetsDownload" v-bind:disabled="selectedAssets.length == 0">
+                                <button class="ui button" v-on:click.stop="assetsDownload" v-bind:disabled="!canDownload">
                                     <i class="download icon"></i> Download
                                 </button>
-                                <!-- <button class="ui button" v-on:click.stop="rename" v-bind:disabled="selectedAssets.length == 0">
-                                    <i class="i cursor icon"></i> Rename
-                                </button> -->
-                                <button class="ui button" v-on:click.stop="assetsCopy" v-bind:disabled="selectedAssets.length == 0">
+                                <button class="ui button" v-on:click.stop="assetsCopy" v-bind:disabled="!canCopy">
                                     <i class="copy icon"></i> Copy
                                 </button>
-                                <button class="ui button" v-on:click.stop="assetsMove" v-bind:disabled="selectedAssets.length == 0">
+                                <button class="ui button" v-on:click.stop="assetsMove" v-bind:disabled="!canMove">
                                     <i class="external alternate icon"></i> Move
                                 </button>
-                                <button class="ui button" v-on:click.stop="assetsSubscribe" v-bind:disabled="selectedAssets.length == 0">
+                                <button class="ui button" v-on:click.stop="assetsSubscribe" v-bind:disabled="!canSubscribe">
                                     <i class="eye icon"></i> Subscribe
                                 </button>
-                                <button class="ui button" v-on:click.stop="assetsUnsubscribe" v-bind:disabled="selectedAssets.length == 0">
+                                <button class="ui button" v-on:click.stop="assetsUnsubscribe" v-bind:disabled="!canUnsubscribe">
                                     <i class="eye slash icon"></i> Unsubscribe
                                 </button>
-                                <!-- <button class="ui button" v-on:click.stop="showVersionHistory" v-bind:disabled="selectedAssets.length == 0">
-                                    <i class="list alternate outline icon"></i> Show Version History
-                                </button> -->
-                                <button class="ui button" v-on:click.stop="assetsDelete" v-bind:disabled="selectedAssets.length == 0">
+                                <button class="ui button" v-on:click.stop="assetsDelete" v-bind:disabled="!canDelete">
                                     <i class="trash icon"></i> Delete
                                 </button>
                             </div>
