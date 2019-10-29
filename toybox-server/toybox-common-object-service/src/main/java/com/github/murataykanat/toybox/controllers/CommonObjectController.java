@@ -82,76 +82,84 @@ public class CommonObjectController {
                 User user = authenticationUtils.getUser(authentication);
                 if(user != null){
                     if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
-                        RestTemplate restTemplate = new RestTemplate();
-                        HttpHeaders headers = authenticationUtils.getHeaders(session);
+                        if(!(selectionContext.getSelectedAssets().isEmpty() && selectionContext.getSelectedContainers().isEmpty())){
+                            RestTemplate restTemplate = new RestTemplate();
+                            HttpHeaders headers = authenticationUtils.getHeaders(session);
 
-                        HttpEntity<SelectionContext> selectionContextHttpEntity = new HttpEntity<>(selectionContext, headers);
+                            HttpEntity<SelectionContext> selectionContextHttpEntity = new HttpEntity<>(selectionContext, headers);
 
-                        String jobServiceUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.JOB_SERVICE_LOAD_BALANCER_SERVICE_NAME, ToyboxConstants.JOB_SERVICE_NAME, session, false);
+                            String jobServiceUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.JOB_SERVICE_LOAD_BALANCER_SERVICE_NAME, ToyboxConstants.JOB_SERVICE_NAME, session, false);
 
-                        try{
-                            ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/package", selectionContextHttpEntity, JobResponse.class);
-                            if(jobResponseResponseEntity != null){
-                                JobResponse jobResponse = jobResponseResponseEntity.getBody();
-                                if(jobResponse != null){
-                                    File archiveFile = jobUtils.getArchiveFile(jobResponse.getJobId(), headers, jobServiceUrl, exportStagingPath);
-                                    if(archiveFile != null && archiveFile.exists()){
+                            try{
+                                ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/package", selectionContextHttpEntity, JobResponse.class);
+                                if(jobResponseResponseEntity != null){
+                                    JobResponse jobResponse = jobResponseResponseEntity.getBody();
+                                    if(jobResponse != null){
+                                        File archiveFile = jobUtils.getArchiveFile(jobResponse.getJobId(), headers, jobServiceUrl, exportStagingPath);
+                                        if(archiveFile != null && archiveFile.exists()){
 
-                                        List<Asset> selectedAssets = selectionContext.getSelectedAssets();
-                                        List<Container> selectedContainers = selectionContext.getSelectedContainers();
+                                            List<Asset> selectedAssets = selectionContext.getSelectedAssets();
+                                            List<Container> selectedContainers = selectionContext.getSelectedContainers();
 
-                                        for(Asset selectedAsset: selectedAssets){
-                                            // Send notification for asset owners
-                                            List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), selectedAsset.getId(), true);
-                                            for(InternalShare internalShare: internalShares){
-                                                if(internalShare.getNotifyOnDownload().equalsIgnoreCase("Y")){
-                                                    String message = "Asset '" + selectedAsset.getName() + "' is downloaded by '" + user.getUsername() + "'";
-                                                    SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                                                    sendNotificationRequest.setFromUsername(user.getUsername());
-                                                    sendNotificationRequest.setToUsername(internalShare.getUsername());
-                                                    sendNotificationRequest.setMessage(message);
-                                                    notificationUtils.sendNotification(sendNotificationRequest, session);
+                                            for(Asset selectedAsset: selectedAssets){
+                                                // Send notification for asset owners
+                                                List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), selectedAsset.getId(), true);
+                                                for(InternalShare internalShare: internalShares){
+                                                    if(internalShare.getNotifyOnDownload().equalsIgnoreCase("Y")){
+                                                        String message = "Asset '" + selectedAsset.getName() + "' is downloaded by '" + user.getUsername() + "'";
+                                                        SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                                        sendNotificationRequest.setFromUsername(user.getUsername());
+                                                        sendNotificationRequest.setToUsername(internalShare.getUsername());
+                                                        sendNotificationRequest.setMessage(message);
+                                                        notificationUtils.sendNotification(sendNotificationRequest, session);
+                                                    }
                                                 }
                                             }
-                                        }
 
-                                        for(Container selectedContainer: selectedContainers){
-                                            // Send notification for container owners
-                                            List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), selectedContainer.getId(), false);
-                                            for(InternalShare internalShare: internalShares){
-                                                if(internalShare.getNotifyOnDownload().equalsIgnoreCase("Y")){
-                                                    String message = "Folder '" + selectedContainer.getName() + "' is downloaded by '" + user.getUsername() + "'";
-                                                    SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                                                    sendNotificationRequest.setFromUsername(user.getUsername());
-                                                    sendNotificationRequest.setToUsername(internalShare.getUsername());
-                                                    sendNotificationRequest.setMessage(message);
-                                                    notificationUtils.sendNotification(sendNotificationRequest, session);
+                                            for(Container selectedContainer: selectedContainers){
+                                                // Send notification for container owners
+                                                List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), selectedContainer.getId(), false);
+                                                for(InternalShare internalShare: internalShares){
+                                                    if(internalShare.getNotifyOnDownload().equalsIgnoreCase("Y")){
+                                                        String message = "Folder '" + selectedContainer.getName() + "' is downloaded by '" + user.getUsername() + "'";
+                                                        SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                                        sendNotificationRequest.setFromUsername(user.getUsername());
+                                                        sendNotificationRequest.setToUsername(internalShare.getUsername());
+                                                        sendNotificationRequest.setMessage(message);
+                                                        notificationUtils.sendNotification(sendNotificationRequest, session);
+                                                    }
                                                 }
                                             }
+
+
+                                            InputStreamResource resource = new InputStreamResource(new FileInputStream(archiveFile));
+                                            return new ResponseEntity<>(resource, HttpStatus.OK);
                                         }
-
-
-                                        InputStreamResource resource = new InputStreamResource(new FileInputStream(archiveFile));
-                                        return new ResponseEntity<>(resource, HttpStatus.OK);
+                                        else{
+                                            if(archiveFile != null){
+                                                throw new IOException("File '" + archiveFile.getAbsolutePath() + "' does not exist!");
+                                            }
+                                            throw new IllegalArgumentException("Archive file is null!");
+                                        }
                                     }
                                     else{
-                                        if(archiveFile != null){
-                                            throw new IOException("File '" + archiveFile.getAbsolutePath() + "' does not exist!");
-                                        }
-                                        throw new IllegalArgumentException("Archive file is null!");
+                                        throw new IllegalArgumentException("Job response is null!");
                                     }
                                 }
                                 else{
-                                    throw new IllegalArgumentException("Job response is null!");
+                                    throw new IllegalArgumentException("Job response entity is null!");
                                 }
                             }
-                            else{
-                                throw new IllegalArgumentException("Job response entity is null!");
+                            catch (HttpStatusCodeException httpEx){
+                                JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+                                throw new Exception("Upload was successful but import failed to start. " + responseJson.get("message").getAsString());
                             }
                         }
-                        catch (HttpStatusCodeException httpEx){
-                            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
-                            throw new Exception("Upload was successful but import failed to start. " + responseJson.get("message").getAsString());
+                        else{
+                            String errorMessage = "No assets or folders are selected!";
+                            _logger.error(errorMessage);
+
+                            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
                         }
                     }
                     else{
@@ -297,12 +305,12 @@ public class CommonObjectController {
                             }
                         }
                         else{
-                            String warningMessage = "No assets or folders are selected!";
-                            _logger.warn(warningMessage);
+                            String errorMessage = "No assets or folders are selected!";
+                            _logger.warn(errorMessage);
 
-                            genericResponse.setMessage(warningMessage);
+                            genericResponse.setMessage(errorMessage);
 
-                            return new ResponseEntity<>(genericResponse, HttpStatus.NOT_FOUND);
+                            return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                         }
                     }
                     else{
@@ -389,12 +397,12 @@ public class CommonObjectController {
                         }
                     }
                     else{
-                        String warningMessage = "No assets or folders are selected!";
-                        _logger.warn(warningMessage);
+                        String errorMessage = "No assets or folders are selected!";
+                        _logger.warn(errorMessage);
 
-                        genericResponse.setMessage(warningMessage);
+                        genericResponse.setMessage(errorMessage);
 
-                        return new ResponseEntity<>(genericResponse, HttpStatus.NOT_FOUND);
+                        return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                     }
                 }
                 else{
@@ -432,49 +440,59 @@ public class CommonObjectController {
         try{
             if(authenticationUtils.isSessionValid(authentication)){
                 if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
-                    User user = authenticationUtils.getUser(authentication);
-                    if(user != null){
-                        int assetCount = 0;
-                        int containerCount = 0;
+                    if(!(selectionContext.getSelectedAssets().isEmpty() && selectionContext.getSelectedContainers().isEmpty())){
+                        User user = authenticationUtils.getUser(authentication);
+                        if(user != null){
+                            int assetCount = 0;
+                            int containerCount = 0;
 
-                        for(Asset selectedAsset: selectionContext.getSelectedAssets()){
-                            if(assetUtils.isSubscribed(assetUserRepository, user, selectedAsset)){
-                                List<Asset> nonDeletedAssetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(selectedAsset.getOriginalAssetId());
-                                if(!nonDeletedAssetsByOriginalAssetId.isEmpty()){
-                                    nonDeletedAssetsByOriginalAssetId.forEach(asset -> assetUserRepository.deleteSubscriber(asset.getId(), user.getId()));
-                                    assetCount++;
-                                }
-                            }
-                        }
-
-                        for(Container selectedContainer: selectionContext.getSelectedContainers()){
-                            if(containerUtils.isSubscribed(user, selectedContainer)){
-                                containerUsersRepository.deleteSubscriber(selectedContainer.getId(), user.getId());
-
-                                List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(selectedContainer.getId());
-                                for(ContainerAsset containerAsset: containerAssetsByContainerId){
-                                    Asset actualAsset = assetUtils.getAsset(containerAsset.getAssetId());
-                                    if(assetUtils.isSubscribed(assetUserRepository, user, actualAsset)){
-                                        List<Asset> nonDeletedAssetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(actualAsset.getOriginalAssetId());
-                                        if(!nonDeletedAssetsByOriginalAssetId.isEmpty()){
-                                            nonDeletedAssetsByOriginalAssetId.forEach(asset -> assetUserRepository.deleteSubscriber(asset.getId(), user.getId()));
-                                            assetCount++;
-                                        }
+                            for(Asset selectedAsset: selectionContext.getSelectedAssets()){
+                                if(assetUtils.isSubscribed(assetUserRepository, user, selectedAsset)){
+                                    List<Asset> nonDeletedAssetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(selectedAsset.getOriginalAssetId());
+                                    if(!nonDeletedAssetsByOriginalAssetId.isEmpty()){
+                                        nonDeletedAssetsByOriginalAssetId.forEach(asset -> assetUserRepository.deleteSubscriber(asset.getId(), user.getId()));
+                                        assetCount++;
                                     }
                                 }
-                                containerCount++;
                             }
+
+                            for(Container selectedContainer: selectionContext.getSelectedContainers()){
+                                if(containerUtils.isSubscribed(user, selectedContainer)){
+                                    containerUsersRepository.deleteSubscriber(selectedContainer.getId(), user.getId());
+
+                                    List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(selectedContainer.getId());
+                                    for(ContainerAsset containerAsset: containerAssetsByContainerId){
+                                        Asset actualAsset = assetUtils.getAsset(containerAsset.getAssetId());
+                                        if(assetUtils.isSubscribed(assetUserRepository, user, actualAsset)){
+                                            List<Asset> nonDeletedAssetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(actualAsset.getOriginalAssetId());
+                                            if(!nonDeletedAssetsByOriginalAssetId.isEmpty()){
+                                                nonDeletedAssetsByOriginalAssetId.forEach(asset -> assetUserRepository.deleteSubscriber(asset.getId(), user.getId()));
+                                                assetCount++;
+                                            }
+                                        }
+                                    }
+                                    containerCount++;
+                                }
+                            }
+
+                            String failureMessage = "Selected assets were already unsubscribed.";
+                            String message = generateProcessingResponse(assetCount, containerCount, " unsubscribed successfully.", failureMessage);
+
+                            genericResponse.setMessage(message);
+
+                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                         }
-
-                        String failureMessage = "Selected assets were already unsubscribed.";
-                        String message = generateProcessingResponse(assetCount, containerCount, " unsubscribed successfully.", failureMessage);
-
-                        genericResponse.setMessage(message);
-
-                        return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                        else{
+                            throw new IllegalArgumentException("User is null!");
+                        }
                     }
                     else{
-                        throw new IllegalArgumentException("User is null!");
+                        String errorMessage = "No assets or folders are selected!";
+                        _logger.warn(errorMessage);
+
+                        genericResponse.setMessage(errorMessage);
+
+                        return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                     }
                 }
                 else{
@@ -517,50 +535,60 @@ public class CommonObjectController {
                     if(user != null){
                         SelectionContext selectionContext = moveAssetRequest.getSelectionContext();
                         if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
-                            boolean hasSharedAssets = selectionContext.getSelectedAssets().stream().anyMatch(asset -> asset.getShared().equalsIgnoreCase("Y"));
-                            boolean hasSharedContainers = selectionContext.getSelectedContainers().stream().anyMatch(container -> container.getShared().equalsIgnoreCase("Y"));
-                            if(!hasSharedAssets && !hasSharedContainers){
-                                Container targetContainer = containerUtils.getContainer(moveAssetRequest.getContainerId());
+                            if(!(selectionContext.getSelectedAssets().isEmpty() && selectionContext.getSelectedContainers().isEmpty())){
+                                boolean hasSharedAssets = selectionContext.getSelectedAssets().stream().anyMatch(asset -> asset.getShared().equalsIgnoreCase("Y"));
+                                boolean hasSharedContainers = selectionContext.getSelectedContainers().stream().anyMatch(container -> container.getShared().equalsIgnoreCase("Y"));
+                                if(!hasSharedAssets && !hasSharedContainers){
+                                    Container targetContainer = containerUtils.getContainer(moveAssetRequest.getContainerId());
 
-                                List<String> assetIds = selectionContext.getSelectedAssets().stream().map(Asset::getId).collect(Collectors.toList());
-                                List<String> containerIds = selectionContext.getSelectedContainers().stream().map(Container::getId).collect(Collectors.toList());
+                                    List<String> assetIds = selectionContext.getSelectedAssets().stream().map(Asset::getId).collect(Collectors.toList());
+                                    List<String> containerIds = selectionContext.getSelectedContainers().stream().map(Container::getId).collect(Collectors.toList());
 
-                                int assetCount = 0;
-                                int containerCount = 0;
+                                    int assetCount = 0;
+                                    int containerCount = 0;
 
-                                int numberOfIgnoredAssets = assetUtils.moveAssets(assetIds, targetContainer, user, session);
-                                assetCount += (assetIds.size() - numberOfIgnoredAssets);
-                                int numberOfIgnoredContainers = containerUtils.moveContainers(containerIds, targetContainer, user, session);
-                                containerCount += (containerIds.size() - numberOfIgnoredContainers);
+                                    int numberOfIgnoredAssets = assetUtils.moveAssets(assetIds, targetContainer, user, session);
+                                    assetCount += (assetIds.size() - numberOfIgnoredAssets);
+                                    int numberOfIgnoredContainers = containerUtils.moveContainers(containerIds, targetContainer, user, session);
+                                    containerCount += (containerIds.size() - numberOfIgnoredContainers);
 
-                                if(assetCount == 0 && containerCount == 0){
-                                    genericResponse.setMessage("No asset or folder is moved because either the target folder is the same as the selected folders or the target folder is a sub folder of the selected folders.");
-                                    return new ResponseEntity<>(genericResponse, HttpStatus.NOT_MODIFIED);
-                                }
-                                else if(assetCount < 0 || containerCount < 0){
-                                    throw new IllegalArgumentException("Returned asset or container is below zero!");
-                                }
-                                else{
-                                    String failureMessage = "You do not have the permission to move the selected assets and/or folders.";
-                                    String message = generateProcessingResponse(assetCount, containerCount, " were successfully moved to the folder '" + targetContainer.getName() + "'.", failureMessage);
-
-                                    genericResponse.setMessage(message);
-
-                                    if(message.equalsIgnoreCase(failureMessage)){
-                                        return new ResponseEntity<>(genericResponse, HttpStatus.FORBIDDEN);
+                                    if(assetCount == 0 && containerCount == 0){
+                                        genericResponse.setMessage("No asset or folder is moved because either the target folder is the same as the selected folders or the target folder is a sub folder of the selected folders.");
+                                        return new ResponseEntity<>(genericResponse, HttpStatus.NOT_MODIFIED);
+                                    }
+                                    else if(assetCount < 0 || containerCount < 0){
+                                        throw new IllegalArgumentException("Returned asset or container is below zero!");
                                     }
                                     else{
-                                        return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                        String failureMessage = "You do not have the permission to move the selected assets and/or folders.";
+                                        String message = generateProcessingResponse(assetCount, containerCount, " were successfully moved to the folder '" + targetContainer.getName() + "'.", failureMessage);
+
+                                        genericResponse.setMessage(message);
+
+                                        if(message.equalsIgnoreCase(failureMessage)){
+                                            return new ResponseEntity<>(genericResponse, HttpStatus.FORBIDDEN);
+                                        }
+                                        else{
+                                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                        }
                                     }
+                                }
+                                else{
+                                    String errorMessage = "You do not have the permission to move one of the selected items!";
+                                    _logger.error(errorMessage);
+
+                                    genericResponse.setMessage(errorMessage);
+
+                                    return new ResponseEntity<>(genericResponse, HttpStatus.FORBIDDEN);
                                 }
                             }
                             else{
-                                String errorMessage = "You do not have the permission to move one of the selected items!";
-                                _logger.error(errorMessage);
+                                String errorMessage = "No assets or folders are selected!";
+                                _logger.warn(errorMessage);
 
                                 genericResponse.setMessage(errorMessage);
 
-                                return new ResponseEntity<>(genericResponse, HttpStatus.FORBIDDEN);
+                                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                             }
                         }
                         else{
@@ -614,30 +642,39 @@ public class CommonObjectController {
                 if(copyAssetRequest != null){
                     SelectionContext selectionContext = copyAssetRequest.getSelectionContext();
                     if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
-                        List<String> targetContainerIds = copyAssetRequest.getContainerIds();
-                        List<String> sourceAssetIds = selectionContext.getSelectedAssets().stream().map(Asset::getId).collect(Collectors.toList());
-                        List<String> sourceContainerIds = selectionContext.getSelectedContainers().stream().map(Container::getId).collect(Collectors.toList());
+                        if(!(selectionContext.getSelectedAssets().isEmpty() && selectionContext.getSelectedContainers().isEmpty())){
+                            List<String> targetContainerIds = copyAssetRequest.getContainerIds();
+                            List<String> sourceAssetIds = selectionContext.getSelectedAssets().stream().map(Asset::getId).collect(Collectors.toList());
+                            List<String> sourceContainerIds = selectionContext.getSelectedContainers().stream().map(Container::getId).collect(Collectors.toList());
 
-                        int assetCount = 0;
-                        int containerCount = 0;
+                            int assetCount = 0;
+                            int containerCount = 0;
 
-                        assetUtils.copyAssets(session, sourceAssetIds, targetContainerIds, authentication.getName(), importStagingPath);
-                        assetCount += sourceAssetIds.size();
-                        containerUtils.copyContainers(session, sourceContainerIds, targetContainerIds, authentication.getName(), importStagingPath);
-                        containerCount += sourceContainerIds.size();
+                            assetUtils.copyAssets(session, sourceAssetIds, targetContainerIds, authentication.getName(), importStagingPath);
+                            assetCount += sourceAssetIds.size();
+                            containerUtils.copyContainers(session, sourceContainerIds, targetContainerIds, authentication.getName(), importStagingPath);
+                            containerCount += sourceContainerIds.size();
 
-                        String failureMessage = "You do not have the permission to copy the selected assets and/or folders.";
-                        String message = generateProcessingResponse(assetCount, containerCount, " started to be copied to the selected folders. This action may take a while depending on the number and size of the selected assets and folders. You can follow the progress of the copy operations in 'Jobs' section.", failureMessage);
+                            String failureMessage = "You do not have the permission to copy the selected assets and/or folders.";
+                            String message = generateProcessingResponse(assetCount, containerCount, " started to be copied to the selected folders. This action may take a while depending on the number and size of the selected assets and folders. You can follow the progress of the copy operations in 'Jobs' section.", failureMessage);
 
-                        genericResponse.setMessage(message);
+                            genericResponse.setMessage(message);
 
-                        if(message.equalsIgnoreCase(failureMessage)){
-                            return new ResponseEntity<>(genericResponse, HttpStatus.FORBIDDEN);
+                            if(message.equalsIgnoreCase(failureMessage)){
+                                return new ResponseEntity<>(genericResponse, HttpStatus.FORBIDDEN);
+                            }
+                            else{
+                                return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                            }
                         }
                         else{
-                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
-                        }
+                            String errorMessage = "No assets or folders are selected!";
+                            _logger.warn(errorMessage);
 
+                            genericResponse.setMessage(errorMessage);
+
+                            return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                        }
                     }
                     else{
                         String errorMessage = "Selection context is not valid!";
