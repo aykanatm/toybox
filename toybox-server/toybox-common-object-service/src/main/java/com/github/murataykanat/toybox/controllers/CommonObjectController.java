@@ -254,6 +254,13 @@ public class CommonObjectController {
                                         User importUser = authenticationUtils.getUser(actualAsset.getImportedByUsername());
                                         assetUserRepository.deleteSubscriber(actualAsset.getId(), importUser.getId());
                                     }
+                                    // We remove the assets from shares
+                                    for(Asset asset: assetsAndVersions){
+                                        List<InternalShare> internalSharesContainingItem = shareUtils.getInternalSharesContainingItem(asset.getId(), true);
+                                        for(InternalShare internalShare: internalSharesContainingItem){
+                                            shareUtils.removeItemFromInternalShare(internalShare.getInternalShareId(), asset.getId(), true);
+                                        }
+                                    }
                                 }
 
                                 if(!nonSharedSelectedContainers.isEmpty()){
@@ -277,6 +284,13 @@ public class CommonObjectController {
                                         Container actualContainer = containerUtils.getContainer(selectedContainer.getId());
                                         User createUser = authenticationUtils.getUser(actualContainer.getCreatedByUsername());
                                         containerUsersRepository.deleteSubscriber(actualContainer.getId(), createUser.getId());
+                                    }
+                                    // We remove the containers and their assets from shares
+                                    for(Container selectedContainer: nonSharedSelectedContainers){
+                                        List<InternalShare> internalSharesContainingItem = shareUtils.getInternalSharesContainingItem(selectedContainer.getId(), false);
+                                        for(InternalShare internalShare: internalSharesContainingItem){
+                                            shareUtils.removeItemFromInternalShare(internalShare.getInternalShareId(), selectedContainer.getId(), true);
+                                        }
                                     }
                                 }
 

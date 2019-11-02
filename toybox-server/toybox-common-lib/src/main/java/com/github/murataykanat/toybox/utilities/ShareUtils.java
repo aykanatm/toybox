@@ -581,6 +581,25 @@ public class ShareUtils {
         return internalShares;
     }
 
+    public void removeItemFromInternalShare(String internalShareId, String id, boolean isAsset){
+        if(isAsset){
+            internalShareAssetsRepository.deleteSharedAssetByInternalShareIdAndAssetId(internalShareId, id);
+        }
+        else{
+            internalShareContainersRepository.deleteSharedContainerByInternalShareIdAndContainerId(internalShareId, id);
+            List<Container> subContainerTree = containerUtils.getSubContainerTree(new ArrayList<>(), id);
+
+            for(Container container: subContainerTree){
+                internalShareContainersRepository.deleteSharedContainerByInternalShareIdAndContainerId(internalShareId, container.getId());
+
+                List<Asset> containerAssets = containerUtils.getContainerAssets(container.getId());
+                for(Asset asset: containerAssets){
+                    internalShareAssetsRepository.deleteSharedAssetByInternalShareIdAndAssetId(internalShareId, asset.getId());
+                }
+            }
+        }
+    }
+
     @LogEntryExitExecutionTime
     public void updateInternalShareAsset(String newAssetId, String oldAssetId){
         internalShareAssetsRepository.updateSharedAssets(newAssetId, oldAssetId);
