@@ -306,7 +306,7 @@ public class CommonObjectController {
                         }
                         else{
                             String errorMessage = "No assets or folders are selected!";
-                            _logger.warn(errorMessage);
+                            _logger.error(errorMessage);
 
                             genericResponse.setMessage(errorMessage);
 
@@ -398,7 +398,7 @@ public class CommonObjectController {
                     }
                     else{
                         String errorMessage = "No assets or folders are selected!";
-                        _logger.warn(errorMessage);
+                        _logger.error(errorMessage);
 
                         genericResponse.setMessage(errorMessage);
 
@@ -488,7 +488,7 @@ public class CommonObjectController {
                     }
                     else{
                         String errorMessage = "No assets or folders are selected!";
-                        _logger.warn(errorMessage);
+                        _logger.error(errorMessage);
 
                         genericResponse.setMessage(errorMessage);
 
@@ -584,7 +584,7 @@ public class CommonObjectController {
                             }
                             else{
                                 String errorMessage = "No assets or folders are selected!";
-                                _logger.warn(errorMessage);
+                                _logger.error(errorMessage);
 
                                 genericResponse.setMessage(errorMessage);
 
@@ -669,7 +669,7 @@ public class CommonObjectController {
                         }
                         else{
                             String errorMessage = "No assets or folders are selected!";
-                            _logger.warn(errorMessage);
+                            _logger.error(errorMessage);
 
                             genericResponse.setMessage(errorMessage);
 
