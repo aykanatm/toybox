@@ -60,13 +60,9 @@ public class CommonObjectController {
     @Autowired
     private AssetsRepository assetsRepository;
     @Autowired
-    private AssetUserRepository assetUserRepository;
-    @Autowired
     private ContainersRepository containersRepository;
     @Autowired
     private ContainerAssetsRepository containerAssetsRepository;
-    @Autowired
-    private ContainerUsersRepository containerUsersRepository;
 
     @Value("${exportStagingPath}")
     private String exportStagingPath;
@@ -248,14 +244,10 @@ public class CommonObjectController {
                                             notificationUtils.sendNotification(sendNotificationRequest, session);
                                         }
                                     }
-                                    // We un-subscribe users from the deleted assets
+                                    // We un-subscribe users from the deleted assets and remove the deleted assets from shares
                                     for(Asset asset: assetsAndVersions){
-                                        Asset actualAsset = assetUtils.getAsset(asset.getId());
-                                        User importUser = authenticationUtils.getUser(actualAsset.getImportedByUsername());
-                                        assetUserRepository.deleteSubscriber(actualAsset.getId(), importUser.getId());
-                                    }
-                                    // We remove the assets from shares
-                                    for(Asset asset: assetsAndVersions){
+                                        assetUtils.unsubscribeUsersFromAsset(asset.getId());
+
                                         List<InternalShare> internalSharesContainingItem = shareUtils.getInternalSharesContainingItem(asset.getId(), true);
                                         for(InternalShare internalShare: internalSharesContainingItem){
                                             shareUtils.removeItemFromInternalShare(internalShare.getInternalShareId(), asset.getId(), true);
@@ -279,17 +271,14 @@ public class CommonObjectController {
                                             notificationUtils.sendNotification(sendNotificationRequest, session);
                                         }
                                     }
-                                    // We un-subscribe users from the deleted containers
+
+                                    // We un-subscribe users from the deleted containers and remove the containers and their assets from shares
                                     for(Container selectedContainer: nonSharedSelectedContainers){
-                                        Container actualContainer = containerUtils.getContainer(selectedContainer.getId());
-                                        User createUser = authenticationUtils.getUser(actualContainer.getCreatedByUsername());
-                                        containerUsersRepository.deleteSubscriber(actualContainer.getId(), createUser.getId());
-                                    }
-                                    // We remove the containers and their assets from shares
-                                    for(Container selectedContainer: nonSharedSelectedContainers){
+                                        containerUtils.unsubscribeUsersFromContainer(selectedContainer.getId());
+
                                         List<InternalShare> internalSharesContainingItem = shareUtils.getInternalSharesContainingItem(selectedContainer.getId(), false);
                                         for(InternalShare internalShare: internalSharesContainingItem){
-                                            shareUtils.removeItemFromInternalShare(internalShare.getInternalShareId(), selectedContainer.getId(), true);
+                                            shareUtils.removeItemFromInternalShare(internalShare.getInternalShareId(), selectedContainer.getId(), false);
                                         }
                                     }
                                 }
@@ -372,35 +361,20 @@ public class CommonObjectController {
                             int assetCount = 0;
                             int containerCount = 0;
                             for(Asset selectedAsset: selectionContext.getSelectedAssets()){
-                                if(!assetUtils.isSubscribed(assetUserRepository, user, selectedAsset)){
-                                    List<Asset> nonDeletedAssetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(selectedAsset.getOriginalAssetId());
-                                    if(!nonDeletedAssetsByOriginalAssetId.isEmpty()){
-                                        nonDeletedAssetsByOriginalAssetId.forEach(asset -> assetUserRepository.insertSubscriber(asset.getId(), user.getId()));
-                                        assetCount++;
-                                    }
+                                boolean result = assetUtils.subscribeToAsset(selectedAsset.getId(), user);
+                                if(result){
+                                    assetCount++;
                                 }
                             }
                             for(Container selectedContainer: selectionContext.getSelectedContainers()){
-                                if(!containerUtils.isSubscribed(user, selectedContainer)){
-                                    containerUsersRepository.insertSubscriber(selectedContainer.getId(), user.getId());
-
-                                    List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(selectedContainer.getId());
-                                    for(ContainerAsset containerAsset: containerAssetsByContainerId){
-                                        Asset actualAsset = assetUtils.getAsset(containerAsset.getAssetId());
-                                        if(!assetUtils.isSubscribed(assetUserRepository, user, actualAsset)){
-                                            List<Asset> nonDeletedAssetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(actualAsset.getOriginalAssetId());
-                                            if(!nonDeletedAssetsByOriginalAssetId.isEmpty()){
-                                                nonDeletedAssetsByOriginalAssetId.forEach(asset -> assetUserRepository.insertSubscriber(asset.getId(), user.getId()));
-                                                assetCount++;
-                                            }
-                                        }
-                                    }
+                                boolean result = containerUtils.subscribeToContainer(selectedContainer.getId(), user);
+                                if(result){
                                     containerCount++;
                                 }
                             }
 
                             String failureMessage = "Selected assets were already subscribed.";
-                            String message = generateProcessingResponse(assetCount, containerCount, " unsubscribed successfully.", failureMessage);
+                            String message = generateProcessingResponse(assetCount, containerCount, " subscribed successfully.", failureMessage);
 
                             genericResponse.setMessage(message);
 
@@ -461,30 +435,15 @@ public class CommonObjectController {
                             int containerCount = 0;
 
                             for(Asset selectedAsset: selectionContext.getSelectedAssets()){
-                                if(assetUtils.isSubscribed(assetUserRepository, user, selectedAsset)){
-                                    List<Asset> nonDeletedAssetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(selectedAsset.getOriginalAssetId());
-                                    if(!nonDeletedAssetsByOriginalAssetId.isEmpty()){
-                                        nonDeletedAssetsByOriginalAssetId.forEach(asset -> assetUserRepository.deleteSubscriber(asset.getId(), user.getId()));
-                                        assetCount++;
-                                    }
+                                boolean result = assetUtils.unsubscribeFromAsset(selectedAsset.getId(), user);
+                                if(result){
+                                    assetCount++;
                                 }
                             }
 
                             for(Container selectedContainer: selectionContext.getSelectedContainers()){
-                                if(containerUtils.isSubscribed(user, selectedContainer)){
-                                    containerUsersRepository.deleteSubscriber(selectedContainer.getId(), user.getId());
-
-                                    List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(selectedContainer.getId());
-                                    for(ContainerAsset containerAsset: containerAssetsByContainerId){
-                                        Asset actualAsset = assetUtils.getAsset(containerAsset.getAssetId());
-                                        if(assetUtils.isSubscribed(assetUserRepository, user, actualAsset)){
-                                            List<Asset> nonDeletedAssetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(actualAsset.getOriginalAssetId());
-                                            if(!nonDeletedAssetsByOriginalAssetId.isEmpty()){
-                                                nonDeletedAssetsByOriginalAssetId.forEach(asset -> assetUserRepository.deleteSubscriber(asset.getId(), user.getId()));
-                                                assetCount++;
-                                            }
-                                        }
-                                    }
+                                boolean result = containerUtils.unsubscribeFromContainer(selectedContainer.getId(), user);
+                                if(result){
                                     containerCount++;
                                 }
                             }

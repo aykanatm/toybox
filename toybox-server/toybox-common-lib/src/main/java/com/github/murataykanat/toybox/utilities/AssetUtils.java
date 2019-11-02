@@ -78,7 +78,7 @@ public class AssetUtils {
     }
 
     @LogEntryExitExecutionTime
-    public boolean isSubscribed(AssetUserRepository assetUserRepository, User user, Asset asset){
+    public boolean isSubscribed(User user, Asset asset){
         List<AssetUser> assetUsersByUserId = assetUserRepository.findAssetUsersByUserId(user.getId());
         for(AssetUser assetUser: assetUsersByUserId){
             if(assetUser.getAssetId().equalsIgnoreCase(asset.getId())){
@@ -347,6 +347,40 @@ public class AssetUtils {
         }
 
         return getAsset(assetId);
+    }
+
+    @LogEntryExitExecutionTime
+    public boolean subscribeToAsset(String assetId, User user){
+        Asset asset = getAsset(assetId);
+
+        if(!isSubscribed(user, asset)){
+            List<Asset> nonDeletedAssetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(asset.getOriginalAssetId());
+            if(!nonDeletedAssetsByOriginalAssetId.isEmpty()){
+                nonDeletedAssetsByOriginalAssetId.forEach(a -> assetUserRepository.insertSubscriber(a.getId(), user.getId()));
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    @LogEntryExitExecutionTime
+    public boolean unsubscribeFromAsset(String assetId, User user) throws Exception {
+        Asset asset = getAsset(assetId);
+
+        if(isSubscribed(user, asset)){
+            User importUser = authenticationUtils.getUser(asset.getImportedByUsername());
+            assetUserRepository.deleteSubscriber(assetId, importUser.getId());
+
+            return true;
+        }
+
+        return false;
+    }
+
+    public void unsubscribeUsersFromAsset(String assetId){
+        assetUserRepository.deleteAllSubscribersByAssetId(assetId);
     }
 
     @LogEntryExitExecutionTime

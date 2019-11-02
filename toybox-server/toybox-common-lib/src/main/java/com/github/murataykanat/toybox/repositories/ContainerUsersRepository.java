@@ -13,10 +13,17 @@ public interface ContainerUsersRepository extends JpaRepository<ContainerUser, S
     @Modifying
     @Query(value = "INSERT INTO container_user(container_id, user_id) VALUES (?1, ?2)", nativeQuery = true)
     int insertSubscriber(String containerId, int userId);
+
     @Transactional
     @Modifying
     @Query(value = "DELETE FROM container_user WHERE container_id=?1 AND user_id=?2", nativeQuery = true)
     int deleteSubscriber(String containerId, int userId);
+
+    @Transactional
+    @Modifying
+    @Query(value = "DELETE FROM container_user WHERE container_id=?1", nativeQuery = true)
+    int deleteAllSubscribersByContainerId(String containerId);
+
     @Query(value = "SELECT container_id, user_id FROM container_user WHERE user_id=?1", nativeQuery = true)
     List<ContainerUser> findContainerUsersByUserId(int userId);
     @Query(value = "SELECT container_id, user_id FROM container_user WHERE container_id=?1", nativeQuery = true)

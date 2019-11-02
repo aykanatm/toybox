@@ -133,10 +133,10 @@ public class ContainerUtils {
     }
 
     @LogEntryExitExecutionTime
-    public boolean isSubscribed(User user, Container asset){
+    public boolean isSubscribed(User user, Container container){
         List<ContainerUser> containerUsersByUserId = containerUsersRepository.findContainerUsersByUserId(user.getId());
         for(ContainerUser containerUser: containerUsersByUserId){
-            if(containerUser.getContainerId().equalsIgnoreCase(asset.getId())){
+            if(containerUser.getContainerId().equalsIgnoreCase(container.getId())){
                 return true;
             }
         }
@@ -441,6 +441,65 @@ public class ContainerUtils {
         }
 
         return subscribers;
+    }
+
+    @LogEntryExitExecutionTime
+    public boolean subscribeToContainer(String containerId, User user){
+        Container container = getContainer(containerId);
+
+        if(!isSubscribed(user, container)){
+            containerUsersRepository.insertSubscriber(container.getId(), user.getId());
+
+            List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(container.getId());
+            for(ContainerAsset containerAsset: containerAssetsByContainerId){
+                assetUtils.subscribeToAsset(containerAsset.getAssetId(), user);
+            }
+            List<Container> subContainerTree = getSubContainerTree(new ArrayList<>(), containerId);
+            for(Container subContainer: subContainerTree){
+                subscribeToContainer(subContainer.getId(), user);
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+    @LogEntryExitExecutionTime
+    public boolean unsubscribeFromContainer(String containerId, User user) throws Exception {
+        Container container = getContainer(containerId);
+        if(isSubscribed(user, container)){
+            User createUser = authenticationUtils.getUser(container.getCreatedByUsername());
+            containerUsersRepository.deleteSubscriber(container.getId(), createUser.getId());
+
+            List<Asset> containerAssets = getContainerAssets(containerId);
+            for(Asset containerAsset: containerAssets){
+                assetUtils.unsubscribeFromAsset(containerAsset.getId(), user);
+            }
+
+            List<Container> subContainerTree = getSubContainerTree(new ArrayList<>(), containerId);
+            for(Container subContainer: subContainerTree){
+                unsubscribeFromContainer(subContainer.getId(), user);
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    @LogEntryExitExecutionTime
+    public void unsubscribeUsersFromContainer(String containerId){
+        containerUsersRepository.deleteAllSubscribersByContainerId(containerId);
+
+        List<Asset> containerAssets = getContainerAssets(containerId);
+        for(Asset containerAsset: containerAssets){
+            assetUtils.unsubscribeUsersFromAsset(containerAsset.getId());
+        }
+
+        List<Container> subContainerTree = getSubContainerTree(new ArrayList<>(), containerId);
+        for(Container subContainer: subContainerTree){
+            unsubscribeUsersFromContainer(subContainer.getId());
+        }
     }
 
     @LogEntryExitExecutionTime

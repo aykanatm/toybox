@@ -13,10 +13,17 @@ public interface AssetUserRepository extends JpaRepository<AssetUser, String> {
     @Modifying
     @Query(value = "INSERT INTO asset_user(asset_id, user_id) VALUES (?1, ?2)", nativeQuery = true)
     int insertSubscriber(String assetId, int userId);
+
     @Transactional
     @Modifying
     @Query(value = "DELETE FROM asset_user WHERE asset_id=?1 AND user_id=?2", nativeQuery = true)
     int deleteSubscriber(String assetId, int userId);
+
+    @Transactional
+    @Modifying
+    @Query(value = "DELETE FROM asset_user WHERE asset_id=?1", nativeQuery = true)
+    int deleteAllSubscribersByAssetId(String assetId);
+
     @Query(value = "SELECT asset_id, user_id FROM asset_user WHERE user_id=?1", nativeQuery = true)
     List<AssetUser> findAssetUsersByUserId(int userId);
     @Query(value = "SELECT asset_id, user_id FROM asset_user WHERE asset_id=?1", nativeQuery = true)
