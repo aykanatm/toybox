@@ -62,7 +62,7 @@
                     <i class="copy icon"></i>
                     Copy
                 </a>
-                <a class="item" v-on:click.stop="assetMove">
+                <a class="item" v-on:click.stop="assetMove" v-show="!(shared === 'Y')">
                     <i class="external alternate icon"></i>
                     Move
                 </a>
@@ -78,7 +78,7 @@
                     <i class="list alternate outline icon"></i>
                     Show Version History
                 </a>
-                <a class="item" v-on:click.stop="assetDelete">
+                <a class="item" v-on:click.stop="assetDelete" v-show="!(shared === 'Y')">
                     <i class="trash alternate outline icon"></i>
                     Delete
                 </a>

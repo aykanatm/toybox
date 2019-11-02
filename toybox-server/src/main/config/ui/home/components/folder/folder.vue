@@ -36,7 +36,7 @@
                     <i class="copy icon"></i>
                     Copy
                 </a>
-                <a class="item" v-on:click.stop="folderMove">
+                <a class="item" v-on:click.stop="folderMove" v-show="!(shared === 'Y')">
                     <i class="external alternate icon"></i>
                     Move
                 </a>
@@ -48,7 +48,7 @@
                     <i class="eye slash icon"></i>
                     Unsubscribe
                 </a>
-                <a class="item" v-on:click.stop="folderDelete">
+                <a class="item" v-on:click.stop="folderDelete" v-show="!(shared === 'Y')">
                     <i class="trash alternate outline icon"></i>
                     Delete
                 </a>
