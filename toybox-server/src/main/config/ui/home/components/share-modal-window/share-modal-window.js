@@ -326,6 +326,7 @@ module.exports = {
                                         this.externalShareUrl = response.data.url;
                                     }
                                     else{
+                                        this.isSharing = false;
                                         this.$root.$emit('message-sent', 'Error', "There was no response from the share loadbalancer!");
                                     }
                                 })
@@ -409,6 +410,7 @@ module.exports = {
                                         this.$root.$emit('message-sent', 'Success', response.data.message);
                                     }
                                     else{
+                                        this.isSharing = false;
                                         this.$root.$emit('message-sent', 'Error', "There was no response from the share loadbalancer!");
                                     }
                                 })
