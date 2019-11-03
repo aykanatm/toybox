@@ -72,6 +72,9 @@ public class Asset implements Serializable, ContainerItem {
     private String sharedByUsername;
 
     @Transient
+    private String canDownload;
+
+    @Transient
     private String parentContainerId;
 
     @Column(name = "checksum")
@@ -271,5 +274,15 @@ public class Asset implements Serializable, ContainerItem {
 
     public void setSharedByUsername(String sharedByUsername) {
         this.sharedByUsername = sharedByUsername;
+    }
+
+    @Transient
+    @JsonGetter(value = "canDownload")
+    public String getCanDownload() {
+        return canDownload;
+    }
+
+    public void setCanDownload(String canDownload) {
+        this.canDownload = canDownload;
     }
 }

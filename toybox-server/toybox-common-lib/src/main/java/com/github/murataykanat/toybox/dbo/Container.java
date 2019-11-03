@@ -58,6 +58,9 @@ public class Container implements Serializable, ContainerItem {
     @Transient
     private String sharedByUsername;
 
+    @Transient
+    private String canDownload;
+
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, targetEntity = Asset.class)
     @JoinTable(name = "container_asset", joinColumns = @JoinColumn(name = "container_id"), inverseJoinColumns = @JoinColumn(name = "asset_id"))
     @JsonIgnore
@@ -168,5 +171,15 @@ public class Container implements Serializable, ContainerItem {
 
     public void setSharedByUsername(String sharedByUsername) {
         this.sharedByUsername = sharedByUsername;
+    }
+
+    @Transient
+    @JsonGetter(value = "canDownload")
+    public String getCanDownload() {
+        return canDownload;
+    }
+
+    public void setCanDownload(String canDownload) {
+        this.canDownload = canDownload;
     }
 }

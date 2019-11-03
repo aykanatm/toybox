@@ -105,21 +105,27 @@ const folders = new Vue({
             this.canDelete = true;
 
             if(after.length != 0){
-                for(var i = 0; i < after.length ; i++){
+                for(var i = 0; i < after.length; i++){
+                    var item = after[i];
+                    if(item.canDownload === 'N'){
+                        this.canDownload = false;
+                        break;
+                    }
+                }
+
+                for(var i = 0; i < after.length; i++){
                     var item = after[i];
                     if(item.shared === 'Y'){
                         this.canDelete = false;
                         this.canMove = false;
+                        break;
                     }
+                }
 
-                    if(item.subscribed === 'Y'){
-                        this.canUnsubscribe = true;
-                        this.canSubscribe = false;
-                    }
-                    else{
-                        this.canUnsubscribe = false;
-                        this.canSubscribe = true;
-                    }
+                for(var i = 0; i < after.length; i++){
+                    var item = after[i];
+                    this.canSubscribe = this.canSubscribe && item.subscribed === 'N';
+                    this.canUnsubscribe = this.canUnsubscribe && item.subscribed === 'Y';
                 }
             }
             else{
@@ -411,7 +417,8 @@ const folders = new Vue({
                 this.selectedItems.push(item);
             }
             else{
-                this.selectedItems.splice(item, 1);
+                var index = this.selectedItems.indexOf(item);
+                this.selectedItems.splice(index, 1);
             }
 
             console.log(this.selectedItems);

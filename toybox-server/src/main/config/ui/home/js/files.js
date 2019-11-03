@@ -94,21 +94,27 @@ const files = new Vue({
             this.canDelete = true;
 
             if(after.length != 0){
-                for(var i = 0; i < after.length ; i++){
-                    var asset = after[i];
-                    if(asset.shared === 'Y'){
+                for(var i = 0; i < after.length; i++){
+                    var item = after[i];
+                    if(item.canDownload === 'N'){
+                        this.canDownload = false;
+                        break;
+                    }
+                }
+
+                for(var i = 0; i < after.length; i++){
+                    var item = after[i];
+                    if(item.shared === 'Y'){
                         this.canDelete = false;
                         this.canMove = false;
+                        break;
                     }
+                }
 
-                    if(asset.subscribed === 'Y'){
-                        this.canUnsubscribe = true;
-                        this.canSubscribe = false;
-                    }
-                    else{
-                        this.canUnsubscribe = false;
-                        this.canSubscribe = true;
-                    }
+                for(var i = 0; i < after.length; i++){
+                    var item = after[i];
+                    this.canSubscribe = this.canSubscribe && item.subscribed === 'N';
+                    this.canUnsubscribe = this.canUnsubscribe && item.subscribed === 'Y';
                 }
             }
             else{
@@ -194,7 +200,8 @@ const files = new Vue({
                 this.selectedAssets.push(asset);
             }
             else{
-                this.selectedAssets.splice(asset, 1);
+                var index = this.selectedAssets.indexOf(asset);
+                this.selectedAssets.splice(index, 1);
             }
 
             console.log(this.selectedAssets);
@@ -304,7 +311,7 @@ const files = new Vue({
             }
 
             return selectedAssets;
-        },
+        }
     },
     components:{
         'navbar': httpVueLoader('../components/navbar/navbar.vue'),

@@ -24,7 +24,7 @@
                     <i class="share alternate icon"></i>
                     Share
                 </a>
-                <a class="item" v-on:click.stop="folderDownload">
+                <a class="item" v-on:click.stop="folderDownload" v-show="canDownload === 'Y'">
                     <i class="download icon"></i>
                     Download
                 </a>

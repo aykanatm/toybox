@@ -6,14 +6,14 @@
                 <i class="dropdown icon"></i>
                 <div class="menu">
                     <div class="item" v-on:click.stop="asset.assetShare"><i class="share alternate icon"></i> Share</div>
-                    <div class="item" v-on:click.stop="asset.assetDownload"><i class="download icon"></i> Download</div>
+                    <div class="item" v-on:click.stop="asset.assetDownload" v-show="asset.canDownload === 'Y'"><i class="download icon"></i> Download</div>
                     <div class="item" v-on:click.stop="asset.assetRename"><i class="i cursor icon"></i> Rename</div>
                     <div class="item" v-on:click.stop="asset.assetCopy"><i class="copy icon"></i> Copy</div>
-                    <div class="item" v-on:click.stop="asset.assetMove"><i class="external alternate icon"></i> Move</div>
+                    <div class="item" v-on:click.stop="asset.assetMove" v-show="!(asset.shared === 'Y')"><i class="external alternate icon"></i> Move</div>
                     <div class="item" v-on:click.stop="asset.assetSubscribe" v-show="!(asset.subscribed === 'Y')"><i class="eye icon"></i> Subscribe</div>
                     <div class="item" v-on:click.stop="asset.assetUnsubscribe" v-show="asset.subscribed === 'Y'"><i class="eye slash icon"></i> Unsubscribe</div>
                     <div class="item" v-on:click.stop="asset.assetShowVersionHistory"><i class="list alternate icon"></i> Show Version History</div>
-                    <div class="item" v-on:click.stop="asset.assetDelete"><i class="trash alternate icon"></i> Delete</div>
+                    <div class="item" v-on:click.stop="asset.assetDelete" v-show="!(asset.shared === 'Y')"><i class="trash alternate icon"></i> Delete</div>
                 </div>
             </div>
         </div>

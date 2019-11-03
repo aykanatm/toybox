@@ -32,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 public class RenditionController {
@@ -139,23 +140,34 @@ public class RenditionController {
                         }
                         else if(renditionType.equalsIgnoreCase("o")){
                             if(StringUtils.isNotBlank(asset.getPath())){
-                                // Send notification for asset owners
-                                List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), asset.getId(), true);
-                                for(InternalShare internalShare: internalShares){
-                                    if(internalShare.getNotifyOnDownload().equalsIgnoreCase("Y")){
-                                        String message = "Asset '" + asset.getName() + "' is downloaded by '" + user.getUsername() + "'";
-                                        SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                                        sendNotificationRequest.setFromUsername(user.getUsername());
-                                        sendNotificationRequest.setToUsername(internalShare.getUsername());
-                                        sendNotificationRequest.setMessage(message);
-                                        notificationUtils.sendNotification(sendNotificationRequest, session);
+                                boolean canDownload = shareUtils.canDownload(user.getId(), asset.getId(), true);
+
+                                if(canDownload){
+                                    List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), asset.getId(), true);
+                                    for(InternalShare internalShare: internalShares){
+                                        boolean downloadAllowed = internalShare.getCanDownload().equalsIgnoreCase("Y");
+                                        boolean notifyOnDownload = internalShare.getNotifyOnDownload().equalsIgnoreCase("Y");
+                                        if(downloadAllowed && notifyOnDownload){
+                                            String message = "Asset '" + asset.getName() + "' is downloaded by '" + user.getUsername() + "'";
+                                            SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                            sendNotificationRequest.setFromUsername(user.getUsername());
+                                            sendNotificationRequest.setToUsername(internalShare.getUsername());
+                                            sendNotificationRequest.setMessage(message);
+                                            notificationUtils.sendNotification(sendNotificationRequest, session);
+                                        }
                                     }
+
+                                    File file = new File(asset.getPath());
+                                    InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
+
+                                    return new ResponseEntity<>(resource, HttpStatus.OK);
                                 }
+                                else{
+                                    String errorMessage = "You do not have the permission to download this file!";
+                                    _logger.error(errorMessage);
 
-                                File file = new File(asset.getPath());
-                                InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
-
-                                return new ResponseEntity<>(resource, HttpStatus.OK);
+                                    return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+                                }
                             }
                             else{
                                 _logger.error("Original asset path is blank!");

@@ -11,7 +11,8 @@ module.exports = {
         subscribed: String,
         parentContainerId: String,
         shared: String,
-        sharedByUsername: String
+        sharedByUsername: String,
+        canDownload: String
     },
     data: function() {
         return  {

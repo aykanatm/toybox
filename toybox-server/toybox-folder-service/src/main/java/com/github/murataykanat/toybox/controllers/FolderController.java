@@ -297,6 +297,7 @@ public class FolderController {
                                     if(assetSharedWithUser){
                                         User sourceUser = shareUtils.getSourceUser(user.getId(), userAsset.getId(), true);
                                         if(sourceUser != null){
+                                            userAsset.setCanDownload(shareUtils.canDownload(user.getId(), userAsset.getId(), true) ? "Y" : "N");
                                             userAsset.setShared("Y");
                                             userAsset.setSharedByUsername(sourceUser.getUsername());
                                         }
@@ -316,6 +317,7 @@ public class FolderController {
                                     if(containerSharedWithUser){
                                         User sourceUser = shareUtils.getSourceUser(user.getId(), userContainer.getId(), false);
                                         if(sourceUser != null){
+                                            userContainer.setCanDownload(shareUtils.canDownload(user.getId(), userContainer.getId(), false) ? "Y" : "N");
                                             userContainer.setShared("Y");
                                             userContainer.setSharedByUsername(sourceUser.getUsername());
                                         }

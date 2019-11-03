@@ -7,7 +7,8 @@ module.exports = {
         subscribed: String,
         renditionUrl: String,
         shared: String,
-        sharedByUsername: String
+        sharedByUsername: String,
+        canDownload: String
     },
     data: function() {
         return  {

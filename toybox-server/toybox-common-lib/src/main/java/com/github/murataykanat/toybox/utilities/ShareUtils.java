@@ -421,9 +421,6 @@ public class ShareUtils {
                     throw new IllegalArgumentException("Internal share ID '" + internalShareUser.getInternalShareId() + "' does not exist in the database!");
                 }
             }
-            else{
-                throw new IllegalArgumentException("Match is null!");
-            }
         }
 
         return null;
@@ -550,34 +547,32 @@ public class ShareUtils {
         List<InternalShareUser> internalShareUsersByUserId = internalShareUsersRepository.findInternalShareUsersByUserId(targetUserId);
         // We iterate over the each internal share that was shared with the user
         for(InternalShareUser internalShareUser: internalShareUsersByUserId){
-            // We find the internal share
-            List<InternalShare> internalSharesById = internalSharesRepository.getInternalSharesById(internalShareUser.getInternalShareId());
-            if(!internalSharesById.isEmpty()){
-                if(internalSharesById.size() == 1){
-                    // If the internal share exists and it is unique
-                    InternalShare internalShare = internalSharesById.get(0);
+            String internalShareId = internalShareUser.getInternalShareId();
+            boolean hasSharedItem = false;
+            if(isAsset){
+                hasSharedItem =  !internalShareAssetsRepository.findInternalShareAssetByInternalShareIdAndAssetId(internalShareId, id).isEmpty();
+            }
+            else{
+                hasSharedItem = !internalShareContainersRepository.findInternalShareContainersByInternalShareIdAndContainerId(internalShareId, id).isEmpty();
+            }
 
-                    if(isAsset){
-                        // We check if the asset is shared with the user
-                        if(isAssetSharedWithUser(targetUserId, id)){
-                            internalShares.add(internalShare);
-                        }
+            if(hasSharedItem){
+                // We find the internal share
+                List<InternalShare> internalSharesById = internalSharesRepository.getInternalSharesById(internalShareUser.getInternalShareId());
+                if(!internalSharesById.isEmpty()){
+                    if(internalSharesById.size() == 1){
+                        internalShares.add(internalSharesById.get(0));
                     }
                     else{
-                        // We check if the container is shared with the user
-                        if(isContainerSharedWithUser(targetUserId, id)){
-                            internalShares.add(internalShare);
-                        }
+                        throw new IllegalArgumentException("There are multiple instances of internal share ID '" + internalShareUser.getInternalShareId() + "' in the database!");
                     }
                 }
                 else{
-                    throw new IllegalArgumentException("There are multiple instances of internal share ID '" + internalShareUser.getInternalShareId() + "' in the database!");
+                    throw new IllegalArgumentException("Internal share ID '" + internalShareUser.getInternalShareId() + "' does not exist in the database!");
                 }
             }
-            else{
-                throw new IllegalArgumentException("Internal share ID '" + internalShareUser.getInternalShareId() + "' does not exist in the database!");
-            }
         }
+
         return internalShares;
     }
 
@@ -598,6 +593,23 @@ public class ShareUtils {
                 }
             }
         }
+    }
+
+    public boolean canDownload(int userId, String id, boolean isAsset){
+        boolean result = true;
+
+        // Check if the asset is shared with the user
+        List<InternalShare> internalShares = getInternalSharesWithTargetUser(userId, id, isAsset);
+        if(!internalShares.isEmpty()){
+            // Check if the user can download the shared asset
+            List<String> canDownloadLst = internalShares.stream().map(InternalShare::getCanDownload).collect(Collectors.toList());
+
+            for(String canDownloadStr: canDownloadLst){
+                result = result && canDownloadStr.equalsIgnoreCase("Y");
+            }
+        }
+
+        return result;
     }
 
     @LogEntryExitExecutionTime
