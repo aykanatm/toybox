@@ -595,17 +595,36 @@ public class ShareUtils {
         }
     }
 
-    public boolean canDownload(int userId, String id, boolean isAsset){
+    @LogEntryExitExecutionTime
+    public boolean hasPermission(String permissionType, int userId, String id, boolean isAsset){
         boolean result = true;
 
         // Check if the asset is shared with the user
         List<InternalShare> internalShares = getInternalSharesWithTargetUser(userId, id, isAsset);
         if(!internalShares.isEmpty()){
-            // Check if the user can download the shared asset
-            List<String> canDownloadLst = internalShares.stream().map(InternalShare::getCanDownload).collect(Collectors.toList());
+            List<String> permissionLst = new ArrayList<>();
 
-            for(String canDownloadStr: canDownloadLst){
-                result = result && canDownloadStr.equalsIgnoreCase("Y");
+            // Check if the user can download the shared asset
+            switch (permissionType){
+                case ToyboxConstants.SHARE_PERMISSION_COPY:{
+                    permissionLst = internalShares.stream().map(InternalShare::getCanCopy).collect(Collectors.toList());
+                }
+                case ToyboxConstants.SHARE_PERMISSION_DOWNLOAD:{
+                    permissionLst = internalShares.stream().map(InternalShare::getCanDownload).collect(Collectors.toList());
+                }
+                case ToyboxConstants.SHARE_PERMISSION_EDIT:{
+                    permissionLst = internalShares.stream().map(InternalShare::getCanEdit).collect(Collectors.toList());
+                }
+                case ToyboxConstants.SHARE_PERMISSION_SHARE:{
+                    permissionLst = internalShares.stream().map(InternalShare::getCanShare).collect(Collectors.toList());
+                }
+                default:{
+                    permissionLst.add("N");
+                }
+            }
+
+            for(String permission: permissionLst){
+                result = result && permission.equalsIgnoreCase("Y");
             }
         }
 

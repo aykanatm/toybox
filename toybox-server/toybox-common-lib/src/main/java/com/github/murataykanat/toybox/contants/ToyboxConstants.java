@@ -61,4 +61,9 @@ public final class ToyboxConstants {
     public static final String GIFSICLE = "Gifsicle";
 
     public static final String TOYBOX_NOTIFICATION_EXCHANGE = "toybox-notification-exchange";
+
+    public static final String SHARE_PERMISSION_DOWNLOAD = "Download";
+    public static final String SHARE_PERMISSION_COPY = "Copy";
+    public static final String SHARE_PERMISSION_EDIT = "Edit";
+    public static final String SHARE_PERMISSION_SHARE = "Share";
 }

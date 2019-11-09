@@ -1,6 +1,7 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
+import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.dbo.InternalShare;
 import com.github.murataykanat.toybox.dbo.User;
@@ -140,7 +141,7 @@ public class RenditionController {
                         }
                         else if(renditionType.equalsIgnoreCase("o")){
                             if(StringUtils.isNotBlank(asset.getPath())){
-                                boolean canDownload = shareUtils.canDownload(user.getId(), asset.getId(), true);
+                                boolean canDownload = shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_DOWNLOAD, user.getId(), asset.getId(), true);
 
                                 if(canDownload){
                                     List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), asset.getId(), true);

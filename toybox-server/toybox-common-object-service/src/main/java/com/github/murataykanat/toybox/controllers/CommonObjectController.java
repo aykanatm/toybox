@@ -85,11 +85,11 @@ public class CommonObjectController {
                             List<Container> selectedContainers = selectionContext.getSelectedContainers();
 
                             for(Asset selectedAsset: selectedAssets){
-                                canDownload = canDownload && shareUtils.canDownload(user.getId(), selectedAsset.getId(), true);
+                                canDownload = canDownload && shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_DOWNLOAD, user.getId(), selectedAsset.getId(), true);
                             }
 
                             for(Container selectedContainer: selectedContainers){
-                                canDownload = canDownload && shareUtils.canDownload(user.getId(), selectedContainer.getId(), false);
+                                canDownload = canDownload && shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_DOWNLOAD, user.getId(), selectedContainer.getId(), false);
                             }
 
                             if(canDownload){
