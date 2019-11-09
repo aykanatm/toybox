@@ -58,7 +58,7 @@
                     <i class="i cursor icon"></i>
                     Rename
                 </a>
-                <a class="item" v-on:click.stop="assetCopy">
+                <a class="item" v-on:click.stop="assetCopy" v-show="canCopy === 'Y'">
                     <i class="copy icon"></i>
                     Copy
                 </a>

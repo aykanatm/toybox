@@ -12,7 +12,8 @@ module.exports = {
         parentContainerId: String,
         shared: String,
         sharedByUsername: String,
-        canDownload: String
+        canDownload: String,
+        canCopy: String
     },
     data: function() {
         return  {

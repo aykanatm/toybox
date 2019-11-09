@@ -32,7 +32,7 @@
                     <i class="i cursor icon"></i>
                     Rename
                 </a>
-                <a class="item" v-on:click.stop="folderCopy">
+                <a class="item" v-on:click.stop="folderCopy" v-show="canCopy === 'Y'">
                     <i class="copy icon"></i>
                     Copy
                 </a>

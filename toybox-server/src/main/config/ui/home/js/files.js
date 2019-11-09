@@ -104,6 +104,14 @@ const files = new Vue({
 
                 for(var i = 0; i < after.length; i++){
                     var item = after[i];
+                    if(item.canCopy === 'N'){
+                        this.canCopy = false;
+                        break;
+                    }
+                }
+
+                for(var i = 0; i < after.length; i++){
+                    var item = after[i];
                     if(item.shared === 'Y'){
                         this.canDelete = false;
                         this.canMove = false;

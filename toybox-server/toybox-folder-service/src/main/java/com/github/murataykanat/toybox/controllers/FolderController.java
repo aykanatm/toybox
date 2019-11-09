@@ -1,6 +1,7 @@
 package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
+import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.*;
 import com.github.murataykanat.toybox.models.share.SharedAssets;
 import com.github.murataykanat.toybox.models.share.SharedContainers;
@@ -297,7 +298,8 @@ public class FolderController {
                                     if(assetSharedWithUser){
                                         User sourceUser = shareUtils.getSourceUser(user.getId(), userAsset.getId(), true);
                                         if(sourceUser != null){
-                                            userAsset.setCanDownload(shareUtils.canDownload(user.getId(), userAsset.getId(), true) ? "Y" : "N");
+                                            userAsset.setCanCopy(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_COPY, user.getId(), userAsset.getId(), true) ? "Y" : "N");
+                                            userAsset.setCanDownload(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_DOWNLOAD, user.getId(), userAsset.getId(), true) ? "Y" : "N");
                                             userAsset.setShared("Y");
                                             userAsset.setSharedByUsername(sourceUser.getUsername());
                                         }
@@ -317,7 +319,8 @@ public class FolderController {
                                     if(containerSharedWithUser){
                                         User sourceUser = shareUtils.getSourceUser(user.getId(), userContainer.getId(), false);
                                         if(sourceUser != null){
-                                            userContainer.setCanDownload(shareUtils.canDownload(user.getId(), userContainer.getId(), false) ? "Y" : "N");
+                                            userContainer.setCanCopy(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_COPY, user.getId(), userContainer.getId(), false) ? "Y" : "N");
+                                            userContainer.setCanDownload(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_DOWNLOAD, user.getId(), userContainer.getId(), false) ? "Y" : "N");
                                             userContainer.setShared("Y");
                                             userContainer.setSharedByUsername(sourceUser.getUsername());
                                         }

@@ -636,35 +636,65 @@ public class CommonObjectController {
         try{
             if(authenticationUtils.isSessionValid(authentication)){
                 if(copyAssetRequest != null){
-                    SelectionContext selectionContext = copyAssetRequest.getSelectionContext();
-                    if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
-                        if(!(selectionContext.getSelectedAssets().isEmpty() && selectionContext.getSelectedContainers().isEmpty())){
-                            List<String> targetContainerIds = copyAssetRequest.getContainerIds();
-                            List<String> sourceAssetIds = selectionContext.getSelectedAssets().stream().map(Asset::getId).collect(Collectors.toList());
-                            List<String> sourceContainerIds = selectionContext.getSelectedContainers().stream().map(Container::getId).collect(Collectors.toList());
+                    User user = authenticationUtils.getUser(authentication.getName());
+                    if(user != null){
+                        SelectionContext selectionContext = copyAssetRequest.getSelectionContext();
+                        if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
+                            if(!(selectionContext.getSelectedAssets().isEmpty() && selectionContext.getSelectedContainers().isEmpty())){
+                                boolean canCopy = true;
+                                List<String> targetContainerIds = copyAssetRequest.getContainerIds();
+                                List<String> sourceAssetIds = selectionContext.getSelectedAssets().stream().map(Asset::getId).collect(Collectors.toList());
+                                List<String> sourceContainerIds = selectionContext.getSelectedContainers().stream().map(Container::getId).collect(Collectors.toList());
 
-                            int assetCount = 0;
-                            int containerCount = 0;
+                                for(String sourceAssetId: sourceAssetIds){
+                                    canCopy = canCopy && shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_COPY, user.getId(), sourceAssetId, true);
+                                }
 
-                            assetUtils.copyAssets(session, sourceAssetIds, targetContainerIds, authentication.getName(), importStagingPath);
-                            assetCount += sourceAssetIds.size();
-                            containerUtils.copyContainers(session, sourceContainerIds, targetContainerIds, authentication.getName(), importStagingPath);
-                            containerCount += sourceContainerIds.size();
+                                for(String sourceContainerId: sourceContainerIds){
+                                    canCopy = canCopy && shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_COPY, user.getId(), sourceContainerId, false);
+                                }
 
-                            String failureMessage = "You do not have the permission to copy the selected assets and/or folders.";
-                            String message = generateProcessingResponse(assetCount, containerCount, " started to be copied to the selected folders. This action may take a while depending on the number and size of the selected assets and folders. You can follow the progress of the copy operations in 'Jobs' section.", failureMessage);
+                                if(canCopy){
+                                    int assetCount = 0;
+                                    int containerCount = 0;
 
-                            genericResponse.setMessage(message);
+                                    assetUtils.copyAssets(session, sourceAssetIds, targetContainerIds, authentication.getName(), importStagingPath);
+                                    assetCount += sourceAssetIds.size();
+                                    containerUtils.copyContainers(session, sourceContainerIds, targetContainerIds, authentication.getName(), importStagingPath);
+                                    containerCount += sourceContainerIds.size();
 
-                            if(message.equalsIgnoreCase(failureMessage)){
-                                return new ResponseEntity<>(genericResponse, HttpStatus.FORBIDDEN);
+                                    String failureMessage = "You do not have the permission to copy the selected assets and/or folders.";
+                                    String message = generateProcessingResponse(assetCount, containerCount, " started to be copied to the selected folders. This action may take a while depending on the number and size of the selected assets and folders. You can follow the progress of the copy operations in 'Jobs' section.", failureMessage);
+
+                                    genericResponse.setMessage(message);
+
+                                    if(message.equalsIgnoreCase(failureMessage)){
+                                        return new ResponseEntity<>(genericResponse, HttpStatus.FORBIDDEN);
+                                    }
+                                    else{
+                                        return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                    }
+                                }
+                                else{
+                                    String errorMessage = "You do not have permission to copy one or more of the selected files and/or folders!";
+                                    _logger.error(errorMessage);
+
+                                    genericResponse.setMessage(errorMessage);
+
+                                    return new ResponseEntity<>(genericResponse, HttpStatus.FORBIDDEN);
+                                }
                             }
                             else{
-                                return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                String errorMessage = "No assets or folders are selected!";
+                                _logger.error(errorMessage);
+
+                                genericResponse.setMessage(errorMessage);
+
+                                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
                             }
                         }
                         else{
-                            String errorMessage = "No assets or folders are selected!";
+                            String errorMessage = "Selection context is not valid!";
                             _logger.error(errorMessage);
 
                             genericResponse.setMessage(errorMessage);
@@ -673,12 +703,7 @@ public class CommonObjectController {
                         }
                     }
                     else{
-                        String errorMessage = "Selection context is not valid!";
-                        _logger.error(errorMessage);
-
-                        genericResponse.setMessage(errorMessage);
-
-                        return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                        throw new IllegalArgumentException("User is null!");
                     }
                 }
                 else{

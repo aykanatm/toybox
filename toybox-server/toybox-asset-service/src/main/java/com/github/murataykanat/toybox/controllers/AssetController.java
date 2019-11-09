@@ -160,7 +160,8 @@ public class AssetController {
                                         for(SharedAssets sharedAssets: sharedAssetsLst){
                                             assetIsSharedWithUser = sharedAssets.getAssetIds().stream().anyMatch(assetId -> assetId.equalsIgnoreCase(asset.getId()));
                                             if(assetIsSharedWithUser){
-                                                asset.setCanDownload(shareUtils.canDownload(user.getId(), asset.getId(), true) ? "Y" : "N");
+                                                asset.setCanCopy(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_COPY, user.getId(), asset.getId(), true) ? "Y" : "N");
+                                                asset.setCanDownload(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_DOWNLOAD, user.getId(), asset.getId(), true) ? "Y" : "N");
                                                 asset.setShared("Y");
                                                 asset.setSharedByUsername(sharedAssets.getUsername());
                                                 break;

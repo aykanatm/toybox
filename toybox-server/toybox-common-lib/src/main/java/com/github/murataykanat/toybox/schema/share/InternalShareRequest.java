@@ -34,8 +34,8 @@ public class InternalShareRequest implements Serializable {
     private boolean canDownload;
     @JsonProperty("canShare")
     private boolean canShare;
-    @JsonProperty("canMoveOrCopy")
-    private boolean canMoveOrCopy;
+    @JsonProperty("canCopy")
+    private boolean canCopy;
 
     public List<String> getSharedUsergroups() {
         return sharedUsergroups;
@@ -117,14 +117,6 @@ public class InternalShareRequest implements Serializable {
         this.canShare = canShare;
     }
 
-    public boolean getCanMoveOrCopy() {
-        return canMoveOrCopy;
-    }
-
-    public void setCanMoveOrCopy(boolean canMoveOrCopy) {
-        this.canMoveOrCopy = canMoveOrCopy;
-    }
-
     public SelectionContext getSelectionContext() {
         return selectionContext;
     }
@@ -139,5 +131,13 @@ public class InternalShareRequest implements Serializable {
 
     public void setSharedUsers(List<String> sharedUsers) {
         this.sharedUsers = sharedUsers;
+    }
+
+    public boolean getCanCopy() {
+        return canCopy;
+    }
+
+    public void setCanCopy(boolean canCopy) {
+        this.canCopy = canCopy;
     }
 }

@@ -248,11 +248,10 @@ public class ShareUtils {
         String canEdit = internalShareRequest.getCanEdit() ? "Y" : "N";
         String canDownload = internalShareRequest.getCanDownload() ? "Y" : "N";
         String canShare = internalShareRequest.getCanShare() ? "Y" : "N";
-        String canMoveOrCopy = internalShareRequest.getCanMoveOrCopy() ? "Y" : "N";
-
+        String canCopy = internalShareRequest.getCanCopy() ? "Y" : "N";
 
         internalSharesRepository.insertExternalShare(internalShareId, user.getUsername(), expirationDate,
-                notifyOnEdit, notifyOnDownload, notifyOnShare, notifyOnMoveOrCopy, canEdit, canDownload, canShare, canMoveOrCopy);
+                notifyOnEdit, notifyOnDownload, notifyOnShare, notifyOnMoveOrCopy, canEdit, canDownload, canShare, canCopy);
 
         List<Asset> sharedAssets = new ArrayList<>();
         List<Container> sharedContainers = new ArrayList<>();
@@ -608,18 +607,23 @@ public class ShareUtils {
             switch (permissionType){
                 case ToyboxConstants.SHARE_PERMISSION_COPY:{
                     permissionLst = internalShares.stream().map(InternalShare::getCanCopy).collect(Collectors.toList());
+                    break;
                 }
                 case ToyboxConstants.SHARE_PERMISSION_DOWNLOAD:{
                     permissionLst = internalShares.stream().map(InternalShare::getCanDownload).collect(Collectors.toList());
+                    break;
                 }
                 case ToyboxConstants.SHARE_PERMISSION_EDIT:{
                     permissionLst = internalShares.stream().map(InternalShare::getCanEdit).collect(Collectors.toList());
+                    break;
                 }
                 case ToyboxConstants.SHARE_PERMISSION_SHARE:{
                     permissionLst = internalShares.stream().map(InternalShare::getCanShare).collect(Collectors.toList());
+                    break;
                 }
                 default:{
                     permissionLst.add("N");
+                    break;
                 }
             }
 
