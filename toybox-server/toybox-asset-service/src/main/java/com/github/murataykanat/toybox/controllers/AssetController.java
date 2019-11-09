@@ -160,6 +160,7 @@ public class AssetController {
                                         for(SharedAssets sharedAssets: sharedAssetsLst){
                                             assetIsSharedWithUser = sharedAssets.getAssetIds().stream().anyMatch(assetId -> assetId.equalsIgnoreCase(asset.getId()));
                                             if(assetIsSharedWithUser){
+                                                asset.setCanEdit(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_EDIT, user.getId(), asset.getId(), true) ? "Y" : "N");
                                                 asset.setCanCopy(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_COPY, user.getId(), asset.getId(), true) ? "Y" : "N");
                                                 asset.setCanDownload(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_DOWNLOAD, user.getId(), asset.getId(), true) ? "Y" : "N");
                                                 asset.setShared("Y");
@@ -275,18 +276,28 @@ public class AssetController {
                     if(updateAssetRequest != null){
                         User user = authenticationUtils.getUser(authentication);
                         if(user != null){
-                            Asset oldAsset = assetUtils.getAsset(assetId);
-                            Asset asset = assetUtils.updateAsset(updateAssetRequest, assetId, user, session);
-                            if(asset != null){
-                                String message = "Asset updated successfully.";
-                                _logger.debug(message);
+                            boolean canEdit = shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_EDIT, user.getId(), assetId, true);
+                            if(canEdit){
+                                Asset asset = assetUtils.updateAsset(updateAssetRequest, assetId, user, session);
+                                if(asset != null){
+                                    String message = "Asset updated successfully.";
+                                    _logger.debug(message);
 
-                                genericResponse.setMessage(message);
+                                    genericResponse.setMessage(message);
 
-                                return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                    return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                }
+                                else{
+                                    throw new IllegalArgumentException("Asset update failed!");
+                                }
                             }
                             else{
-                                throw new IllegalArgumentException("Asset update failed!");
+                                String errorMessage = "You do not have permission to edit the selected file!";
+                                _logger.error(errorMessage);
+
+                                genericResponse.setMessage(errorMessage);
+
+                                return new ResponseEntity<>(genericResponse, HttpStatus.FORBIDDEN);
                             }
                         }
                         else{
@@ -340,35 +351,30 @@ public class AssetController {
                 if(StringUtils.isNotBlank(assetId)){
                     User user = authenticationUtils.getUser(authentication);
                     if(user != null){
-                        List<Asset> assetsById = assetsRepository.getAssetsById(assetId);
-                        if(!assetsById.isEmpty()){
-                            if(assetsById.size() == 1){
-                                Asset asset = assetsById.get(0);
+                        boolean canEdit = shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_EDIT, user.getId(), assetId, true);
+                        if(canEdit){
+                            Asset asset = assetUtils.getAsset(assetId);
 
-                                List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(asset.getOriginalAssetId());
-                                if(!assetsByOriginalAssetId.isEmpty()){
-                                    sortUtils.sortItems("des", assetsByOriginalAssetId, Comparator.comparing(Asset::getVersion));
+                            List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(asset.getOriginalAssetId());
+                            if(!assetsByOriginalAssetId.isEmpty()){
+                                sortUtils.sortItems("des", assetsByOriginalAssetId, Comparator.comparing(Asset::getVersion));
 
-                                    assetVersionResponse.setAssets(assetsByOriginalAssetId);
-                                    assetVersionResponse.setMessage("Asset version history retrieved successfully.");
+                                assetVersionResponse.setAssets(assetsByOriginalAssetId);
+                                assetVersionResponse.setMessage("Asset version history retrieved successfully.");
 
-                                    return new ResponseEntity<>(assetVersionResponse, HttpStatus.OK);
-                                }
-                                else{
-                                    throw new IllegalArgumentException("No assets found with original asset ID '" + asset.getOriginalAssetId() + "'!");
-                                }
+                                return new ResponseEntity<>(assetVersionResponse, HttpStatus.OK);
                             }
                             else{
-                                throw new IllegalArgumentException("There are multiple assets with ID '" + assetId + "'!");
+                                throw new IllegalArgumentException("No assets found with original asset ID '" + asset.getOriginalAssetId() + "'!");
                             }
                         }
                         else{
-                            String errorMessage = "No assets found with ID '" + assetId + "'.";
+                            String errorMessage = "You do not have permission to edit the selected file!";
                             _logger.error(errorMessage);
 
                             assetVersionResponse.setMessage(errorMessage);
 
-                            return new ResponseEntity<>(assetVersionResponse, HttpStatus.NOT_FOUND);
+                            return new ResponseEntity<>(assetVersionResponse, HttpStatus.FORBIDDEN);
                         }
                     }
                     else{

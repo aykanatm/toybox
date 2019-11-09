@@ -28,7 +28,7 @@
                     <i class="download icon"></i>
                     Download
                 </a>
-                <a class="item" v-on:click.stop="folderRename">
+                <a class="item" v-on:click.stop="folderRename" v-show="canEdit === 'Y'">
                     <i class="i cursor icon"></i>
                     Rename
                 </a>

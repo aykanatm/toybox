@@ -298,6 +298,7 @@ public class FolderController {
                                     if(assetSharedWithUser){
                                         User sourceUser = shareUtils.getSourceUser(user.getId(), userAsset.getId(), true);
                                         if(sourceUser != null){
+                                            userAsset.setCanEdit(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_EDIT, user.getId(), userAsset.getId(), true) ? "Y" : "N");
                                             userAsset.setCanCopy(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_COPY, user.getId(), userAsset.getId(), true) ? "Y" : "N");
                                             userAsset.setCanDownload(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_DOWNLOAD, user.getId(), userAsset.getId(), true) ? "Y" : "N");
                                             userAsset.setShared("Y");
@@ -319,6 +320,7 @@ public class FolderController {
                                     if(containerSharedWithUser){
                                         User sourceUser = shareUtils.getSourceUser(user.getId(), userContainer.getId(), false);
                                         if(sourceUser != null){
+                                            userContainer.setCanEdit(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_EDIT, user.getId(), userContainer.getId(), false) ? "Y" : "N");
                                             userContainer.setCanCopy(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_COPY, user.getId(), userContainer.getId(), false) ? "Y" : "N");
                                             userContainer.setCanDownload(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_DOWNLOAD, user.getId(), userContainer.getId(), false) ? "Y" : "N");
                                             userContainer.setShared("Y");
@@ -468,17 +470,28 @@ public class FolderController {
                     if(updateContainerRequest != null){
                         User user = authenticationUtils.getUser(authentication);
                         if(user != null){
-                            Container container = containerUtils.updateContainer(updateContainerRequest, containerId, user, session);
-                            if(container != null){
-                                String message = "Container updated successfully.";
-                                _logger.debug(message);
+                            boolean canEdit = shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_EDIT, user.getId(), containerId, false);
+                            if(canEdit){
+                                Container container = containerUtils.updateContainer(updateContainerRequest, containerId, user, session);
+                                if(container != null){
+                                    String message = "Container updated successfully.";
+                                    _logger.debug(message);
 
-                                genericResponse.setMessage(message);
+                                    genericResponse.setMessage(message);
 
-                                return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                    return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                                }
+                                else{
+                                    throw new IllegalArgumentException("Container update failed!");
+                                }
                             }
                             else{
-                                throw new IllegalArgumentException("Container update failed!");
+                                String errorMessage = "You do not have permission to edit the selected folder!";
+                                _logger.error(errorMessage);
+
+                                genericResponse.setMessage(errorMessage);
+
+                                return new ResponseEntity<>(genericResponse, HttpStatus.FORBIDDEN);
                             }
                         }
                         else{

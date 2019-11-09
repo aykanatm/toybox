@@ -78,6 +78,9 @@ public class Asset implements Serializable, ContainerItem {
     private String canCopy;
 
     @Transient
+    private String canEdit;
+
+    @Transient
     private String parentContainerId;
 
     @Column(name = "checksum")
@@ -297,5 +300,15 @@ public class Asset implements Serializable, ContainerItem {
 
     public void setCanCopy(String canCopy) {
         this.canCopy = canCopy;
+    }
+
+    @Transient
+    @JsonGetter(value = "canEdit")
+    public String getCanEdit() {
+        return canEdit;
+    }
+
+    public void setCanEdit(String canEdit) {
+        this.canEdit = canEdit;
     }
 }

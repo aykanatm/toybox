@@ -13,7 +13,8 @@ module.exports = {
         shared: String,
         sharedByUsername: String,
         canDownload: String,
-        canCopy: String
+        canCopy: String,
+        canEdit: String
     },
     data: function() {
         return  {

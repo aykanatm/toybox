@@ -54,7 +54,7 @@
                     <i class="download icon"></i>
                     Download
                 </a>
-                <a class="item" v-on:click.stop="assetRename">
+                <a class="item" v-on:click.stop="assetRename" v-show="canEdit === 'Y'">
                     <i class="i cursor icon"></i>
                     Rename
                 </a>
@@ -74,7 +74,7 @@
                     <i class="eye slash icon"></i>
                     Unsubscribe
                 </a>
-                <a class="item" v-on:click.stop="assetShowVersionHistory">
+                <a class="item" v-on:click.stop="assetShowVersionHistory" v-show="canEdit === 'Y'">
                     <i class="list alternate outline icon"></i>
                     Show Version History
                 </a>
