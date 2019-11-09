@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -121,10 +122,14 @@ public class RenditionController {
                         else if(renditionType.equalsIgnoreCase("p")){
                             if(StringUtils.isNotBlank(asset.getPreviewPath())){
                                 if(asset.getPreviewPath().toLowerCase().endsWith("pdf")){
-                                    // TODO: Consider another way since this will not work with large files
-                                    Path path = Paths.get(asset.getPreviewPath());
-                                    ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
-                                    return ResponseEntity.ok().header("Content-Disposition","inline; filename=" + new File(asset.getPreviewPath()).getName()).contentType(MediaType.APPLICATION_PDF).contentLength(resource.contentLength()).body(resource);
+                                    File file = new File(asset.getPreviewPath());
+
+                                    HttpHeaders httpHeaders = new HttpHeaders();
+                                    httpHeaders.add("Content-Disposition", "inline; filename=" + asset.getName());
+                                    httpHeaders.add("Content-Type", MediaType.APPLICATION_PDF_VALUE);
+
+                                    InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
+                                    return new ResponseEntity<>(resource, httpHeaders, HttpStatus.OK);
                                 }
                                 else{
                                     File file = new File(asset.getPreviewPath());
