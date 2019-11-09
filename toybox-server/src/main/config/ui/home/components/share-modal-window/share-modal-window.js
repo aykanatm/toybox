@@ -34,6 +34,8 @@ module.exports = {
     mounted:function(){
         this.$root.$on('open-share-modal-window', (selectionContext) => {
             var shareModalWindow = this;
+            this.isSharing = false;
+
             setTimeout(() => {
                 $('#internal-expiration-date').calendar({
                     type: 'date',
