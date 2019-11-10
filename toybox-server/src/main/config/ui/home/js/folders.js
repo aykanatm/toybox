@@ -28,6 +28,7 @@ const folders = new Vue({
         canSubscribe: false,
         canUnsubscribe: false,
         canDelete: false,
+        canEditCurrentContainer: false
     },
     mounted:function(){
         var csrfHeader = $("meta[name='_csrf_header']").attr("content");
@@ -196,6 +197,7 @@ const folders = new Vue({
                 if(response){
                     this.isLoading = false;
                     this.items = response.data.containers;
+                    this.canEditCurrentContainer = response.data.canEdit === 'Y';
                     this.updateBreadcrumbs(response.data.breadcrumbs);
 
                     if(this.items == null || this.items.length == 0){
@@ -275,6 +277,7 @@ const folders = new Vue({
                         this.isLoading = false;
                         this.items = response.data.containerItems;
                         this.facets = response.data.facets;
+                        this.canEditCurrentContainer = response.data.canEdit === 'Y';
                         this.updateBreadcrumbs(response.data.breadcrumbs);
 
                         if(this.items == null || this.items.length == 0){
@@ -340,6 +343,7 @@ const folders = new Vue({
                                                         this.isLoading = false;
                                                         this.items = response.data.containerItems;
                                                         this.facets = response.data.facets;
+                                                        this.canEditCurrentContainer = response.data.canEdit === 'Y';
                                                         this.updateBreadcrumbs(response.data.breadcrumbs);
 
                                                         if(this.items == null || this.items.length == 0){
@@ -358,6 +362,10 @@ const folders = new Vue({
 
                                                         this.updateButtons();
                                                         this.updatePagination(this.currentPage, this.totalPages, offset, limit, this.totalRecords);
+                                                    }
+                                                    else{
+                                                        this.isLoading = false;
+                                                        this.$root.$emit('message-sent', 'Error', "There was no response from the container loadbalancer!");
                                                     }
                                                 })
                                                 .catch(error => {
@@ -571,7 +579,7 @@ const folders = new Vue({
             return selectedItems;
         },
         updateButtons:function(){
-            if(this.currentFolderId && this.currentFolderId !== ''){
+            if(this.currentFolderId && this.currentFolderId !== '' && this.canEditCurrentContainer){
                 this.canCreateFolder = true;
                 this.canUploadFile = true;
             }

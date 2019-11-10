@@ -73,20 +73,46 @@ public class AssetController {
             GenericResponse genericResponse = new GenericResponse();
             if(authenticationUtils.isSessionValid(authentication)){
                 if(uploadFileLst != null){
-                    RestTemplate restTemplate = new RestTemplate();
+                    User user = authenticationUtils.getUser(authentication);
+                    if(user != null){
+                        boolean canEdit = true;
 
-                    HttpHeaders headers = authenticationUtils.getHeaders(session);
-                    HttpEntity<UploadFileLst> selectedAssetsEntity = new HttpEntity<>(uploadFileLst, headers);
-                    String jobServiceUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.JOB_SERVICE_LOAD_BALANCER_SERVICE_NAME, ToyboxConstants.JOB_SERVICE_NAME, session, false);
+                        if(shareUtils.isContainerSharedWithUser(user.getId(), uploadFileLst.getContainerId())){
+                            List<InternalShare> internalSharesWithTargetUser = shareUtils.getInternalSharesWithTargetUser(user.getId(), uploadFileLst.getContainerId(), false);
 
-                    try{
-                        restTemplate.postForEntity(jobServiceUrl + "/jobs/import", selectedAssetsEntity, JobResponse.class);
-                        genericResponse.setMessage("Import job started for the uploaded file. You can track the result of the import job in 'Jobs' section.");
-                        return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                            for(InternalShare internalShare: internalSharesWithTargetUser){
+                                canEdit = canEdit && internalShare.getCanEdit().equalsIgnoreCase("Y");
+                            }
+                        }
+
+                        if(canEdit){
+                            RestTemplate restTemplate = new RestTemplate();
+
+                            HttpHeaders headers = authenticationUtils.getHeaders(session);
+                            HttpEntity<UploadFileLst> selectedAssetsEntity = new HttpEntity<>(uploadFileLst, headers);
+                            String jobServiceUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.JOB_SERVICE_LOAD_BALANCER_SERVICE_NAME, ToyboxConstants.JOB_SERVICE_NAME, session, false);
+
+                            try{
+                                restTemplate.postForEntity(jobServiceUrl + "/jobs/import", selectedAssetsEntity, JobResponse.class);
+                                genericResponse.setMessage("Import job started for the uploaded file. You can track the result of the import job in 'Jobs' section.");
+                                return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                            }
+                            catch (HttpStatusCodeException httpEx){
+                                JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+                                throw new Exception("Upload was successful but import failed to start. " + responseJson.get("message").getAsString());
+                            }
+                        }
+                        else{
+                            String errorMessage = "You do not have permission to edit the folder with ID '" + uploadFileLst.getContainerId() + "'!";
+                            _logger.error(errorMessage);
+
+                            genericResponse.setMessage(errorMessage);
+
+                            return new ResponseEntity<>(genericResponse, HttpStatus.FORBIDDEN);
+                        }
                     }
-                    catch (HttpStatusCodeException httpEx){
-                        JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
-                        throw new Exception("Upload was successful but import failed to start. " + responseJson.get("message").getAsString());
+                    else{
+                        throw new IllegalArgumentException("User is null!");
                     }
                 }
                 else{

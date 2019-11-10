@@ -72,85 +72,106 @@ public class FolderController {
             if(authenticationUtils.isSessionValid(authentication)){
                 if(createContainerRequest != null){
                     if(StringUtils.isNotBlank(createContainerRequest.getContainerName())){
-                        boolean canCreateFolder;
-                        boolean canSendNotification = false;
-                        Container parentContainer = null;
+                        User user = authenticationUtils.getUser(authentication);
+                        if(user != null){
+                            boolean canCreateFolder;
+                            boolean canSendNotification = false;
+                            Container parentContainer = null;
 
-                        String errorMessage = "";
-                        if(StringUtils.isBlank(createContainerRequest.getParentContainerId())){
-                            if(authenticationUtils.isAdminUser(authentication)){
-                                Container duplicateTopLevelContainer = containerUtils.findDuplicateTopLevelContainer(createContainerRequest.getContainerName());
-                                if(duplicateTopLevelContainer == null){
-                                    canCreateFolder = true;
+                            String errorMessage = "";
+                            if(StringUtils.isBlank(createContainerRequest.getParentContainerId())){
+                                if(authenticationUtils.isAdminUser(authentication)){
+                                    Container duplicateTopLevelContainer = containerUtils.findDuplicateTopLevelContainer(createContainerRequest.getContainerName());
+                                    if(duplicateTopLevelContainer == null){
+                                        canCreateFolder = true;
+                                    }
+                                    else{
+                                        canCreateFolder = false;
+                                        errorMessage = "The root folder already has a folder named '" + createContainerRequest.getContainerName() + "'.";
+                                    }
+
                                 }
                                 else{
                                     canCreateFolder = false;
-                                    errorMessage = "The root folder already has a folder named '" + createContainerRequest.getContainerName() + "'.";
+                                    errorMessage = "You are not allowed to create a folder under the root folder.";
+                                }
+                            }
+                            else{
+                                boolean canEdit = true;
+
+                                if(shareUtils.isContainerSharedWithUser(user.getId(), createContainerRequest.getParentContainerId())){
+                                    List<InternalShare> internalSharesWithTargetUser = shareUtils.getInternalSharesWithTargetUser(user.getId(), createContainerRequest.getParentContainerId(), false);
+
+                                    for(InternalShare internalShare: internalSharesWithTargetUser){
+                                        canEdit = canEdit && internalShare.getCanEdit().equalsIgnoreCase("Y");
+                                    }
                                 }
 
-                            }
-                            else{
-                                canCreateFolder = false;
-                                errorMessage = "You are not allowed to create a folder under the root folder.";
-                            }
-                        }
-                        else{
-                            parentContainer = containerUtils.getContainer(createContainerRequest.getParentContainerId());
-                            Container duplicateContainer = containerUtils.findDuplicateContainer(createContainerRequest.getParentContainerId(), createContainerRequest.getContainerName());
-                            if(duplicateContainer == null){
-                                canCreateFolder = true;
-                                canSendNotification = true;
-                            }
-                            else{
-                                canCreateFolder = false;
-                                errorMessage = "The folder '" + parentContainer.getName() + "' already has a folder named '" + createContainerRequest.getContainerName() + "'.";
-                            }
-                        }
+                                parentContainer = containerUtils.getContainer(createContainerRequest.getParentContainerId());
 
-                        if(canCreateFolder){
-                            Container container = new Container();
-                            container.setName(createContainerRequest.getContainerName());
-                            container.setParentId(createContainerRequest.getParentContainerId());
-                            container.setCreatedByUsername(authentication.getName());
-                            container.setCreationDate(Calendar.getInstance().getTime());
-                            container.setDeleted("N");
-                            container.setSystem("N");
-
-                            containerUtils.createContainer(container);
-
-                            // Check if the parent folder is shared
-                            // If so add the folder to the shares
-                            List<InternalShare> internalShares = shareUtils.getInternalSharesContainingItem(container.getParentId(), false);
-                            for(InternalShare internalShare: internalShares){
-                                shareUtils.addContainerToInternalShare(container.getId(), internalShare.getInternalShareId());
-                            }
-
-                            createContainerResponse.setContainerId(container.getId());
-                            createContainerResponse.setMessage("Folder created successfully!");
-
-                            if(canSendNotification){
-                                User user = authenticationUtils.getUser(authentication.getName());
-
-                                // Send notification for subscribers
-                                List<User> subscribers = containerUtils.getSubscribers(container.getId());
-                                for(User subscriber: subscribers){
-                                    String message = "Folder '" + container.getName() + "' is created under the folder '" + parentContainer.getName() + "' by '" + user.getUsername() + "'";
-                                    SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                                    sendNotificationRequest.setFromUsername(user.getUsername());
-                                    sendNotificationRequest.setToUsername(subscriber.getUsername());
-                                    sendNotificationRequest.setMessage(message);
-                                    notificationUtils.sendNotification(sendNotificationRequest, session);
+                                if(canEdit){
+                                    Container duplicateContainer = containerUtils.findDuplicateContainer(createContainerRequest.getParentContainerId(), createContainerRequest.getContainerName());
+                                    if(duplicateContainer == null){
+                                        canCreateFolder = true;
+                                        canSendNotification = true;
+                                    }
+                                    else{
+                                        canCreateFolder = false;
+                                        errorMessage = "The folder '" + parentContainer.getName() + "' already has a folder named '" + createContainerRequest.getContainerName() + "'.";
+                                    }
+                                }
+                                else{
+                                    canCreateFolder = false;
+                                    errorMessage = "You are not allowed to create a folder under the folder '" + parentContainer.getName() + "'.";
                                 }
                             }
 
-                            return new ResponseEntity<>(createContainerResponse, HttpStatus.OK);
+                            if(canCreateFolder){
+                                Container container = new Container();
+                                container.setName(createContainerRequest.getContainerName());
+                                container.setParentId(createContainerRequest.getParentContainerId());
+                                container.setCreatedByUsername(authentication.getName());
+                                container.setCreationDate(Calendar.getInstance().getTime());
+                                container.setDeleted("N");
+                                container.setSystem("N");
+
+                                containerUtils.createContainer(container);
+
+                                // Check if the parent folder is shared
+                                // If so add the folder to the shares
+                                List<InternalShare> internalShares = shareUtils.getInternalSharesContainingItem(container.getParentId(), false);
+                                for(InternalShare internalShare: internalShares){
+                                    shareUtils.addContainerToInternalShare(container.getId(), internalShare.getInternalShareId());
+                                }
+
+                                createContainerResponse.setContainerId(container.getId());
+                                createContainerResponse.setMessage("Folder created successfully!");
+
+                                if(canSendNotification){
+                                    // Send notification for subscribers
+                                    List<User> subscribers = containerUtils.getSubscribers(container.getId());
+                                    for(User subscriber: subscribers){
+                                        String message = "Folder '" + container.getName() + "' is created under the folder '" + parentContainer.getName() + "' by '" + user.getUsername() + "'";
+                                        SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                        sendNotificationRequest.setFromUsername(user.getUsername());
+                                        sendNotificationRequest.setToUsername(subscriber.getUsername());
+                                        sendNotificationRequest.setMessage(message);
+                                        notificationUtils.sendNotification(sendNotificationRequest, session);
+                                    }
+                                }
+
+                                return new ResponseEntity<>(createContainerResponse, HttpStatus.OK);
+                            }
+                            else{
+                                _logger.error(errorMessage);
+
+                                createContainerResponse.setMessage(errorMessage);
+
+                                return new ResponseEntity<>(createContainerResponse, HttpStatus.FORBIDDEN);
+                            }
                         }
                         else{
-                            _logger.error(errorMessage);
-
-                            createContainerResponse.setMessage(errorMessage);
-
-                            return new ResponseEntity<>(createContainerResponse, HttpStatus.BAD_REQUEST);
+                            throw new IllegalArgumentException("User is null!");
                         }
                     }
                     else{
@@ -411,6 +432,20 @@ public class FolderController {
 
                             // Set breadcrumbs
                             retrieveContainerContentsResult.setBreadcrumbs(containerUtils.generateContainerPath(container.getId()));
+
+                            // Set edit status
+                            if(shareUtils.isContainerSharedWithUser(user.getId(), containerId)){
+                                List<InternalShare> internalSharesWithTargetUser = shareUtils.getInternalSharesWithTargetUser(user.getId(), containerId, false);
+                                boolean canEdit = true;
+                                for(InternalShare internalShare: internalSharesWithTargetUser){
+                                    canEdit = canEdit && internalShare.getCanEdit().equalsIgnoreCase("Y");
+                                }
+
+                                retrieveContainerContentsResult.setCanEdit(canEdit ? "Y" : "N");
+                            }
+                            else{
+                                retrieveContainerContentsResult.setCanEdit("Y");
+                            }
 
                             // Finalize
                             retrieveContainerContentsResult.setTotalRecords(totalRecords);
