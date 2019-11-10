@@ -170,6 +170,12 @@ public class AssetController {
                                 assetsByCurrentUser = allAssets.stream()
                                         .filter(asset -> asset.getIsLatestVersion().equalsIgnoreCase("Y"))
                                         .collect(Collectors.toList());
+
+                                assetsByCurrentUser.forEach(asset -> {
+                                    asset.setCanDownload("Y");
+                                    asset.setCanCopy("Y");
+                                    asset.setCanEdit("Y");
+                                });
                             }
                             else{
                                 _logger.debug("Retrieving assets of the user '" + user.getUsername() + "'...");
@@ -182,6 +188,9 @@ public class AssetController {
                                         boolean assetIsSharedWithUser = false;
 
                                         asset.setShared("N");
+                                        asset.setCanDownload("Y");
+                                        asset.setCanCopy("Y");
+                                        asset.setCanEdit("Y");
 
                                         for(SharedAssets sharedAssets: sharedAssetsLst){
                                             assetIsSharedWithUser = sharedAssets.getAssetIds().stream().anyMatch(assetId -> assetId.equalsIgnoreCase(asset.getId()));

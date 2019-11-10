@@ -331,7 +331,15 @@ public class FolderController {
                                     }
                                     else{
                                         userAsset.setShared("N");
+                                        userAsset.setCanDownload("Y");
+                                        userAsset.setCanCopy("Y");
+                                        userAsset.setCanEdit("Y");
                                     }
+                                }
+                                else{
+                                    userAsset.setCanDownload("Y");
+                                    userAsset.setCanCopy("Y");
+                                    userAsset.setCanEdit("Y");
                                 }
                             }
 
@@ -353,7 +361,15 @@ public class FolderController {
                                     }
                                     else{
                                         userContainer.setShared("N");
+                                        userContainer.setCanDownload("Y");
+                                        userContainer.setCanCopy("Y");
+                                        userContainer.setCanEdit("Y");
                                     }
+                                }
+                                else{
+                                    userContainer.setCanDownload("Y");
+                                    userContainer.setCanCopy("Y");
+                                    userContainer.setCanEdit("Y");
                                 }
                             }
 
