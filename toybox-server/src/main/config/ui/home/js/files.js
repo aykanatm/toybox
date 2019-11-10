@@ -112,6 +112,14 @@ const files = new Vue({
 
                 for(var i = 0; i < after.length; i++){
                     var item = after[i];
+                    if(item.canShare === 'N'){
+                        this.canShare = false;
+                        break;
+                    }
+                }
+
+                for(var i = 0; i < after.length; i++){
+                    var item = after[i];
                     if(item.shared === 'Y'){
                         this.canDelete = false;
                         this.canMove = false;
@@ -314,7 +322,11 @@ const files = new Vue({
                     '@class': 'com.github.murataykanat.toybox.dbo.Asset',
                     parentContainerId: asset.parentContainerId,
                     shared: asset.shared,
-                    sharedByUsername: asset.sharedByUsername
+                    sharedByUsername: asset.sharedByUsername,
+                    canDownload: asset.canDownload,
+                    canCopy: asset.canCopy,
+                    canEdit: asset.canEdit,
+                    canShare: asset.canShare
                 });
             }
 

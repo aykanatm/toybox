@@ -46,7 +46,7 @@
         <div class="content" style="overflow: hidden; height: 40px; text-overflow: ellipsis;">
             <span style="white-space: nowrap;">{{ name }}</span>
             <div v-show="contextMenuOpen" class="ui vertical menu toybox-asset-context-menu">
-                <a class="item" v-on:click.stop="assetShare">
+                <a class="item" v-on:click.stop="assetShare" v-show="canShare === 'Y'">
                     <i class="share alternate icon"></i>
                     Share
                 </a>

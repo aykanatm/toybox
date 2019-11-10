@@ -67,6 +67,9 @@ public class Container implements Serializable, ContainerItem {
     @Transient
     private String canEdit;
 
+    @Transient
+    private String canShare;
+
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, targetEntity = Asset.class)
     @JoinTable(name = "container_asset", joinColumns = @JoinColumn(name = "container_id"), inverseJoinColumns = @JoinColumn(name = "asset_id"))
     @JsonIgnore
@@ -207,5 +210,15 @@ public class Container implements Serializable, ContainerItem {
 
     public void setCanEdit(String canEdit) {
         this.canEdit = canEdit;
+    }
+
+    @Transient
+    @JsonGetter(value = "canShare")
+    public String getCanShare() {
+        return canShare;
+    }
+
+    public void setCanShare(String canShare) {
+        this.canShare = canShare;
     }
 }

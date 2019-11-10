@@ -207,8 +207,25 @@ public class ShareController {
                         SelectionContext selectionContext = externalShareRequest.getSelectionContext();
                         if(selectionUtils.isSelectionContextValid(selectionContext)){
                             if(!(selectionContext.getSelectedAssets().isEmpty() && selectionContext.getSelectedContainers().isEmpty())){
-                                externalShareResponse = shareUtils.createExternalShare(user, externalShareRequest, selectionContext, session);
-                                return new ResponseEntity<>(externalShareResponse, HttpStatus.CREATED);
+                                boolean canShare = true;
+                                for(Asset asset: selectionContext.getSelectedAssets()){
+                                    canShare = canShare && shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_COPY, user.getId(), asset.getId(), true);
+                                }
+
+                                for(Container container:  selectionContext.getSelectedContainers()){
+                                    canShare = canShare && shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_COPY, user.getId(), container.getId(), false);
+                                }
+
+                                if(canShare){
+                                    externalShareResponse = shareUtils.createExternalShare(user, externalShareRequest, selectionContext, session);
+                                    return new ResponseEntity<>(externalShareResponse, HttpStatus.CREATED);
+                                }
+                                else{
+                                    String errorMessage = "You do not have permission to share one or more of the selected files and/or folders!";
+                                    _logger.error(errorMessage);
+
+                                    return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+                                }
                             }
                             else{
                                 String errorMessage = "No assets or folders are selected!";
@@ -271,53 +288,71 @@ public class ShareController {
                         SelectionContext selectionContext = internalShareRequest.getSelectionContext();
                         if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
                             if(!(selectionContext.getSelectedAssets().isEmpty() && selectionContext.getSelectedContainers().isEmpty())){
-                                List<String> sharedUsers = internalShareRequest.getSharedUsers();
+                                boolean canShare = true;
+                                for(Asset asset: selectionContext.getSelectedAssets()){
+                                    canShare = canShare && shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_COPY, user.getId(), asset.getId(), true);
+                                }
 
-                                boolean containsOriginalSharer = false;
+                                for(Container container:  selectionContext.getSelectedContainers()){
+                                    canShare = canShare && shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_COPY, user.getId(), container.getId(), false);
+                                }
+                                if(canShare){
+                                    List<String> sharedUsers = internalShareRequest.getSharedUsers();
 
-                                for(Asset selectedAsset: selectionContext.getSelectedAssets()){
-                                    if(selectedAsset.getShared().equalsIgnoreCase("Y")){
-                                        for(String sharedUsername: sharedUsers){
-                                            if(selectedAsset.getSharedByUsername().equalsIgnoreCase(sharedUsername)){
-                                                containsOriginalSharer = true;
-                                                break;
+                                    boolean containsOriginalSharer = false;
+
+                                    for(Asset selectedAsset: selectionContext.getSelectedAssets()){
+                                        if(selectedAsset.getShared().equalsIgnoreCase("Y")){
+                                            for(String sharedUsername: sharedUsers){
+                                                if(selectedAsset.getSharedByUsername().equalsIgnoreCase(sharedUsername)){
+                                                    containsOriginalSharer = true;
+                                                    break;
+                                                }
                                             }
+                                        }
+
+                                        if(containsOriginalSharer){
+                                            break;
                                         }
                                     }
 
-                                    if(containsOriginalSharer){
-                                        break;
-                                    }
-                                }
-
-                                for(Container selectedContainer: selectionContext.getSelectedContainers()){
-                                    if(selectedContainer.getShared().equalsIgnoreCase("Y")){
-                                        for(String sharedUsername: sharedUsers){
-                                            if(selectedContainer.getSharedByUsername().equalsIgnoreCase(sharedUsername)){
-                                                containsOriginalSharer = true;
-                                                break;
+                                    for(Container selectedContainer: selectionContext.getSelectedContainers()){
+                                        if(selectedContainer.getShared().equalsIgnoreCase("Y")){
+                                            for(String sharedUsername: sharedUsers){
+                                                if(selectedContainer.getSharedByUsername().equalsIgnoreCase(sharedUsername)){
+                                                    containsOriginalSharer = true;
+                                                    break;
+                                                }
                                             }
+                                        }
+
+                                        if(containsOriginalSharer){
+                                            break;
                                         }
                                     }
 
-                                    if(containsOriginalSharer){
-                                        break;
+                                    if(!containsOriginalSharer){
+                                        shareUtils.createInternalShare(user, internalShareRequest, selectionContext, session);
+
+                                        genericResponse.setMessage("Internal share created successfully!");
+                                        return new ResponseEntity<>(genericResponse, HttpStatus.CREATED);
                                     }
-                                }
+                                    else{
+                                        String errorMessage = "You cannot share the asset or folder with its original sharer!";
+                                        _logger.error(errorMessage);
 
-                                if(!containsOriginalSharer){
-                                    shareUtils.createInternalShare(user, internalShareRequest, selectionContext, session);
+                                        genericResponse.setMessage(errorMessage);
 
-                                    genericResponse.setMessage("Internal share created successfully!");
-                                    return new ResponseEntity<>(genericResponse, HttpStatus.CREATED);
+                                        return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                                    }
                                 }
                                 else{
-                                    String errorMessage = "You cannot share the asset or folder with its original sharer!";
+                                    String errorMessage = "You do not have permission to share one or more of the selected files and/or folders!";
                                     _logger.error(errorMessage);
 
                                     genericResponse.setMessage(errorMessage);
 
-                                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                                    return new ResponseEntity<>(genericResponse, HttpStatus.FORBIDDEN);
                                 }
                             }
                             else{

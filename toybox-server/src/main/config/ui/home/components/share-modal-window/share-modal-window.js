@@ -17,10 +17,15 @@ module.exports = {
             notifyOnShare: false,
             notifyOnCopy: false,
             // Share permissions
+            initialCanEdit: false,
+            initialCanDownload: false,
+            initialCanShare: false,
+            initialCanCopy: false,
             canEdit: false,
             canDownload: false,
             canShare: false,
             canCopy: false,
+            hasSharedItem: false,
             // Models
             enableExpireInternal: false,
             enableExpireExternal: false,
@@ -108,6 +113,46 @@ module.exports = {
             $('#user-dropdown').dropdown('clear');
 
             this.selectionContext = selectionContext;
+
+            var canEditAll = true;
+            var canDownloadAll = true;
+            var canShareAll = true;
+            var canCopyAll = true;
+            this.hasSharedItem = false;
+
+            for(var j = 0; j < this.selectionContext.selectedAssets.length; j++){
+                var selectedAsset = this.selectionContext.selectedAssets[j];
+                if(selectedAsset.shared === 'Y'){
+                    canEditAll = canEditAll && (selectedAsset.canEdit === 'Y');
+                    canDownloadAll = canDownloadAll && (selectedAsset.canDownload === 'Y');
+                    canShareAll = canShareAll && (selectedAsset.canShare === 'Y');
+                    canCopyAll = canCopyAll && (selectedAsset.canCopy === 'Y');
+                    this.hasSharedItem = true;
+                }
+            }
+
+            for(var j = 0; j < this.selectionContext.selectedContainers.length; j++){
+                var selectedContainer = this.selectionContext.selectedContainers[j];
+                if(selectedContainer.shared === "Y"){
+                    canEditAll = canEditAll && (selectedContainer.canEdit === 'Y');
+                    canDownloadAll = canDownloadAll && (selectedContainer.canDownload === 'Y');
+                    canShareAll = canShareAll && (selectedContainer.canShare === 'Y');
+                    canCopyAll = canCopyAll && (selectedContainer.canCopy === 'Y');
+                    this.hasSharedItem = true;
+                }
+            }
+
+            if(this.hasSharedItem){
+                this.canEdit = canEditAll;
+                this.canDownload = canDownloadAll;
+                this.canShare = canShareAll;
+                this.canCopy = canCopyAll;
+            }
+
+            this.initialCanEdit = this.canEdit;
+            this.initialCanDownload = this.canDownload;
+            this.initialCanShare = this.canShare;
+            this.initialCanCopy = this.canCopy;
 
             this.getService("toybox-user-loadbalancer")
                 .then(response => {
@@ -259,10 +304,10 @@ module.exports = {
                 this.notifyOnShare = false;
                 this.notifyOnCopy = false;
 
-                this.canEdit = false;
-                this.canDownload = false;
-                this.canShare = false;
-                this.canCopy = false;
+                this.canEdit = this.initialCanCopy;
+                this.canDownload = this.initialCanDownload;
+                this.canShare = this.initialCanShare;
+                this.canCopy = this.initialCanCopy;
             }
         },
         enableExpireInternal:function(value){

@@ -124,6 +124,14 @@ const folders = new Vue({
 
                 for(var i = 0; i < after.length; i++){
                     var item = after[i];
+                    if(item.canShare === 'N'){
+                        this.canShare = false;
+                        break;
+                    }
+                }
+
+                for(var i = 0; i < after.length; i++){
+                    var item = after[i];
                     if(item.shared === 'Y'){
                         this.canDelete = false;
                         this.canMove = false;
@@ -572,7 +580,11 @@ const folders = new Vue({
                     '@class': itemClass,
                     parentContainerId: item.parentContainerId,
                     shared: item.shared,
-                    sharedByUsername: item.sharedByUsername
+                    sharedByUsername: item.sharedByUsername,
+                    canDownload: item.canDownload,
+                    canCopy: item.canCopy,
+                    canEdit: item.canEdit,
+                    canShare: item.canShare
                 });
             }
 

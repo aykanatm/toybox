@@ -10,7 +10,8 @@ module.exports = {
         sharedByUsername: String,
         canDownload: String,
         canCopy: String,
-        canEdit: String
+        canEdit: String,
+        canShare: String
     },
     data: function() {
         return  {
@@ -65,7 +66,11 @@ module.exports = {
                 '@class': 'com.github.murataykanat.toybox.dbo.Container',
                 parentContainerId: this.parentContainerId,
                 shared: this.shared,
-                sharedByUsername: this.sharedByUsername
+                sharedByUsername: this.sharedByUsername,
+                canDownload: this.canDownload,
+                canCopy: this.canCopy,
+                canEdit: this.canEdit,
+                canShare: this.canShare
             }
             var selectedFolders = [folder];
             this.shareItems(selectedFolders);
@@ -80,7 +85,11 @@ module.exports = {
                 '@class': 'com.github.murataykanat.toybox.dbo.Container',
                 parentContainerId: this.parentContainerId,
                 shared: this.shared,
-                sharedByUsername: this.sharedByUsername
+                sharedByUsername: this.sharedByUsername,
+                canDownload: this.canDownload,
+                canCopy: this.canCopy,
+                canEdit: this.canEdit,
+                canShare: this.canShare
             }
             var selectedFolders = [folder];
             this.downloadItems(selectedFolders);
@@ -99,7 +108,11 @@ module.exports = {
                 '@class': 'com.github.murataykanat.toybox.dbo.Container',
                 parentContainerId: this.parentContainerId,
                 shared: this.shared,
-                sharedByUsername: this.sharedByUsername
+                sharedByUsername: this.sharedByUsername,
+                canDownload: this.canDownload,
+                canCopy: this.canCopy,
+                canEdit: this.canEdit,
+                canShare: this.canShare
             }
             var selectedFolders = [folder];
             this.copyItems(selectedFolders);
@@ -114,7 +127,11 @@ module.exports = {
                 '@class': 'com.github.murataykanat.toybox.dbo.Container',
                 parentContainerId: this.parentContainerId,
                 shared: this.shared,
-                sharedByUsername: this.sharedByUsername
+                sharedByUsername: this.sharedByUsername,
+                canDownload: this.canDownload,
+                canCopy: this.canCopy,
+                canEdit: this.canEdit,
+                canShare: this.canShare
             }
             var selectedFolders = [folder];
             this.moveItems(selectedFolders);
@@ -129,7 +146,11 @@ module.exports = {
                 '@class': 'com.github.murataykanat.toybox.dbo.Container',
                 parentContainerId: this.parentContainerId,
                 shared: this.shared,
-                sharedByUsername: this.sharedByUsername
+                sharedByUsername: this.sharedByUsername,
+                canDownload: this.canDownload,
+                canCopy: this.canCopy,
+                canEdit: this.canEdit,
+                canShare: this.canShare
             }
             var selectedFolders = [folder];
             this.subscribeToItems(selectedFolders);
@@ -144,7 +165,11 @@ module.exports = {
                 '@class': 'com.github.murataykanat.toybox.dbo.Container',
                 parentContainerId: this.parentContainerId,
                 shared: this.shared,
-                sharedByUsername: this.sharedByUsername
+                sharedByUsername: this.sharedByUsername,
+                canDownload: this.canDownload,
+                canCopy: this.canCopy,
+                canEdit: this.canEdit,
+                canShare: this.canShare
             }
             var selectedFolders = [folder];
             this.unsubscribeFromItems(selectedFolders);
@@ -159,7 +184,11 @@ module.exports = {
                 '@class': 'com.github.murataykanat.toybox.dbo.Container',
                 parentContainerId: this.parentContainerId,
                 shared: this.shared,
-                sharedByUsername: this.sharedByUsername
+                sharedByUsername: this.sharedByUsername,
+                canDownload: this.canDownload,
+                canCopy: this.canCopy,
+                canEdit: this.canEdit,
+                canShare: this.canShare
             }
             var selectedFolders = [folder];
             this.deleteItems(selectedFolders);

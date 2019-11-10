@@ -172,6 +172,7 @@ public class AssetController {
                                         .collect(Collectors.toList());
 
                                 assetsByCurrentUser.forEach(asset -> {
+                                    asset.setCanShare("Y");
                                     asset.setCanDownload("Y");
                                     asset.setCanCopy("Y");
                                     asset.setCanEdit("Y");
@@ -188,6 +189,8 @@ public class AssetController {
                                         boolean assetIsSharedWithUser = false;
 
                                         asset.setShared("N");
+
+                                        asset.setCanShare("Y");
                                         asset.setCanDownload("Y");
                                         asset.setCanCopy("Y");
                                         asset.setCanEdit("Y");
@@ -195,6 +198,7 @@ public class AssetController {
                                         for(SharedAssets sharedAssets: sharedAssetsLst){
                                             assetIsSharedWithUser = sharedAssets.getAssetIds().stream().anyMatch(assetId -> assetId.equalsIgnoreCase(asset.getId()));
                                             if(assetIsSharedWithUser){
+                                                asset.setCanShare(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_SHARE, user.getId(), asset.getId(), true) ? "Y" : "N");
                                                 asset.setCanEdit(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_EDIT, user.getId(), asset.getId(), true) ? "Y" : "N");
                                                 asset.setCanCopy(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_COPY, user.getId(), asset.getId(), true) ? "Y" : "N");
                                                 asset.setCanDownload(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_DOWNLOAD, user.getId(), asset.getId(), true) ? "Y" : "N");

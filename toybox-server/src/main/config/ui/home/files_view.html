@@ -89,7 +89,7 @@
                             v-bind:extension="asset.extension" v-bind:type="asset.type" v-bind:rendition-url="renditionUrl" v-bind:subscribed="asset.subscribed"
                             v-bind:original-asset-id="asset.originalAssetId" v-bind:parent-container-id="asset.parentContainerId" v-bind:shared="asset.shared"
                             v-bind:shared-by-username="asset.sharedByUsername" v-bind:can-download="asset.canDownload" v-bind:can-copy="asset.canCopy"
-                            v-bind:can-edit="asset.canEdit" v-bind:key="asset.id"/>
+                            v-bind:can-edit="asset.canEdit" v-bind:can-share="asset.canShare" v-bind:key="asset.id"/>
                         </div>
                         <div class="ui right floated pagination menu toybox-pagination">
                             <a v-bind:class="{icon:true, disabled:previousPageButtonDisabled, item:true}" v-on:click="previousPage">

@@ -14,7 +14,8 @@ module.exports = {
         sharedByUsername: String,
         canDownload: String,
         canCopy: String,
-        canEdit: String
+        canEdit: String,
+        canShare: String
     },
     data: function() {
         return  {
@@ -105,7 +106,11 @@ module.exports = {
                 '@class': 'com.github.murataykanat.toybox.dbo.Asset',
                 parentContainerId: this.parentContainerId,
                 shared: this.shared,
-                sharedByUsername: this.sharedByUsername
+                sharedByUsername: this.sharedByUsername,
+                canDownload: this.canDownload,
+                canCopy: this.canCopy,
+                canEdit: this.canEdit,
+                canShare: this.canShare
             }
             var selectedAssets = [asset];
             this.shareItems(selectedAssets);
@@ -170,7 +175,11 @@ module.exports = {
                 '@class': 'com.github.murataykanat.toybox.dbo.Asset',
                 parentContainerId: this.parentContainerId,
                 shared: this.shared,
-                sharedByUsername: this.sharedByUsername
+                sharedByUsername: this.sharedByUsername,
+                canDownload: this.canDownload,
+                canCopy: this.canCopy,
+                canEdit: this.canEdit,
+                canShare: this.canShare
             }
             var selectedAssets= [asset];
             this.copyItems(selectedAssets);
@@ -186,7 +195,11 @@ module.exports = {
                 '@class': 'com.github.murataykanat.toybox.dbo.Asset',
                 parentContainerId: this.parentContainerId,
                 shared: this.shared,
-                sharedByUsername: this.sharedByUsername
+                sharedByUsername: this.sharedByUsername,
+                canDownload: this.canDownload,
+                canCopy: this.canCopy,
+                canEdit: this.canEdit,
+                canShare: this.canShare
             }
             var selectedAssets= [asset];
             this.moveItems(selectedAssets);
@@ -203,7 +216,11 @@ module.exports = {
                 '@class': 'com.github.murataykanat.toybox.dbo.Asset',
                 parentContainerId: this.parentContainerId,
                 shared: this.shared,
-                sharedByUsername: this.sharedByUsername
+                sharedByUsername: this.sharedByUsername,
+                canDownload: this.canDownload,
+                canCopy: this.canCopy,
+                canEdit: this.canEdit,
+                canShare: this.canShare
             }
             var selectedAssets= [asset];
             this.subscribeToItems(selectedAssets);
@@ -220,7 +237,11 @@ module.exports = {
                 '@class': 'com.github.murataykanat.toybox.dbo.Asset',
                 parentContainerId: this.parentContainerId,
                 shared: this.shared,
-                sharedByUsername: this.sharedByUsername
+                sharedByUsername: this.sharedByUsername,
+                canDownload: this.canDownload,
+                canCopy: this.canCopy,
+                canEdit: this.canEdit,
+                canShare: this.canShare
             }
             var selectedAssets= [asset];
             this.unsubscribeFromItems(selectedAssets);
@@ -236,7 +257,11 @@ module.exports = {
                 '@class': 'com.github.murataykanat.toybox.dbo.Asset',
                 parentContainerId: this.parentContainerId,
                 shared: this.shared,
-                sharedByUsername: this.sharedByUsername
+                sharedByUsername: this.sharedByUsername,
+                canDownload: this.canDownload,
+                canCopy: this.canCopy,
+                canEdit: this.canEdit,
+                canShare: this.canShare
             }
             var selectedAssets= [asset];
             this.deleteItems(selectedAssets);

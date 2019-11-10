@@ -55,25 +55,25 @@
                     <div class="permission-types">
                         <div>
                             <div class="ui toggle checkbox" id="toybox-toggle">
-                                <input type="checkbox" name="canedit" v-model="canEdit" v-bind:disabled="isExternalUser">
+                                <input type="checkbox" name="canedit" v-model="canEdit" v-bind:disabled="isExternalUser || hasSharedItem">
                                 <label>Edit</label>
                             </div>
                         </div>
                         <div>
                             <div class="ui toggle checkbox" id="toybox-toggle">
-                                <input type="checkbox" name="candownload" v-model="canDownload" v-bind:disabled="isExternalUser">
+                                <input type="checkbox" name="candownload" v-model="canDownload" v-bind:disabled="isExternalUser || hasSharedItem">
                                 <label>Download</label>
                             </div>
                         </div>
                         <div>
                             <div class="ui toggle checkbox" id="toybox-toggle">
-                                <input type="checkbox" name="canshare" v-model="canShare" v-bind:disabled="isExternalUser">
+                                <input type="checkbox" name="canshare" v-model="canShare" v-bind:disabled="isExternalUser || hasSharedItem">
                                 <label>Share</label>
                             </div>
                         </div>
                         <div>
                             <div class="ui toggle checkbox" id="toybox-toggle">
-                                <input type="checkbox" name="cancopy" v-model="canCopy" v-bind:disabled="isExternalUser">
+                                <input type="checkbox" name="cancopy" v-model="canCopy" v-bind:disabled="isExternalUser || hasSharedItem">
                                 <label>Copy</label>
                             </div>
                         </div>
