@@ -7,33 +7,32 @@ import com.github.murataykanat.toybox.repositories.*;
 import com.github.murataykanat.toybox.schema.asset.CopyAssetRequest;
 import com.github.murataykanat.toybox.schema.asset.MoveAssetRequest;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
-import com.github.murataykanat.toybox.schema.job.JobResponse;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
 import com.github.murataykanat.toybox.schema.selection.SelectionContext;
 import com.github.murataykanat.toybox.utilities.*;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.core.io.Resource;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.HttpStatusCodeException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import javax.servlet.http.HttpSession;
 import java.io.*;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @RefreshScope
 @RestController
@@ -53,8 +52,6 @@ public class CommonObjectController {
     @Autowired
     private SelectionUtils selectionUtils;
     @Autowired
-    private JobUtils jobUtils;
-    @Autowired
     private ShareUtils shareUtils;
 
     @Autowired
@@ -72,7 +69,7 @@ public class CommonObjectController {
 
     @LogEntryExitExecutionTime
     @RequestMapping(value = "/common-objects/download", method = RequestMethod.POST, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public ResponseEntity<Resource> downloadObjects(Authentication authentication, HttpSession session, @RequestBody SelectionContext selectionContext){
+    public ResponseEntity<StreamingResponseBody> downloadObjects(Authentication authentication, HttpSession session, @RequestBody SelectionContext selectionContext){
         try{
             if(authenticationUtils.isSessionValid(authentication)){
                 User user = authenticationUtils.getUser(authentication);
@@ -93,79 +90,60 @@ public class CommonObjectController {
                             }
 
                             if(canDownload){
-                                RestTemplate restTemplate = new RestTemplate();
                                 HttpHeaders headers = authenticationUtils.getHeaders(session);
+                                String loadbalancerUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.SHARE_LOAD_BALANCER_SERVICE_NAME, ToyboxConstants.RENDITION_SERVICE_NAME, session, false);
 
-                                HttpEntity<SelectionContext> selectionContextHttpEntity = new HttpEntity<>(selectionContext, headers);
-
-                                String jobServiceUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.JOB_SERVICE_LOAD_BALANCER_SERVICE_NAME, ToyboxConstants.JOB_SERVICE_NAME, session, false);
-
-                                try{
-                                    ResponseEntity<JobResponse> jobResponseResponseEntity = restTemplate.postForEntity(jobServiceUrl + "/jobs/package", selectionContextHttpEntity, JobResponse.class);
-                                    if(jobResponseResponseEntity != null){
-                                        JobResponse jobResponse = jobResponseResponseEntity.getBody();
-                                        if(jobResponse != null){
-                                            File archiveFile = jobUtils.getArchiveFile(jobResponse.getJobId(), headers, jobServiceUrl, exportStagingPath);
-                                            if(archiveFile != null && archiveFile.exists()){
-                                                for(Asset selectedAsset: selectedAssets){
-                                                    // Send notification for asset owners
-                                                    List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), selectedAsset.getId(), true);
-                                                    for(InternalShare internalShare: internalShares){
-                                                        boolean downloadAllowed = internalShare.getCanDownload().equalsIgnoreCase("Y");
-                                                        boolean notifyOnDownload = internalShare.getNotifyOnDownload().equalsIgnoreCase("Y");
-
-                                                        if(downloadAllowed && notifyOnDownload){
-                                                            String message = "Asset '" + selectedAsset.getName() + "' is downloaded by '" + user.getUsername() + "'";
-                                                            SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                                                            sendNotificationRequest.setFromUsername(user.getUsername());
-                                                            sendNotificationRequest.setToUsername(internalShare.getUsername());
-                                                            sendNotificationRequest.setMessage(message);
-                                                            notificationUtils.sendNotification(sendNotificationRequest, session);
-                                                        }
-                                                    }
-                                                }
-
-                                                for(Container selectedContainer: selectedContainers){
-                                                    // Send notification for container owners
-                                                    List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), selectedContainer.getId(), false);
-                                                    for(InternalShare internalShare: internalShares){
-                                                        boolean downloadAllowed = internalShare.getCanDownload().equalsIgnoreCase("Y");
-                                                        boolean notifyOnDownload = internalShare.getNotifyOnDownload().equalsIgnoreCase("Y");
-
-                                                        if(downloadAllowed && notifyOnDownload){
-                                                            String message = "Folder '" + selectedContainer.getName() + "' is downloaded by '" + user.getUsername() + "'";
-                                                            SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
-                                                            sendNotificationRequest.setFromUsername(user.getUsername());
-                                                            sendNotificationRequest.setToUsername(internalShare.getUsername());
-                                                            sendNotificationRequest.setMessage(message);
-                                                            notificationUtils.sendNotification(sendNotificationRequest, session);
-                                                        }
-                                                    }
-                                                }
-
-
-                                                InputStreamResource resource = new InputStreamResource(new FileInputStream(archiveFile));
-                                                return new ResponseEntity<>(resource, HttpStatus.OK);
-                                            }
-                                            else{
-                                                if(archiveFile != null){
-                                                    throw new IOException("File '" + archiveFile.getAbsolutePath() + "' does not exist!");
-                                                }
-                                                throw new IllegalArgumentException("Archive file is null!");
-                                            }
+                                StreamingResponseBody responseBody = outputStream -> {
+                                    try(ZipOutputStream zos = new ZipOutputStream(outputStream)){
+                                        for(Asset selectedAsset: selectedAssets){
+                                            addAssetToZipArchive(selectedAsset, loadbalancerUrl, headers, zos, "");
                                         }
-                                        else{
-                                            throw new IllegalArgumentException("Job response is null!");
+
+                                        for(Container selectedContainer: selectedContainers){
+                                            addContainerToZipArchive(selectedContainer, loadbalancerUrl, headers, zos, "");
                                         }
                                     }
-                                    else{
-                                        throw new IllegalArgumentException("Job response entity is null!");
+                                };
+
+                                for(Asset selectedAsset: selectedAssets){
+                                    // Send notification for asset owners
+                                    List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), selectedAsset.getId(), true);
+                                    for(InternalShare internalShare: internalShares){
+                                        boolean downloadAllowed = internalShare.getCanDownload().equalsIgnoreCase("Y");
+                                        boolean notifyOnDownload = internalShare.getNotifyOnDownload().equalsIgnoreCase("Y");
+
+                                        if(downloadAllowed && notifyOnDownload){
+                                            String message = "Asset '" + selectedAsset.getName() + "' is downloaded by '" + user.getUsername() + "'";
+                                            SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                            sendNotificationRequest.setFromUsername(user.getUsername());
+                                            sendNotificationRequest.setToUsername(internalShare.getUsername());
+                                            sendNotificationRequest.setMessage(message);
+                                            notificationUtils.sendNotification(sendNotificationRequest, session);
+                                        }
                                     }
                                 }
-                                catch (HttpStatusCodeException httpEx){
-                                    JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
-                                    throw new Exception("Download request was successful but the packaging job failed to start. " + responseJson.get("message").getAsString());
+
+                                for(Container selectedContainer: selectedContainers){
+                                    // Send notification for container owners
+                                    List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), selectedContainer.getId(), false);
+                                    for(InternalShare internalShare: internalShares){
+                                        boolean downloadAllowed = internalShare.getCanDownload().equalsIgnoreCase("Y");
+                                        boolean notifyOnDownload = internalShare.getNotifyOnDownload().equalsIgnoreCase("Y");
+
+                                        if(downloadAllowed && notifyOnDownload){
+                                            String message = "Folder '" + selectedContainer.getName() + "' is downloaded by '" + user.getUsername() + "'";
+                                            SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
+                                            sendNotificationRequest.setFromUsername(user.getUsername());
+                                            sendNotificationRequest.setToUsername(internalShare.getUsername());
+                                            sendNotificationRequest.setMessage(message);
+                                            notificationUtils.sendNotification(sendNotificationRequest, session);
+                                        }
+                                    }
                                 }
+
+                                HttpHeaders httpHeaders = new HttpHeaders();
+                                httpHeaders.set("Content-Disposition", "attachment; filename=Download.zip");
+                                return new ResponseEntity<>(responseBody, httpHeaders, HttpStatus.OK);
                             }
                             else{
                                 String errorMessage = "You do not have permission to download one or more of the selected files and/or folders!";
@@ -204,6 +182,46 @@ public class CommonObjectController {
             _logger.error(errorMessage, e);
 
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    private void addContainerToZipArchive(Container container, String renditionLoadbalancerUrl, HttpHeaders headers, ZipOutputStream zos, String parentFolderPath) throws IOException {
+        String folderPath = parentFolderPath + container.getName() + "/";
+        ZipEntry ze = new ZipEntry(folderPath);
+        zos.putNextEntry(ze);
+        zos.flush();
+        zos.closeEntry();
+
+        List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(container.getId());
+        for(ContainerAsset containerAsset: containerAssetsByContainerId){
+            Asset asset = assetUtils.getAsset(containerAsset.getAssetId());
+            addAssetToZipArchive(asset, renditionLoadbalancerUrl, headers, zos, folderPath);
+        }
+
+        List<Container> containersByParentContainerId = containersRepository.getContainersByParentContainerId(container.getId());
+        for(Container childContainer : containersByParentContainerId){
+            addContainerToZipArchive(childContainer, renditionLoadbalancerUrl, headers, zos, folderPath);
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    private void addAssetToZipArchive(Asset asset, String renditionLoadbalancerUrl, HttpHeaders headers, ZipOutputStream zos, String parentFolderPath) throws IOException {
+        String assetRenditionUrl = renditionLoadbalancerUrl + "/renditions/assets/" + asset.getId() + "/o";
+
+        URL url = new URL(assetRenditionUrl);
+        URLConnection connection = url.openConnection();
+        connection.setRequestProperty("Cookie", headers.get(("Cookie")).get(0));
+        connection.setRequestProperty("X-XSRF-TOKEN", headers.get("X-XSRF-TOKEN").get(0));
+
+        try(InputStream in = connection.getInputStream()){
+            ZipEntry ze = new ZipEntry(parentFolderPath + asset.getName());
+            zos.putNextEntry(ze);
+
+            IOUtils.copy(in, zos);
+
+            zos.flush();
+            zos.closeEntry();
         }
     }
 

@@ -6,6 +6,7 @@ const files = new Vue({
         assets:[],
         selectedAssets: [],
         isLoading: false,
+        isDownloading: false,
         // Sorting
         defaultSortType: 'des',
         defaultSortColumn: 'asset_import_date',

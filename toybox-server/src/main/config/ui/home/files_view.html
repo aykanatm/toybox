@@ -85,6 +85,9 @@
                             <div class="ui active dimmer" v-if="isLoading">
                                 <div class="ui massive text loader">Loading</div>
                             </div>
+                            <div class="ui active dimmer" v-if="isDownloading">
+                                <div class="ui massive text loader">Preparing the selected files for download. Your download will start once they are ready...</div>
+                            </div>
                             <asset v-for="asset in assets" v-bind:id="asset.id" v-bind:name="asset.name" v-bind:imported-by-username="asset.importedByUsername"
                             v-bind:extension="asset.extension" v-bind:type="asset.type" v-bind:rendition-url="renditionUrl" v-bind:subscribed="asset.subscribed"
                             v-bind:original-asset-id="asset.originalAssetId" v-bind:parent-container-id="asset.parentContainerId" v-bind:shared="asset.shared"

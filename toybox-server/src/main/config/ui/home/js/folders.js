@@ -7,6 +7,7 @@ const folders = new Vue({
         breadcrumbs:[],
         selectedItems: [],
         isLoading: false,
+        isDownloading: false,
         renditionUrl:'',
         canCreateFolder: false,
         canUploadFile: false,

@@ -146,6 +146,8 @@ var itemActionsMixin = {
             })
         },
         downloadItems(selectedItems){
+            this.isDownloading = true;
+
             console.log(selectedItems);
             var selectionContext = this.generateSelectionContext(selectedItems);
 
@@ -159,12 +161,16 @@ var itemActionsMixin = {
                                 var filename = 'Download.zip';
                                 var blob = new Blob([response.data], {type:'application/octet-stream'});
                                 saveAs(blob , filename);
+
+                                this.isDownloading = false;
                             }
                             else{
                                 this.$root.$emit('message-sent', 'Error', "There was no response from the common object loadbalancer!");
                             }
                         })
                         .catch(error => {
+                            this.isDownloading = false;
+
                             var errorMessage;
 
                             if(error.response){
@@ -189,6 +195,7 @@ var itemActionsMixin = {
                         });
                 }
                 else{
+                    this.isDownloading = false;
                     this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
                 }
             });

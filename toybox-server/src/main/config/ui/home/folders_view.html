@@ -94,6 +94,9 @@
                             <div class="ui active dimmer" v-if="isLoading">
                                 <div class="ui massive text loader">Loading</div>
                             </div>
+                            <div class="ui active dimmer" v-if="isDownloading">
+                                <div class="ui massive text loader">Preparing the selected items for download. Your download will start once they are ready...</div>
+                            </div>
                             <component v-bind:is="item['@class'] === 'com.github.murataykanat.toybox.dbo.Asset' ? 'asset' : 'folder'"
                                         v-for="item in items"
                                         v-bind:id="item.id" v-bind:name="item.name" v-bind:created-by-username="item.createdByUsername"

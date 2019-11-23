@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import javax.servlet.http.HttpSession;
 
@@ -61,7 +62,7 @@ public class CommonObjectLoadbalancerController {
     @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "downloadObjectsErrorFallback")
     @RequestMapping(value = "/common-objects/download", method = RequestMethod.POST, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public ResponseEntity<Resource> downloadObjects(Authentication authentication, HttpSession session, @RequestBody SelectionContext selectionContext){
+    public ResponseEntity<StreamingResponseBody> downloadObjects(Authentication authentication, HttpSession session, @RequestBody SelectionContext selectionContext){
         try {
             if(authenticationUtils.isSessionValid(authentication)){
                 if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
@@ -69,7 +70,7 @@ public class CommonObjectLoadbalancerController {
                     String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.COMMON_OBJECT_SERVICE_NAME);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        return restTemplate.exchange(prefix + ToyboxConstants.COMMON_OBJECT_SERVICE_NAME + "/common-objects/download", HttpMethod.POST, new HttpEntity<>(selectionContext, headers), Resource.class);
+                        return restTemplate.exchange(prefix + ToyboxConstants.COMMON_OBJECT_SERVICE_NAME + "/common-objects/download", HttpMethod.POST, new HttpEntity<>(selectionContext, headers), StreamingResponseBody.class);
                     }
                     else{
                         throw new IllegalArgumentException("Service ID prefix is null!");
