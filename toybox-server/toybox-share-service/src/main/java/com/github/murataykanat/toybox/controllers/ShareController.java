@@ -70,7 +70,7 @@ public class ShareController {
 
                         SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
 
-                        if(externalShare.getEnableExpireExternal().equalsIgnoreCase("Y")){
+                        if(externalShare.getEnableExpireExternal().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
                             Date expirationDate = externalShare.getExpirationDate();
                             if(expirationDate != null){
                                 Calendar cal = Calendar.getInstance();
@@ -100,7 +100,7 @@ public class ShareController {
                             }
                         }
 
-                        if(externalShare.getEnableUsageLimit().equalsIgnoreCase("Y")){
+                        if(externalShare.getEnableUsageLimit().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
                             int maxNumberOfHits = externalShare.getMaxNumberOfHits();
                             if(maxNumberOfHits <= 0){
                                 String errorMessage = "The maximum number of uses exceeded the set amount!";
@@ -120,7 +120,7 @@ public class ShareController {
 
                         File archiveFile = new File(downloadFilePath);
                         if(archiveFile.exists()){
-                            if(externalShare.getNotifyWhenDownloaded().equalsIgnoreCase("Y")){
+                            if(externalShare.getNotifyWhenDownloaded().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
                                 // Send notification manually (because we don't have a session)
                                 String toUsername = externalShare.getUsername();
                                 String fromUsername = "system";
@@ -128,14 +128,14 @@ public class ShareController {
                                 Notification notification = new Notification();
                                 notification.setUsername(toUsername);
                                 notification.setNotification("The assets you externally shared were downloaded.");
-                                notification.setIsRead("N");
+                                notification.setIsRead(ToyboxConstants.LOOKUP_NO);
                                 notification.setDate(new Date());
                                 notification.setFrom(fromUsername);
 
                                 rabbitTemplate.convertAndSend(ToyboxConstants.TOYBOX_NOTIFICATION_EXCHANGE,"toybox.notification." + System.currentTimeMillis(), notification);
                             }
 
-                            if(externalShare.getEnableUsageLimit().equalsIgnoreCase("Y")){
+                            if(externalShare.getEnableUsageLimit().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
                                 int maxNumberOfHits = externalShare.getMaxNumberOfHits();
                                 maxNumberOfHits--;
                                 externalSharesRepository.updateMaxUsage(maxNumberOfHits, externalShareId);
@@ -302,7 +302,7 @@ public class ShareController {
                                     boolean containsOriginalSharer = false;
 
                                     for(Asset selectedAsset: selectionContext.getSelectedAssets()){
-                                        if(selectedAsset.getShared().equalsIgnoreCase("Y")){
+                                        if(selectedAsset.getShared().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
                                             for(String sharedUsername: sharedUsers){
                                                 if(selectedAsset.getSharedByUsername().equalsIgnoreCase(sharedUsername)){
                                                     containsOriginalSharer = true;
@@ -317,7 +317,7 @@ public class ShareController {
                                     }
 
                                     for(Container selectedContainer: selectionContext.getSelectedContainers()){
-                                        if(selectedContainer.getShared().equalsIgnoreCase("Y")){
+                                        if(selectedContainer.getShared().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
                                             for(String sharedUsername: sharedUsers){
                                                 if(selectedContainer.getSharedByUsername().equalsIgnoreCase(sharedUsername)){
                                                     containsOriginalSharer = true;

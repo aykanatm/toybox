@@ -64,9 +64,9 @@ public class ShareUtils {
         String username = user.getUsername();
         Date expirationDate = externalShareRequest.getExpirationDate();
         int maxNumberOfHits = externalShareRequest.getMaxNumberOfHits();
-        String notifyWhenDownloaded = externalShareRequest.getNotifyWhenDownloaded() ? "Y" : "N";
-        String enableExpireExternal = externalShareRequest.getEnableExpireExternal() ? "Y" : "N";
-        String enableUsageLimit = externalShareRequest.getEnableUsageLimit() ? "Y" : "N";
+        String notifyWhenDownloaded = externalShareRequest.getNotifyWhenDownloaded() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
+        String enableExpireExternal = externalShareRequest.getEnableExpireExternal() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
+        String enableUsageLimit = externalShareRequest.getEnableUsageLimit() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
 
         if(!externalShareRequest.getEnableExpireExternal()){
             SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss");
@@ -122,7 +122,7 @@ public class ShareUtils {
                         // Send notification for asset owners
                         List<InternalShare> internalShares = getInternalSharesWithTargetUser(user.getId(), asset.getId(), true);
                         for(InternalShare internalShare: internalShares){
-                            if(internalShare.getNotifyOnShare().equalsIgnoreCase("Y")){
+                            if(internalShare.getNotifyOnShare().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
                                 SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
                                 sendNotificationRequest.setFromUsername(user.getUsername());
                                 sendNotificationRequest.setToUsername(internalShare.getUsername());
@@ -150,7 +150,7 @@ public class ShareUtils {
                         // Send notification for asset owners
                         List<InternalShare> internalShares = getInternalSharesWithTargetUser(user.getId(), container.getId(), false);
                         for(InternalShare internalShare: internalShares){
-                            if(internalShare.getNotifyOnShare().equalsIgnoreCase("Y")){
+                            if(internalShare.getNotifyOnShare().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
                                 SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
                                 sendNotificationRequest.setFromUsername(user.getUsername());
                                 sendNotificationRequest.setToUsername(internalShare.getUsername());
@@ -186,13 +186,13 @@ public class ShareUtils {
         usersToIgnore.add(user);
 
         for(Asset selectedAsset: selectedAssets){
-            if(selectedAsset.getShared().equalsIgnoreCase("Y")){
+            if(selectedAsset.getShared().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
                 usersToIgnore.add(authenticationUtils.getUser(selectedAsset.getSharedByUsername()));
             }
         }
 
         for(Container selectedContainer: selectedContainers){
-            if(selectedContainer.getShared().equalsIgnoreCase("Y")){
+            if(selectedContainer.getShared().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
                 usersToIgnore.add(authenticationUtils.getUser(selectedContainer.getSharedByUsername()));
             }
         }
@@ -241,14 +241,14 @@ public class ShareUtils {
             expirationDate = calendar.getTime();
         }
 
-        String notifyOnEdit = internalShareRequest.getNotifyOnEdit() ? "Y" : "N";
-        String notifyOnDownload = internalShareRequest.getNotifyOnDownload() ? "Y" : "N";
-        String notifyOnShare = internalShareRequest.getNotifyOnShare() ? "Y" : "N";
-        String notifyOnMoveOrCopy = internalShareRequest.getNotifyOnMoveOrCopy() ? "Y" : "N";
-        String canEdit = internalShareRequest.getCanEdit() ? "Y" : "N";
-        String canDownload = internalShareRequest.getCanDownload() ? "Y" : "N";
-        String canShare = internalShareRequest.getCanShare() ? "Y" : "N";
-        String canCopy = internalShareRequest.getCanCopy() ? "Y" : "N";
+        String notifyOnEdit = internalShareRequest.getNotifyOnEdit() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
+        String notifyOnDownload = internalShareRequest.getNotifyOnDownload() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
+        String notifyOnShare = internalShareRequest.getNotifyOnShare() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
+        String notifyOnMoveOrCopy = internalShareRequest.getNotifyOnMoveOrCopy() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
+        String canEdit = internalShareRequest.getCanEdit() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
+        String canDownload = internalShareRequest.getCanDownload() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
+        String canShare = internalShareRequest.getCanShare() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
+        String canCopy = internalShareRequest.getCanCopy() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
 
         internalSharesRepository.insertExternalShare(internalShareId, user.getUsername(), expirationDate,
                 notifyOnEdit, notifyOnDownload, notifyOnShare, notifyOnMoveOrCopy, canEdit, canDownload, canShare, canCopy);
@@ -311,7 +311,7 @@ public class ShareUtils {
                 // Send notification for asset owners
                 List<InternalShare> internalShares = getInternalSharesWithTargetUser(user.getId(), asset.getId(), true);
                 for(InternalShare internalShare: internalShares){
-                    if(internalShare.getNotifyOnShare().equalsIgnoreCase("Y")){
+                    if(internalShare.getNotifyOnShare().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
                         SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
                         sendNotificationRequest.setFromUsername(user.getUsername());
                         sendNotificationRequest.setToUsername(internalShare.getUsername());
@@ -339,7 +339,7 @@ public class ShareUtils {
                 // Send notification for asset owners
                 List<InternalShare> internalShares = getInternalSharesWithTargetUser(user.getId(), container.getId(), false);
                 for(InternalShare internalShare: internalShares){
-                    if(internalShare.getNotifyOnShare().equalsIgnoreCase("Y")){
+                    if(internalShare.getNotifyOnShare().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
                         SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
                         sendNotificationRequest.setFromUsername(user.getUsername());
                         sendNotificationRequest.setToUsername(internalShare.getUsername());
@@ -622,13 +622,13 @@ public class ShareUtils {
                     break;
                 }
                 default:{
-                    permissionLst.add("N");
+                    permissionLst.add(ToyboxConstants.LOOKUP_NO);
                     break;
                 }
             }
 
             for(String permission: permissionLst){
-                result = result && permission.equalsIgnoreCase("Y");
+                result = result && permission.equalsIgnoreCase(ToyboxConstants.LOOKUP_YES);
             }
         }
 

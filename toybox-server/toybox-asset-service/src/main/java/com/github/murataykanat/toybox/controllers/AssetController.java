@@ -81,7 +81,7 @@ public class AssetController {
                             List<InternalShare> internalSharesWithTargetUser = shareUtils.getInternalSharesWithTargetUser(user.getId(), uploadFileLst.getContainerId(), false);
 
                             for(InternalShare internalShare: internalSharesWithTargetUser){
-                                canEdit = canEdit && internalShare.getCanEdit().equalsIgnoreCase("Y");
+                                canEdit = canEdit && internalShare.getCanEdit().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES);
                             }
                         }
 
@@ -168,41 +168,41 @@ public class AssetController {
                             if(authenticationUtils.isAdminUser(authentication)){
                                 _logger.debug("Retrieving all assets [Admin User]...");
                                 assetsByCurrentUser = allAssets.stream()
-                                        .filter(asset -> asset.getIsLatestVersion().equalsIgnoreCase("Y"))
+                                        .filter(asset -> asset.getIsLatestVersion().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES))
                                         .collect(Collectors.toList());
 
                                 assetsByCurrentUser.forEach(asset -> {
-                                    asset.setCanShare("Y");
-                                    asset.setCanDownload("Y");
-                                    asset.setCanCopy("Y");
-                                    asset.setCanEdit("Y");
+                                    asset.setCanShare(ToyboxConstants.LOOKUP_YES);
+                                    asset.setCanDownload(ToyboxConstants.LOOKUP_YES);
+                                    asset.setCanCopy(ToyboxConstants.LOOKUP_YES);
+                                    asset.setCanEdit(ToyboxConstants.LOOKUP_YES);
                                 });
                             }
                             else{
                                 _logger.debug("Retrieving assets of the user '" + user.getUsername() + "'...");
 
                                 for(Asset asset: allAssets){
-                                    if(StringUtils.isNotBlank(asset.getImportedByUsername()) && asset.getIsLatestVersion().equalsIgnoreCase("Y")){
+                                    if(StringUtils.isNotBlank(asset.getImportedByUsername()) && asset.getIsLatestVersion().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
                                         Asset originalAsset = assetUtils.getAsset(asset.getOriginalAssetId());
                                         boolean assetImportedByUser = asset.getImportedByUsername().equalsIgnoreCase(user.getUsername());
                                         boolean originalAssetImportedByUser = originalAsset.getImportedByUsername().equalsIgnoreCase(user.getUsername());
                                         boolean assetIsSharedWithUser = false;
 
-                                        asset.setShared("N");
+                                        asset.setShared(ToyboxConstants.LOOKUP_NO);
 
-                                        asset.setCanShare("Y");
-                                        asset.setCanDownload("Y");
-                                        asset.setCanCopy("Y");
-                                        asset.setCanEdit("Y");
+                                        asset.setCanShare(ToyboxConstants.LOOKUP_YES);
+                                        asset.setCanDownload(ToyboxConstants.LOOKUP_YES);
+                                        asset.setCanCopy(ToyboxConstants.LOOKUP_YES);
+                                        asset.setCanEdit(ToyboxConstants.LOOKUP_YES);
 
                                         for(SharedAssets sharedAssets: sharedAssetsLst){
                                             assetIsSharedWithUser = sharedAssets.getAssetIds().stream().anyMatch(assetId -> assetId.equalsIgnoreCase(asset.getId()));
                                             if(assetIsSharedWithUser){
-                                                asset.setCanShare(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_SHARE, user.getId(), asset.getId(), true) ? "Y" : "N");
-                                                asset.setCanEdit(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_EDIT, user.getId(), asset.getId(), true) ? "Y" : "N");
-                                                asset.setCanCopy(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_COPY, user.getId(), asset.getId(), true) ? "Y" : "N");
-                                                asset.setCanDownload(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_DOWNLOAD, user.getId(), asset.getId(), true) ? "Y" : "N");
-                                                asset.setShared("Y");
+                                                asset.setCanShare(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_SHARE, user.getId(), asset.getId(), true) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
+                                                asset.setCanEdit(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_EDIT, user.getId(), asset.getId(), true) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
+                                                asset.setCanCopy(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_COPY, user.getId(), asset.getId(), true) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
+                                                asset.setCanDownload(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_DOWNLOAD, user.getId(), asset.getId(), true) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
+                                                asset.setShared(ToyboxConstants.LOOKUP_YES);
                                                 asset.setSharedByUsername(sharedAssets.getUsername());
                                                 break;
                                             }
@@ -241,11 +241,11 @@ public class AssetController {
                             List<AssetUser> assetUsersByUserId = assetUserRepository.findAssetUsersByUserId(user.getId());
 
                             for(Asset assetOnPage: assetsOnPage){
-                                assetOnPage.setSubscribed("N");
+                                assetOnPage.setSubscribed(ToyboxConstants.LOOKUP_NO);
 
                                 boolean isSubscribedAsset = assetUsersByUserId.stream().anyMatch(assetUser -> assetUser.getAssetId().equalsIgnoreCase(assetOnPage.getId()));
                                 if(isSubscribedAsset){
-                                    assetOnPage.setSubscribed("Y");
+                                    assetOnPage.setSubscribed(ToyboxConstants.LOOKUP_YES);
                                     break;
                                 }
                             }
@@ -472,12 +472,12 @@ public class AssetController {
                                         List<String> assetIds = new ArrayList<>();
                                         assetIds.add(versionAsset.getId());
 
-                                        assetsRepository.updateAssetsLatestVersion("Y", assetIds);
+                                        assetsRepository.updateAssetsLatestVersion(ToyboxConstants.LOOKUP_YES, assetIds);
                                     }
                                 }
 
                                 if(!assetsToDelete.isEmpty()){
-                                    assetsRepository.updateAssetsLatestVersion("N", assetsToDelete.stream().map(Asset::getId).collect(Collectors.toList()));
+                                    assetsRepository.updateAssetsLatestVersion(ToyboxConstants.LOOKUP_NO, assetsToDelete.stream().map(Asset::getId).collect(Collectors.toList()));
                                     List<Container> containersToDelete = new ArrayList<>();
 
                                     SelectionContext selectionContext = new SelectionContext();

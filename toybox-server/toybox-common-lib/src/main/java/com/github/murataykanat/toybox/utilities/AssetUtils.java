@@ -105,7 +105,7 @@ public class AssetUtils {
                     assetAlreadyInTargetContainer = true;
                     break;
                 }
-                if(assetInContainer.getName().equalsIgnoreCase(asset.getName()) && assetInContainer.getIsLatestVersion().equalsIgnoreCase("Y") && assetInContainer.getDeleted().equalsIgnoreCase("N")){
+                if(assetInContainer.getName().equalsIgnoreCase(asset.getName()) && assetInContainer.getIsLatestVersion().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES) && assetInContainer.getDeleted().equalsIgnoreCase(ToyboxConstants.LOOKUP_NO)){
                     duplicateAsset = assetInContainer;
                     break;
                 }
@@ -116,7 +116,7 @@ public class AssetUtils {
                     // Container has a duplicate asset
                     // We must add the new asset and its versions as new versions of the duplicate asset.
                     List<Asset> duplicateAssetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(duplicateAsset.getOriginalAssetId());
-                    assetsRepository.updateAssetsLatestVersion("N", duplicateAssetsByOriginalAssetId.stream().map(Asset::getId).collect(Collectors.toList()));
+                    assetsRepository.updateAssetsLatestVersion(ToyboxConstants.LOOKUP_NO, duplicateAssetsByOriginalAssetId.stream().map(Asset::getId).collect(Collectors.toList()));
 
                     List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(asset.getOriginalAssetId());
                     containerAssetsRepository.moveAssets(targetContainer.getId(), assetsByOriginalAssetId.stream().map(Asset::getId).collect(Collectors.toList()));
@@ -244,7 +244,7 @@ public class AssetUtils {
                 // Send notification for asset owners
                 List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), copiedAsset.getId(), true);
                 for(InternalShare internalShare: internalShares){
-                    if(internalShare.getNotifyOnCopy().equalsIgnoreCase("Y")){
+                    if(internalShare.getNotifyOnCopy().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
                         SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
                         sendNotificationRequest.setFromUsername(user.getUsername());
                         sendNotificationRequest.setToUsername(internalShare.getUsername());
@@ -337,7 +337,7 @@ public class AssetUtils {
         // Send notification for asset owners
         List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), assetId, true);
         for(InternalShare internalShare: internalShares){
-            if(internalShare.getNotifyOnEdit().equalsIgnoreCase("Y")){
+            if(internalShare.getNotifyOnEdit().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
                 SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
                 sendNotificationRequest.setFromUsername(user.getUsername());
                 sendNotificationRequest.setToUsername(internalShare.getUsername());

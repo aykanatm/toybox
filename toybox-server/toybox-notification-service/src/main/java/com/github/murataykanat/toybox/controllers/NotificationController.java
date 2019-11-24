@@ -67,7 +67,7 @@ public class NotificationController {
                         Notification notification = new Notification();
                         notification.setUsername(toUsername);
                         notification.setNotification(sendNotificationRequest.getMessage());
-                        notification.setIsRead("N");
+                        notification.setIsRead(ToyboxConstants.LOOKUP_NO);
                         notification.setDate(new Date());
                         notification.setFrom(fromUsername);
 

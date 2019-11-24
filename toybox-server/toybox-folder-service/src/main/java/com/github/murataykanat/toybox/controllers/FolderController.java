@@ -103,7 +103,7 @@ public class FolderController {
                                     List<InternalShare> internalSharesWithTargetUser = shareUtils.getInternalSharesWithTargetUser(user.getId(), createContainerRequest.getParentContainerId(), false);
 
                                     for(InternalShare internalShare: internalSharesWithTargetUser){
-                                        canEdit = canEdit && internalShare.getCanEdit().equalsIgnoreCase("Y");
+                                        canEdit = canEdit && internalShare.getCanEdit().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES);
                                     }
                                 }
 
@@ -132,8 +132,8 @@ public class FolderController {
                                 container.setParentId(createContainerRequest.getParentContainerId());
                                 container.setCreatedByUsername(authentication.getName());
                                 container.setCreationDate(Calendar.getInstance().getTime());
-                                container.setDeleted("N");
-                                container.setSystem("N");
+                                container.setDeleted(ToyboxConstants.LOOKUP_NO);
+                                container.setSystem(ToyboxConstants.LOOKUP_NO);
 
                                 containerUtils.createContainer(container);
 
@@ -254,7 +254,7 @@ public class FolderController {
                                             if(containerAssetsByAssetId.size() == 1){
                                                 ContainerAsset containerAsset = containerAssetsByAssetId.get(0);
                                                 Container assetContainer = containerUtils.getContainer(containerAsset.getContainerId());
-                                                if(assetContainer.getSystem().equalsIgnoreCase("Y")){
+                                                if(assetContainer.getSystem().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
                                                     Asset asset = assetUtils.getAsset(assetId);
                                                     allAssets.add(asset);
                                                 }
@@ -298,7 +298,7 @@ public class FolderController {
                             }
 
                             assetsByCurrentUser = allAssets.stream()
-                                    .filter(asset -> asset.getIsLatestVersion().equalsIgnoreCase("Y"))
+                                    .filter(asset -> asset.getIsLatestVersion().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES))
                                     .collect(Collectors.toList());
 
 
@@ -319,11 +319,11 @@ public class FolderController {
                                     if(assetSharedWithUser){
                                         User sourceUser = shareUtils.getSourceUser(user.getId(), userAsset.getId(), true);
                                         if(sourceUser != null){
-                                            userAsset.setCanShare(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_SHARE, user.getId(), userAsset.getId(), true) ? "Y" : "N");
-                                            userAsset.setCanEdit(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_EDIT, user.getId(), userAsset.getId(), true) ? "Y" : "N");
-                                            userAsset.setCanCopy(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_COPY, user.getId(), userAsset.getId(), true) ? "Y" : "N");
-                                            userAsset.setCanDownload(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_DOWNLOAD, user.getId(), userAsset.getId(), true) ? "Y" : "N");
-                                            userAsset.setShared("Y");
+                                            userAsset.setCanShare(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_SHARE, user.getId(), userAsset.getId(), true) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
+                                            userAsset.setCanEdit(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_EDIT, user.getId(), userAsset.getId(), true) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
+                                            userAsset.setCanCopy(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_COPY, user.getId(), userAsset.getId(), true) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
+                                            userAsset.setCanDownload(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_DOWNLOAD, user.getId(), userAsset.getId(), true) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
+                                            userAsset.setShared(ToyboxConstants.LOOKUP_YES);
                                             userAsset.setSharedByUsername(sourceUser.getUsername());
                                         }
                                         else{
@@ -331,19 +331,19 @@ public class FolderController {
                                         }
                                     }
                                     else{
-                                        userAsset.setShared("N");
+                                        userAsset.setShared(ToyboxConstants.LOOKUP_NO);
 
-                                        userAsset.setCanDownload("Y");
-                                        userAsset.setCanCopy("Y");
-                                        userAsset.setCanEdit("Y");
-                                        userAsset.setCanShare("Y");
+                                        userAsset.setCanDownload(ToyboxConstants.LOOKUP_YES);
+                                        userAsset.setCanCopy(ToyboxConstants.LOOKUP_YES);
+                                        userAsset.setCanEdit(ToyboxConstants.LOOKUP_YES);
+                                        userAsset.setCanShare(ToyboxConstants.LOOKUP_YES);
                                     }
                                 }
                                 else{
-                                    userAsset.setCanDownload("Y");
-                                    userAsset.setCanCopy("Y");
-                                    userAsset.setCanEdit("Y");
-                                    userAsset.setCanShare("Y");
+                                    userAsset.setCanDownload(ToyboxConstants.LOOKUP_YES);
+                                    userAsset.setCanCopy(ToyboxConstants.LOOKUP_YES);
+                                    userAsset.setCanEdit(ToyboxConstants.LOOKUP_YES);
+                                    userAsset.setCanShare(ToyboxConstants.LOOKUP_YES);
                                 }
                             }
 
@@ -353,11 +353,11 @@ public class FolderController {
                                     if(containerSharedWithUser){
                                         User sourceUser = shareUtils.getSourceUser(user.getId(), userContainer.getId(), false);
                                         if(sourceUser != null){
-                                            userContainer.setCanShare(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_SHARE, user.getId(), userContainer.getId(), false) ? "Y" : "N");
-                                            userContainer.setCanEdit(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_EDIT, user.getId(), userContainer.getId(), false) ? "Y" : "N");
-                                            userContainer.setCanCopy(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_COPY, user.getId(), userContainer.getId(), false) ? "Y" : "N");
-                                            userContainer.setCanDownload(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_DOWNLOAD, user.getId(), userContainer.getId(), false) ? "Y" : "N");
-                                            userContainer.setShared("Y");
+                                            userContainer.setCanShare(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_SHARE, user.getId(), userContainer.getId(), false) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
+                                            userContainer.setCanEdit(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_EDIT, user.getId(), userContainer.getId(), false) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
+                                            userContainer.setCanCopy(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_COPY, user.getId(), userContainer.getId(), false) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
+                                            userContainer.setCanDownload(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_DOWNLOAD, user.getId(), userContainer.getId(), false) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
+                                            userContainer.setShared(ToyboxConstants.LOOKUP_YES);
                                             userContainer.setSharedByUsername(sourceUser.getUsername());
                                         }
                                         else{
@@ -365,19 +365,19 @@ public class FolderController {
                                         }
                                     }
                                     else{
-                                        userContainer.setShared("N");
+                                        userContainer.setShared(ToyboxConstants.LOOKUP_NO);
 
-                                        userContainer.setCanShare("Y");
-                                        userContainer.setCanDownload("Y");
-                                        userContainer.setCanCopy("Y");
-                                        userContainer.setCanEdit("Y");
+                                        userContainer.setCanShare(ToyboxConstants.LOOKUP_YES);
+                                        userContainer.setCanDownload(ToyboxConstants.LOOKUP_YES);
+                                        userContainer.setCanCopy(ToyboxConstants.LOOKUP_YES);
+                                        userContainer.setCanEdit(ToyboxConstants.LOOKUP_YES);
                                     }
                                 }
                                 else{
-                                    userContainer.setCanShare("Y");
-                                    userContainer.setCanDownload("Y");
-                                    userContainer.setCanCopy("Y");
-                                    userContainer.setCanEdit("Y");
+                                    userContainer.setCanShare(ToyboxConstants.LOOKUP_YES);
+                                    userContainer.setCanDownload(ToyboxConstants.LOOKUP_YES);
+                                    userContainer.setCanCopy(ToyboxConstants.LOOKUP_YES);
+                                    userContainer.setCanEdit(ToyboxConstants.LOOKUP_YES);
                                 }
                             }
 
@@ -418,10 +418,10 @@ public class FolderController {
                                 if(containerItemClass.getName().equalsIgnoreCase("com.github.murataykanat.toybox.dbo.Container")){
                                     Container containerOnPage = (Container) containerItem;
 
-                                    containerOnPage.setSubscribed("N");
+                                    containerOnPage.setSubscribed(ToyboxConstants.LOOKUP_NO);
                                     for(ContainerUser containerUser: containerUsersByUserId){
                                         if(containerOnPage.getId().equalsIgnoreCase(containerUser.getContainerId())){
-                                            containerOnPage.setSubscribed("Y");
+                                            containerOnPage.setSubscribed(ToyboxConstants.LOOKUP_YES);
                                             break;
                                         }
                                     }
@@ -429,10 +429,10 @@ public class FolderController {
                                 else if(containerItemClass.getName().equalsIgnoreCase("com.github.murataykanat.toybox.dbo.Asset")){
                                     Asset assetOnPage = (Asset) containerItem;
 
-                                    assetOnPage.setSubscribed("N");
+                                    assetOnPage.setSubscribed(ToyboxConstants.LOOKUP_NO);
                                     for(AssetUser assetUser: assetUsersByUserId){
                                         if(assetOnPage.getId().equalsIgnoreCase(assetUser.getAssetId())){
-                                            assetOnPage.setSubscribed("Y");
+                                            assetOnPage.setSubscribed(ToyboxConstants.LOOKUP_YES);
                                             break;
                                         }
                                     }
@@ -462,13 +462,13 @@ public class FolderController {
                                 List<InternalShare> internalSharesWithTargetUser = shareUtils.getInternalSharesWithTargetUser(user.getId(), containerId, false);
                                 boolean canEdit = true;
                                 for(InternalShare internalShare: internalSharesWithTargetUser){
-                                    canEdit = canEdit && internalShare.getCanEdit().equalsIgnoreCase("Y");
+                                    canEdit = canEdit && internalShare.getCanEdit().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES);
                                 }
 
-                                retrieveContainerContentsResult.setCanEdit(canEdit ? "Y" : "N");
+                                retrieveContainerContentsResult.setCanEdit(canEdit ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
                             }
                             else{
-                                retrieveContainerContentsResult.setCanEdit("Y");
+                                retrieveContainerContentsResult.setCanEdit(ToyboxConstants.LOOKUP_YES);
                             }
 
                             // Finalize
@@ -608,7 +608,7 @@ public class FolderController {
 
                         List<Container> containersByCurrentUser;
 
-                        if(containerSearchRequest.getRetrieveTopLevelContainers() != null && containerSearchRequest.getRetrieveTopLevelContainers().equalsIgnoreCase("Y")){
+                        if(containerSearchRequest.getRetrieveTopLevelContainers() != null && containerSearchRequest.getRetrieveTopLevelContainers().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
                             if(authenticationUtils.isAdminUser(authentication)){
                                 _logger.debug("Retrieving the top level containers [Admin User]...");
                                 containersByCurrentUser = containersRepository.getTopLevelNonDeletedContainers();
@@ -673,16 +673,16 @@ public class FolderController {
                                 for(Container containerOnPage: containersOnPage){
                                     for(ContainerUser containerUser: containerUsersByUserId){
                                         if(containerOnPage.getId().equalsIgnoreCase(containerUser.getContainerId())){
-                                            containerOnPage.setSubscribed("Y");
+                                            containerOnPage.setSubscribed(ToyboxConstants.LOOKUP_YES);
                                             break;
                                         }
-                                        containerOnPage.setSubscribed("N");
+                                        containerOnPage.setSubscribed(ToyboxConstants.LOOKUP_NO);
                                     }
                                 }
                             }
                             else{
                                 for(Container containerOnPage: containersOnPage){
-                                    containerOnPage.setSubscribed("N");
+                                    containerOnPage.setSubscribed(ToyboxConstants.LOOKUP_NO);
                                 }
                             }
 

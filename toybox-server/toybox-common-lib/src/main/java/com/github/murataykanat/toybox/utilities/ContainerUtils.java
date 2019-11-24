@@ -164,7 +164,7 @@ public class ContainerUtils {
                         containerIdsToDelete.add(container.getId());
 
                         if(!targetContainer.getId().equalsIgnoreCase(container.getParentId())){
-                            containersRepository.deleteContainersById("Y", containerIdsToDelete);
+                            containersRepository.deleteContainersById(ToyboxConstants.LOOKUP_YES, containerIdsToDelete);
                         }
                         else{
                             _logger.debug("Container with ID '" + container.getId() + "' is already inside the container with ID '" + targetContainer.getId() + "'. Skipping delete...");
@@ -261,7 +261,7 @@ public class ContainerUtils {
             // Send notification for container owners
             List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), sourceContainer.getId(), false);
             for(InternalShare internalShare: internalShares){
-                if(internalShare.getNotifyOnCopy().equalsIgnoreCase("Y")){
+                if(internalShare.getNotifyOnCopy().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
                     SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
                     sendNotificationRequest.setFromUsername(user.getUsername());
                     sendNotificationRequest.setToUsername(internalShare.getUsername());
@@ -403,7 +403,7 @@ public class ContainerUtils {
         // Send notification for container owners
         List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), container.getId(), false);
         for(InternalShare internalShare: internalShares){
-            if(internalShare.getNotifyOnEdit().equalsIgnoreCase("Y")){
+            if(internalShare.getNotifyOnEdit().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
                 SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
                 sendNotificationRequest.setFromUsername(user.getUsername());
                 sendNotificationRequest.setToUsername(internalShare.getUsername());

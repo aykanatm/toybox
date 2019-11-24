@@ -188,9 +188,9 @@ public class ImportJobConfig {
                                             asset.setPreviewPath("");
                                             asset.setThumbnailPath("");
                                             asset.setType(assetMimeType);
-                                            asset.setDeleted("N");
+                                            asset.setDeleted(ToyboxConstants.LOOKUP_NO);
                                             asset.setChecksum(checksum);
-                                            asset.setIsLatestVersion("Y");
+                                            asset.setIsLatestVersion(ToyboxConstants.LOOKUP_YES);
                                             asset.setOriginalAssetId(originalAssetId);
                                             asset.setVersion(latestVersion);
                                             asset.setFileSize(FileUtils.byteCountToDisplaySize(assetSource.length()));
@@ -432,7 +432,7 @@ public class ImportJobConfig {
 
     private void updateInternalShares(String assetId, String assetName, String containerId){
         List<Asset> duplicateAssetsByAssetName = getDuplicateAssets(assetName, containerId);
-        List<Asset> duplicateLastVersionAssets = duplicateAssetsByAssetName.stream().filter(asset -> asset.getIsLatestVersion().equalsIgnoreCase("Y")).collect(Collectors.toList());
+        List<Asset> duplicateLastVersionAssets = duplicateAssetsByAssetName.stream().filter(asset -> asset.getIsLatestVersion().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)).collect(Collectors.toList());
         if(!duplicateLastVersionAssets.isEmpty()){
             if(duplicateLastVersionAssets.size() == 1){
                 Asset oldAsset = duplicateLastVersionAssets.get(0);
@@ -453,7 +453,7 @@ public class ImportJobConfig {
                     .filter(asset -> !asset.getId().equalsIgnoreCase(assetId))
                     .map(Asset::getId)
                     .collect(Collectors.toList());
-            assetsRepository.updateAssetsLatestVersion("N", assetIds);
+            assetsRepository.updateAssetsLatestVersion(ToyboxConstants.LOOKUP_NO, assetIds);
         }
     }
 

@@ -146,8 +146,8 @@ public class RenditionController {
                                 if(canDownload){
                                     List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), asset.getId(), true);
                                     for(InternalShare internalShare: internalShares){
-                                        boolean downloadAllowed = internalShare.getCanDownload().equalsIgnoreCase("Y");
-                                        boolean notifyOnDownload = internalShare.getNotifyOnDownload().equalsIgnoreCase("Y");
+                                        boolean downloadAllowed = internalShare.getCanDownload().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES);
+                                        boolean notifyOnDownload = internalShare.getNotifyOnDownload().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES);
                                         if(downloadAllowed && notifyOnDownload){
                                             String message = "Asset '" + asset.getName() + "' is downloaded by '" + user.getUsername() + "'";
                                             SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();

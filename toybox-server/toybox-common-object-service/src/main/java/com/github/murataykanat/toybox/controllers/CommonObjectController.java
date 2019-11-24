@@ -116,8 +116,8 @@ public class CommonObjectController {
                                     // Send notification for asset owners
                                     List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), selectedAsset.getId(), true);
                                     for(InternalShare internalShare: internalShares){
-                                        boolean downloadAllowed = internalShare.getCanDownload().equalsIgnoreCase("Y");
-                                        boolean notifyOnDownload = internalShare.getNotifyOnDownload().equalsIgnoreCase("Y");
+                                        boolean downloadAllowed = internalShare.getCanDownload().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES);
+                                        boolean notifyOnDownload = internalShare.getNotifyOnDownload().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES);
 
                                         if(downloadAllowed && notifyOnDownload){
                                             String message = "Asset '" + selectedAsset.getName() + "' is downloaded by '" + user.getUsername() + "'";
@@ -134,8 +134,8 @@ public class CommonObjectController {
                                     // Send notification for container owners
                                     List<InternalShare> internalShares = shareUtils.getInternalSharesWithTargetUser(user.getId(), selectedContainer.getId(), false);
                                     for(InternalShare internalShare: internalShares){
-                                        boolean downloadAllowed = internalShare.getCanDownload().equalsIgnoreCase("Y");
-                                        boolean notifyOnDownload = internalShare.getNotifyOnDownload().equalsIgnoreCase("Y");
+                                        boolean downloadAllowed = internalShare.getCanDownload().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES);
+                                        boolean notifyOnDownload = internalShare.getNotifyOnDownload().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES);
 
                                         if(downloadAllowed && notifyOnDownload){
                                             String message = "Folder '" + selectedContainer.getName() + "' is downloaded by '" + user.getUsername() + "'";
@@ -248,8 +248,8 @@ public class CommonObjectController {
                     User user = authenticationUtils.getUser(authentication);
                     if(user != null){
                         if(!(selectionContext.getSelectedAssets().isEmpty() && selectionContext.getSelectedContainers().isEmpty())){
-                            boolean hasSharedAssets = selectionContext.getSelectedAssets().stream().anyMatch(asset -> asset.getShared().equalsIgnoreCase("Y"));
-                            boolean hasSharedContainers = selectionContext.getSelectedContainers().stream().anyMatch(container -> container.getShared().equalsIgnoreCase("Y"));
+                            boolean hasSharedAssets = selectionContext.getSelectedAssets().stream().anyMatch(asset -> asset.getShared().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES));
+                            boolean hasSharedContainers = selectionContext.getSelectedContainers().stream().anyMatch(container -> container.getShared().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES));
                             if(!hasSharedAssets && !hasSharedContainers){
                                 // We filter out the selected shared assets
                                 List<Asset> nonSharedSelectedAssets = selectionContext.getSelectedAssets().stream().filter(asset -> !shareUtils.isAssetSharedWithUser(user.getId(), asset.getId())).collect(Collectors.toList());
@@ -276,7 +276,7 @@ public class CommonObjectController {
                                 List<Asset> assetsAndVersions = new ArrayList<>(selectedAssetsAndContainerAssets);
                                 // We find all the non-deleted versions of the assets if the selected asset is the latest version and add them to a list
                                 for(Asset selectedAsset: selectedAssetsAndContainerAssets){
-                                    if(selectedAsset.getIsLatestVersion().equalsIgnoreCase("Y")){
+                                    if(selectedAsset.getIsLatestVersion().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
                                         List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(selectedAsset.getOriginalAssetId());
                                         assetsAndVersions.addAll(assetsByOriginalAssetId);
                                     }
@@ -284,7 +284,7 @@ public class CommonObjectController {
 
                                 if(!assetsAndVersions.isEmpty()){
                                     // We set all the assets as deleted
-                                    assetsRepository.deleteAssetById("Y",assetsAndVersions.stream().map(Asset::getId).collect(Collectors.toList()));
+                                    assetsRepository.deleteAssetById(ToyboxConstants.LOOKUP_YES,assetsAndVersions.stream().map(Asset::getId).collect(Collectors.toList()));
                                     // We send delete notification for the selected assets
                                     for(Asset asset: selectedAssetsAndContainerAssets){
                                         // Send notification for subscribers
@@ -311,7 +311,7 @@ public class CommonObjectController {
 
                                 if(!nonSharedSelectedContainers.isEmpty()){
                                     // We set all the non-shared containers as deleted
-                                    containersRepository.deleteContainersById("Y", nonSharedSelectedContainers.stream().map(Container::getId).collect(Collectors.toList()));
+                                    containersRepository.deleteContainersById(ToyboxConstants.LOOKUP_YES, nonSharedSelectedContainers.stream().map(Container::getId).collect(Collectors.toList()));
                                     // We send delete notification for the selected containers
                                     for(Container selectedContainer: nonSharedSelectedContainers){
                                         // Send notification for subscribers
@@ -563,8 +563,8 @@ public class CommonObjectController {
                         SelectionContext selectionContext = moveAssetRequest.getSelectionContext();
                         if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
                             if(!(selectionContext.getSelectedAssets().isEmpty() && selectionContext.getSelectedContainers().isEmpty())){
-                                boolean hasSharedAssets = selectionContext.getSelectedAssets().stream().anyMatch(asset -> asset.getShared().equalsIgnoreCase("Y"));
-                                boolean hasSharedContainers = selectionContext.getSelectedContainers().stream().anyMatch(container -> container.getShared().equalsIgnoreCase("Y"));
+                                boolean hasSharedAssets = selectionContext.getSelectedAssets().stream().anyMatch(asset -> asset.getShared().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES));
+                                boolean hasSharedContainers = selectionContext.getSelectedContainers().stream().anyMatch(container -> container.getShared().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES));
                                 if(!hasSharedAssets && !hasSharedContainers){
                                     Container targetContainer = containerUtils.getContainer(moveAssetRequest.getContainerId());
 
