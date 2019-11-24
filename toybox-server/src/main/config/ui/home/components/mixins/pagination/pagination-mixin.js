@@ -18,11 +18,11 @@ var paginationMixin = {
         updatePagination:function(currentPage, totalPages, offset, limit, totalRecords){
             if(totalRecords == 0){
                 this.startIndex = 0;
-                this.endIndex = 0
+                this.endIndex = 0;
             }
             else{
                 this.startIndex = offset + 1;
-                this.endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
+                this.endIndex = Math.min((offset + limit), totalRecords);
             }
 
             if(currentPage == 1){
@@ -48,10 +48,10 @@ var paginationMixin = {
             if(this.currentPage != 1){
                 this.offset -= this.limit;
                 if(this.view === 'jobs'){
-                    this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
+                    this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList);
                 }
                 else if(this.view === 'files'){
-                    this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
+                    this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList);
                 }
                 else if(this.view === 'notifications'){
                     this.getNotifications(this.fromUsername, this.content, this.notificationDate, this.isRead, this.offset, this.limit, this.searchRequestFacetList, false);
@@ -62,10 +62,10 @@ var paginationMixin = {
             if(this.currentPage != this.totalPages){
                 this.offset += this.limit;
                 if(this.view === 'jobs'){
-                    this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
+                    this.getJobs(this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList);
                 }
                 else if(this.view === 'files'){
-                    this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
+                    this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList);
                 }
                 else if(this.view === 'notifications'){
                     this.getNotifications(this.fromUsername, this.content, this.notificationDate, this.isRead, this.offset, this.limit, this.searchRequestFacetList, false);

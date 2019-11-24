@@ -72,8 +72,7 @@ const files = new Vue({
                 this.searchRequestFacetList.splice(index, 1);
             }
 
-            // TODO: username is not necessary?
-            this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
+            this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList);
         });
         this.$root.$on('asset-selection-changed', this.onAssetSelectionChanged);
         this.$root.$on('message-sent', this.displayMessage);
@@ -82,7 +81,7 @@ const files = new Vue({
         this.$root.$on('update-arrows-request', this.updateArrows);
         this.$root.$on('refresh-assets', this.refreshAssets);
 
-        this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
+        this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList);
     },
     watch:{
         selectedAssets(after, before){
@@ -147,7 +146,7 @@ const files = new Vue({
         deep: true
     },
     methods:{
-        getAssets(offset, limit, sortType, sortColumn, username, searchRequestFacetList){
+        getAssets(offset, limit, sortType, sortColumn, searchRequestFacetList){
             this.isLoading = true;
             this.getService("toybox-asset-loadbalancer")
             .then(response => {
@@ -157,7 +156,6 @@ const files = new Vue({
                     searchRequest.offset = offset;
                     searchRequest.sortType = sortType;
                     searchRequest.sortColumn = sortColumn;
-                    searchRequest.username = username;
                     searchRequest.assetSearchRequestFacetList = searchRequestFacetList;
 
                     return axios.post(response.data.value + "/assets/search", searchRequest)
@@ -308,7 +306,7 @@ const files = new Vue({
                 }
             }
 
-            this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.username, this.searchRequestFacetList);
+            this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList);
         },
         getSelectedAssets:function(){
             var selectedAssets = []

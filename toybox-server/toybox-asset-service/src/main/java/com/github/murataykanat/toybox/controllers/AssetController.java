@@ -155,7 +155,7 @@ public class AssetController {
                     if(user != null){
                         String sortColumn = assetSearchRequest.getSortColumn();
                         String sortType = assetSearchRequest.getSortType();
-                        int startIndex = assetSearchRequest.getOffset();
+                        int offset = assetSearchRequest.getOffset();
                         int limit = assetSearchRequest.getLimit();
                         List<SearchRequestFacet> searchRequestFacetList = assetSearchRequest.getAssetSearchRequestFacetList();
 
@@ -233,9 +233,12 @@ public class AssetController {
 
                             // Paginate assets
                             int totalRecords = assetsByCurrentUser.size();
-                            int endIndex = Math.min((startIndex + limit), totalRecords);
+                            if(offset > totalRecords){
+                                offset = 0;
+                            }
+                            int endIndex = Math.min((offset + limit), totalRecords);
 
-                            List<Asset> assetsOnPage = assetsByCurrentUser.subList(startIndex, endIndex);
+                            List<Asset> assetsOnPage = assetsByCurrentUser.subList(offset, endIndex);
 
                             // Set subscription status
                             List<AssetUser> assetUsersByUserId = assetUserRepository.findAssetUsersByUserId(user.getId());

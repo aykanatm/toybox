@@ -72,6 +72,11 @@ const jobs = new Vue({
                     }
                     else{
                         this.totalRecords = response.data.totalRecords;
+
+                        if(offset > this.totalRecords){
+                            this.offset = offset = 0;
+                        }
+
                         this.totalPages = Math.ceil(this.totalRecords / limit);
                         this.currentPage = Math.ceil((offset / limit) + 1);
                     }
