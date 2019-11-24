@@ -19,29 +19,32 @@ var paginationMixin = {
             if(totalRecords == 0){
                 this.startIndex = 0;
                 this.endIndex = 0;
+
+                this.nextPageButtonDisabled = true;
+                this.previousPageButtonDisabled = true;
             }
             else{
                 this.startIndex = offset + 1;
                 this.endIndex = Math.min((offset + limit), totalRecords);
-            }
 
-            if(currentPage == 1){
-                if(totalPages != 1){
-                    this.nextPageButtonDisabled = false;
-                    this.previousPageButtonDisabled = true;
+                if(currentPage == 1){
+                    if(totalPages != 1){
+                        this.nextPageButtonDisabled = false;
+                        this.previousPageButtonDisabled = true;
+                    }
+                    else{
+                        this.nextPageButtonDisabled = true;
+                        this.previousPageButtonDisabled = true;
+                    }
+                }
+                else if(currentPage == totalPages){
+                    this.nextPageButtonDisabled = true;
+                    this.previousPageButtonDisabled = false;
                 }
                 else{
-                    this.nextPageButtonDisabled = true;
-                    this.previousPageButtonDisabled = true;
+                    this.nextPageButtonDisabled = false;
+                    this.previousPageButtonDisabled = false;
                 }
-            }
-            else if(currentPage == totalPages){
-                this.nextPageButtonDisabled = true;
-                this.previousPageButtonDisabled = false;
-            }
-            else{
-                this.nextPageButtonDisabled = false;
-                this.previousPageButtonDisabled = false;
             }
         },
         previousPage(){
