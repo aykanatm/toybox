@@ -30,6 +30,10 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -90,12 +94,15 @@ public class CommonObjectController {
                             }
 
                             if(canDownload){
+                                // Make asset list unique by asset name
+                                List<Asset> uniqueSelectedAssets = selectedAssets.stream().filter(distinctByKey(Asset::getName)).collect(Collectors.toList());
+
                                 HttpHeaders headers = authenticationUtils.getHeaders(session);
                                 String loadbalancerUrl = loadbalancerUtils.getLoadbalancerUrl(ToyboxConstants.SHARE_LOAD_BALANCER_SERVICE_NAME, ToyboxConstants.RENDITION_SERVICE_NAME, session, false);
 
                                 StreamingResponseBody responseBody = outputStream -> {
                                     try(ZipOutputStream zos = new ZipOutputStream(outputStream)){
-                                        for(Asset selectedAsset: selectedAssets){
+                                        for(Asset selectedAsset: uniqueSelectedAssets){
                                             addAssetToZipArchive(selectedAsset, loadbalancerUrl, headers, zos, "");
                                         }
 
@@ -223,6 +230,12 @@ public class CommonObjectController {
             zos.flush();
             zos.closeEntry();
         }
+    }
+
+    @LogEntryExitExecutionTime
+    private static <T> Predicate<T> distinctByKey(Function<? super T, ?> keyExtractor) {
+        Set<Object> seen = ConcurrentHashMap.newKeySet();
+        return t -> seen.add(keyExtractor.apply(t));
     }
 
     @LogEntryExitExecutionTime
