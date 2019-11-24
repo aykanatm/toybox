@@ -59,6 +59,9 @@ var paginationMixin = {
                 else if(this.view === 'notifications'){
                     this.getNotifications(this.fromUsername, this.content, this.notificationDate, this.isRead, this.offset, this.limit, this.searchRequestFacetList, false);
                 }
+                else if(this.view === 'folders'){
+                    this.getItems(this.currentFolderId, this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList);
+                }
             }
         },
         nextPage(){
@@ -72,6 +75,9 @@ var paginationMixin = {
                 }
                 else if(this.view === 'notifications'){
                     this.getNotifications(this.fromUsername, this.content, this.notificationDate, this.isRead, this.offset, this.limit, this.searchRequestFacetList, false);
+                }
+                else if(this.view === 'folders'){
+                    this.getItems(this.currentFolderId, this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList);
                 }
             }
         },
