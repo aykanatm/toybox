@@ -18,6 +18,10 @@ public class InternalShare {
     @JsonProperty("username")
     private String username;
 
+    @Column(name = "enable_expire_internal")
+    @JsonProperty("enableExpireInternal")
+    private String enableExpireInternal;
+
     @Column(name = "expiration_date")
     @JsonProperty("expirationDate")
     private Date expirationDate;
@@ -176,5 +180,13 @@ public class InternalShare {
 
     public void setNotifyOnCopy(String notifyOnCopy) {
         this.notifyOnCopy = notifyOnCopy;
+    }
+
+    public String getEnableExpireInternal() {
+        return enableExpireInternal;
+    }
+
+    public void setEnableExpireInternal(String enableExpireInternal) {
+        this.enableExpireInternal = enableExpireInternal;
     }
 }

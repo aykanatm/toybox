@@ -249,8 +249,9 @@ public class ShareUtils {
         String canDownload = internalShareRequest.getCanDownload() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
         String canShare = internalShareRequest.getCanShare() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
         String canCopy = internalShareRequest.getCanCopy() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
+        String enableExpireInternal = internalShareRequest.getEnableExpireInternal() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
 
-        internalSharesRepository.insertExternalShare(internalShareId, user.getUsername(), expirationDate,
+        internalSharesRepository.insertInternalShare(internalShareId, user.getUsername(), enableExpireInternal, expirationDate,
                 notifyOnEdit, notifyOnDownload, notifyOnShare, notifyOnMoveOrCopy, canEdit, canDownload, canShare, canCopy);
 
         List<Asset> sharedAssets = new ArrayList<>();
