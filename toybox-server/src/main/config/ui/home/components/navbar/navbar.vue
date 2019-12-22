@@ -14,6 +14,10 @@
             <i class="folder icon"></i>
             <span>Folders</span>
         </a>
+        <a class="item toybox-navbar-item" id="toybox-folders-menu" href="/toybox/shares">
+            <i class="share alternate icon"></i>
+            <span>Shares</span>
+        </a>
         <a class="item toybox-navbar-item" id="toybox-folders-menu" href="/toybox/jobs">
             <i class="cogs icon"></i>
             <span>Jobs</span>
