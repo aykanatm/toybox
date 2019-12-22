@@ -1,27 +1,30 @@
 package com.github.murataykanat.toybox.controllers;
 
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
 public class HomeController {
-    @RequestMapping("/toybox")
+    @GetMapping( "/toybox")
     public String loadHome(){
         return "home_view";
     }
 
-    @RequestMapping("/toybox/files")
+    @GetMapping("/toybox/files")
     public String loadFiles(){ return "files_view"; }
 
-    @RequestMapping("/toybox/folders")
+    @GetMapping("/toybox/folders")
     public String loadFolders(){ return "folders_view"; }
 
-    @RequestMapping("/toybox/jobs")
+    @GetMapping("/toybox/jobs")
     public String loadJobs(){ return "jobs_view"; }
 
-    @RequestMapping("/toybox/notifications")
+    @GetMapping("/toybox/notifications")
     public String loadNotifications(){ return "notifications_view"; }
 
-    @RequestMapping("/exit")
+    @GetMapping("/toybox/shares")
+    public String loadShares(){ return "shares_view";}
+
+    @GetMapping("/exit")
     public String loadExit(){ return "logout_view"; }
 }
