@@ -17,6 +17,10 @@ public class ExternalShare {
     @JsonProperty("username")
     private String username;
 
+    @Column(name = "creation_date")
+    @JsonProperty("creationDate")
+    private Date creationDate;
+
     @Column(name = "job_id")
     @JsonProperty("jobId")
     private long jobId;
@@ -103,5 +107,13 @@ public class ExternalShare {
 
     public void setEnableUsageLimit(String enableUsageLimit) {
         this.enableUsageLimit = enableUsageLimit;
+    }
+
+    public Date getCreationDate() {
+        return creationDate;
+    }
+
+    public void setCreationDate(Date creationDate) {
+        this.creationDate = creationDate;
     }
 }

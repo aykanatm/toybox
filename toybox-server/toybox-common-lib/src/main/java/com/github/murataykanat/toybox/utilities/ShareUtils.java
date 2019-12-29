@@ -68,12 +68,16 @@ public class ShareUtils {
         String enableExpireExternal = externalShareRequest.getEnableExpireExternal() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
         String enableUsageLimit = externalShareRequest.getEnableUsageLimit() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
 
+        Calendar calendar = Calendar.getInstance();
+
+        Date creationDate = calendar.getTime();
+
         if(!externalShareRequest.getEnableExpireExternal()){
             SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss");
             expirationDate = simpleDateFormat.parse("12/31/9999 23:59:59");
         }
         else{
-            Calendar calendar = Calendar.getInstance();
+            calendar = Calendar.getInstance();
             calendar.setTime(expirationDate);
             calendar.set(Calendar.HOUR_OF_DAY, 0);
             calendar.set(Calendar.MINUTE, 0);
@@ -97,7 +101,7 @@ public class ShareUtils {
 
                 String externalShareId = generateExternalShareId();
 
-                externalSharesRepository.insertExternalShare(externalShareId, username, jobResponse.getJobId(), expirationDate, maxNumberOfHits, notifyWhenDownloaded, enableExpireExternal, enableUsageLimit);
+                externalSharesRepository.insertExternalShare(externalShareId, username, jobResponse.getJobId(), creationDate, expirationDate, maxNumberOfHits, notifyWhenDownloaded, enableExpireExternal, enableUsageLimit);
 
                 externalShareResponse.setMessage("External share successfully generated.");
                 externalShareResponse.setUrl(shareServiceUrl + "/share/download/" + externalShareId);
@@ -226,6 +230,9 @@ public class ShareUtils {
 
         String internalShareId = generateInternalShareId();
 
+        Calendar calendar = Calendar.getInstance();
+
+        Date creationDate = calendar.getTime();
         Date expirationDate;
 
         if(!internalShareRequest.getEnableExpireInternal()){
@@ -233,7 +240,7 @@ public class ShareUtils {
             expirationDate = simpleDateFormat.parse("12/31/9999 23:59:59");
         }
         else{
-            Calendar calendar = Calendar.getInstance();
+            calendar = Calendar.getInstance();
             calendar.setTime(internalShareRequest.getExpirationDate());
             calendar.set(Calendar.HOUR_OF_DAY, 0);
             calendar.set(Calendar.MINUTE, 0);
@@ -251,7 +258,7 @@ public class ShareUtils {
         String canCopy = internalShareRequest.getCanCopy() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
         String enableExpireInternal = internalShareRequest.getEnableExpireInternal() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
 
-        internalSharesRepository.insertInternalShare(internalShareId, user.getUsername(), enableExpireInternal, expirationDate,
+        internalSharesRepository.insertInternalShare(internalShareId, user.getUsername(), creationDate, enableExpireInternal, expirationDate,
                 notifyOnEdit, notifyOnDownload, notifyOnShare, notifyOnMoveOrCopy, canEdit, canDownload, canShare, canCopy);
 
         List<Asset> sharedAssets = new ArrayList<>();

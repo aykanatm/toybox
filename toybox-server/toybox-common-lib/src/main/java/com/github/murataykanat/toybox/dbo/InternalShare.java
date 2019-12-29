@@ -18,6 +18,10 @@ public class InternalShare {
     @JsonProperty("username")
     private String username;
 
+    @Column(name = "creation_date")
+    @JsonProperty("creationDate")
+    private Date creationDate;
+
     @Column(name = "enable_expire_internal")
     @JsonProperty("enableExpireInternal")
     private String enableExpireInternal;
@@ -188,5 +192,13 @@ public class InternalShare {
 
     public void setEnableExpireInternal(String enableExpireInternal) {
         this.enableExpireInternal = enableExpireInternal;
+    }
+
+    public Date getCreationDate() {
+        return creationDate;
+    }
+
+    public void setCreationDate(Date creationDate) {
+        this.creationDate = creationDate;
     }
 }
