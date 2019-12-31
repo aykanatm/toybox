@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1"/>
+        <!-- CSRF Config -->
+        <meta th:name="_csrf" th:content="${_csrf.token}"/>
+        <meta th:name="_csrf_header" th:content="${_csrf.headerName}"/>
+        <!-- -->
+        <link rel="stylesheet" type="text/css" href="../thirdparty/semantic/semantic.min.css"/>
+        <link rel="stylesheet" type="text/css" href="../css/toybox.css"/>
+
+        <script type="text/javascript" src="../thirdparty/jquery/jquery-3.3.1.min.js"></script>
+        <script type="text/javascript" src="../thirdparty/axios/axios.min.js"></script>
+        <script type="text/javascript" src="../thirdparty/semantic/semantic.min.js"></script>
+        <script type="text/javascript" src="../thirdparty/vue/vue.js"></script>
+        <!-- <script type="text/javascript" src="../thirdparty/vue/vue.min.js"></script> -->
+        <script src="../thirdparty/imagesloaded.pkgd.min.js"></script>
+        <script src="../thirdparty/FileSaver.min.js"></script>
+        <script src="../thirdparty/moment.min.js"></script>
+        <script type="text/javascript" src="../js/httpVueLoader.js"></script>
+    </head>
+    <body>
+        <div style="height: calc(100% - 68px); width: 100%;" id="toybox-shares">
+            <navbar v-bind:user="user"/>
+            <div class="toybox-background">
+                <div class="toybox-container">
+                    <div class="ui grid toybox-jobs-container">
+                        <div class="two wide column">
+                            <div class="ui grid" style="margin-top: 10px;">
+                                <div class="one column row toybox-filters-header-row">
+                                    <div class="column">
+                                        <i class="filter icon"></i>
+                                        <span>Filters</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="ui grid">
+                                <div class="ui styled accordion">
+                                    <facet v-for="facet in facets" v-bind:name="facet.name" v-bind:id="facet.id" v-bind:lookups="facet.lookups" v-bind:key="facet.id"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="fourteen wide column">
+                            <div class="ui grid toybox-jobs-header-grid">
+                                <div class="fourteen column row toybox-jobs-header-row" style="font-size: 9pt;">
+                                    <div class="column">
+                                        <span>Share Type</span>
+                                    </div>
+                                    <div class="column">
+                                        <span>Expire</span>
+                                    </div>
+                                    <div class="column">
+                                        <span>Expiration Date</span>
+                                    </div>
+                                    <div class="column">
+                                        <span>Limit Usage</span>
+                                    </div>
+                                    <div class="column">
+                                        <span>Usage Limit</span>
+                                    </div>
+                                    <div class="column">
+                                        <span>Copy</span>
+                                    </div>
+                                    <div class="column">
+                                        <span>Download</span>
+                                    </div>
+                                    <div class="column">
+                                        <span>Edit</span>
+                                    </div>
+                                    <div class="column">
+                                        <span>Share</span>
+                                    </div>
+                                    <div class="column">
+                                        <span>Notify on Copy</span>
+                                    </div>
+                                    <div class="column">
+                                        <span>Notify on Download</span>
+                                    </div>
+                                    <div class="column">
+                                        <span>Notify on Edit</span>
+                                    </div>
+                                    <div class="column">
+                                        <span>Notify on Share</span>
+                                    </div>
+                                    <div class="column">
+                                        <span>Actions</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="ui grid">
+                                <div class="ui active dimmer" v-if="isLoading">
+                                    <div class="ui massive text loader">Loading</div>
+                                </div>
+                                <share  v-for="share in shares"
+                                        v-bind:id="share.id" v-bind:type="share['@class']" v-bind:creation-date="share.creationDate"
+                                        v-bind:enable-expire="share.enableExpire" v-bind:expiration-date="share.expirationDate"
+                                        v-bind:enable-usage-limit="share.enableUsageLimit" v-bind:max-number-of-hits="share.maxNumberOfHits"
+                                        v-bind:can-copy="share.canCopy" v-bind:can-download="share.canDownload" v-bind:can-edit="share.canEdit"
+                                        v-bind:can-share="share.canShare" v-bind:notify-on-copy="share.notifyOnCopy" v-bind:notify-on-download="share.notifyOnDownload"
+                                        v-bind:notify-on-edit="share.notifyOnEdit" v-bind:notify-on-share="share.notifyOnShare"
+                                        v-bind:key="share.id"></share>
+                            </div>
+                            <div class="ui right floated pagination menu toybox-pagination">
+                                <a v-bind:class="{icon:true, disabled:previousPageButtonDisabled, item:true}" v-on:click="previousPage">
+                                    <i class="left chevron icon"></i>
+                                </a>
+                                <div class="item">
+                                    {{ startIndex }} - {{ endIndex }} of {{ totalRecords }} Results
+                                </div>
+                                <div class="item">
+                                    <span>{{ currentPage }} of {{ totalPages }} Pages</span>
+                                </div>
+                                <a v-bind:class="{icon:true, disabled:nextPageButtonDisabled, item:true}" v-on:click="nextPage">
+                                    <i class="right chevron icon"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+    <script src="../components/mixins/service/service-mixin.js"></script>
+    <script src="../components/mixins/user/user-mixin.js"></script>
+    <script src="../components/mixins/facet/facet-mixin.js"></script>
+    <script src="../components/mixins/message/message-mixin.js"></script>
+    <script src="../components/mixins/pagination/pagination-mixin.js"></script>
+    <script src="../components/mixins/notification/notification-mixin.js"></script>
+    <script src="../js/utilities.js"></script>
+    <script src="../js/shares.js"></script>
+</html>
