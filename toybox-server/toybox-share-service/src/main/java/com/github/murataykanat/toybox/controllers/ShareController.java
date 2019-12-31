@@ -4,11 +4,11 @@ import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.*;
 import com.github.murataykanat.toybox.repositories.*;
+import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
+import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.selection.SelectionContext;
-import com.github.murataykanat.toybox.schema.share.ExternalShareRequest;
-import com.github.murataykanat.toybox.schema.share.ExternalShareResponse;
-import com.github.murataykanat.toybox.schema.share.InternalShareRequest;
+import com.github.murataykanat.toybox.schema.share.*;
 import com.github.murataykanat.toybox.utilities.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -32,6 +32,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RefreshScope
 @RestController
@@ -44,6 +45,10 @@ public class ShareController {
     private SelectionUtils selectionUtils;
     @Autowired
     private ShareUtils shareUtils;
+    @Autowired
+    private SortUtils sortUtils;
+    @Autowired
+    private FacetUtils facetUtils;
 
     @Autowired
     private ExternalSharesRepository externalSharesRepository;
@@ -69,7 +74,7 @@ public class ShareController {
 
                         SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
 
-                        if(externalShare.getEnableExpireExternal().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
+                        if(externalShare.getEnableExpire().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
                             Date expirationDate = externalShare.getExpirationDate();
                             if(expirationDate != null){
                                 Calendar cal = Calendar.getInstance();
@@ -119,7 +124,7 @@ public class ShareController {
 
                         File archiveFile = new File(downloadFilePath);
                         if(archiveFile.exists()){
-                            if(externalShare.getNotifyWhenDownloaded().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
+                            if(externalShare.getNotifyOnDownload().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
                                 // Send notification manually (because we don't have a session)
                                 String toUsername = externalShare.getUsername();
                                 String fromUsername = "system";
@@ -271,6 +276,86 @@ public class ShareController {
             externalShareResponse.setMessage(errorMessage);
 
             return new ResponseEntity<>(externalShareResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    @RequestMapping(value = "/share/search", method = RequestMethod.POST)
+    public ResponseEntity<RetrieveSharesResponse> searchShares(Authentication authentication, @RequestBody ShareSearchRequest shareSearchRequest){
+        RetrieveSharesResponse retrieveSharesResponse = new RetrieveSharesResponse();
+
+        try{
+            if(authenticationUtils.isSessionValid(authentication)){
+                if(shareSearchRequest != null){
+                    User user = authenticationUtils.getUser(authentication);
+                    if(user != null){
+                        List<ShareItem> shareItems = new ArrayList<>();
+
+                        String sortColumn = shareSearchRequest.getSortColumn();
+                        String sortType = shareSearchRequest.getSortType();
+                        int offset = shareSearchRequest.getOffset();
+                        int limit = shareSearchRequest.getLimit();
+                        List<SearchRequestFacet> searchRequestFacetList = shareSearchRequest.getSearchRequestFacetList();
+
+                        List<InternalShare> internalSharesWithSourceUser = shareUtils.getInternalSharesWithSourceUser(user);
+                        shareItems.addAll(internalSharesWithSourceUser);
+
+                        List<ExternalShare> externalSharesWithSourceUser = shareUtils.getExternalSharesWithSourceUser(user);
+                        shareItems.addAll(externalSharesWithSourceUser);
+
+                        if(searchRequestFacetList != null && !searchRequestFacetList.isEmpty()){
+                            shareItems = shareItems.stream().filter(shareItem -> facetUtils.hasFacetValue(shareItem, searchRequestFacetList)).collect(Collectors.toList());
+                        }
+
+                        List<Facet> facets = facetUtils.getFacets(shareItems);
+                        retrieveSharesResponse.setFacets(facets);
+
+                        sortUtils.sortItems(sortType, shareItems, Comparator.comparing(ShareItem::getCreationDate, Comparator.nullsLast(Comparator.naturalOrder())));
+
+
+                        int totalRecords = shareItems.size();
+                        if(offset > totalRecords){
+                            offset = 0;
+                        }
+                        int endIndex = Math.min((offset + limit), totalRecords);
+
+                        List<ShareItem> shareItemsOnPage = shareItems.subList(offset, endIndex);
+
+                        retrieveSharesResponse.setTotalRecords(totalRecords);
+                        retrieveSharesResponse.setShares(shareItemsOnPage);
+                        retrieveSharesResponse.setMessage("Shares retrieved successfully!");
+
+                        return new ResponseEntity<>(retrieveSharesResponse, HttpStatus.OK);
+                    }
+                    else{
+                        throw new IllegalArgumentException("User is null!");
+                    }
+                }
+                else{
+                    String errorMessage = "Share search request is null!";
+                    _logger.error(errorMessage);
+
+                    retrieveSharesResponse.setMessage(errorMessage);
+
+                    return new ResponseEntity<>(retrieveSharesResponse, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                retrieveSharesResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(retrieveSharesResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while searching shares. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            retrieveSharesResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(retrieveSharesResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

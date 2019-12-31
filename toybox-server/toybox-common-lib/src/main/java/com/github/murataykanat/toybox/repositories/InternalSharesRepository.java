@@ -11,20 +11,20 @@ import java.util.Date;
 import java.util.List;
 
 public interface InternalSharesRepository extends JpaRepository<InternalShare, String> {
-    @Query(value = "SELECT internal_share_id, username, creation_date, enable_expire_internal, expiration_date, notify_on_edit, notify_on_download, notify_on_share, notify_on_copy, can_edit, can_download, can_share, can_copy FROM internal_shares WHERE internal_share_id=?1", nativeQuery = true)
-    List<InternalShare> getInternalSharesById(String internalShareId);
+    @Query(value = "SELECT id, username, creation_date, enable_expire, expiration_date, notify_on_edit, notify_on_download, notify_on_share, notify_on_copy, can_edit, can_download, can_share, can_copy FROM internal_shares WHERE id=?1", nativeQuery = true)
+    List<InternalShare> getInternalSharesById(String id);
 
-    @Query(value = "SELECT internal_share_id, username, creation_date, enable_expire_internal, expiration_date, notify_on_edit, notify_on_download, notify_on_share, notify_on_copy, can_edit, can_download, can_share, can_copy FROM internal_shares WHERE internal_share_id IN :internalShareIds", nativeQuery = true)
+    @Query(value = "SELECT id, username, creation_date, enable_expire, expiration_date, notify_on_edit, notify_on_download, notify_on_share, notify_on_copy, can_edit, can_download, can_share, can_copy FROM internal_shares WHERE id IN :internalShareIds", nativeQuery = true)
     List<InternalShare> getInternalSharesByIds(@Param("internalShareIds")List<String> internalShareIds);
 
-    @Query(value = "SELECT internal_share_id, username, enable_expire_internal, expiration_date, notify_on_edit, notify_on_download, notify_on_share, notify_on_copy, can_edit, can_download, can_share, can_copy FROM internal_shares WHERE username=?1", nativeQuery = true)
+    @Query(value = "SELECT id, username, creation_date, enable_expire, expiration_date, notify_on_edit, notify_on_download, notify_on_share, notify_on_copy, can_edit, can_download, can_share, can_copy FROM internal_shares WHERE username=?1", nativeQuery = true)
     List<InternalShare> getInternalSharesByUsername(String username);
 
     @Transactional
     @Modifying
-    @Query(value = "INSERT INTO internal_shares(internal_share_id, username, creation_date, enable_expire_internal, expiration_date, notify_on_edit, notify_on_download, notify_on_share, notify_on_copy, can_edit, can_download, can_share, can_copy) VALUES (:internal_share_id, :username, :creation_date, :enable_expire_internal, :expiration_date, :notify_on_edit, :notify_on_download, :notify_on_share, :notify_on_copy, :can_edit, :can_download, :can_share, :can_copy)", nativeQuery = true)
-    int insertInternalShare(@Param("internal_share_id") String internalShareId, @Param("username") String username, @Param("creation_date") Date creationDate,
-                            @Param("enable_expire_internal") String enableExpireInternal,
+    @Query(value = "INSERT INTO internal_shares(id, username, creation_date, enable_expire, expiration_date, notify_on_edit, notify_on_download, notify_on_share, notify_on_copy, can_edit, can_download, can_share, can_copy) VALUES (:id, :username, :creation_date, :enable_expire, :expiration_date, :notify_on_edit, :notify_on_download, :notify_on_share, :notify_on_copy, :can_edit, :can_download, :can_share, :can_copy)", nativeQuery = true)
+    int insertInternalShare(@Param("id") String id, @Param("username") String username, @Param("creation_date") Date creationDate,
+                            @Param("enable_expire") String enableExpire,
                             @Param("expiration_date") Date expirationDate, @Param("notify_on_edit") String notifyOnEdit, @Param("notify_on_download") String notifyOnDownload,
                             @Param("notify_on_share") String notifyOnShare, @Param("notify_on_copy") String notifyOnCopy, @Param("can_edit") String canEdit,
                             @Param("can_download") String canDownload, @Param("can_share") String canShare, @Param("can_copy") String canCopy);

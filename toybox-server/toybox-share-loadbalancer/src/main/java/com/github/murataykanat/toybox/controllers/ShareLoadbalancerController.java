@@ -4,9 +4,7 @@ import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.ribbon.RibbonRetryHttpRequestFactory;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
-import com.github.murataykanat.toybox.schema.share.ExternalShareRequest;
-import com.github.murataykanat.toybox.schema.share.ExternalShareResponse;
-import com.github.murataykanat.toybox.schema.share.InternalShareRequest;
+import com.github.murataykanat.toybox.schema.share.*;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import com.github.murataykanat.toybox.utilities.LoadbalancerUtils;
 import com.google.gson.Gson;
@@ -272,6 +270,88 @@ public class ShareLoadbalancerController {
             genericResponse.setMessage(errorMessage);
 
             return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    @HystrixCommand(fallbackMethod = "searchSharesErrorFallback")
+    @RequestMapping(value = "/share/search", method = RequestMethod.POST)
+    public ResponseEntity<RetrieveSharesResponse> searchShares(Authentication authentication, HttpSession session, @RequestBody ShareSearchRequest shareSearchRequest){
+        RetrieveSharesResponse retrieveSharesResponse = new RetrieveSharesResponse();
+
+        try{
+            if(authenticationUtils.isSessionValid(authentication)){
+                if(shareSearchRequest != null){
+                    HttpHeaders headers = authenticationUtils.getHeaders(session);
+                    String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.SHARE_SERVICE_NAME);
+
+                    if(StringUtils.isNotBlank(prefix)){
+                        return restTemplate.exchange(prefix + ToyboxConstants.SHARE_SERVICE_NAME + "/share/search", HttpMethod.POST, new HttpEntity<>(shareSearchRequest, headers), RetrieveSharesResponse.class);
+                    }
+                    else{
+                        throw new IllegalArgumentException("Service ID prefix is null!");
+                    }
+                }
+                else{
+                    String errorMessage = "Internal share request is null!";
+                    _logger.error(errorMessage);
+
+                    retrieveSharesResponse.setMessage(errorMessage);
+
+                    return new ResponseEntity<>(retrieveSharesResponse, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                retrieveSharesResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(retrieveSharesResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            retrieveSharesResponse.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(retrieveSharesResponse, httpEx.getStatusCode());
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while searching shares. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            retrieveSharesResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(retrieveSharesResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    public ResponseEntity<RetrieveSharesResponse> searchSharesErrorFallback(Authentication authentication, HttpSession session, InternalShareRequest internalShareRequest, Throwable e){
+        RetrieveSharesResponse retrieveSharesResponse = new RetrieveSharesResponse();
+
+        if(internalShareRequest != null){
+            String errorMessage;
+            if(e.getLocalizedMessage() != null){
+                errorMessage = "Unable to search shares. " + e.getLocalizedMessage();
+            }
+            else{
+                errorMessage = "Unable to get response from the share service.";
+            }
+
+            _logger.error(errorMessage, e);
+
+            retrieveSharesResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(retrieveSharesResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        else{
+            String errorMessage = "Internal share request is null!";
+
+            _logger.error(errorMessage);
+
+            retrieveSharesResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(retrieveSharesResponse, HttpStatus.BAD_REQUEST);
         }
     }
 }

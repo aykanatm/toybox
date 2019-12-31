@@ -7,11 +7,11 @@ import java.util.Date;
 
 @Entity
 @Table(name = "external_shares")
-public class ExternalShare {
+public class ExternalShare implements ShareItem{
     @Id
-    @Column(name = "external_share_id")
-    @JsonProperty("externalShareId")
-    private String externalShareId;
+    @Column(name = "id")
+    @JsonProperty("id")
+    private String id;
 
     @Column(name = "username")
     @JsonProperty("username")
@@ -25,9 +25,9 @@ public class ExternalShare {
     @JsonProperty("jobId")
     private long jobId;
 
-    @Column(name = "enable_expire_external")
-    @JsonProperty("enableExpireExternal")
-    private String enableExpireExternal;
+    @Column(name = "enable_expire")
+    @JsonProperty("enableExpire")
+    private String enableExpire;
 
     @Column(name = "expiration_date")
     @JsonProperty("expirationDate")
@@ -41,16 +41,16 @@ public class ExternalShare {
     @JsonProperty("maxNumberOfHits")
     private int maxNumberOfHits;
 
-    @Column(name = "notify_when_downloaded")
-    @JsonProperty("notifyWhenDownloaded")
-    private String notifyWhenDownloaded;
+    @Column(name = "notify_on_download")
+    @JsonProperty("notifyOnDownload")
+    private String notifyOnDownload;
 
-    public String getExternalShareId() {
-        return externalShareId;
+    public String getId() {
+        return id;
     }
 
-    public void setExternalShareId(String externalShareId) {
-        this.externalShareId = externalShareId;
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getUsername() {
@@ -85,20 +85,20 @@ public class ExternalShare {
         this.maxNumberOfHits = maxNumberOfHits;
     }
 
-    public String getNotifyWhenDownloaded() {
-        return notifyWhenDownloaded;
+    public String getNotifyOnDownload() {
+        return notifyOnDownload;
     }
 
-    public void setNotifyWhenDownloaded(String notifyWhenDownloaded) {
-        this.notifyWhenDownloaded = notifyWhenDownloaded;
+    public void setNotifyOnDownload(String notifyOnDownload) {
+        this.notifyOnDownload = notifyOnDownload;
     }
 
-    public String getEnableExpireExternal() {
-        return enableExpireExternal;
+    public String getEnableExpire() {
+        return enableExpire;
     }
 
-    public void setEnableExpireExternal(String enableExpireExternal) {
-        this.enableExpireExternal = enableExpireExternal;
+    public void setEnableExpire(String enableExpire) {
+        this.enableExpire = enableExpire;
     }
 
     public String getEnableUsageLimit() {

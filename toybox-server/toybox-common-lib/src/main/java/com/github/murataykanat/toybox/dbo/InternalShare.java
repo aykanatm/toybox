@@ -8,11 +8,11 @@ import java.util.Set;
 
 @Entity
 @Table(name = "internal_shares")
-public class InternalShare {
+public class InternalShare implements ShareItem{
     @Id
-    @Column(name = "internal_share_id")
-    @JsonProperty("internalShareId")
-    private String internalShareId;
+    @Column(name = "id")
+    @JsonProperty("id")
+    private String id;
 
     @Column(name = "username")
     @JsonProperty("username")
@@ -22,9 +22,9 @@ public class InternalShare {
     @JsonProperty("creationDate")
     private Date creationDate;
 
-    @Column(name = "enable_expire_internal")
-    @JsonProperty("enableExpireInternal")
-    private String enableExpireInternal;
+    @Column(name = "enable_expire")
+    @JsonProperty("enableExpire")
+    private String enableExpire;
 
     @Column(name = "expiration_date")
     @JsonProperty("expirationDate")
@@ -74,12 +74,12 @@ public class InternalShare {
     @JoinTable(name = "internal_share_users", joinColumns = @JoinColumn(name = "internal_share_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
     private Set<User> users;
 
-    public String getInternalShareId() {
-        return internalShareId;
+    public String getId() {
+        return id;
     }
 
-    public void setInternalShareId(String internalShareId) {
-        this.internalShareId = internalShareId;
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getUsername() {
@@ -186,12 +186,12 @@ public class InternalShare {
         this.notifyOnCopy = notifyOnCopy;
     }
 
-    public String getEnableExpireInternal() {
-        return enableExpireInternal;
+    public String getEnableExpire() {
+        return enableExpire;
     }
 
-    public void setEnableExpireInternal(String enableExpireInternal) {
-        this.enableExpireInternal = enableExpireInternal;
+    public void setEnableExpire(String enableExpireInternal) {
+        this.enableExpire = enableExpireInternal;
     }
 
     public Date getCreationDate() {
