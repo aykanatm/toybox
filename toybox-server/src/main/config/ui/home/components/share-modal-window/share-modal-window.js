@@ -480,6 +480,7 @@ module.exports = {
                                 });
                         }
                         else{
+                            this.isSharing = false;
                             this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
                         }
                     })
