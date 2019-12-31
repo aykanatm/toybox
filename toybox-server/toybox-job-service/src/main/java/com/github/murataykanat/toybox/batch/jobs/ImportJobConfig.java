@@ -226,7 +226,7 @@ public class ImportJobConfig {
                                                 // If so add the asset to the shares
                                                 List<InternalShare> internalShares = shareUtils.getInternalSharesContainingItem(containerId, false);
                                                 for(InternalShare internalShare: internalShares){
-                                                    shareUtils.addAssetToInternalShare(assetId, internalShare.getInternalShareId());
+                                                    shareUtils.addAssetToInternalShare(assetId, internalShare.getId());
                                                 }
                                             }
                                         }

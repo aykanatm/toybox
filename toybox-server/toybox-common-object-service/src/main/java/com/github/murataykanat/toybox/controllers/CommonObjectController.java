@@ -304,7 +304,7 @@ public class CommonObjectController {
 
                                         List<InternalShare> internalSharesContainingItem = shareUtils.getInternalSharesContainingItem(asset.getId(), true);
                                         for(InternalShare internalShare: internalSharesContainingItem){
-                                            shareUtils.removeItemFromInternalShare(internalShare.getInternalShareId(), asset.getId(), true);
+                                            shareUtils.removeItemFromInternalShare(internalShare.getId(), asset.getId(), true);
                                         }
                                     }
                                 }
@@ -332,7 +332,7 @@ public class CommonObjectController {
 
                                         List<InternalShare> internalSharesContainingItem = shareUtils.getInternalSharesContainingItem(selectedContainer.getId(), false);
                                         for(InternalShare internalShare: internalSharesContainingItem){
-                                            shareUtils.removeItemFromInternalShare(internalShare.getInternalShareId(), selectedContainer.getId(), false);
+                                            shareUtils.removeItemFromInternalShare(internalShare.getId(), selectedContainer.getId(), false);
                                         }
                                     }
                                 }

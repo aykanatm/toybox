@@ -141,7 +141,7 @@ public class FolderController {
                                 // If so add the folder to the shares
                                 List<InternalShare> internalShares = shareUtils.getInternalSharesContainingItem(container.getParentId(), false);
                                 for(InternalShare internalShare: internalShares){
-                                    shareUtils.addContainerToInternalShare(container.getId(), internalShare.getInternalShareId());
+                                    shareUtils.addContainerToInternalShare(container.getId(), internalShare.getId());
                                 }
 
                                 createContainerResponse.setContainerId(container.getId());
