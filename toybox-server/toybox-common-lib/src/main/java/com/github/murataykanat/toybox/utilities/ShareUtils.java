@@ -251,7 +251,7 @@ public class ShareUtils {
         String notifyOnEdit = internalShareRequest.getNotifyOnEdit() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
         String notifyOnDownload = internalShareRequest.getNotifyOnDownload() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
         String notifyOnShare = internalShareRequest.getNotifyOnShare() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
-        String notifyOnMoveOrCopy = internalShareRequest.getNotifyOnMoveOrCopy() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
+        String notifyOnCopy = internalShareRequest.getNotifyOnCopy() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
         String canEdit = internalShareRequest.getCanEdit() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
         String canDownload = internalShareRequest.getCanDownload() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
         String canShare = internalShareRequest.getCanShare() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
@@ -259,7 +259,7 @@ public class ShareUtils {
         String enableExpireInternal = internalShareRequest.getEnableExpireInternal() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
 
         internalSharesRepository.insertInternalShare(internalShareId, user.getUsername(), creationDate, enableExpireInternal, expirationDate,
-                notifyOnEdit, notifyOnDownload, notifyOnShare, notifyOnMoveOrCopy, canEdit, canDownload, canShare, canCopy);
+                notifyOnEdit, notifyOnDownload, notifyOnShare, notifyOnCopy, canEdit, canDownload, canShare, canCopy);
 
         List<Asset> sharedAssets = new ArrayList<>();
         List<Container> sharedContainers = new ArrayList<>();

@@ -26,8 +26,8 @@ public class InternalShareRequest implements Serializable {
     private boolean notifyOnDownload;
     @JsonProperty("notifyOnShare")
     private boolean notifyOnShare;
-    @JsonProperty("notifyOnMoveOrCopy")
-    private boolean notifyOnMoveOrCopy;
+    @JsonProperty("notifyOnCopy")
+    private boolean notifyOnCopy;
     @JsonProperty("canEdit")
     private boolean canEdit;
     @JsonProperty("canDownload")
@@ -85,12 +85,12 @@ public class InternalShareRequest implements Serializable {
         this.notifyOnShare = notifyOnShare;
     }
 
-    public boolean getNotifyOnMoveOrCopy() {
-        return notifyOnMoveOrCopy;
+    public boolean getNotifyOnCopy() {
+        return notifyOnCopy;
     }
 
-    public void setNotifyOnMoveOrCopy(boolean notifyOnMoveOrCopy) {
-        this.notifyOnMoveOrCopy = notifyOnMoveOrCopy;
+    public void setNotifyOnCopy(boolean notifyOnCopy) {
+        this.notifyOnCopy = notifyOnCopy;
     }
 
     public boolean getCanEdit() {
