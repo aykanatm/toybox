@@ -74,7 +74,7 @@
             </div>
         </div>
         <div class="column">
-            <div v-if="notifyOnDownload === 'Y' || notifyWhenDownloaded === 'Y'" class="column">
+            <div v-if="notifyOnDownload === 'Y'" class="column">
                 <i class="check green icon"></i>
             </div>
             <div v-else class="column">
