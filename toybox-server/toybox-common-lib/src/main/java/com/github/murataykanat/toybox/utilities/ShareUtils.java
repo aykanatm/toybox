@@ -101,10 +101,11 @@ public class ShareUtils {
 
                 String externalShareId = generateExternalShareId();
 
-                externalSharesRepository.insertExternalShare(externalShareId, username, jobResponse.getJobId(), creationDate, expirationDate, maxNumberOfHits, notifyWhenDownloaded, enableExpireExternal, enableUsageLimit);
+                String url = shareServiceUrl + "/share/download/" + externalShareId;
+                externalSharesRepository.insertExternalShare(externalShareId, username, jobResponse.getJobId(), creationDate, expirationDate, maxNumberOfHits, notifyWhenDownloaded, enableExpireExternal, enableUsageLimit, url);
 
                 externalShareResponse.setMessage("External share successfully generated.");
-                externalShareResponse.setUrl(shareServiceUrl + "/share/download/" + externalShareId);
+                externalShareResponse.setUrl(url);
 
                 List<Asset> selectedAssets = externalShareRequest.getSelectionContext().getSelectedAssets();
                 List<Container> selectedContainers = externalShareRequest.getSelectionContext().getSelectedContainers();

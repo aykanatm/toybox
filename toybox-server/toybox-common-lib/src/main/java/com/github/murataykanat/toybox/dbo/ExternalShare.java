@@ -56,6 +56,10 @@ public class ExternalShare implements Serializable, ShareItem{
     @JsonProperty("notifyOnDownload")
     private String notifyOnDownload;
 
+    @Column(name = "url")
+    @JsonProperty("url")
+    private String url;
+
     public String getId() {
         return id;
     }
@@ -126,5 +130,13 @@ public class ExternalShare implements Serializable, ShareItem{
 
     public void setCreationDate(Date creationDate) {
         this.creationDate = creationDate;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
     }
 }

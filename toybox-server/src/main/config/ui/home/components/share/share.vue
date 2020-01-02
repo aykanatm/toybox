@@ -97,8 +97,17 @@
                 <i class="times red icon"></i>
             </div>
         </div>
-        <div class="column">
-            <button class="mini ui button" v-on:click.stop="editShare">Edit</button>
+        <div class="column" style="padding-left: 0;">
+            <div class="ui buttons">
+                <div class="ui mini button">Actions</div>
+                <div class="ui floating dropdown icon mini button">
+                    <i class="dropdown icon"></i>
+                    <div class="menu">
+                        <div class="item" v-on:click.stop="editShare"><i class="pencil alternate icon"></i> Edit</div>
+                        <div class="item" v-on:click.stop="copyUrl" v-show="type === 'com.github.murataykanat.toybox.dbo.ExternalShare'"><i class="copy icon"></i> Copy URL</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </template>
