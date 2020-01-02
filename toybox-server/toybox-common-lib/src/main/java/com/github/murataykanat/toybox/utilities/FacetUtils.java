@@ -53,9 +53,7 @@ public class FacetUtils {
                     for(T obj: objects){
                         for(Field objField: obj.getClass().getDeclaredFields()){
                             if(objField.isAnnotationPresent(FacetColumnName.class) && objField.getAnnotation(FacetColumnName.class).value().equalsIgnoreCase(facetFieldName)){
-                                if(objField.isAnnotationPresent(FacetDefaultLookup.class)){
-                                    // TODO: Add a logic for non-date lookups
-
+                                if(objField.isAnnotationPresent(FacetDefaultLookup.class) && objField.getAnnotation(FacetDataType.class).value().equalsIgnoreCase("Date")){
                                     Calendar cal = Calendar.getInstance();
                                     cal.set(Calendar.HOUR_OF_DAY, 0);
                                     cal.set(Calendar.MINUTE, 0);
