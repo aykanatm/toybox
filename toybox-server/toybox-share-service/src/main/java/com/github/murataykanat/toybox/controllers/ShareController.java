@@ -297,11 +297,21 @@ public class ShareController {
                         int limit = shareSearchRequest.getLimit();
                         List<SearchRequestFacet> searchRequestFacetList = shareSearchRequest.getSearchRequestFacetList();
 
-                        List<InternalShare> internalSharesWithSourceUser = shareUtils.getInternalSharesWithSourceUser(user);
-                        shareItems.addAll(internalSharesWithSourceUser);
+                        if(authenticationUtils.isAdminUser(authentication)){
+                            List<InternalShare> internalSharesWithSourceUser = shareUtils.getAllInternalShares();
+                            shareItems.addAll(internalSharesWithSourceUser);
 
-                        List<ExternalShare> externalSharesWithSourceUser = shareUtils.getExternalSharesWithSourceUser(user);
-                        shareItems.addAll(externalSharesWithSourceUser);
+                            List<ExternalShare> externalSharesWithSourceUser = shareUtils.getAllExternalShares();
+                            shareItems.addAll(externalSharesWithSourceUser);
+                        }
+                        else{
+                            List<InternalShare> internalSharesWithSourceUser = shareUtils.getInternalSharesWithSourceUser(user);
+                            shareItems.addAll(internalSharesWithSourceUser);
+
+                            List<ExternalShare> externalSharesWithSourceUser = shareUtils.getExternalSharesWithSourceUser(user);
+                            shareItems.addAll(externalSharesWithSourceUser);
+                        }
+
 
                         if(searchRequestFacetList != null && !searchRequestFacetList.isEmpty()){
                             shareItems = shareItems.stream().filter(shareItem -> facetUtils.hasFacetValue(shareItem, searchRequestFacetList)).collect(Collectors.toList());

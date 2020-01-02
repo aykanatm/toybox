@@ -521,6 +521,16 @@ public class ShareUtils {
     }
 
     @LogEntryExitExecutionTime
+    public List<ExternalShare> getAllExternalShares(){
+        return externalSharesRepository.getAllExternalShares();
+    }
+
+    @LogEntryExitExecutionTime
+    public List<InternalShare> getAllInternalShares(){
+        return internalSharesRepository.getAllInternalShares();
+    }
+
+    @LogEntryExitExecutionTime
     public List<ExternalShare> getExternalSharesWithSourceUser(User user){
         return externalSharesRepository.getExternalSharesByUsername(user.getUsername());
     }

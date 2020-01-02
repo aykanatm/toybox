@@ -20,6 +20,9 @@ public interface InternalSharesRepository extends JpaRepository<InternalShare, S
     @Query(value = "SELECT id, username, creation_date, enable_expire, expiration_date, notify_on_edit, notify_on_download, notify_on_share, notify_on_copy, can_edit, can_download, can_share, can_copy FROM internal_shares WHERE username=?1", nativeQuery = true)
     List<InternalShare> getInternalSharesByUsername(String username);
 
+    @Query(value = "SELECT id, username, creation_date, enable_expire, expiration_date, notify_on_edit, notify_on_download, notify_on_share, notify_on_copy, can_edit, can_download, can_share, can_copy FROM internal_shares", nativeQuery = true)
+    List<InternalShare> getAllInternalShares();
+
     @Transactional
     @Modifying
     @Query(value = "INSERT INTO internal_shares(id, username, creation_date, enable_expire, expiration_date, notify_on_edit, notify_on_download, notify_on_share, notify_on_copy, can_edit, can_download, can_share, can_copy) VALUES (:id, :username, :creation_date, :enable_expire, :expiration_date, :notify_on_edit, :notify_on_download, :notify_on_share, :notify_on_copy, :can_edit, :can_download, :can_share, :can_copy)", nativeQuery = true)

@@ -17,6 +17,9 @@ public interface ExternalSharesRepository extends JpaRepository<ExternalShare, S
     @Query(value = "SELECT id, username, creation_date, job_id, expiration_date, max_number_of_hits, notify_on_download, enable_expire, enable_usage_limit FROM external_shares WHERE username=?1", nativeQuery = true)
     List<ExternalShare> getExternalSharesByUsername(String username);
 
+    @Query(value = "SELECT id, username, creation_date, job_id, expiration_date, max_number_of_hits, notify_on_download, enable_expire, enable_usage_limit FROM external_shares", nativeQuery = true)
+    List<ExternalShare> getAllExternalShares();
+
     @Transactional
     @Modifying
     @Query(value = "INSERT INTO external_shares(id, username, creation_date, job_id, expiration_date, max_number_of_hits, notify_on_download, enable_expire, enable_usage_limit) VALUES (:id, :username, :creation_date, :job_id, :expiration_date, :max_number_of_hits, :notify_on_download, :enable_expire, :enable_usage_limit)", nativeQuery = true)
