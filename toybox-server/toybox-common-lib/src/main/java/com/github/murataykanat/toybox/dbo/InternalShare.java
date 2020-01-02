@@ -1,14 +1,18 @@
 package com.github.murataykanat.toybox.dbo;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.murataykanat.toybox.models.annotations.FacetColumnName;
+import com.github.murataykanat.toybox.models.annotations.FacetDataType;
+import com.github.murataykanat.toybox.models.annotations.FacetDefaultLookup;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.util.Date;
 import java.util.Set;
 
 @Entity
 @Table(name = "internal_shares")
-public class InternalShare implements ShareItem{
+public class InternalShare implements Serializable, ShareItem{
     @Id
     @Column(name = "id")
     @JsonProperty("id")
@@ -16,10 +20,14 @@ public class InternalShare implements ShareItem{
 
     @Column(name = "username")
     @JsonProperty("username")
+    @FacetColumnName("Username")
     private String username;
 
     @Column(name = "creation_date")
     @JsonProperty("creationDate")
+    @FacetColumnName("Creation Date")
+    @FacetDataType(value = "Date")
+    @FacetDefaultLookup(values = {"Next 30+ days", "Next 30 days", "Next 7 days", "Today","Past 7 days","Past 30 days", "Past 30+ days"})
     private Date creationDate;
 
     @Column(name = "enable_expire")
@@ -28,6 +36,9 @@ public class InternalShare implements ShareItem{
 
     @Column(name = "expiration_date")
     @JsonProperty("expirationDate")
+    @FacetColumnName("Expiration Date")
+    @FacetDataType(value = "Date")
+    @FacetDefaultLookup(values = {"Next 30+ days", "Next 30 days", "Next 7 days", "Today","Past 7 days","Past 30 days", "Past 30+ days"})
     private Date expirationDate;
 
     @Column(name = "notify_on_edit")

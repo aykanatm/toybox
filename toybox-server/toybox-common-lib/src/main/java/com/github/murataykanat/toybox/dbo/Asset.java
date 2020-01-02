@@ -54,7 +54,7 @@ public class Asset implements Serializable, ContainerItem {
     @JsonProperty("importDate")
     @FacetColumnName("Import Date")
     @FacetDataType(value = "Date")
-    @FacetDefaultLookup(values = {"Today","Past 7 days","Past 30 days"})
+    @FacetDefaultLookup(values = {"Next 30+ days", "Next 30 days", "Next 7 days", "Today","Past 7 days","Past 30 days", "Past 30+ days"})
     private Date importDate;
 
     @Column(name = "deleted")
