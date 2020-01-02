@@ -4,7 +4,7 @@ const shares = new Vue({
     data:{
         view: 'shares',
         // isLoading: true,
-        isLoading: false,
+        isLoading: true,
         shares:[],
         defaultSortType: 'des',
         defaultSortColumn: 'creation_date',
@@ -75,6 +75,7 @@ const shares = new Vue({
     },
     methods:{
         getShares(offset, limit, sortType, sortColumn, searchRequestFacetList){
+            this.isLoading = true;
             this.getService("toybox-share-loadbalancer")
             .then(response => {
                 if(response){
