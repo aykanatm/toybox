@@ -202,7 +202,7 @@ var itemActionsMixin = {
         },
         shareItems(selectedItems){
             var selectionContext = this.generateSelectionContext(selectedItems);
-            this.$root.$emit('open-share-modal-window', selectionContext);
+            this.$root.$emit('open-share-modal-window', selectionContext, undefined, undefined);
         },
         moveItems(selectedItems){
             var selectionContext = this.generateSelectionContext(selectedItems);

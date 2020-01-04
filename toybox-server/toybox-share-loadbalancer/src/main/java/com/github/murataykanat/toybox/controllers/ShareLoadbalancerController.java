@@ -326,10 +326,10 @@ public class ShareLoadbalancerController {
     }
 
     @LogEntryExitExecutionTime
-    public ResponseEntity<RetrieveSharesResponse> searchSharesErrorFallback(Authentication authentication, HttpSession session, InternalShareRequest internalShareRequest, Throwable e){
+    public ResponseEntity<RetrieveSharesResponse> searchSharesErrorFallback(Authentication authentication, HttpSession session, ShareSearchRequest shareSearchRequest, Throwable e){
         RetrieveSharesResponse retrieveSharesResponse = new RetrieveSharesResponse();
 
-        if(internalShareRequest != null){
+        if(shareSearchRequest != null){
             String errorMessage;
             if(e.getLocalizedMessage() != null){
                 errorMessage = "Unable to search shares. " + e.getLocalizedMessage();
@@ -345,13 +345,95 @@ public class ShareLoadbalancerController {
             return new ResponseEntity<>(retrieveSharesResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         else{
-            String errorMessage = "Internal share request is null!";
+            String errorMessage = "Share search request is null!";
 
             _logger.error(errorMessage);
 
             retrieveSharesResponse.setMessage(errorMessage);
 
             return new ResponseEntity<>(retrieveSharesResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    @HystrixCommand(fallbackMethod = "getSharesErrorFallback")
+    @RequestMapping(value = "/share/{id}", method = RequestMethod.GET)
+    public ResponseEntity<RetrieveShareResponse> getShare(Authentication authentication, HttpSession session, @PathVariable String id, @RequestParam("type") String type) {
+        RetrieveShareResponse retrieveShareResponse = new RetrieveShareResponse();
+
+        try{
+            if(authenticationUtils.isSessionValid(authentication)){
+                if(StringUtils.isNotBlank(id)  && StringUtils.isNotBlank(type)){
+                    HttpHeaders headers = authenticationUtils.getHeaders(session);
+                    String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.SHARE_SERVICE_NAME);
+
+                    if(StringUtils.isNotBlank(prefix)){
+                        return restTemplate.exchange(prefix + ToyboxConstants.SHARE_SERVICE_NAME + "/share/" + id + "?type=" + type, HttpMethod.GET, new HttpEntity<>(headers), RetrieveShareResponse.class);
+                    }
+                    else{
+                        throw new IllegalArgumentException("Service ID prefix is null!");
+                    }
+                }
+                else{
+                    String errorMessage = "Internal share request is null!";
+                    _logger.error(errorMessage);
+
+                    retrieveShareResponse.setMessage(errorMessage);
+
+                    return new ResponseEntity<>(retrieveShareResponse, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                retrieveShareResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(retrieveShareResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            retrieveShareResponse.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(retrieveShareResponse, httpEx.getStatusCode());
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while getting a share. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            retrieveShareResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(retrieveShareResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    public ResponseEntity<RetrieveShareResponse> getSharesErrorFallback(Authentication authentication, HttpSession session, @PathVariable String id, @RequestParam("type") String type, Throwable e){
+        RetrieveShareResponse retrieveShareResponse = new RetrieveShareResponse();
+
+        if(StringUtils.isNotBlank(id) && StringUtils.isNotBlank(type)){
+            String errorMessage;
+            if(e.getLocalizedMessage() != null){
+                errorMessage = "Unable to retrieve a share. " + e.getLocalizedMessage();
+            }
+            else{
+                errorMessage = "Unable to get response from the share service.";
+            }
+
+            _logger.error(errorMessage, e);
+
+            retrieveShareResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(retrieveShareResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        else{
+            String errorMessage = "Id or Type is blank!";
+
+            _logger.error(errorMessage);
+
+            retrieveShareResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(retrieveShareResponse, HttpStatus.BAD_REQUEST);
         }
     }
 }

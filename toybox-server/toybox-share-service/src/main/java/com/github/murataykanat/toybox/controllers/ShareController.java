@@ -200,6 +200,65 @@ public class ShareController {
     }
 
     @LogEntryExitExecutionTime
+    @RequestMapping(value = "/share/{id}", method = RequestMethod.GET)
+    public ResponseEntity<RetrieveShareResponse> getShare(Authentication authentication, @PathVariable String id, @RequestParam("type") String type) {
+        RetrieveShareResponse retrieveShareResponse = new RetrieveShareResponse();
+        try{
+            if(authenticationUtils.isSessionValid(authentication)){
+                if(StringUtils.isNotBlank(id) && StringUtils.isNotBlank(type)){
+                    if(type.equalsIgnoreCase("com.github.murataykanat.toybox.dbo.InternalShare")){
+                        InternalShare internalShare = shareUtils.getInternalShare(id);
+                        retrieveShareResponse.setShareItem(internalShare);
+
+                        SelectionContext internalShareSelectionContext = shareUtils.getInternalShareSelectionContext(internalShare);
+                        retrieveShareResponse.setSelectionContext(internalShareSelectionContext);
+                    }
+                    else if(type.equalsIgnoreCase("com.github.murataykanat.toybox.dbo.ExternalShare")){
+                        ExternalShare externalShare = shareUtils.getExternalShare(id);
+                        retrieveShareResponse.setShareItem(externalShare);
+                    }
+                    else{
+                        String errorMessage = "Share type '" + type + "' is invalid!";
+                        _logger.error(errorMessage);
+
+                        retrieveShareResponse.setMessage(errorMessage);
+
+                        return new ResponseEntity<>(retrieveShareResponse, HttpStatus.BAD_REQUEST);
+                    }
+
+                    retrieveShareResponse.setMessage("Share retrieved successfully!");
+
+                    return new ResponseEntity<>(retrieveShareResponse, HttpStatus.OK);
+                }
+                else{
+                    String errorMessage = "Id or Type are blank!";
+                    _logger.error(errorMessage);
+
+                    retrieveShareResponse.setMessage(errorMessage);
+
+                    return new ResponseEntity<>(retrieveShareResponse, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                retrieveShareResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(retrieveShareResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while retrieving a share. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            retrieveShareResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(retrieveShareResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/share/external", method = RequestMethod.POST)
     public ResponseEntity<ExternalShareResponse> createExternalShare(Authentication authentication, HttpSession session, @RequestBody ExternalShareRequest externalShareRequest) {
         ExternalShareResponse externalShareResponse = new ExternalShareResponse();

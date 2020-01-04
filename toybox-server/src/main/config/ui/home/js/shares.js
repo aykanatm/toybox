@@ -145,5 +145,6 @@ const shares = new Vue({
         'facet' : httpVueLoader('../components/facet/facet.vue'),
         'message' : httpVueLoader('../components/message/message.vue'),
         'share' : httpVueLoader('../components/share/share.vue'),
+        'share-modal-window': httpVueLoader('../components/share-modal-window/share-modal-window.vue'),
     }
 });

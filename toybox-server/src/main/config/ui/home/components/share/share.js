@@ -38,7 +38,7 @@ module.exports = {
     },
     methods:{
         editShare:function(){
-            this.$root.$emit('open-share-modal-window', undefined, this.id);
+            this.$root.$emit('open-share-modal-window', undefined, this.type, this.id);
         },
         copyUrl:function(){
             this.copyTextToClipboard(this.url);

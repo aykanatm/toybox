@@ -522,6 +522,68 @@ public class ShareUtils {
     }
 
     @LogEntryExitExecutionTime
+    public ExternalShare getExternalShare(String id){
+        List<ExternalShare> externalSharesById = externalSharesRepository.getExternalSharesById(id);
+        if(!externalSharesById.isEmpty()){
+            if(externalSharesById.size() == 1){
+                return externalSharesById.get(0);
+            }
+            else{
+                throw new IllegalArgumentException("There are multiple external shares with ID '" + id + "'!");
+            }
+        }
+        else{
+            throw new IllegalArgumentException("There is no external share with ID '" + id + "'!");
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    public SelectionContext getInternalShareSelectionContext(InternalShare internalShare){
+        SelectionContext selectionContext = new SelectionContext();
+
+        List<Asset> selectedAssets = new ArrayList<>();
+        List<Container> selectedContainers = new ArrayList<>();
+
+        List<InternalShareAsset> internalShareAssetByInternalShareId = internalShareAssetsRepository.findInternalShareAssetByInternalShareId(internalShare.getId());
+        for(InternalShareAsset internalShareAsset: internalShareAssetByInternalShareId){
+            Asset asset = assetUtils.getAsset(internalShareAsset.getAssetId());
+
+            asset.setShared("Y");
+            asset.setCanCopy(internalShare.getCanCopy());
+            asset.setCanDownload(internalShare.getCanDownload());
+            asset.setCanEdit(internalShare.getCanEdit());
+            asset.setCanShare(internalShare.getCanShare());
+
+            selectedAssets.add(asset);
+        }
+        List<InternalShareContainer> internalShareContainersByInternalShareId = internalShareContainersRepository.findInternalShareContainersByInternalShareId(internalShare.getId());
+        for(InternalShareContainer internalShareContainer: internalShareContainersByInternalShareId){
+            selectedContainers.add(containerUtils.getContainer(internalShareContainer.getContainerId()));
+        }
+
+        selectionContext.setSelectedAssets(selectedAssets);
+        selectionContext.setSelectedContainers(selectedContainers);
+
+        return selectionContext;
+    }
+
+    @LogEntryExitExecutionTime
+    public InternalShare getInternalShare(String id){
+        List<InternalShare> internalSharesById = internalSharesRepository.getInternalSharesById(id);
+        if(!internalSharesById.isEmpty()){
+            if(internalSharesById.size() == 1){
+                return internalSharesById.get(0);
+            }
+            else{
+                throw new IllegalArgumentException("There are multiple internal shares with ID '" + id + "'!");
+            }
+        }
+        else{
+            throw new IllegalArgumentException("There is no internal share with ID '" + id + "'!");
+        }
+    }
+
+    @LogEntryExitExecutionTime
     public List<ExternalShare> getAllExternalShares(){
         return externalSharesRepository.getAllExternalShares();
     }
