@@ -41,25 +41,24 @@ module.exports = {
             this.$root.$emit('open-share-modal-window', undefined, this.type, this.id);
         },
         copyUrl:function(){
-            this.copyTextToClipboard(this.url);
-            this.$root.$emit('message-sent', 'Information', "Share URL copied to clipboard.");
+            this.copyTextToClipboard(this.url, this);
         },
-        copyTextToClipboard:function(text)
+        copyTextToClipboard:function(text, share)
         {
             if (!navigator.clipboard)
             {
-                this.fallbackCopyTextToClipboard(text);
+                this.fallbackCopyTextToClipboard(text, share);
                 return;
             }
 
             navigator.clipboard.writeText(text)
                 .then(function() {
-                console.log('Async: Copying to clipboard was successful!');
+                    share.$root.$emit('message-sent', 'Information', "Share URL copied to clipboard.");
             }, function(err) {
-                console.error('Async: Could not copy text: ', err);
+                share.$root.$emit('message-sent', 'Error', "An error occured while copying the URL to clipboard." + err);
             });
         },
-        fallbackCopyTextToClipboard:function(text)
+        fallbackCopyTextToClipboard:function(text, share)
         {
             var textArea = document.createElement("textarea");
             textArea.value = text;
@@ -70,12 +69,16 @@ module.exports = {
             try
             {
                 var successful = document.execCommand('copy');
-                var msg = successful ? 'successful' : 'unsuccessful';
-                console.log('Copying text command was ' + msg);
+                if(successful){
+                    share.$root.$emit('message-sent', 'Information', "Share URL copied to clipboard.");
+                }
+                else{
+                    share.$root.$emit('message-sent', 'Error', "Could not copy the URL to clipboard.");
+                }
             }
             catch (err)
             {
-                console.error('Fallback: Unable to copy', err);
+                share.$root.$emit('message-sent', 'Error', "An error occured while copying the URL to clipboard." + err);
             }
 
             document.body.removeChild(textArea);

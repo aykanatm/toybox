@@ -153,8 +153,9 @@
             </div>
         </div>
         <div class="actions">
-            <div v-show="isExternalUser" v-bind:class="{'ui':true, 'primary':true, 'button':true, 'disabled':isSharing}" v-on:click="generateUrl">Generate URL</div>
-            <div v-show="!isExternalUser" v-bind:class="{'ui':true, 'primary':true, 'button':true, 'disabled':isSharing}" v-on:click="share">Share</div>
+            <div v-show="isExternalUser && !isEdit" v-bind:class="{'ui':true, 'primary':true, 'button':true, 'disabled':isSharing}" v-on:click="generateUrl">Generate URL</div>
+            <div v-show="!isExternalUser && !isEdit" v-bind:class="{'ui':true, 'primary':true, 'button':true, 'disabled':isSharing}" v-on:click="share">Share</div>
+            <div v-show="isEdit" v-bind:class="{'ui':true, 'primary':true, 'button':true, 'disabled':isSharing}" v-on:click="update">Update</div>
         </div>
     </div>
 </template>

@@ -4,6 +4,7 @@ module.exports = {
         return{
             componentName: 'Share Modal Window',
             isSharing: false,
+            isEdit: false,
             selectionContext: '',
             usersAndUsergroups:[],
             selectedUsers:[],
@@ -113,6 +114,7 @@ module.exports = {
             $('#user-dropdown').dropdown('clear');
 
             if(!selectionContext && type && id){
+                this.isEdit = true;
                 this.getService("toybox-share-loadbalancer")
                     .then(response => {
                         if(response){
@@ -166,6 +168,7 @@ module.exports = {
                     });
             }
             else{
+                this.isEdit = false;
                 this.populateWindow(selectionContext, undefined);
             }
 
@@ -235,7 +238,7 @@ module.exports = {
         populateWindow:function(selectionContext, share){
             this.selectionContext = selectionContext;
 
-            if(!share){
+            if(!this.isEdit){
                 var canEditAll = true;
                 var canDownloadAll = true;
                 var canShareAll = true;
@@ -623,25 +626,28 @@ module.exports = {
                     });
             }
         },
-        copy:function(){
-            this.copyTextToClipboard(this.externalShareUrl);
+        update:function(){
+
         },
-        copyTextToClipboard:function(text)
+        copy:function(){
+            this.copyTextToClipboard(this.externalShareUrl, this);
+        },
+        copyTextToClipboard:function(text, shareModalWindow)
         {
             if (!navigator.clipboard)
             {
-                this.fallbackCopyTextToClipboard(text);
+                this.fallbackCopyTextToClipboard(text, shareModalWindow);
                 return;
             }
 
             navigator.clipboard.writeText(text)
                 .then(function() {
-                console.log('Async: Copying to clipboard was successful!');
+                    shareModalWindow.$root.$emit('message-sent', 'Information', "Share URL copied to clipboard.");
             }, function(err) {
-                console.error('Async: Could not copy text: ', err);
+                shareModalWindow.$root.$emit('message-sent', 'Error', "An error occured while copying the URL to clipboard." + err);
             });
         },
-        fallbackCopyTextToClipboard:function(text)
+        fallbackCopyTextToClipboard:function(text, shareModalWindow)
         {
             var textArea = document.createElement("textarea");
             textArea.value = text;
@@ -652,12 +658,16 @@ module.exports = {
             try
             {
                 var successful = document.execCommand('copy');
-                var msg = successful ? 'successful' : 'unsuccessful';
-                console.log('Copying text command was ' + msg);
+                if(successful){
+                    shareModalWindow.$root.$emit('message-sent', 'Information', "Share URL copied to clipboard.");
+                }
+                else{
+                    shareModalWindow.$root.$emit('message-sent', 'Error', "Could not copy the URL to clipboard.");
+                }
             }
             catch (err)
             {
-                console.error('Fallback: Unable to copy', err);
+                shareModalWindow.$root.$emit('message-sent', 'Error', "An error occured while copying the URL to clipboard." + err);
             }
 
             document.body.removeChild(textArea);
