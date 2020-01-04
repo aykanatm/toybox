@@ -374,7 +374,7 @@ public class AssetController {
             }
         }
         catch (Exception e){
-            String errorMessage = "An error occurred while updating from assets. " + e.getLocalizedMessage();
+            String errorMessage = "An error occurred while updating an asset. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
             genericResponse.setMessage(errorMessage);
