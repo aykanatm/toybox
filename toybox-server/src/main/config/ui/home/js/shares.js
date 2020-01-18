@@ -71,6 +71,10 @@ const shares = new Vue({
             this.getShares(this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList);
         });
 
+        this.$root.$on('refresh-shares', () => {
+            this.getShares(this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList);
+        });
+
         this.$root.$on('message-sent', this.displayMessage);
     },
     methods:{

@@ -4,6 +4,8 @@ module.exports = {
         return{
             componentName: 'Share Modal Window',
             isSharing: false,
+            isUpdating: false,
+            isLoading: false,
             isEdit: false,
             selectionContext: '',
             usersAndUsergroups:[],
@@ -34,11 +36,25 @@ module.exports = {
             externalShareUrl: '',
             externalExpirationDate: '',
             internalExpirationDate: '',
-            maxNumberOfHits: -1
+            maxNumberOfHits: -1,
+            // Edit
+            id: '',
+            type: '',
         }
     },
     mounted:function(){
+        $('#user-dropdown').dropdown({
+            onAdd: function(value){
+                this.addSelectedUsergroupOrUser(value);
+            }.bind(this),
+            onRemove: function(value) {
+                this.removeSelectedUsergroupOrUser(value);
+            }.bind(this)
+        });
+
         this.$root.$on('open-share-modal-window', (selectionContext, type, id) => {
+            this.id = id;
+            this.type = type;
             var shareModalWindow = this;
             this.isSharing = false;
 
@@ -101,20 +117,9 @@ module.exports = {
             $('#max-number-of-hits').attr('disabled', true);
             this.maxNumberOfHits = '';
 
-
-            $('#user-dropdown').dropdown({
-                onAdd: function(value){
-                    this.addSelectedUsergroupOrUser(value);
-                }.bind(this),
-                onRemove: function(value) {
-                    this.removeSelectedUsergroupOrUser(value);
-                }.bind(this)
-            });
-
-            $('#user-dropdown').dropdown('clear');
-
             if(!selectionContext && type && id){
                 this.isEdit = true;
+                this.isLoading = true;
                 this.getService("toybox-share-loadbalancer")
                     .then(response => {
                         if(response){
@@ -122,7 +127,9 @@ module.exports = {
                             axios.get(shareServiceUrl + "/share/" + id + "?type=" + type)
                                 .then(response =>{
                                     if(response){
+                                        this.isLoading = false;
                                         console.log(response);
+                                        $('#user-dropdown').dropdown('clear');
                                         this.populateWindow(response.data.selectionContext, response.data.shareItem);
                                     }
                                     else{
@@ -131,6 +138,7 @@ module.exports = {
                                 })
                                 .catch(error => {
                                     var errorMessage;
+                                    this.isLoading = false;
 
                                     if(error.response){
                                         errorMessage = error.response.data.message
@@ -147,6 +155,7 @@ module.exports = {
                                 });
                         }
                         else{
+                            this.isLoading = false;
                             this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
                         }
                     })
@@ -169,6 +178,7 @@ module.exports = {
             }
             else{
                 this.isEdit = false;
+                $('#user-dropdown').dropdown('clear');
                 this.populateWindow(selectionContext, undefined);
             }
 
@@ -212,6 +222,7 @@ module.exports = {
             }
             else{
                 $('#internal-expiration-date-input').attr('disabled', true);
+                $('#internal-expiration-date-input').val('');
                 this.internalExpirationDate = '';
             }
         },
@@ -221,6 +232,7 @@ module.exports = {
             }
             else{
                 $('#external-expiration-date-input').attr('disabled', true);
+                $('#external-expiration-date-input').val('');
                 this.externalExpirationDate = '';
             }
         },
@@ -280,16 +292,17 @@ module.exports = {
                 this.initialCanCopy = this.canCopy;
             }
             else{
-                this.canEdit = share.canEdit;
-                this.canDownload = share.canDownload;
-                this.canShare = share.canShare;
-                this.canCopy = share.canCopy;
+                this.canEdit = share.canEdit === 'Y' ? true : false;
+                this.canDownload = share.canDownload === 'Y' ? true : false;
+                this.canShare = share.canShare === 'Y' ? true : false;
+                this.canCopy = share.canCopy === 'Y' ? true : false;
 
-                this.notifyMe = share.notifyOnCopy || share.notifyOnDownload || share.notifyOnEdit || share.notifyOnShare;
-                this.notifyOnCopy = share.notifyOnCopy;
-                this.notifyOnDownload = share.notifyOnDownload;
-                this.notifyOnEdit = share.notifyOnEdit;
-                this.notifyOnShare = share.notifyOnShare;
+
+                this.notifyOnCopy = share.notifyOnCopy === 'Y' ? true : false;
+                this.notifyOnDownload = share.notifyOnDownload === 'Y' ? true : false;
+                this.notifyOnEdit = share.notifyOnEdit === 'Y' ? true : false;
+                this.notifyOnShare = share.notifyOnShare === 'Y' ? true : false;
+                this.notifyMe = this.notifyOnCopy || this.notifyOnDownload || this.notifyOnEdit || this.notifyOnShare;
 
                 this.isExternalUser = share['@class'] === 'com.github.murataykanat.toybox.dbo.ExternalShare';
                 $('.user-selection input').attr('disabled', true);
@@ -298,11 +311,13 @@ module.exports = {
                 if(share.enableExpire === 'Y'){
                     if(this.isExternalUser){
                         this.enableExpireExternal = true;
-                        $('#external-expiration-date-input').val(convertToToyboxDateString(share.expirationDate));
+                        this.externalExpirationDate = convertToFrontendDateString(share.expirationDate);
+                        $('#external-expiration-date-input').val(this.externalExpirationDate);
                     }
                     else{
                         this.enableExpireInternal = true;
-                        $('#internal-expiration-date-input').val(convertToToyboxDateString(share.expirationDate));
+                        this.internalExpirationDate = convertToFrontendDateString(share.expirationDate);
+                        $('#internal-expiration-date-input').val(this.internalExpirationDate);
                     }
                 }
                 else{
@@ -381,7 +396,8 @@ module.exports = {
                                                 this.selectedUsers.push(shareUser.username);
                                             }
 
-                                            $('.ui.fluid.dropdown').dropdown('set selected', selectedArray);
+                                            $('#user-dropdown').dropdown('clear');
+                                            $('#user-dropdown').dropdown('set selected', selectedArray);
                                         }, 200);
                                     }
                                 }
@@ -627,7 +643,84 @@ module.exports = {
             }
         },
         update:function(){
+            this.isUpdating = true;
+            this.getService("toybox-share-loadbalancer")
+                .then(response =>{
+                    if(response){
+                        var shareServiceUrl = response.data.value;
+                        var updateShareRequest = {
+                            type: this.type,
+                            enableExpire: this.enableExpireInternal,
+                            expirationDate: this.internalExpirationDate,
+                            notifyOnEdit: this.notifyOnEdit,
+                            notifyOnDownload: this.notifyOnDownload,
+                            notifyOnShare: this.notifyOnShare,
+                            notifyOnCopy: this.notifyOnCopy,
+                            canEdit: this.canEdit,
+                            canDownload: this.canDownload,
+                            canShare: this.canShare,
+                            canCopy: this.canCopy,
+                            sharedUsergroups: this.selectedUserGroups,
+                            sharedUsers: this.selectedUsers,
+                            enableUsageLimit: this.enableUsageLimit,
+                            maxNumberOfHits: this.maxNumberOfHits
+                        };
 
+                        axios.patch(shareServiceUrl + '/share/' + this.id, updateShareRequest)
+                                .then(response =>{
+                                    if(response){
+                                        console.log(response);
+                                        this.isUpdating = false;
+
+                                        this.$root.$emit('message-sent', 'Success', response.data.message);
+                                        this.$root.$emit('refresh-shares');
+                                        $(this.$el).modal('hide');
+                                    }
+                                    else{
+                                        this.isUpdating = false;
+                                        this.$root.$emit('message-sent', 'Error', "There was no response from the share loadbalancer!");
+                                    }
+                                })
+                                .catch(error => {
+                                    var errorMessage;
+                                    this.isUpdating = false;
+
+                                    if(error.response){
+                                        errorMessage = error.response.data.message
+                                        if(error.response.status == 401){
+                                            window.location = '/logout';
+                                        }
+                                    }
+                                    else{
+                                        errorMessage = error.message;
+                                    }
+
+                                    console.error(errorMessage);
+                                    this.$root.$emit('message-sent', 'Error', errorMessage);
+                                });
+                    }
+                    else{
+                        this.isUpdating = false;
+                        this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
+                    }
+                })
+                .catch(error => {
+                    var errorMessage;
+                    this.isUpdating = false;
+
+                    if(error.response){
+                        errorMessage = error.response.data.message
+                        if(error.response.status == 401){
+                            window.location = '/logout';
+                        }
+                    }
+                    else{
+                        errorMessage = error.message;
+                    }
+
+                    console.error(errorMessage);
+                    this.$root.$emit('message-sent', 'Error', errorMessage);
+                });
         },
         copy:function(){
             this.copyTextToClipboard(this.externalShareUrl, this);
@@ -676,20 +769,26 @@ module.exports = {
             var regExp = /\(([^)]+)\)/;
             var matches = regExp.exec(value);
             if(matches){
-                this.selectedUsers.push(matches[1]);
+                if(!this.selectedUsers.includes(matches[1])){
+                    this.selectedUsers.push(matches[1]);
+                }
             }
             else{
-                this.selectedUserGroups.push(value);
+                if(!this.selectedUserGroups.includes(value)){
+                    this.selectedUserGroups.push(value);
+                }
             }
         },
         removeSelectedUsergroupOrUser:function(value){
             var regExp = /\(([^)]+)\)/;
             var matches = regExp.exec(value);
             if(matches){
-                this.selectedUsers.splice(matches[1], 1);
+                var index = this.selectedUsers.indexOf(matches[1]);
+                this.selectedUsers.splice(index, 1);
             }
             else{
-                this.selectedUserGroups.splice(value, 1);
+                var index = this.selectedUserGroups.indexOf(value);
+                this.selectedUserGroups.splice(index, 1);
             }
         }
     }

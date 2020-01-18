@@ -200,6 +200,76 @@ public class ShareController {
     }
 
     @LogEntryExitExecutionTime
+    @RequestMapping(value = "/share/{id}", method = RequestMethod.PATCH)
+    public ResponseEntity<GenericResponse> updateShare(Authentication authentication, @PathVariable String id, @RequestBody UpdateShareRequest updateShareRequest) {
+        GenericResponse genericResponse = new GenericResponse();
+
+        try{
+            if(authenticationUtils.isSessionValid(authentication)){
+                User user = authenticationUtils.getUser(authentication);
+                if(user != null){
+                    if(StringUtils.isNotBlank(id)){
+                        if(updateShareRequest != null){
+                            if(updateShareRequest.getType().equalsIgnoreCase("com.github.murataykanat.toybox.dbo.InternalShare")){
+                                shareUtils.updateInternalShare(id, updateShareRequest, user);
+                            }
+                            else if(updateShareRequest.getType().equalsIgnoreCase("com.github.murataykanat.toybox.dbo.ExternalShare")){
+                                shareUtils.updateExternalShare(id, updateShareRequest);
+                            }
+                            else{
+                                String errorMessage = "Share type '" + updateShareRequest.getType() + "' is invalid!";
+                                _logger.error(errorMessage);
+
+                                genericResponse.setMessage(errorMessage);
+
+                                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                            }
+
+                            genericResponse.setMessage("Share updated successfully!");
+                            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                        }
+                        else{
+                            String errorMessage = "Update share request is null!";
+                            _logger.error(errorMessage);
+
+                            genericResponse.setMessage(errorMessage);
+
+                            return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                        }
+                    }
+                    else{
+                        String errorMessage = "Share ID is blank!";
+                        _logger.error(errorMessage);
+
+                        genericResponse.setMessage(errorMessage);
+
+                        return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                    }
+                }
+                else{
+                    throw new IllegalArgumentException("User is null!");
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while updating a share. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/share/{id}", method = RequestMethod.GET)
     public ResponseEntity<RetrieveShareResponse> getShare(Authentication authentication, @PathVariable String id, @RequestParam("type") String type) {
         RetrieveShareResponse retrieveShareResponse = new RetrieveShareResponse();

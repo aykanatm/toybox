@@ -13,7 +13,7 @@ function convertToDateString(milliseconds){
     return '';
 }
 
-function convertToToyboxDateString(milliseconds){
+function convertToFrontendDateString(milliseconds){
     if(milliseconds){
         var date = new Date(milliseconds);
         var year = date.getFullYear();

@@ -12,6 +12,7 @@ import com.github.murataykanat.toybox.schema.selection.SelectionContext;
 import com.github.murataykanat.toybox.schema.share.ExternalShareRequest;
 import com.github.murataykanat.toybox.schema.share.ExternalShareResponse;
 import com.github.murataykanat.toybox.schema.share.InternalShareRequest;
+import com.github.murataykanat.toybox.schema.share.UpdateShareRequest;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpSession;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -601,6 +603,137 @@ public class ShareUtils {
     @LogEntryExitExecutionTime
     public List<InternalShare> getInternalSharesWithSourceUser(User user){
         return internalSharesRepository.getInternalSharesByUsername(user.getUsername());
+    }
+
+    @LogEntryExitExecutionTime
+    public void updateInternalShare(String id, UpdateShareRequest updateShareRequest, User user) throws ParseException {
+
+        List<String> sharedUsergroupNames = updateShareRequest.getSharedUsergroups();
+        List<String> sharedUsernames = updateShareRequest.getSharedUsers();
+
+        // We find all the users that are in the shared user groups
+        List<User> sharedUsers = new ArrayList<>();
+        List<User> usersToIgnore = new ArrayList<>();
+
+        usersToIgnore.add(user);
+
+        for(String sharedUsergroupName: sharedUsergroupNames){
+            List<User> usersInUserGroup = authenticationUtils.getUsersInUserGroup(sharedUsergroupName);
+            for(User userInUserGroup: usersInUserGroup){
+                boolean ignoreUser = false;
+                for(User userToIgnore: usersToIgnore){
+                    if(userInUserGroup.getId() == userToIgnore.getId()){
+                        ignoreUser = true;
+                        break;
+                    }
+                }
+
+                if(!ignoreUser){
+                    sharedUsers.add(userInUserGroup);
+                }
+            }
+        }
+
+        // We find the shared users
+        if(!sharedUsernames.isEmpty()){
+            List<User> usersByUsernames = usersRepository.findUsersByUsernames(sharedUsernames);
+            List<User> usersToShare = usersByUsernames.stream().filter(u -> !u.getUsername().equalsIgnoreCase(user.getUsername())).collect(Collectors.toList());
+            sharedUsers.addAll(usersToShare);
+        }
+
+        // We create the unique users list to share
+        List<User> uniqueUsers = new ArrayList<>(new HashSet<>(sharedUsers));
+
+        internalShareUsersRepository.deleteShareUsersByInternalShareId(id);
+
+        for(User uniqueUser: uniqueUsers){
+            List<InternalShareUser> internalShareUsersByInternalShareIdAndUserId = internalShareUsersRepository.findInternalShareUsersByInternalShareIdAndUserId(id, uniqueUser.getId());
+            if(internalShareUsersByInternalShareIdAndUserId.isEmpty()){
+                internalShareUsersRepository.insertShareUser(id, uniqueUser.getId());
+            }
+        }
+
+        Date expirationDate;
+        String enableExpire;
+
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss");
+        if(updateShareRequest.getExpirationDate() == null){
+            enableExpire = "N";
+
+            expirationDate = simpleDateFormat.parse("12/31/9999 23:59:59");
+        }
+        else{
+            if(!updateShareRequest.getEnableExpire()){
+                enableExpire = "N";
+
+                expirationDate = simpleDateFormat.parse("12/31/9999 23:59:59");
+            }
+            else{
+                enableExpire = "Y";
+
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTime(updateShareRequest.getExpirationDate());
+                calendar.set(Calendar.HOUR_OF_DAY, 0);
+                calendar.set(Calendar.MINUTE, 0);
+                calendar.set(Calendar.SECOND, 0);
+                expirationDate = calendar.getTime();
+            }
+        }
+
+        String notifyOnEdit = updateShareRequest.getNotifyOnEdit() ? "Y" : "N";
+        String notifyOnDownload = updateShareRequest.getNotifyOnDownload() ? "Y" : "N";
+        String notifyOnShare = updateShareRequest.getNotifyOnShare() ? "Y" : "N";
+        String notifyOnCopy = updateShareRequest.getNotifyOnCopy() ? "Y" : "N";
+        String canEdit = updateShareRequest.getCanEdit() ? "Y" : "N";
+        String canDownload = updateShareRequest.getCanDownload() ? "Y" : "N";
+        String canShare = updateShareRequest.getCanShare() ? "Y" : "N";
+        String canCopy = updateShareRequest.getCanCopy() ? "Y" : "N";
+
+
+        internalSharesRepository.updateInternalShareById(id, enableExpire, expirationDate, notifyOnEdit,
+                notifyOnDownload, notifyOnShare, notifyOnCopy, canEdit, canDownload, canShare, canCopy);
+    }
+
+    @LogEntryExitExecutionTime
+    public void updateExternalShare(String id, UpdateShareRequest updateShareRequest) throws ParseException {
+        String notifyOnDownload = updateShareRequest.getNotifyOnDownload() ? "Y" : "N";
+
+        String enableUsageLimit;
+        if(updateShareRequest.getMaxNumberOfHits() == 0){
+            enableUsageLimit = "N";
+        }
+        else{
+            enableUsageLimit = updateShareRequest.getEnableUsageLimit() ? "Y" : "N";
+        }
+
+        Date expirationDate;
+        String enableExpire;
+
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss");
+        if(updateShareRequest.getExpirationDate() == null){
+            enableExpire = "N";
+
+            expirationDate = simpleDateFormat.parse("12/31/9999 23:59:59");
+        }
+        else{
+            if(!updateShareRequest.getEnableExpire()){
+                enableExpire = "N";
+
+                expirationDate = simpleDateFormat.parse("12/31/9999 23:59:59");
+            }
+            else{
+                enableExpire = "Y";
+
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTime(updateShareRequest.getExpirationDate());
+                calendar.set(Calendar.HOUR_OF_DAY, 0);
+                calendar.set(Calendar.MINUTE, 0);
+                calendar.set(Calendar.SECOND, 0);
+                expirationDate = calendar.getTime();
+            }
+        }
+
+        externalSharesRepository.updateExternalShareById(id, expirationDate, updateShareRequest.getMaxNumberOfHits(), notifyOnDownload, enableExpire, enableUsageLimit);
     }
 
     // TODO: Change the name to getInternalSharesWithTargetUserAndItemId

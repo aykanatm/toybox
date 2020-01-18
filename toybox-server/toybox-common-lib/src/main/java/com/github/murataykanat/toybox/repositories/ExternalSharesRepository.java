@@ -31,6 +31,11 @@ public interface ExternalSharesRepository extends JpaRepository<ExternalShare, S
 
     @Transactional
     @Modifying
+    @Query(value = "UPDATE external_shares SET expiration_date=?2, max_number_of_hits=?3, notify_on_download=?4, enable_expire=?5, enable_usage_limit=?6 WHERE id=?1", nativeQuery = true)
+    int updateExternalShareById(String id, Date expirationDate, int maxNumberOfHits, String notifyOnDownload, String enableExpire, String enableUsageLimit);
+
+    @Transactional
+    @Modifying
     @Query(value = "UPDATE external_shares SET max_number_of_hits=?1 WHERE id=?2", nativeQuery = true)
     int updateMaxUsage(int maxNumberOfHits, String id);
 }

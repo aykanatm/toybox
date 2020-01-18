@@ -6,6 +6,12 @@
             <div class="ui active inverted dimmer" style="position: absolute;" v-if="isSharing">
                 <div class="ui massive text loader">Generating the share...</div>
             </div>
+            <div class="ui active inverted dimmer" style="position: absolute;" v-if="isUpdating">
+                <div class="ui massive text loader">Updating the share...</div>
+            </div>
+            <div class="ui active inverted dimmer" style="position: absolute;" v-if="isLoading">
+                <div class="ui massive text loader">Loading the share...</div>
+            </div>
             <div class="user-selection">
                 <label style="margin-right: 10px;">Internal User</label>
                 <div class="ui toggle checkbox" id="user-selection-toggle">

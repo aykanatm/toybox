@@ -27,4 +27,9 @@ public interface InternalShareUsersRepository extends JpaRepository<InternalShar
     @Modifying
     @Query(value = "DELETE FROM internal_share_users WHERE internal_share_id=?1 AND user_id=?2", nativeQuery = true)
     int deleteShareUserByInternalShareIdAndUserId(String internalShareId, int userId);
+
+    @Transactional
+    @Modifying
+    @Query(value = "DELETE FROM internal_share_users WHERE internal_share_id=?1", nativeQuery = true)
+    int deleteShareUsersByInternalShareId(String internalShareId);
 }

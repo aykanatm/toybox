@@ -25,6 +25,12 @@ public interface InternalSharesRepository extends JpaRepository<InternalShare, S
 
     @Transactional
     @Modifying
+    @Query(value = "UPDATE internal_shares SET enable_expire=?2, expiration_date=?3, notify_on_edit=?4, notify_on_download=?5, notify_on_share=?6, notify_on_copy=?7, can_edit=?8, can_download=?9, can_share=?10, can_copy=?11 WHERE id=?1", nativeQuery = true)
+    int updateInternalShareById(String id, String enableExpire, Date expirationDate, String notifyOnEdit, String notifyOnDownload, String notifyOnShare,
+                        String notifyOnCopy, String canEdit, String canDownload, String canShare, String canCopy);
+
+    @Transactional
+    @Modifying
     @Query(value = "INSERT INTO internal_shares(id, username, creation_date, enable_expire, expiration_date, notify_on_edit, notify_on_download, notify_on_share, notify_on_copy, can_edit, can_download, can_share, can_copy) VALUES (:id, :username, :creation_date, :enable_expire, :expiration_date, :notify_on_edit, :notify_on_download, :notify_on_share, :notify_on_copy, :can_edit, :can_download, :can_share, :can_copy)", nativeQuery = true)
     int insertInternalShare(@Param("id") String id, @Param("username") String username, @Param("creation_date") Date creationDate,
                             @Param("enable_expire") String enableExpire,

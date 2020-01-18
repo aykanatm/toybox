@@ -356,7 +356,110 @@ public class ShareLoadbalancerController {
     }
 
     @LogEntryExitExecutionTime
-    @HystrixCommand(fallbackMethod = "getSharesErrorFallback")
+    @HystrixCommand(fallbackMethod = "updateShareErrorFallback")
+    @RequestMapping(value = "/share/{id}", method = RequestMethod.PATCH)
+    public ResponseEntity<GenericResponse> updateShare(Authentication authentication, HttpSession session, @PathVariable String id, @RequestBody UpdateShareRequest updateShareRequest) {
+        GenericResponse genericResponse = new GenericResponse();
+
+        try{
+            if(authenticationUtils.isSessionValid(authentication)){
+                if(StringUtils.isNotBlank(id)){
+                    if(updateShareRequest != null){
+                        HttpHeaders headers = authenticationUtils.getHeaders(session);
+                        String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.SHARE_SERVICE_NAME);
+
+                        if(StringUtils.isNotBlank(prefix)){
+                            return restTemplate.exchange(prefix + ToyboxConstants.SHARE_SERVICE_NAME + "/share/" + id, HttpMethod.PATCH, new HttpEntity<>(updateShareRequest, headers), GenericResponse.class);
+                        }
+                        else{
+                            throw new IllegalArgumentException("Service ID prefix is null!");
+                        }
+                    }
+                    else{
+                        String errorMessage = "Update share request is null!";
+                        _logger.error(errorMessage);
+
+                        genericResponse.setMessage(errorMessage);
+
+                        return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                    }
+                }
+                else{
+                    String errorMessage = "Share ID is blank!";
+                    _logger.error(errorMessage);
+
+                    genericResponse.setMessage(errorMessage);
+
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (HttpStatusCodeException httpEx){
+            JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
+            genericResponse.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(genericResponse, httpEx.getStatusCode());
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while updating a share. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    public ResponseEntity<GenericResponse> updateShareErrorFallback(Authentication authentication, HttpSession session, String id, UpdateShareRequest updateShareRequest, Throwable e){
+        GenericResponse genericResponse = new GenericResponse();
+
+        if(StringUtils.isNotBlank(id)){
+            if(updateShareRequest != null){
+                String errorMessage;
+                if(e.getLocalizedMessage() != null){
+                    errorMessage = "Unable to update a share. " + e.getLocalizedMessage();
+                }
+                else{
+                    errorMessage = "Unable to get response from the share service.";
+                }
+
+                _logger.error(errorMessage, e);
+
+                genericResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+            else{
+                String errorMessage = "Update share request is blank!";
+
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+            }
+        }
+        else{
+            String errorMessage = "Share ID is blank!";
+
+            _logger.error(errorMessage);
+
+            genericResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    @HystrixCommand(fallbackMethod = "getShareErrorFallback")
     @RequestMapping(value = "/share/{id}", method = RequestMethod.GET)
     public ResponseEntity<RetrieveShareResponse> getShare(Authentication authentication, HttpSession session, @PathVariable String id, @RequestParam("type") String type) {
         RetrieveShareResponse retrieveShareResponse = new RetrieveShareResponse();
@@ -408,7 +511,7 @@ public class ShareLoadbalancerController {
     }
 
     @LogEntryExitExecutionTime
-    public ResponseEntity<RetrieveShareResponse> getSharesErrorFallback(Authentication authentication, HttpSession session, @PathVariable String id, @RequestParam("type") String type, Throwable e){
+    public ResponseEntity<RetrieveShareResponse> getShareErrorFallback(Authentication authentication, HttpSession session, @PathVariable String id, @RequestParam("type") String type, Throwable e){
         RetrieveShareResponse retrieveShareResponse = new RetrieveShareResponse();
 
         if(StringUtils.isNotBlank(id) && StringUtils.isNotBlank(type)){
