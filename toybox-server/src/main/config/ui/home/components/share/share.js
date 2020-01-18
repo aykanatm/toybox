@@ -20,7 +20,7 @@ module.exports = {
         url: String
     },
     mounted:function(){
-        $('.ui.dropdown').dropdown();
+        $('.share-action-dropdown').dropdown();
     },
     computed:{
         formattedCreationDate(){

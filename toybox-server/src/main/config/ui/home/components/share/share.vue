@@ -100,7 +100,7 @@
         <div class="column" style="padding-left: 0;">
             <div class="ui buttons">
                 <div class="ui mini button">Actions</div>
-                <div class="ui floating dropdown icon mini button">
+                <div class="ui floating dropdown icon mini button share-action-dropdown">
                     <i class="dropdown icon"></i>
                     <div class="menu">
                         <div class="item" v-on:click.stop="editShare"><i class="pencil alternate icon"></i> Edit</div>
