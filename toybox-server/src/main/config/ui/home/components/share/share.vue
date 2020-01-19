@@ -104,6 +104,7 @@
                     <i class="dropdown icon"></i>
                     <div class="menu">
                         <div class="item" v-on:click.stop="editShare"><i class="pencil alternate icon"></i> Edit</div>
+                        <div class="item" v-on:click.stop="deleteShare"><i class="trash alternate outline icon"></i> Delete</div>
                         <div class="item" v-on:click.stop="copyUrl" v-show="type === 'com.github.murataykanat.toybox.dbo.ExternalShare'"><i class="copy icon"></i> Copy URL</div>
                     </div>
                 </div>

@@ -40,6 +40,59 @@ module.exports = {
         editShare:function(){
             this.$root.$emit('open-share-modal-window', undefined, this.type, this.id);
         },
+        deleteShare:function(){
+            this.getService("toybox-share-loadbalancer")
+                .then(response =>{
+                    if(response){
+                        var shareServiceUrl = response.data.value;
+                        axios.delete(shareServiceUrl + '/share/' + this.id)
+                            .then(response => {
+                                if(response){
+                                    this.$root.$emit('message-sent', 'Success', response.data.message);
+                                    this.$root.$emit('refresh-shares');
+                                }
+                                else{
+                                    this.$root.$emit('message-sent', 'Error', "There was no response from the share loadbalancer!");
+                                }
+                            })
+                            .catch(error => {
+                                var errorMessage;
+
+                                if(error.response){
+                                    errorMessage = error.response.data.message
+                                    if(error.response.status == 401){
+                                        window.location = '/logout';
+                                    }
+                                }
+                                else{
+                                    errorMessage = error.message;
+                                }
+
+                                console.error(errorMessage);
+                                this.$root.$emit('message-sent', 'Error', errorMessage);
+                            });
+                    }
+                    else{
+                        this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
+                    }
+                })
+                .catch(error => {
+                    var errorMessage;
+
+                    if(error.response){
+                        errorMessage = error.response.data.message
+                        if(error.response.status == 401){
+                            window.location = '/logout';
+                        }
+                    }
+                    else{
+                        errorMessage = error.message;
+                    }
+
+                    console.error(errorMessage);
+                    this.$root.$emit('message-sent', 'Error', errorMessage);
+                });
+        },
         copyUrl:function(){
             this.copyTextToClipboard(this.url, this);
         },
