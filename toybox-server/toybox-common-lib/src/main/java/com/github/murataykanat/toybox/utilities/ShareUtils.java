@@ -687,18 +687,18 @@ public class ShareUtils {
 
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss");
         if(updateShareRequest.getExpirationDate() == null){
-            enableExpire = "N";
+            enableExpire = ToyboxConstants.LOOKUP_NO;
 
             expirationDate = simpleDateFormat.parse("12/31/9999 23:59:59");
         }
         else{
             if(!updateShareRequest.getEnableExpire()){
-                enableExpire = "N";
+                enableExpire = ToyboxConstants.LOOKUP_NO;
 
                 expirationDate = simpleDateFormat.parse("12/31/9999 23:59:59");
             }
             else{
-                enableExpire = "Y";
+                enableExpire = ToyboxConstants.LOOKUP_YES;
 
                 Calendar calendar = Calendar.getInstance();
                 calendar.setTime(updateShareRequest.getExpirationDate());
@@ -709,14 +709,14 @@ public class ShareUtils {
             }
         }
 
-        String notifyOnEdit = updateShareRequest.getNotifyOnEdit() ? "Y" : "N";
-        String notifyOnDownload = updateShareRequest.getNotifyOnDownload() ? "Y" : "N";
-        String notifyOnShare = updateShareRequest.getNotifyOnShare() ? "Y" : "N";
-        String notifyOnCopy = updateShareRequest.getNotifyOnCopy() ? "Y" : "N";
-        String canEdit = updateShareRequest.getCanEdit() ? "Y" : "N";
-        String canDownload = updateShareRequest.getCanDownload() ? "Y" : "N";
-        String canShare = updateShareRequest.getCanShare() ? "Y" : "N";
-        String canCopy = updateShareRequest.getCanCopy() ? "Y" : "N";
+        String notifyOnEdit = updateShareRequest.getNotifyOnEdit() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
+        String notifyOnDownload = updateShareRequest.getNotifyOnDownload() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
+        String notifyOnShare = updateShareRequest.getNotifyOnShare() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
+        String notifyOnCopy = updateShareRequest.getNotifyOnCopy() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
+        String canEdit = updateShareRequest.getCanEdit() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
+        String canDownload = updateShareRequest.getCanDownload() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
+        String canShare = updateShareRequest.getCanShare() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
+        String canCopy = updateShareRequest.getCanCopy() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
 
 
         internalSharesRepository.updateInternalShareById(id, enableExpire, expirationDate, notifyOnEdit,
@@ -725,14 +725,14 @@ public class ShareUtils {
 
     @LogEntryExitExecutionTime
     public void updateExternalShare(String id, UpdateShareRequest updateShareRequest) throws ParseException {
-        String notifyOnDownload = updateShareRequest.getNotifyOnDownload() ? "Y" : "N";
+        String notifyOnDownload = updateShareRequest.getNotifyOnDownload() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
 
         String enableUsageLimit;
         if(updateShareRequest.getMaxNumberOfHits() == 0){
-            enableUsageLimit = "N";
+            enableUsageLimit = ToyboxConstants.LOOKUP_NO;
         }
         else{
-            enableUsageLimit = updateShareRequest.getEnableUsageLimit() ? "Y" : "N";
+            enableUsageLimit = updateShareRequest.getEnableUsageLimit() ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO;
         }
 
         Date expirationDate;
@@ -740,18 +740,18 @@ public class ShareUtils {
 
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss");
         if(updateShareRequest.getExpirationDate() == null){
-            enableExpire = "N";
+            enableExpire = ToyboxConstants.LOOKUP_NO;
 
             expirationDate = simpleDateFormat.parse("12/31/9999 23:59:59");
         }
         else{
             if(!updateShareRequest.getEnableExpire()){
-                enableExpire = "N";
+                enableExpire = ToyboxConstants.LOOKUP_NO;
 
                 expirationDate = simpleDateFormat.parse("12/31/9999 23:59:59");
             }
             else{
-                enableExpire = "Y";
+                enableExpire = ToyboxConstants.LOOKUP_YES;
 
                 Calendar calendar = Calendar.getInstance();
                 calendar.setTime(updateShareRequest.getExpirationDate());
