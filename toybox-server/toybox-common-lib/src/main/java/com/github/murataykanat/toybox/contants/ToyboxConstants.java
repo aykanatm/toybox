@@ -69,4 +69,7 @@ public final class ToyboxConstants {
 
     public static final String LOOKUP_YES = "Y";
     public static final String LOOKUP_NO = "N";
+
+    public static final String FRIENDLY_DATE_FORMAT = "MM/dd/yyyy hh:mm:ss";
+    public static final String FAR_FUTURE_DATE_TIME = "12/31/9999 23:59:59";
 }

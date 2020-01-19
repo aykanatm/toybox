@@ -82,17 +82,17 @@ public class ShareUtils {
         Date expirationDate;
         String enableExpireExternal;
 
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss");
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(ToyboxConstants.FRIENDLY_DATE_FORMAT);
         if(externalShareRequest.getExpirationDate() == null){
             enableExpireExternal = ToyboxConstants.LOOKUP_NO;
 
-            expirationDate = simpleDateFormat.parse("12/31/9999 23:59:59");
+            expirationDate = simpleDateFormat.parse(ToyboxConstants.FAR_FUTURE_DATE_TIME);
         }
         else{
             if(!externalShareRequest.getEnableExpireExternal()){
                 enableExpireExternal = ToyboxConstants.LOOKUP_NO;
 
-                expirationDate = simpleDateFormat.parse("12/31/9999 23:59:59");
+                expirationDate = simpleDateFormat.parse(ToyboxConstants.FAR_FUTURE_DATE_TIME);
             }
             else{
                 enableExpireExternal = ToyboxConstants.LOOKUP_YES;
@@ -258,17 +258,17 @@ public class ShareUtils {
         Date expirationDate;
         String enableExpireInternal;
 
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss");
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(ToyboxConstants.FRIENDLY_DATE_FORMAT);
         if(internalShareRequest.getExpirationDate() == null){
             enableExpireInternal = ToyboxConstants.LOOKUP_NO;
 
-            expirationDate = simpleDateFormat.parse("12/31/9999 23:59:59");
+            expirationDate = simpleDateFormat.parse(ToyboxConstants.FAR_FUTURE_DATE_TIME);
         }
         else{
             if(!internalShareRequest.getEnableExpireInternal()){
                 enableExpireInternal = ToyboxConstants.LOOKUP_NO;
 
-                expirationDate = simpleDateFormat.parse("12/31/9999 23:59:59");
+                expirationDate = simpleDateFormat.parse(ToyboxConstants.FAR_FUTURE_DATE_TIME);
             }
             else{
                 enableExpireInternal = ToyboxConstants.LOOKUP_YES;
@@ -685,17 +685,17 @@ public class ShareUtils {
         Date expirationDate;
         String enableExpire;
 
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss");
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(ToyboxConstants.FRIENDLY_DATE_FORMAT);
         if(updateShareRequest.getExpirationDate() == null){
             enableExpire = ToyboxConstants.LOOKUP_NO;
 
-            expirationDate = simpleDateFormat.parse("12/31/9999 23:59:59");
+            expirationDate = simpleDateFormat.parse(ToyboxConstants.FAR_FUTURE_DATE_TIME);
         }
         else{
             if(!updateShareRequest.getEnableExpire()){
                 enableExpire = ToyboxConstants.LOOKUP_NO;
 
-                expirationDate = simpleDateFormat.parse("12/31/9999 23:59:59");
+                expirationDate = simpleDateFormat.parse(ToyboxConstants.FAR_FUTURE_DATE_TIME);
             }
             else{
                 enableExpire = ToyboxConstants.LOOKUP_YES;
@@ -738,17 +738,17 @@ public class ShareUtils {
         Date expirationDate;
         String enableExpire;
 
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss");
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(ToyboxConstants.FRIENDLY_DATE_FORMAT);
         if(updateShareRequest.getExpirationDate() == null){
             enableExpire = ToyboxConstants.LOOKUP_NO;
 
-            expirationDate = simpleDateFormat.parse("12/31/9999 23:59:59");
+            expirationDate = simpleDateFormat.parse(ToyboxConstants.FAR_FUTURE_DATE_TIME);
         }
         else{
             if(!updateShareRequest.getEnableExpire()){
                 enableExpire = ToyboxConstants.LOOKUP_NO;
 
-                expirationDate = simpleDateFormat.parse("12/31/9999 23:59:59");
+                expirationDate = simpleDateFormat.parse(ToyboxConstants.FAR_FUTURE_DATE_TIME);
             }
             else{
                 enableExpire = ToyboxConstants.LOOKUP_YES;
