@@ -5,6 +5,7 @@ const shares = new Vue({
         view: 'shares',
         // isLoading: true,
         isLoading: true,
+        isDeleting: false,
         shares:[],
         defaultSortType: 'des',
         defaultSortColumn: 'creation_date',
@@ -73,6 +74,14 @@ const shares = new Vue({
 
         this.$root.$on('refresh-shares', () => {
             this.getShares(this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList);
+        });
+
+        this.$root.$on('start-delete-share', () => {
+            this.isDeleting = true;
+        });
+
+        this.$root.$on('end-delete-share', () => {
+            this.isDeleting = false;
         });
 
         this.$root.$on('message-sent', this.displayMessage);

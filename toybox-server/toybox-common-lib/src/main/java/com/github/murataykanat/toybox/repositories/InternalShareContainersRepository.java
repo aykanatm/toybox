@@ -25,6 +25,11 @@ public interface InternalShareContainersRepository extends JpaRepository<Interna
 
     @Transactional
     @Modifying
+    @Query(value = "DELETE FROM internal_share_containers WHERE internal_share_id=?1", nativeQuery = true)
+    int deleteSharedContainerByInternalShareId(String internalShareId);
+
+    @Transactional
+    @Modifying
     @Query(value = "DELETE FROM internal_share_containers WHERE internal_share_id=?1 AND container_id=?2", nativeQuery = true)
     int deleteSharedContainerByInternalShareIdAndContainerId(String internalShareId, String containerId);
 }

@@ -93,6 +93,9 @@
                                 <div class="ui active dimmer" v-if="isLoading">
                                     <div class="ui massive text loader">Loading</div>
                                 </div>
+                                <div class="ui active dimmer" v-if="isDeleting">
+                                    <div class="ui massive text loader">Deleting</div>
+                                </div>
                                 <share  v-for="share in shares"
                                         v-bind:id="share.id" v-bind:type="share['@class']" v-bind:creation-date="share.creationDate"
                                         v-bind:enable-expire="share.enableExpire" v-bind:expiration-date="share.expirationDate"

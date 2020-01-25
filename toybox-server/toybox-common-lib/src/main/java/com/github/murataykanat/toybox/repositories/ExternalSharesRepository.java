@@ -38,4 +38,9 @@ public interface ExternalSharesRepository extends JpaRepository<ExternalShare, S
     @Modifying
     @Query(value = "UPDATE external_shares SET max_number_of_hits=?1 WHERE id=?2", nativeQuery = true)
     int updateMaxUsage(int maxNumberOfHits, String id);
+
+    @Transactional
+    @Modifying
+    @Query(value = "DELETE FROM external_shares WHERE id=?1", nativeQuery = true)
+    int deleteExternalShareById(String externalShareId);
 }

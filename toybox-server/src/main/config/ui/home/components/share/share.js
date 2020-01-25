@@ -45,10 +45,13 @@ module.exports = {
                 .then(response =>{
                     if(response){
                         var shareServiceUrl = response.data.value;
-                        axios.delete(shareServiceUrl + '/share/' + this.id)
+
+                        this.$root.$emit('start-delete-share');
+                        axios.delete(shareServiceUrl + '/share/' + this.id, {headers:{}, data:{type: this.type}})
                             .then(response => {
                                 if(response){
                                     this.$root.$emit('message-sent', 'Success', response.data.message);
+                                    this.$root.$emit('end-delete-share');
                                     this.$root.$emit('refresh-shares');
                                 }
                                 else{
@@ -69,6 +72,7 @@ module.exports = {
                                 }
 
                                 console.error(errorMessage);
+                                this.$root.$emit('end-delete-share');
                                 this.$root.$emit('message-sent', 'Error', errorMessage);
                             });
                     }

@@ -37,4 +37,9 @@ public interface InternalSharesRepository extends JpaRepository<InternalShare, S
                             @Param("expiration_date") Date expirationDate, @Param("notify_on_edit") String notifyOnEdit, @Param("notify_on_download") String notifyOnDownload,
                             @Param("notify_on_share") String notifyOnShare, @Param("notify_on_copy") String notifyOnCopy, @Param("can_edit") String canEdit,
                             @Param("can_download") String canDownload, @Param("can_share") String canShare, @Param("can_copy") String canCopy);
+
+    @Transactional
+    @Modifying
+    @Query(value = "DELETE FROM internal_shares WHERE id=?1", nativeQuery = true)
+    int deleteInternalShareById(String internalShareId);
 }

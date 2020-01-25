@@ -13,10 +13,12 @@ import com.github.murataykanat.toybox.schema.share.ExternalShareRequest;
 import com.github.murataykanat.toybox.schema.share.ExternalShareResponse;
 import com.github.murataykanat.toybox.schema.share.InternalShareRequest;
 import com.github.murataykanat.toybox.schema.share.UpdateShareRequest;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +26,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpSession;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -58,6 +63,9 @@ public class ShareUtils {
 
     @Autowired
     private ExternalSharesRepository externalSharesRepository;
+
+    @Value("${exportStagingPath}")
+    private String exportStagingPath;
 
     @LogEntryExitExecutionTime
     public ExternalShareResponse createExternalShare(User user, ExternalShareRequest externalShareRequest, SelectionContext selectionContext, HttpSession session) throws Exception {
@@ -763,6 +771,73 @@ public class ShareUtils {
         }
 
         externalSharesRepository.updateExternalShareById(id, expirationDate, updateShareRequest.getMaxNumberOfHits(), notifyOnDownload, enableExpire, enableUsageLimit);
+    }
+
+    @LogEntryExitExecutionTime
+    public void deleteInternalShare(String id){
+        // Find the containers and the assets that are shared in the share
+        List<InternalShareAsset> sharedAssets = internalShareAssetsRepository.findInternalShareAssetByInternalShareId(id);
+        List<InternalShareContainer> sharedContainers = internalShareContainersRepository.findInternalShareContainersByInternalShareId(id);
+        // Find the users that these items were shared with
+        List<InternalShareUser> sharedUsers = internalShareUsersRepository.findInternalShareUsersByInternalShareId(id);
+        // Check if these shared users have any of these assets in their own shares
+        for(InternalShareUser internalShareUser : sharedUsers){
+            List<InternalShare> userShares = getInternakSharesWithSourceUser(internalShareUser.getUserId());
+            for(InternalShare userShare: userShares){
+                for(InternalShareAsset sharedAsset: sharedAssets){
+                    List<InternalShareAsset> matchingAssets = internalShareAssetsRepository.findInternalShareAssetByInternalShareIdAndAssetId(userShare.getId(), sharedAsset.getAssetId());
+                    if(!matchingAssets.isEmpty()){
+                        // Remove the assets from the share
+                        for(InternalShareAsset matchingAsset: matchingAssets){
+                            removeItemFromInternalShare(userShare.getId(), matchingAsset.getAssetId(), true);
+                        }
+                    }
+                }
+
+                for(InternalShareContainer sharedContainer: sharedContainers){
+                    List<InternalShareContainer> matchingContainers = internalShareContainersRepository.findInternalShareContainersByInternalShareIdAndContainerId(userShare.getId(), sharedContainer.getContainerId());
+                    if(!matchingContainers.isEmpty()){
+                        // Remove the containers from the share
+                        for(InternalShareContainer matchingContainer: matchingContainers){
+                            removeItemFromInternalShare(userShare.getId(), matchingContainer.getContainerId(), false);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Delete the main share
+        internalShareAssetsRepository.deleteSharedAssetByInternalShareId(id);
+        internalShareContainersRepository.deleteSharedContainerByInternalShareId(id);
+        internalShareUsersRepository.deleteShareUsersByInternalShareId(id);
+        internalSharesRepository.deleteInternalShareById(id);
+    }
+
+    @LogEntryExitExecutionTime
+    public void deleteExternalShare(String id) throws IOException {
+        ExternalShare externalShare = getExternalShare(id);
+        long jobId = externalShare.getJobId();
+        String jobFolderPath = exportStagingPath + File.separator + jobId;
+        File jobFolder = new File(jobFolderPath);
+        if(jobFolder.exists()){
+            if(jobFolder.isDirectory()){
+                FileUtils.deleteDirectory(jobFolder);
+            }
+            else{
+                throw new FileNotFoundException("The path '" + jobFolderPath + "' is not a valid folder path!");
+            }
+        }
+        else{
+            throw new FileNotFoundException("The path '" + jobFolderPath + "' is not found!");
+        }
+
+        externalSharesRepository.deleteExternalShareById(id);
+    }
+
+    @LogEntryExitExecutionTime
+    public List<InternalShare> getInternakSharesWithSourceUser(int sourceUserId){
+        User user = authenticationUtils.getUser(sourceUserId);
+        return internalSharesRepository.getInternalSharesByUsername(user.getUsername());
     }
 
     // TODO: Change the name to getInternalSharesWithTargetUserAndItemId

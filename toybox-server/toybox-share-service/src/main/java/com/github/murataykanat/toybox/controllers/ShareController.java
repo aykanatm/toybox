@@ -270,6 +270,70 @@ public class ShareController {
     }
 
     @LogEntryExitExecutionTime
+    @RequestMapping(value = "/share/{id}", method = RequestMethod.DELETE)
+    public ResponseEntity<GenericResponse> deleteShare(Authentication authentication, @PathVariable String id, @RequestBody DeleteShareRequest deleteShareRequest) {
+        GenericResponse genericResponse = new GenericResponse();
+
+        try{
+            if(authenticationUtils.isSessionValid(authentication)){
+                if(StringUtils.isNotBlank(id)){
+                    if(deleteShareRequest != null){
+                        if(deleteShareRequest.getType().equalsIgnoreCase("com.github.murataykanat.toybox.dbo.InternalShare")){
+                            shareUtils.deleteInternalShare(id);
+                        }
+                        else if(deleteShareRequest.getType().equalsIgnoreCase("com.github.murataykanat.toybox.dbo.ExternalShare")){
+                            shareUtils.deleteExternalShare(id);
+                        }
+                        else{
+                            String errorMessage = "Share type '" + deleteShareRequest.getType() + "' is invalid!";
+                            _logger.error(errorMessage);
+
+                            genericResponse.setMessage(errorMessage);
+
+                            return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                        }
+
+                        genericResponse.setMessage("Share updated successfully!");
+                        return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+                    }
+                    else{
+                        String errorMessage = "Delete share request is null!";
+                        _logger.error(errorMessage);
+
+                        genericResponse.setMessage(errorMessage);
+
+                        return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                    }
+                }
+                else{
+                    String errorMessage = "Share ID is blank!";
+                    _logger.error(errorMessage);
+
+                    genericResponse.setMessage(errorMessage);
+
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while deleting a share. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/share/{id}", method = RequestMethod.GET)
     public ResponseEntity<RetrieveShareResponse> getShare(Authentication authentication, @PathVariable String id, @RequestParam("type") String type) {
         RetrieveShareResponse retrieveShareResponse = new RetrieveShareResponse();
@@ -513,11 +577,11 @@ public class ShareController {
                             if(!(selectionContext.getSelectedAssets().isEmpty() && selectionContext.getSelectedContainers().isEmpty())){
                                 boolean canShare = true;
                                 for(Asset asset: selectionContext.getSelectedAssets()){
-                                    canShare = canShare && shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_COPY, user.getId(), asset.getId(), true);
+                                    canShare = canShare && shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_SHARE, user.getId(), asset.getId(), true);
                                 }
 
                                 for(Container container:  selectionContext.getSelectedContainers()){
-                                    canShare = canShare && shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_COPY, user.getId(), container.getId(), false);
+                                    canShare = canShare && shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_SHARE, user.getId(), container.getId(), false);
                                 }
                                 if(canShare){
                                     List<String> sharedUsers = internalShareRequest.getSharedUsers();
