@@ -989,4 +989,20 @@ public class ShareUtils {
         List<ExternalShare> externalSharesById = externalSharesRepository.getExternalSharesById(externalShareId);
         return externalSharesById.isEmpty();
     }
+
+    @LogEntryExitExecutionTime
+    public List<InternalShare> getExpiredInternalShares(Date date){
+        return  internalSharesRepository.getAllInternalShares().stream()
+                .filter(internalShare -> internalShare.getEnableExpire().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)
+                        && (internalShare.getExpirationDate().equals(date) || internalShare.getExpirationDate().before(date)))
+                .collect(Collectors.toList());
+    }
+
+    @LogEntryExitExecutionTime
+    public List<ExternalShare> getExpiredExternalShares(Date date){
+        return externalSharesRepository.getAllExternalShares().stream()
+                .filter(externalShare -> externalShare.getEnableExpire().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)
+                        && (externalShare.getExpirationDate().equals(date) || externalShare.getExpirationDate().before(date)))
+                .collect(Collectors.toList());
+    }
 }

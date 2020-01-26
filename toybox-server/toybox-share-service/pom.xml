@@ -77,6 +77,16 @@
             <version>2.6</version>
         </dependency>
         <dependency>
+            <groupId>net.javacrumbs.shedlock</groupId>
+            <artifactId>shedlock-spring</artifactId>
+            <version>4.2.0</version>
+        </dependency>
+        <dependency>
+            <groupId>net.javacrumbs.shedlock</groupId>
+            <artifactId>shedlock-provider-jdbc-template</artifactId>
+            <version>4.2.0</version>
+        </dependency>
+        <dependency>
             <groupId>com.github.murataykanat.toybox</groupId>
             <artifactId>toybox-common-lib</artifactId>
             <version>${project.version}</version>
