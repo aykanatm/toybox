@@ -29,7 +29,7 @@ public class ShareCleanupScheduler {
     }
 
     @LogEntryExitExecutionTime
-    @Scheduled(cron = "0 1 * * *")
+    @Scheduled(cron = "0 1 * * * *")
     @SchedulerLock(name = "TaskScheduler_cleanupExpiredShares", lockAtLeastForString = "PT5M", lockAtMostForString = "PT14M")
     public void cleanupExpiredShares() throws IOException {
         Calendar calendar = Calendar.getInstance();
