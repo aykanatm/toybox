@@ -70,6 +70,29 @@ public final class ToyboxConstants {
     public static final String LOOKUP_YES = "Y";
     public static final String LOOKUP_NO = "N";
 
+    public static final String LOOKUP_TODAY = "Today";
+    public static final String LOOKUP_NEXT_7_DAYS = "Next 7 days";
+    public static final String LOOKUP_PAST_7_DAYS = "Past 7 days";
+    public static final String LOOKUP_NEXT_30_DAYS = "Next 30 days";
+    public static final String LOOKUP_PAST_30_DAYS = "Past 30 days";
+    public static final String LOOKUP_PAST_30_PLUS_DAYS = "Past 30+ days";
+    public static final String LOOKUP_NEXT_30_PLUS_DAYS = "Next 30+ days";
+
     public static final String FRIENDLY_DATE_FORMAT = "MM/dd/yyyy hh:mm:ss";
     public static final String FAR_FUTURE_DATE_TIME = "12/31/9999 23:59:59";
+
+    public static final String SEARCH_OPERATOR_AND = "AND";
+    public static final String SEARCH_OPERATOR_OR = "OR";
+
+    public static final String SEARCH_CONDITION_EQUALS = "EQUALS";
+    public static final String SEARCH_CONDITION_CONTAINS = "CONTAINS";
+    public static final String SEARCH_CONDITION_STARTS_WITH = "STARTS_WITH";
+    public static final String SEARCH_CONDITION_ENDS_WITH = "ENDS_WITH";
+    public static final String SEARCH_CONDITION_IS_GREATER_THAN = "IS_GREATER_THAN";
+    public static final String SEARCH_CONDITION_IS_LESS_THAN = "IS_LESS_THAN";
+    public static final String SEARCH_CONDITION_BETWEEN = "BETWEEN";
+
+    public static final String SEARCH_CONDITION_DATA_TYPE_STRING = "STRING";
+    public static final String SEARCH_CONDITION_DATA_TYPE_INTEGER = "INTEGER";
+    public static final String SEARCH_CONDITION_DATA_TYPE_DATE = "DATE";
 }

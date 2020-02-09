@@ -1,16 +1,29 @@
 package com.github.murataykanat.toybox.repositories;
 
 import com.github.murataykanat.toybox.dbo.Asset;
+import com.github.murataykanat.toybox.dbo.QAsset;
+import com.querydsl.core.types.dsl.StringExpression;
+import com.querydsl.core.types.dsl.StringPath;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.querydsl.QueryDslPredicateExecutor;
+import org.springframework.data.querydsl.binding.QuerydslBinderCustomizer;
+import org.springframework.data.querydsl.binding.QuerydslBindings;
+import org.springframework.data.querydsl.binding.SingleValueBinding;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
 
-public interface AssetsRepository extends JpaRepository<Asset, String> {
+public interface AssetsRepository extends JpaRepository<Asset, String>, QueryDslPredicateExecutor<Asset>, QuerydslBinderCustomizer<QAsset> {
+    @Override
+    default public void customize(QuerydslBindings bindings, QAsset root) {
+        bindings.bind(String.class)
+                .first((SingleValueBinding<StringPath, String>) StringExpression::containsIgnoreCase);
+    }
+
     @Query(value = "SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted, checksum, is_latest_version, original_asset_id, version, file_size FROM assets WHERE deleted='N'", nativeQuery = true)
     List<Asset> getNonDeletedAssets();
 

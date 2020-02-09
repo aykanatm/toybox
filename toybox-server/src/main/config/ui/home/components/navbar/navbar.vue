@@ -25,7 +25,7 @@
 
         <div class="ui icon right menu">
             <div class="ui transparent icon input toybox-search-box">
-                <input class="prompt" placeholder="Search..." type="text"/>
+                <input class="prompt" placeholder="Search..." type="text" v-model="searchQuery" v-on:keyup.enter="onSubmit"/>
                 <i class="search link icon"></i>
             </div>
             <a class="item toybox-navbar-item" id="toybox-advsearch-menu">

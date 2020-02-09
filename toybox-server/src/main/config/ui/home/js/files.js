@@ -26,6 +26,7 @@ const files = new Vue({
         canSubscribe: false,
         canUnsubscribe: false,
         canDelete: false,
+        searchQuery:'',
     },
     mounted:function(){
         var csrfHeader = $("meta[name='_csrf_header']").attr("content");
@@ -80,6 +81,19 @@ const files = new Vue({
         this.$root.$on('navigate-to-previous-asset', this.onNavigateToPreviousAsset);
         this.$root.$on('update-arrows-request', this.updateArrows);
         this.$root.$on('refresh-assets', this.refreshAssets);
+        this.$root.$on('perform-contextual-search', searchQuery => {
+            this.selectedAssets = [];
+            if(this.assets !== undefined){
+                for(var i = 0; i < this.assets.length; i++){
+                    var asset = this.assets[i];
+                    this.$root.$emit('deselect-asset', asset.id);
+                }
+            }
+
+            this.searchQuery = searchQuery;
+
+            this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList);
+        });
 
         this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList);
     },
@@ -151,12 +165,23 @@ const files = new Vue({
             this.getService("toybox-asset-loadbalancer")
             .then(response => {
                 if(response){
-                    var searchRequest = {};
-                    searchRequest.limit = limit;
-                    searchRequest.offset = offset;
-                    searchRequest.sortType = sortType;
-                    searchRequest.sortColumn = sortColumn;
-                    searchRequest.assetSearchRequestFacetList = searchRequestFacetList;
+                    var searchRequest = {
+                        limit: limit,
+                        offset: offset,
+                        sortType: sortType,
+                        sortColumn: sortColumn,
+                        assetSearchRequestFacetList: searchRequestFacetList,
+                    };
+
+                    if(this.searchQuery !== undefined && this.searchQuery !== ''){
+                        searchRequest['searchConditions'] = [{
+                            keyword: this.searchQuery,
+                            field:'name',
+                            operator: 'CONTAINS',
+                            dataType: 'STRING',
+                            booleanOperator: 'AND'
+                        }]
+                    }
 
                     return axios.post(response.data.value + "/assets/search", searchRequest)
                         .catch(error => {
@@ -306,6 +331,8 @@ const files = new Vue({
                 }
             }
 
+            this.$root.$emit('clear-search-query');
+            this.searchQuery = '';
             this.getAssets(this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList);
         },
         getSelectedAssets:function(){

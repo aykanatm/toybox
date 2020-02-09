@@ -3,12 +3,15 @@ package com.github.murataykanat.toybox.utilities;
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.*;
+import com.github.murataykanat.toybox.predicates.AssetPredicateBuilder;
 import com.github.murataykanat.toybox.repositories.*;
 import com.github.murataykanat.toybox.schema.asset.UpdateAssetRequest;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
+import com.github.murataykanat.toybox.schema.search.SearchCondition;
 import com.github.murataykanat.toybox.schema.upload.UploadFile;
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
+import com.google.common.collect.Lists;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
@@ -56,6 +59,18 @@ public class AssetUtils {
     private ContainersRepository containersRepository;
     @Autowired
     private ContainerAssetsRepository containerAssetsRepository;
+
+    @LogEntryExitExecutionTime
+    public List<Asset> getAssets(List<SearchCondition> searchConditions){
+        if(searchConditions == null || searchConditions.isEmpty()){
+            return assetsRepository.findAll();
+        }
+        else{
+            AssetPredicateBuilder builder = new AssetPredicateBuilder().with(searchConditions);
+            Iterable<Asset> iterableAssets = assetsRepository.findAll(builder.build());
+            return Lists.newArrayList(iterableAssets);
+        }
+    }
 
     @LogEntryExitExecutionTime
     public Asset getAsset(String assetId) {

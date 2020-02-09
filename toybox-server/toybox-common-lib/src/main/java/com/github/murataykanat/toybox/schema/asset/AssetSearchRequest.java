@@ -2,6 +2,7 @@ package com.github.murataykanat.toybox.schema.asset;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
+import com.github.murataykanat.toybox.schema.search.SearchCondition;
 
 import java.io.Serializable;
 import java.util.List;
@@ -15,6 +16,8 @@ public class AssetSearchRequest implements Serializable {
     private String sortType;
     @JsonProperty("sortColumn")
     private String sortColumn;
+    @JsonProperty("searchConditions")
+    private List<SearchCondition> searchConditions;
     @JsonProperty("assetSearchRequestFacetList")
     private List<SearchRequestFacet> searchRequestFacetList;
 
@@ -56,5 +59,13 @@ public class AssetSearchRequest implements Serializable {
 
     public void setSortColumn(String sortColumn) {
         this.sortColumn = sortColumn;
+    }
+
+    public List<SearchCondition> getSearchConditions() {
+        return searchConditions;
+    }
+
+    public void setSearchConditions(List<SearchCondition> searchConditions) {
+        this.searchConditions = searchConditions;
     }
 }

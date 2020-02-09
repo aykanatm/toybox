@@ -65,7 +65,6 @@ public class Asset implements Serializable, ContainerItem {
     private String subscribed;
 
     @Transient
-    @FacetColumnName("Shared")
     private String shared;
 
     @Transient

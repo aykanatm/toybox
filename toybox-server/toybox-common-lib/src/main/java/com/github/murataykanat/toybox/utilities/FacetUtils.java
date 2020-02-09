@@ -1,9 +1,11 @@
 package com.github.murataykanat.toybox.utilities;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
+import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.models.annotations.FacetColumnName;
 import com.github.murataykanat.toybox.models.annotations.FacetDataType;
 import com.github.murataykanat.toybox.models.annotations.FacetDefaultLookup;
+import com.github.murataykanat.toybox.models.search.FacetField;
 import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import org.apache.commons.beanutils.PropertyUtils;
@@ -12,6 +14,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.stereotype.Component;
 
+import javax.persistence.Column;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.function.Function;
@@ -20,6 +23,34 @@ import java.util.stream.Collectors;
 @Component
 public class FacetUtils {
     private static final Log _logger = LogFactory.getLog(FacetUtils.class);
+
+    public <T> FacetField getFacetField(String fieldName, T object){
+        List<Field> declaredFields = Arrays.asList(object.getClass().getDeclaredFields());
+        for(Field field: declaredFields){
+            if(field.getAnnotation(Column.class) != null && field.getAnnotation(FacetColumnName.class) != null){
+                if(field.getAnnotation(FacetColumnName.class).value().equalsIgnoreCase(fieldName)){
+                    // The reason why we are using the actual field name is because
+                    // hibernate cannot match the column name with the variable name
+                    FacetField facetField = new FacetField();
+                    facetField.setFieldName(field.getName());
+
+                    if(field.getType().getSimpleName().equalsIgnoreCase(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING)){
+                        facetField.setDataType(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING);
+                    }
+                    else if(field.getType().getSimpleName().equalsIgnoreCase(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_INTEGER)){
+                        facetField.setDataType(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_INTEGER);
+                    }
+                    else if(field.getType().getSimpleName().equalsIgnoreCase(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_DATE)){
+                        facetField.setDataType(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_DATE);
+                    }
+
+                    return facetField;
+                }
+            }
+        }
+
+        throw new IllegalArgumentException("Field name '" + fieldName + "' does not exist in the object of class '" + object.getClass() + "'!");
+    }
 
     @LogEntryExitExecutionTime
     public <T> List<Facet>  getFacets (List<T> objects) throws IllegalAccessException {
@@ -47,6 +78,10 @@ public class FacetUtils {
 
                     String facetFieldName = field.getAnnotation(FacetColumnName.class).value();
                     facet.setName(facetFieldName);
+                    if(field.getAnnotation(Column.class) != null){
+                        String facetDbFieldName = field.getAnnotation(Column.class).name();
+                        facet.setDbFieldName(facetDbFieldName);
+                    }
 
                     List<String> lookups = new ArrayList<>();
 

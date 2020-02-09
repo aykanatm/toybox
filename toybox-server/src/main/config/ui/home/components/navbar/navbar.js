@@ -13,12 +13,14 @@ module.exports = {
                 notificationDate: new Date().getTime(),
                 isRead: 'Y'
             },
-            userInitialized: false
+            userInitialized: false,
+            searchQuery:''
         }
     },
     mounted:function(){
         this.getNotifications(null, '*', new Date(), 'N', 0, 100, this.searchRequestFacetList, true);
         this.$root.$on('notifications-updated', this.getNotifications);
+        this.$root.$on('clear-search-query', this.clearSearchQuery);
     },
     watch:{
         user:{
@@ -51,6 +53,12 @@ module.exports = {
         },
         logout:function(){
             window.location = "/logout";
+        },
+        onSubmit:function(){
+            this.$root.$emit('perform-contextual-search', this.searchQuery);
+        },
+        clearSearchQuery:function(){
+            this.searchQuery = '';
         }
     },
     components:{

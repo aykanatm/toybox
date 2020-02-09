@@ -3,6 +3,7 @@ package com.github.murataykanat.toybox.controllers;
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.*;
+import com.github.murataykanat.toybox.models.search.FacetField;
 import com.github.murataykanat.toybox.models.share.SharedAssets;
 import com.github.murataykanat.toybox.repositories.AssetUserRepository;
 import com.github.murataykanat.toybox.repositories.AssetsRepository;
@@ -12,6 +13,7 @@ import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
+import com.github.murataykanat.toybox.schema.search.SearchCondition;
 import com.github.murataykanat.toybox.schema.selection.SelectionContext;
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
 import com.github.murataykanat.toybox.utilities.*;
@@ -155,11 +157,28 @@ public class AssetController {
                     if(user != null){
                         String sortColumn = assetSearchRequest.getSortColumn();
                         String sortType = assetSearchRequest.getSortType();
+
                         int offset = assetSearchRequest.getOffset();
                         int limit = assetSearchRequest.getLimit();
+
+                        List<SearchCondition> searchConditions = assetSearchRequest.getSearchConditions();
+                        if(searchConditions == null){
+                            searchConditions = new ArrayList<>();
+                        }
+
                         List<SearchRequestFacet> searchRequestFacetList = assetSearchRequest.getAssetSearchRequestFacetList();
 
-                        List<Asset> allAssets = assetsRepository.getNonDeletedAssets();
+                        for (SearchRequestFacet searchRequestFacet: searchRequestFacetList){
+                            String fieldName = searchRequestFacet.getFieldName();
+                            FacetField facetField = facetUtils.getFacetField(fieldName, new Asset());
+
+                            String dbFieldName = facetField.getFieldName();
+                            String fieldValue = searchRequestFacet.getFieldValue();
+                            searchConditions.add(new SearchCondition(dbFieldName, ToyboxConstants.SEARCH_CONDITION_EQUALS, fieldValue, facetField.getDataType(), ToyboxConstants.SEARCH_OPERATOR_AND));
+                        }
+
+                        List<Asset> allAssets = assetUtils.getAssets(searchConditions);
+
                         List<SharedAssets> sharedAssetsLst = shareUtils.getSharedAssets(user.getId());
 
                         if(!allAssets.isEmpty()){
@@ -213,10 +232,6 @@ public class AssetController {
                                         }
                                     }
                                 }
-                            }
-
-                            if(searchRequestFacetList != null && !searchRequestFacetList.isEmpty()){
-                                assetsByCurrentUser = assetsByCurrentUser.stream().filter(asset -> facetUtils.hasFacetValue(asset, searchRequestFacetList)).collect(Collectors.toList());
                             }
 
                             // Set facets

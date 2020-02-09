@@ -8,6 +8,8 @@ import java.util.List;
 public class Facet implements Serializable {
     @JsonProperty("name")
     private String name;
+    @JsonProperty("dbFieldName")
+    private String dbFieldName;
     @JsonProperty("lookups")
     private List<String> lookups;
 
@@ -25,5 +27,13 @@ public class Facet implements Serializable {
 
     public void setLookups(List<String> lookups) {
         this.lookups = lookups;
+    }
+
+    public String getDbFieldName() {
+        return dbFieldName;
+    }
+
+    public void setDbFieldName(String dbFieldName) {
+        this.dbFieldName = dbFieldName;
     }
 }
