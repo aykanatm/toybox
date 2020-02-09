@@ -171,16 +171,27 @@ const files = new Vue({
                         sortType: sortType,
                         sortColumn: sortColumn,
                         assetSearchRequestFacetList: searchRequestFacetList,
+                        searchConditions:[
+                            {
+                                keyword: 'N',
+                                field:'deleted',
+                                operator: 'EQUALS',
+                                dataType: 'STRING',
+                                booleanOperator: 'AND'
+                            }
+                        ]
                     };
 
                     if(this.searchQuery !== undefined && this.searchQuery !== ''){
-                        searchRequest['searchConditions'] = [{
+                        var searchQuerySearchCondition = {
                             keyword: this.searchQuery,
                             field:'name',
                             operator: 'CONTAINS',
                             dataType: 'STRING',
                             booleanOperator: 'AND'
-                        }]
+                        }
+
+                        searchRequest.searchConditions.push(searchQuerySearchCondition)
                     }
 
                     return axios.post(response.data.value + "/assets/search", searchRequest)
