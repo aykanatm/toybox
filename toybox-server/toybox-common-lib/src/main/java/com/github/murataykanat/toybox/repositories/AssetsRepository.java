@@ -24,9 +24,6 @@ public interface AssetsRepository extends JpaRepository<Asset, String>, QueryDsl
                 .first((SingleValueBinding<StringPath, String>) StringExpression::containsIgnoreCase);
     }
 
-    @Query(value = "SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted, checksum, is_latest_version, original_asset_id, version, file_size FROM assets WHERE deleted='N'", nativeQuery = true)
-    List<Asset> getNonDeletedAssets();
-
     @Query(value = "SELECT asset_id, asset_extension, asset_import_date, asset_imported_by_username, asset_name, asset_path, asset_preview_path, asset_thumbnail_path, asset_type, deleted, checksum, is_latest_version, original_asset_id, version, file_size FROM assets WHERE asset_id=?1", nativeQuery = true)
     List<Asset> getAssetsById(String assetId);
 
