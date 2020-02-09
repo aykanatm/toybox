@@ -9,11 +9,13 @@ import com.querydsl.core.types.dsl.Expressions;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class AssetPredicateBuilder {
+public class ToyboxPredicateBuilder<T> {
     private List<SearchCondition> searchConditions;
+    private Class<T> typeParameterClass;
 
-    public AssetPredicateBuilder with(List<SearchCondition> searchConditions) {
+    public ToyboxPredicateBuilder<T> with(List<SearchCondition> searchConditions, Class<T> typeParameterClass) {
         this.searchConditions = searchConditions;
+        this.typeParameterClass = typeParameterClass;
         return this;
     }
 
@@ -24,7 +26,7 @@ public class AssetPredicateBuilder {
 
         List<PredicateResult> predicateResults = searchConditions.stream()
                 .map(param -> {
-                    AssetPredicate predicate = new AssetPredicate(param);
+                    ToyboxPredicate<T> predicate = new ToyboxPredicate<>(param, typeParameterClass);
                     PredicateResult predicateResult = new PredicateResult();
                     predicateResult.setBooleanExpression(predicate.getPredicate());
                     predicateResult.setOperator(param.getBooleanOperator());

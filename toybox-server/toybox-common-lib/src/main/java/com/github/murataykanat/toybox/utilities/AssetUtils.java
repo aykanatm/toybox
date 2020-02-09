@@ -3,7 +3,7 @@ package com.github.murataykanat.toybox.utilities;
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.*;
-import com.github.murataykanat.toybox.predicates.AssetPredicateBuilder;
+import com.github.murataykanat.toybox.predicates.ToyboxPredicateBuilder;
 import com.github.murataykanat.toybox.repositories.*;
 import com.github.murataykanat.toybox.schema.asset.UpdateAssetRequest;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
@@ -61,12 +61,13 @@ public class AssetUtils {
     private ContainerAssetsRepository containerAssetsRepository;
 
     @LogEntryExitExecutionTime
+    @SuppressWarnings("unchecked")
     public List<Asset> getAssets(List<SearchCondition> searchConditions){
         if(searchConditions == null || searchConditions.isEmpty()){
             return assetsRepository.findAll();
         }
         else{
-            AssetPredicateBuilder builder = new AssetPredicateBuilder().with(searchConditions);
+            ToyboxPredicateBuilder<Asset> builder = new ToyboxPredicateBuilder().with(searchConditions, Asset.class);
             Iterable<Asset> iterableAssets = assetsRepository.findAll(builder.build());
             return Lists.newArrayList(iterableAssets);
         }

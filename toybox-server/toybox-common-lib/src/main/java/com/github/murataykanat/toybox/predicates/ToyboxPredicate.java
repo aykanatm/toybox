@@ -1,22 +1,23 @@
 package com.github.murataykanat.toybox.predicates;
 
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
-import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.schema.search.SearchCondition;
 import com.querydsl.core.types.dsl.*;
 
 import java.util.Calendar;
 import java.util.Date;
 
-public class AssetPredicate {
+public class ToyboxPredicate<T> {
     private SearchCondition searchCondition;
+    private Class<T> typeParameterClass;
 
-    public AssetPredicate(SearchCondition searchCondition){
+    public ToyboxPredicate(SearchCondition searchCondition, Class<T> typeParameterClass){
         this.searchCondition = searchCondition;
+        this.typeParameterClass = typeParameterClass;
     }
 
     public BooleanExpression getPredicate() {
-        PathBuilder<Asset> entityPath = new PathBuilder<>(Asset.class, "asset");
+        PathBuilder<T> entityPath = new PathBuilder<>(typeParameterClass, typeParameterClass.getSimpleName().toLowerCase());
 
         String field = searchCondition.getField();
         String keyword = searchCondition.getKeyword();
