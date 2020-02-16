@@ -155,7 +155,7 @@ public class AssetController {
                 if(assetSearchRequest != null){
                     User user = authenticationUtils.getUser(authentication);
                     if(user != null){
-                        String sortColumn = assetSearchRequest.getSortColumn();
+                        String sortField = assetSearchRequest.getSortColumn();
                         String sortType = assetSearchRequest.getSortType();
 
                         int offset = assetSearchRequest.getOffset();
@@ -177,7 +177,7 @@ public class AssetController {
                             searchConditions.add(new SearchCondition(dbFieldName, ToyboxConstants.SEARCH_CONDITION_EQUALS, fieldValue, facetField.getDataType(), ToyboxConstants.SEARCH_OPERATOR_AND));
                         }
 
-                        List<Asset> allAssets = assetUtils.getAssets(searchConditions);
+                        List<Asset> allAssets = assetUtils.getAssets(searchConditions, sortField, sortType);
 
                         List<SharedAssets> sharedAssetsLst = shareUtils.getSharedAssets(user.getId());
 
@@ -237,14 +237,6 @@ public class AssetController {
                             // Set facets
                             List<Facet> facets = facetUtils.getFacets(assetsByCurrentUser);
                             retrieveAssetsResults.setFacets(facets);
-
-                            // Sort assets
-                            if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_import_date")){
-                                sortUtils.sortItems(sortType, assetsByCurrentUser, Comparator.comparing(Asset::getImportDate, Comparator.nullsLast(Comparator.naturalOrder())));
-                            }
-                            else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_name")){
-                                sortUtils.sortItems(sortType, assetsByCurrentUser, Comparator.comparing(Asset::getName, Comparator.nullsLast(Comparator.naturalOrder())));
-                            }
 
                             // Paginate assets
                             int totalRecords = assetsByCurrentUser.size();

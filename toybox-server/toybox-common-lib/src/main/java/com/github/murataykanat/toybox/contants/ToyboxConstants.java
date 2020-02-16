@@ -95,4 +95,7 @@ public final class ToyboxConstants {
     public static final String SEARCH_CONDITION_DATA_TYPE_STRING = "STRING";
     public static final String SEARCH_CONDITION_DATA_TYPE_INTEGER = "INTEGER";
     public static final String SEARCH_CONDITION_DATA_TYPE_DATE = "DATE";
+
+    public static final String SORT_TYPE_DESCENDING = "DESC";
+    public static final String SORT_TYPE_ASCENDING = "ASC";
 }

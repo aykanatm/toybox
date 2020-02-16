@@ -4,6 +4,7 @@ import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.*;
 import com.github.murataykanat.toybox.predicates.ToyboxPredicateBuilder;
+import com.github.murataykanat.toybox.predicates.ToyboxStringPath;
 import com.github.murataykanat.toybox.repositories.*;
 import com.github.murataykanat.toybox.schema.asset.UpdateAssetRequest;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
@@ -12,6 +13,7 @@ import com.github.murataykanat.toybox.schema.search.SearchCondition;
 import com.github.murataykanat.toybox.schema.upload.UploadFile;
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
 import com.google.common.collect.Lists;
+import com.querydsl.core.types.OrderSpecifier;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
@@ -62,13 +64,34 @@ public class AssetUtils {
 
     @LogEntryExitExecutionTime
     @SuppressWarnings("unchecked")
-    public List<Asset> getAssets(List<SearchCondition> searchConditions){
+    public List<Asset> getAssets(List<SearchCondition> searchConditions, String sortField, String sortType) throws NoSuchFieldException {
         if(searchConditions == null || searchConditions.isEmpty()){
             return assetsRepository.findAll();
         }
         else{
+            OrderSpecifier<?> order;
             ToyboxPredicateBuilder<Asset> builder = new ToyboxPredicateBuilder().with(searchConditions, Asset.class);
-            Iterable<Asset> iterableAssets = assetsRepository.findAll(builder.build());
+            if(ToyboxConstants.SORT_TYPE_ASCENDING.equalsIgnoreCase(sortType)){
+                if("importDate".equalsIgnoreCase(sortField)){
+                    order = QAsset.asset.importDate.asc();
+                }
+                else{
+                    order = new ToyboxStringPath(QAsset.asset, sortField).asc();
+                }
+            }
+            else if(ToyboxConstants.SORT_TYPE_DESCENDING.equalsIgnoreCase(sortType)){
+                if("importDate".equalsIgnoreCase(sortField)){
+                    order = QAsset.asset.importDate.desc();
+                }
+                else{
+                    order = new ToyboxStringPath(QAsset.asset, sortField).desc();
+                }
+            }
+            else{
+                throw new IllegalArgumentException("Sort type '" + sortType + "' is invalid!");
+            }
+
+            Iterable<Asset> iterableAssets = assetsRepository.findAll(builder.build(), order);
             return Lists.newArrayList(iterableAssets);
         }
     }
