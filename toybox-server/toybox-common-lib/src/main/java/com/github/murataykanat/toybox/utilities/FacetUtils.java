@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 public class FacetUtils {
     private static final Log _logger = LogFactory.getLog(FacetUtils.class);
 
+    @LogEntryExitExecutionTime
     public <T> FacetField getFacetField(String fieldName, T object){
         List<Field> declaredFields = Arrays.asList(object.getClass().getDeclaredFields());
         for(Field field: declaredFields){
@@ -34,14 +35,17 @@ public class FacetUtils {
                     FacetField facetField = new FacetField();
                     facetField.setFieldName(field.getName());
 
-                    if(field.getType().getSimpleName().equalsIgnoreCase(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING)){
+                    if(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING.equalsIgnoreCase(field.getType().getSimpleName())){
                         facetField.setDataType(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING);
                     }
-                    else if(field.getType().getSimpleName().equalsIgnoreCase(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_INTEGER)){
+                    else if(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_INTEGER.equalsIgnoreCase(field.getType().getSimpleName())){
                         facetField.setDataType(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_INTEGER);
                     }
-                    else if(field.getType().getSimpleName().equalsIgnoreCase(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_DATE)){
+                    else if(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_DATE.equalsIgnoreCase(field.getType().getSimpleName())){
                         facetField.setDataType(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_DATE);
+                    }
+                    else{
+                        throw new IllegalArgumentException("Field type '" + field.getType().getSimpleName() + "' is invalid!");
                     }
 
                     return facetField;
