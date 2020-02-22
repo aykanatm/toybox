@@ -2,6 +2,7 @@ package com.github.murataykanat.toybox.schema.job;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
+import com.github.murataykanat.toybox.schema.search.SearchCondition;
 
 import java.util.List;
 
@@ -14,6 +15,8 @@ public class JobSearchRequest {
     private String sortType;
     @JsonProperty("sortColumn")
     private String sortColumn;
+    @JsonProperty("searchConditions")
+    private List<SearchCondition> searchConditions;
     @JsonProperty("jobSearchRequestFacetList")
     private List<SearchRequestFacet> searchRequestFacetList;
 
@@ -55,5 +58,13 @@ public class JobSearchRequest {
 
     public void setJobSearchRequestFacetList(List<SearchRequestFacet> jobSearchRequestFacetList) {
         this.searchRequestFacetList = jobSearchRequestFacetList;
+    }
+
+    public List<SearchCondition> getSearchConditions() {
+        return searchConditions;
+    }
+
+    public void setSearchConditions(List<SearchCondition> searchConditions) {
+        this.searchConditions = searchConditions;
     }
 }

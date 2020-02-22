@@ -4,13 +4,11 @@ import com.github.murataykanat.toybox.models.annotations.FacetColumnName;
 import com.github.murataykanat.toybox.models.annotations.FacetDataType;
 import com.github.murataykanat.toybox.models.annotations.FacetDefaultLookup;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Transient;
+import javax.persistence.*;
 import java.util.Date;
 import java.util.List;
 @Entity
+@Table(name = "TOYBOX_JOBS_VW")
 public class ToyboxJob {
     @Id
     @Column(name = "JOB_INSTANCE_ID")

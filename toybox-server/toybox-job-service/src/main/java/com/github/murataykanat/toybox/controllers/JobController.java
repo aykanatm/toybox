@@ -6,7 +6,9 @@ import com.github.murataykanat.toybox.dbo.Asset;
 import com.github.murataykanat.toybox.dbo.Container;
 import com.github.murataykanat.toybox.models.job.ToyboxJob;
 import com.github.murataykanat.toybox.models.job.ToyboxJobStep;
+import com.github.murataykanat.toybox.models.search.FacetField;
 import com.github.murataykanat.toybox.repositories.*;
+import com.github.murataykanat.toybox.schema.search.SearchCondition;
 import com.github.murataykanat.toybox.schema.selection.SelectionContext;
 import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
@@ -15,6 +17,7 @@ import com.github.murataykanat.toybox.schema.upload.UploadFile;
 import com.github.murataykanat.toybox.schema.upload.UploadFileLst;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import com.github.murataykanat.toybox.utilities.FacetUtils;
+import com.github.murataykanat.toybox.utilities.JobUtils;
 import com.github.murataykanat.toybox.utilities.SortUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -49,6 +52,8 @@ public class JobController {
     private SortUtils sortUtils;
     @Autowired
     private FacetUtils facetUtils;
+    @Autowired
+    private JobUtils jobUtils;
 
     @Value("${exportStagingPath}")
     private String exportStagingPath;
@@ -228,58 +233,49 @@ public class JobController {
         try{
             if(authenticationUtils.isSessionValid(authentication)){
                 if(jobSearchRequest != null){
-                    String sortColumn = jobSearchRequest.getSortColumn();
+                    String sortField = jobSearchRequest.getSortColumn();
                     String sortType = jobSearchRequest.getSortType();
+
                     int offset = jobSearchRequest.getOffset();
                     int limit = jobSearchRequest.getLimit();
-                    List<SearchRequestFacet> jobSearchRequestFacetList = jobSearchRequest.getSearchRequestFacetList();
 
-                    List<ToyboxJob> allJobs = jobsRepository.getAll();
+                    List<SearchCondition> searchConditions = jobSearchRequest.getSearchConditions();
+                    if(searchConditions == null){
+                        searchConditions = new ArrayList<>();
+                    }
+
+                    List<SearchRequestFacet> searchRequestFacetList = jobSearchRequest.getSearchRequestFacetList();
+
+                    for (SearchRequestFacet searchRequestFacet: searchRequestFacetList){
+                        String fieldName = searchRequestFacet.getFieldName();
+                        FacetField facetField = facetUtils.getFacetField(fieldName, new ToyboxJob());
+
+                        String dbFieldName = facetField.getFieldName();
+                        String fieldValue = searchRequestFacet.getFieldValue();
+                        if(StringUtils.isNotBlank(fieldValue)){
+                            searchConditions.add(new SearchCondition(dbFieldName, ToyboxConstants.SEARCH_CONDITION_EQUALS, fieldValue, facetField.getDataType(), ToyboxConstants.SEARCH_OPERATOR_AND));
+                        }
+                    }
+
+                    List<ToyboxJob> allJobs = jobUtils.getJobs(searchConditions, sortField, sortType);
 
                     if(!allJobs.isEmpty()){
-                        List<ToyboxJob> jobs;
-
-                        if(jobSearchRequestFacetList != null && !jobSearchRequestFacetList.isEmpty()){
-                            jobs = allJobs.stream().filter(j -> facetUtils.hasFacetValue(j, jobSearchRequestFacetList)).collect(Collectors.toList());
-                        }
-                        else{
-                            jobs = allJobs;
-                        }
-
-                        List<Facet> facets = facetUtils.getFacets(jobs);
-
-                        retrieveToyboxJobsResult.setFacets(facets);
-
-                        if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("JOB_NAME")){
-                            sortUtils.sortItems(sortType, jobs, Comparator.comparing(ToyboxJob::getJobName, Comparator.nullsLast(Comparator.naturalOrder())));
-                        }
-                        else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("JOB_TYPE")){
-                            sortUtils.sortItems(sortType, jobs, Comparator.comparing(ToyboxJob::getJobType, Comparator.nullsLast(Comparator.naturalOrder())));
-                        }
-                        else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("START_TIME")){
-                            sortUtils.sortItems(sortType, jobs, Comparator.comparing(ToyboxJob::getStartTime, Comparator.nullsLast(Comparator.naturalOrder())));
-                        }
-                        else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("END_TIME")){
-                            sortUtils.sortItems(sortType, jobs, Comparator.comparing(ToyboxJob::getEndTime, Comparator.nullsLast(Comparator.naturalOrder())));
-                        }
-                        else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("STATUS")){
-                            sortUtils.sortItems(sortType, jobs, Comparator.comparing(ToyboxJob::getStatus, Comparator.nullsLast(Comparator.naturalOrder())));
-                        }
-                        else{
-                            sortUtils.sortItems(sortType, jobs, Comparator.comparing(ToyboxJob::getEndTime, Comparator.nullsLast(Comparator.naturalOrder())));
-                        }
-
                         List<ToyboxJob> jobsByCurrentUser;
 
                         if(authenticationUtils.isAdminUser(authentication)){
                             _logger.debug("Retrieving all jobs [Admin User]...");
-                            jobsByCurrentUser = jobs;
+                            jobsByCurrentUser = allJobs;
                         }
                         else{
                             _logger.debug("Retrieving jobs of the user '" + authentication.getName() + "'...");
-                            jobsByCurrentUser = jobs.stream().filter(j -> j.getUsername() != null && j.getUsername().equalsIgnoreCase(authentication.getName())).collect(Collectors.toList());
+                            jobsByCurrentUser = allJobs.stream().filter(j -> j.getUsername() != null && j.getUsername().equalsIgnoreCase(authentication.getName())).collect(Collectors.toList());
                         }
 
+                        // Set facets
+                        List<Facet> facets = facetUtils.getFacets(jobsByCurrentUser);
+                        retrieveToyboxJobsResult.setFacets(facets);
+
+                        // Paginate jobs
                         int totalRecords = jobsByCurrentUser.size();
                         if(offset > totalRecords){
                             offset = 0;
