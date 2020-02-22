@@ -65,35 +65,31 @@ public class AssetUtils {
     @LogEntryExitExecutionTime
     @SuppressWarnings("unchecked")
     public List<Asset> getAssets(List<SearchCondition> searchConditions, String sortField, String sortType) throws NoSuchFieldException {
-        if(searchConditions == null || searchConditions.isEmpty()){
-            return assetsRepository.findAll();
-        }
-        else{
-            OrderSpecifier<?> order;
-            ToyboxPredicateBuilder<Asset> builder = new ToyboxPredicateBuilder().with(searchConditions, Asset.class);
-            if(ToyboxConstants.SORT_TYPE_ASCENDING.equalsIgnoreCase(sortType)){
-                if("importDate".equalsIgnoreCase(sortField)){
-                    order = QAsset.asset.importDate.asc();
-                }
-                else{
-                    order = new ToyboxStringPath(QAsset.asset, sortField).asc();
-                }
-            }
-            else if(ToyboxConstants.SORT_TYPE_DESCENDING.equalsIgnoreCase(sortType)){
-                if("importDate".equalsIgnoreCase(sortField)){
-                    order = QAsset.asset.importDate.desc();
-                }
-                else{
-                    order = new ToyboxStringPath(QAsset.asset, sortField).desc();
-                }
+        OrderSpecifier<?> order;
+        ToyboxPredicateBuilder<Asset> builder = new ToyboxPredicateBuilder().with(searchConditions, Asset.class);
+
+        if(ToyboxConstants.SORT_TYPE_ASCENDING.equalsIgnoreCase(sortType)){
+            if("importDate".equalsIgnoreCase(sortField)){
+                order = QAsset.asset.importDate.asc();
             }
             else{
-                throw new IllegalArgumentException("Sort type '" + sortType + "' is invalid!");
+                order = new ToyboxStringPath(QAsset.asset, sortField).asc();
             }
-
-            Iterable<Asset> iterableAssets = assetsRepository.findAll(builder.build(), order);
-            return Lists.newArrayList(iterableAssets);
         }
+        else if(ToyboxConstants.SORT_TYPE_DESCENDING.equalsIgnoreCase(sortType)){
+            if("importDate".equalsIgnoreCase(sortField)){
+                order = QAsset.asset.importDate.desc();
+            }
+            else{
+                order = new ToyboxStringPath(QAsset.asset, sortField).desc();
+            }
+        }
+        else{
+            throw new IllegalArgumentException("Sort type '" + sortType + "' is invalid!");
+        }
+
+        Iterable<Asset> iterableAssets = assetsRepository.findAll(builder.build(), order);
+        return Lists.newArrayList(iterableAssets);
     }
 
     @LogEntryExitExecutionTime
