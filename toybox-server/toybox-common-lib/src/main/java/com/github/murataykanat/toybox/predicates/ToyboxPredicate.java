@@ -3,6 +3,7 @@ package com.github.murataykanat.toybox.predicates;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.schema.search.SearchCondition;
 import com.querydsl.core.types.dsl.*;
+import org.apache.commons.lang.WordUtils;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -17,7 +18,8 @@ public class ToyboxPredicate<T> {
     }
 
     public BooleanExpression getPredicate() {
-        PathBuilder<T> entityPath = new PathBuilder<>(typeParameterClass, typeParameterClass.getSimpleName().toLowerCase());
+
+        PathBuilder<T> entityPath = new PathBuilder<>(typeParameterClass, WordUtils.uncapitalize(typeParameterClass.getSimpleName()));
 
         String field = searchCondition.getField();
         String keyword = searchCondition.getKeyword();
