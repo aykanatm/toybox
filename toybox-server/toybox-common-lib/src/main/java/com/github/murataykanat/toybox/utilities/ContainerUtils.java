@@ -3,12 +3,17 @@ package com.github.murataykanat.toybox.utilities;
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.*;
+import com.github.murataykanat.toybox.predicates.ToyboxPredicateBuilder;
+import com.github.murataykanat.toybox.predicates.ToyboxStringPath;
 import com.github.murataykanat.toybox.repositories.*;
 import com.github.murataykanat.toybox.schema.container.Breadcrumb;
 import com.github.murataykanat.toybox.schema.container.CreateContainerRequest;
 import com.github.murataykanat.toybox.schema.container.CreateContainerResponse;
 import com.github.murataykanat.toybox.schema.container.UpdateContainerRequest;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
+import com.github.murataykanat.toybox.schema.search.SearchCondition;
+import com.google.common.collect.Lists;
+import com.querydsl.core.types.OrderSpecifier;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -52,6 +57,36 @@ public class ContainerUtils {
     private ContainerAssetsRepository containerAssetsRepository;
     @Autowired
     private ContainerUsersRepository containerUsersRepository;
+
+    @LogEntryExitExecutionTime
+    @SuppressWarnings("unchecked")
+    public List<Container> getContainers(List<SearchCondition> searchConditions, String sortField, String sortType){
+        OrderSpecifier<?> order;
+        ToyboxPredicateBuilder<Container> builder = new ToyboxPredicateBuilder().with(searchConditions, Container.class);
+
+        if(ToyboxConstants.SORT_TYPE_ASCENDING.equalsIgnoreCase(sortType)){
+            if("importDate".equalsIgnoreCase(sortField)){
+                order = QContainer.container.importDate.asc();
+            }
+            else{
+                order = new ToyboxStringPath(QAsset.asset, sortField).asc();
+            }
+        }
+        else if(ToyboxConstants.SORT_TYPE_DESCENDING.equalsIgnoreCase(sortType)){
+            if("importDate".equalsIgnoreCase(sortField)){
+                order = QContainer.container.importDate.desc();
+            }
+            else{
+                order = new ToyboxStringPath(QAsset.asset, sortField).desc();
+            }
+        }
+        else{
+            throw new IllegalArgumentException("Sort type '" + sortType + "' is invalid!");
+        }
+
+        Iterable<Container> iterableContainers = containersRepository.findAll(builder.build(), order);
+        return Lists.newArrayList(iterableContainers);
+    }
 
     @LogEntryExitExecutionTime
     public Container getContainer(String containerId) {
@@ -381,7 +416,7 @@ public class ContainerUtils {
         boolean updateParentId = StringUtils.isNotBlank(updateContainerRequest.getParentId());
 
         container.setCreatedByUsername(updateCreatedByUserName ? updateContainerRequest.getCreatedByUsername() : container.getCreatedByUsername());
-        container.setCreationDate(updateCreationDate ? updateContainerRequest.getCreationDate() : container.getCreationDate());
+        container.setImportDate(updateCreationDate ? updateContainerRequest.getCreationDate() : container.getImportDate());
         container.setDeleted(updateDeleted ? updateContainerRequest.getDeleted() : container.getDeleted());
         container.setSystem(updateIsSystem ? updateContainerRequest.getIsSystem() : container.getSystem());
         container.setName(updateName ? updateContainerRequest.getName() : container.getName());
@@ -422,10 +457,10 @@ public class ContainerUtils {
         _logger.debug("Container name: " + container.getName());
         _logger.debug("Container parent ID: " + container.getParentId());
         _logger.debug("Container created by username: " + container.getCreatedByUsername());
-        _logger.debug("Container creation date: " + container.getCreationDate());
+        _logger.debug("Container creation date: " + container.getImportDate());
 
         containersRepository.insertContainer(container.getId(), container.getName(), container.getParentId(),
-                container.getCreatedByUsername(), container.getCreationDate(), container.getDeleted(),
+                container.getCreatedByUsername(), container.getImportDate(), container.getDeleted(),
                 container.getSystem());
     }
 

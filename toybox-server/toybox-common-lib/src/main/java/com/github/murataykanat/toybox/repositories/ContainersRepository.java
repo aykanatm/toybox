@@ -1,16 +1,29 @@
 package com.github.murataykanat.toybox.repositories;
 
 import com.github.murataykanat.toybox.dbo.Container;
+import com.github.murataykanat.toybox.dbo.QContainer;
+import com.querydsl.core.types.dsl.StringExpression;
+import com.querydsl.core.types.dsl.StringPath;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.querydsl.QueryDslPredicateExecutor;
+import org.springframework.data.querydsl.binding.QuerydslBinderCustomizer;
+import org.springframework.data.querydsl.binding.QuerydslBindings;
+import org.springframework.data.querydsl.binding.SingleValueBinding;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
 
-public interface ContainersRepository extends JpaRepository<Container, String> {
+public interface ContainersRepository extends JpaRepository<Container, String>, QueryDslPredicateExecutor<Container>, QuerydslBinderCustomizer<QContainer> {
+    @Override
+    default public void customize(QuerydslBindings bindings, QContainer root) {
+        bindings.bind(String.class)
+                .first((SingleValueBinding<StringPath, String>) StringExpression::containsIgnoreCase);
+    }
+
     @Query(value = "SELECT container_id, parent_container_id, container_name, container_created_by_username, container_creation_date, deleted, is_system FROM containers WHERE deleted='N' AND parent_container_id IS NULL", nativeQuery = true)
     List<Container> getTopLevelNonDeletedContainers();
 

@@ -34,11 +34,11 @@ public class Container implements Serializable, ContainerItem {
     private String createdByUsername;
 
     @Column(name = "container_creation_date")
-    @JsonProperty("creationDate")
+    @JsonProperty("importDate")
     @FacetColumnName("Import Date")
     @FacetDataType(value = "Date")
     @FacetDefaultLookup(values = {"Next 30+ days", "Next 30 days", "Next 7 days", "Today","Past 7 days","Past 30 days", "Past 30+ days"})
-    private Date creationDate;
+    private Date importDate;
 
     @Column(name = "deleted")
     @JsonProperty("deleted")
@@ -52,7 +52,6 @@ public class Container implements Serializable, ContainerItem {
     private String subscribed;
 
     @Transient
-    @FacetColumnName("Shared")
     private String shared;
 
     @Transient
@@ -104,12 +103,12 @@ public class Container implements Serializable, ContainerItem {
         this.createdByUsername = createdByUsername;
     }
 
-    public Date getCreationDate() {
-        return creationDate;
+    public Date getImportDate() {
+        return importDate;
     }
 
-    public void setCreationDate(Date creationDate) {
-        this.creationDate = creationDate;
+    public void setImportDate(Date creationDate) {
+        this.importDate = creationDate;
     }
 
     public String getDeleted() {

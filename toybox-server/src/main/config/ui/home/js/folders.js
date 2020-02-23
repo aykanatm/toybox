@@ -12,11 +12,13 @@ const folders = new Vue({
         canCreateFolder: false,
         canUploadFile: false,
         currentFolderId: '',
+        // Searching
+        searchQuery:'',
         // Sorting
-        defaultSortType: 'des',
-        defaultSortColumn: 'asset_import_date',
-        sortType: 'des',
-        sortColumn: 'asset_import_date',
+        defaultSortType: 'DESC',
+        defaultSortColumn: 'importDate',
+        sortType: 'DESC',
+        sortColumn: 'importDate',
         sortedAscByAssetName: false,
         sortedDesByAssetName: false,
         sortedAscByAssetImportDate: false,
@@ -86,6 +88,11 @@ const folders = new Vue({
         this.$root.$on('update-arrows-request', this.updateArrows);
         this.$root.$on('refresh-items', this.refreshItems);
         this.$root.$on('open-folder', this.openFolder)
+        this.$root.$on('perform-contextual-search', searchQuery => {
+            this.searchQuery = searchQuery;
+
+            this.getItems(this.currentFolderId, this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList)
+        });
 
         setTimeout(() => {
             if(this.user.isAdmin){
@@ -249,12 +256,34 @@ const folders = new Vue({
                 this.getService("toybox-folder-loadbalancer")
                 .then(response => {
                     if(response){
-                        var searchRequest = {};
-                        searchRequest.limit = limit;
-                        searchRequest.offset = offset;
-                        searchRequest.sortType = sortType;
-                        searchRequest.sortColumn = sortColumn;
-                        searchRequest.assetSearchRequestFacetList = searchRequestFacetList;
+                        var searchRequest = {
+                            limit: limit,
+                            offset: offset,
+                            sortType: sortType,
+                            sortColumn: sortColumn,
+                            assetSearchRequestFacetList: searchRequestFacetList,
+                            searchConditions:[
+                                {
+                                    keyword: 'N',
+                                    field:'deleted',
+                                    operator: 'EQUALS',
+                                    dataType: 'STRING',
+                                    booleanOperator: 'AND'
+                                }
+                            ]
+                        };
+
+                        if(this.searchQuery !== undefined && this.searchQuery !== ''){
+                            var searchQuerySearchCondition = {
+                                keyword: this.searchQuery,
+                                field:'name',
+                                operator: 'CONTAINS',
+                                dataType: 'STRING',
+                                booleanOperator: 'AND'
+                            }
+
+                            searchRequest.searchConditions.push(searchQuerySearchCondition)
+                        }
 
                         return axios.post(response.data.value + '/containers/' + containerId + '/search', searchRequest)
                             .catch(error => {
@@ -338,12 +367,34 @@ const folders = new Vue({
                                         if(containers.length == 1){
                                             var userContainer = containers[0];
                                             var searchRequest = {
-                                                'limit': limit,
-                                                'offset': offset,
-                                                'sortType': sortType,
-                                                'sortColumn': sortColumn,
-                                                'assetSearchRequestFacetList': searchRequestFacetList
+                                                limit: limit,
+                                                offset: offset,
+                                                sortType: sortType,
+                                                sortColumn: sortColumn,
+                                                assetSearchRequestFacetList: searchRequestFacetList,
+                                                searchConditions:[
+                                                    {
+                                                        keyword: 'N',
+                                                        field:'deleted',
+                                                        operator: 'EQUALS',
+                                                        dataType: 'STRING',
+                                                        booleanOperator: 'AND'
+                                                    }
+                                                ]
                                             };
+
+                                            if(this.searchQuery !== undefined && this.searchQuery !== ''){
+                                                var searchQuerySearchCondition = {
+                                                    keyword: this.searchQuery,
+                                                    field:'name',
+                                                    operator: 'CONTAINS',
+                                                    dataType: 'STRING',
+                                                    booleanOperator: 'AND'
+                                                }
+
+                                                searchRequest.searchConditions.push(searchQuerySearchCondition)
+                                            }
+
 
                                             axios.post(containerServiceUrl + '/containers/' + userContainer.id + '/search', searchRequest)
                                                 .then(response => {

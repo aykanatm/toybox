@@ -3,6 +3,7 @@ package com.github.murataykanat.toybox.controllers;
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.*;
+import com.github.murataykanat.toybox.models.search.FacetField;
 import com.github.murataykanat.toybox.models.share.SharedAssets;
 import com.github.murataykanat.toybox.models.share.SharedContainers;
 import com.github.murataykanat.toybox.repositories.*;
@@ -12,6 +13,7 @@ import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
 import com.github.murataykanat.toybox.schema.container.*;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
+import com.github.murataykanat.toybox.schema.search.SearchCondition;
 import com.github.murataykanat.toybox.utilities.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -131,7 +133,7 @@ public class FolderController {
                                 container.setName(createContainerRequest.getContainerName());
                                 container.setParentId(createContainerRequest.getParentContainerId());
                                 container.setCreatedByUsername(authentication.getName());
-                                container.setCreationDate(Calendar.getInstance().getTime());
+                                container.setImportDate(Calendar.getInstance().getTime());
                                 container.setDeleted(ToyboxConstants.LOOKUP_NO);
                                 container.setSystem(ToyboxConstants.LOOKUP_NO);
 
@@ -222,25 +224,93 @@ public class FolderController {
                         Container container = containerUtils.getContainer(containerId);
                         User user = authenticationUtils.getUser(authentication);
                         if(user != null){
-                            String sortColumn = assetSearchRequest.getSortColumn();
+                            String sortField = assetSearchRequest.getSortColumn();
                             String sortType = assetSearchRequest.getSortType();
+
                             int offset = assetSearchRequest.getOffset();
                             int limit = assetSearchRequest.getLimit();
+
+                            List<SearchCondition> searchConditions = assetSearchRequest.getSearchConditions();
+                            if(searchConditions == null){
+                                searchConditions = new ArrayList<>();
+                            }
+
+                            List<SearchCondition> assetSearchConditions = new ArrayList<>(searchConditions);
+                            List<SearchCondition> containerSearchConditions = new ArrayList<>(searchConditions);
+
                             List<SearchRequestFacet> searchRequestFacetList = assetSearchRequest.getAssetSearchRequestFacetList();
 
-                            List<Container> containersByCurrentUser;
-                            List<Asset> assetsByCurrentUser;
+                            for (SearchRequestFacet searchRequestFacet: searchRequestFacetList){
+                                String fieldName = searchRequestFacet.getFieldName();
+
+                                FacetField facetField;
+
+                                try{
+                                    facetField = facetUtils.getFacetField(fieldName, new Asset());
+
+                                    String dbFieldName = facetField.getFieldName();
+                                    String fieldValue = searchRequestFacet.getFieldValue();
+                                    assetSearchConditions.add(new SearchCondition(dbFieldName, ToyboxConstants.SEARCH_CONDITION_EQUALS, fieldValue, facetField.getDataType(), ToyboxConstants.SEARCH_OPERATOR_AND));
+                                }
+                                catch (IllegalArgumentException e){
+                                    _logger.debug(e.getLocalizedMessage() + ". Trying the next valid object...");
+                                    facetField = facetUtils.getFacetField(fieldName, new Container());
+
+                                    String dbFieldName = facetField.getFieldName();
+                                    String fieldValue = searchRequestFacet.getFieldValue();
+                                    containerSearchConditions.add(new SearchCondition(dbFieldName, ToyboxConstants.SEARCH_CONDITION_EQUALS, fieldValue, facetField.getDataType(), ToyboxConstants.SEARCH_OPERATOR_AND));
+                                }
+                            }
 
                             List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(container.getId());
                             List<String> containerAssetIdsByContainerId = containerAssetsByContainerId.stream().map(ContainerAsset::getAssetId).collect(Collectors.toList());
 
-                            List<Asset> allAssets;
-                            if(!containerAssetIdsByContainerId.isEmpty()){
-                                allAssets = assetsRepository.getNonDeletedLastVersionAssetsByAssetIds(containerAssetIdsByContainerId);
+                            SearchCondition asc1 = new SearchCondition();
+                            asc1.setBooleanOperator(ToyboxConstants.SEARCH_OPERATOR_AND);
+                            asc1.setDataType(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING);
+                            asc1.setField("isLatestVersion");
+                            asc1.setKeyword(ToyboxConstants.LOOKUP_YES);
+                            asc1.setOperator(ToyboxConstants.SEARCH_CONDITION_EQUALS);
+                            assetSearchConditions.add(asc1);
+
+                            boolean firstAsset = true;
+
+                            for(String assetId : containerAssetIdsByContainerId){
+                                SearchCondition asc = new SearchCondition();
+                                if(firstAsset){
+                                    asc.setBooleanOperator(ToyboxConstants.SEARCH_OPERATOR_AND);
+                                    firstAsset = false;
+                                }
+                                else{
+                                    asc.setBooleanOperator(ToyboxConstants.SEARCH_OPERATOR_OR);
+                                }
+
+                                asc.setDataType(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING);
+                                asc.setField("id");
+                                asc.setKeyword(assetId);
+                                asc.setOperator(ToyboxConstants.SEARCH_CONDITION_EQUALS);
+
+                                assetSearchConditions.add(asc);
                             }
-                            else{
-                                allAssets = new ArrayList<>();
-                            }
+
+                            SearchCondition csc1 = new SearchCondition();
+                            csc1.setBooleanOperator(ToyboxConstants.SEARCH_OPERATOR_AND);
+                            csc1.setDataType(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING);
+                            csc1.setField("parentId");
+                            csc1.setKeyword(container.getId());
+                            csc1.setOperator(ToyboxConstants.SEARCH_CONDITION_EQUALS);
+
+                            containerSearchConditions.add(csc1);
+
+//                            if(!containerAssetIdsByContainerId.isEmpty()){
+//                                allAssets = assetsRepository.getNonDeletedLastVersionAssetsByAssetIds(containerAssetIdsByContainerId);
+//                            }
+//                            else{
+//                                allAssets = new ArrayList<>();
+//                            }
+
+                            List<Container> containersByCurrentUser;
+                            List<Asset> assetsByCurrentUser = new ArrayList<>();
 
                             boolean isUserMainContainer = (container.getCreatedByUsername().equalsIgnoreCase(toyboxSuperAdminUsername) && container.getName().equalsIgnoreCase(user.getUsername()));
                             if(isUserMainContainer){
@@ -255,8 +325,22 @@ public class FolderController {
                                                 ContainerAsset containerAsset = containerAssetsByAssetId.get(0);
                                                 Container assetContainer = containerUtils.getContainer(containerAsset.getContainerId());
                                                 if(assetContainer.getSystem().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
-                                                    Asset asset = assetUtils.getAsset(assetId);
-                                                    allAssets.add(asset);
+                                                    SearchCondition asc = new SearchCondition();
+                                                    if(firstAsset){
+                                                        asc.setBooleanOperator(ToyboxConstants.SEARCH_OPERATOR_AND);
+                                                        firstAsset = false;
+                                                    }
+                                                    else{
+                                                        asc.setBooleanOperator(ToyboxConstants.SEARCH_OPERATOR_OR);
+                                                    }
+                                                    asc.setDataType(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING);
+                                                    asc.setField("id");
+                                                    asc.setKeyword(assetId);
+                                                    asc.setOperator(ToyboxConstants.SEARCH_CONDITION_EQUALS);
+
+                                                    assetSearchConditions.add(asc);
+//                                                    Asset asset = assetUtils.getAsset(assetId);
+//                                                    allAssets.add(asset);
                                                 }
                                             }
                                             else{
@@ -269,10 +353,14 @@ public class FolderController {
                                     }
                                 }
 
-                                containersByCurrentUser = containersRepository.getNonDeletedContainersByParentContainerId(container.getId());
+                                assetsByCurrentUser = assetUtils.getAssets(assetSearchConditions, sortField, sortType);
+
+                                // containersByCurrentUser = containerUtils.getContainers(containerSearchConditions, sortField, sortType);
+                                // containersByCurrentUser = containersRepository.getNonDeletedContainersByParentContainerId(container.getId());
+
                                 List<SharedContainers> sharedContainersLst = shareUtils.getSharedContainers(user.getId());
                                 for(SharedContainers sharedContainers: sharedContainersLst){
-                                    List<Container> containersToAdd = new ArrayList<>();
+                                    // List<Container> containersToAdd = new ArrayList<>();
                                     List<Container> containersByContainerIds = containerUtils.getContainersByContainerIds(sharedContainers.getContainerIds());
 
                                     // If the container's parent container is on the list, exclude it
@@ -287,31 +375,46 @@ public class FolderController {
                                         }
 
                                         if(addContainer){
-                                            containersToAdd.add(containerToAdd);
+                                            SearchCondition csc = new SearchCondition();
+                                            csc.setBooleanOperator(ToyboxConstants.SEARCH_OPERATOR_OR);
+                                            csc.setDataType(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING);
+                                            csc.setField("id");
+                                            csc.setKeyword(containerToAdd.getId());
+                                            csc.setOperator(ToyboxConstants.SEARCH_CONDITION_EQUALS);
+
+                                            containerSearchConditions.add(csc);
+
+                                            // containersToAdd.add(containerToAdd);
                                         }
                                     }
-                                    containersByCurrentUser.addAll(containersToAdd);
+                                    // containersByCurrentUser.addAll(containersToAdd);
                                 }
+
+                                containersByCurrentUser = containerUtils.getContainers(containerSearchConditions, sortField, sortType);
                             }
                             else{
-                                containersByCurrentUser = containersRepository.getNonDeletedContainersByParentContainerId(container.getId());
+                                if(!containerAssetIdsByContainerId.isEmpty()){
+                                    assetsByCurrentUser = assetUtils.getAssets(assetSearchConditions, sortField, sortType);
+                                }
+                                containersByCurrentUser = containerUtils.getContainers(containerSearchConditions, sortField, sortType);
+                                // containersByCurrentUser = containersRepository.getNonDeletedContainersByParentContainerId(container.getId());
                             }
 
-                            assetsByCurrentUser = allAssets.stream()
-                                    .filter(asset -> asset.getIsLatestVersion().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES))
-                                    .collect(Collectors.toList());
+//                            assetsByCurrentUser = allAssets.stream()
+//                                    .filter(asset -> asset.getIsLatestVersion().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES))
+//                                    .collect(Collectors.toList());
 
 
 
                             // Sort containers
-                            sortUtils.sortItems("asc", containersByCurrentUser, Comparator.comparing(Container::getName, Comparator.nullsLast(Comparator.naturalOrder())));
+                            // sortUtils.sortItems("asc", containersByCurrentUser, Comparator.comparing(Container::getName, Comparator.nullsLast(Comparator.naturalOrder())));
                             // Sort assets
-                            if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_import_date")){
-                                sortUtils.sortItems(sortType, assetsByCurrentUser, Comparator.comparing(Asset::getImportDate, Comparator.nullsLast(Comparator.naturalOrder())));
-                            }
-                            else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_name")){
-                                sortUtils.sortItems(sortType, assetsByCurrentUser, Comparator.comparing(Asset::getName, Comparator.nullsLast(Comparator.naturalOrder())));
-                            }
+//                            if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_import_date")){
+//                                sortUtils.sortItems(sortType, assetsByCurrentUser, Comparator.comparing(Asset::getImportDate, Comparator.nullsLast(Comparator.naturalOrder())));
+//                            }
+//                            else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_name")){
+//                                sortUtils.sortItems(sortType, assetsByCurrentUser, Comparator.comparing(Asset::getName, Comparator.nullsLast(Comparator.naturalOrder())));
+//                            }
 
                             for(Asset userAsset: assetsByCurrentUser){
                                 if(!authenticationUtils.isAdminUser(authentication)){
@@ -381,14 +484,14 @@ public class FolderController {
                                 }
                             }
 
-                            // Filter assets
-                            if(searchRequestFacetList != null && !searchRequestFacetList.isEmpty()){
-                                assetsByCurrentUser = assetsByCurrentUser.stream().filter(asset -> facetUtils.hasFacetValue(asset, searchRequestFacetList)).collect(Collectors.toList());
-                            }
-                            // Filter containers
-                            if(searchRequestFacetList != null && !searchRequestFacetList.isEmpty()){
-                                containersByCurrentUser = containersByCurrentUser.stream().filter(userContainer -> facetUtils.hasFacetValue(userContainer, searchRequestFacetList)).collect(Collectors.toList());
-                            }
+//                            // Filter assets
+//                            if(!searchRequestFacetList.isEmpty()){
+//                                assetsByCurrentUser = assetsByCurrentUser.stream().filter(asset -> facetUtils.hasFacetValue(asset, searchRequestFacetList)).collect(Collectors.toList());
+//                            }
+//                            // Filter containers
+//                            if(!searchRequestFacetList.isEmpty()){
+//                                containersByCurrentUser = containersByCurrentUser.stream().filter(userContainer -> facetUtils.hasFacetValue(userContainer, searchRequestFacetList)).collect(Collectors.toList());
+//                            }
 
                             // Set facets
                             List<Facet> assetFacets = facetUtils.getFacets(assetsByCurrentUser);
@@ -638,7 +741,7 @@ public class FolderController {
                             boolean filterByParentId = StringUtils.isNotBlank(filterByContainer.getParentId());
                             boolean filterByName = StringUtils.isNotBlank(filterByContainer.getName());
                             boolean filterByCreatedByUsername = StringUtils.isNotBlank(filterByContainer.getCreatedByUsername());
-                            boolean filterByCreationDate = filterByContainer.getCreationDate() != null;
+                            boolean filterByCreationDate = filterByContainer.getImportDate() != null;
                             boolean filterByDeleted = StringUtils.isNotBlank(filterByContainer.getDeleted());
                             boolean filterByIsSystem = StringUtils.isNotBlank(filterByContainer.getSystem());
 
@@ -648,7 +751,7 @@ public class FolderController {
                                     && (!filterByParentId || container.getParentId().contains(filterByContainer.getParentId()))
                                     && (!filterByName || container.getName().contains(filterByContainer.getName()))
                                     && (!filterByCreatedByUsername || container.getCreatedByUsername().contains(filterByContainer.getCreatedByUsername()))
-                                    && (!filterByCreationDate || container.getCreationDate().equals(filterByContainer.getCreationDate()))
+                                    && (!filterByCreationDate || container.getImportDate().equals(filterByContainer.getImportDate()))
                                     && (!filterByDeleted || container.getDeleted().equalsIgnoreCase(filterByContainer.getDeleted()))
                                     && (!filterByIsSystem || container.getSystem().equalsIgnoreCase(filterByContainer.getSystem()))
                                     ).collect(Collectors.toList());
