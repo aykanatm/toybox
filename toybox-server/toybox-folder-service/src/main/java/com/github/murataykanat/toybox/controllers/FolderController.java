@@ -302,13 +302,6 @@ public class FolderController {
 
                             containerSearchConditions.add(csc1);
 
-//                            if(!containerAssetIdsByContainerId.isEmpty()){
-//                                allAssets = assetsRepository.getNonDeletedLastVersionAssetsByAssetIds(containerAssetIdsByContainerId);
-//                            }
-//                            else{
-//                                allAssets = new ArrayList<>();
-//                            }
-
                             List<Container> containersByCurrentUser;
                             List<Asset> assetsByCurrentUser = new ArrayList<>();
 
@@ -339,8 +332,6 @@ public class FolderController {
                                                     asc.setOperator(ToyboxConstants.SEARCH_CONDITION_EQUALS);
 
                                                     assetSearchConditions.add(asc);
-//                                                    Asset asset = assetUtils.getAsset(assetId);
-//                                                    allAssets.add(asset);
                                                 }
                                             }
                                             else{
@@ -355,12 +346,8 @@ public class FolderController {
 
                                 assetsByCurrentUser = assetUtils.getAssets(assetSearchConditions, sortField, sortType);
 
-                                // containersByCurrentUser = containerUtils.getContainers(containerSearchConditions, sortField, sortType);
-                                // containersByCurrentUser = containersRepository.getNonDeletedContainersByParentContainerId(container.getId());
-
                                 List<SharedContainers> sharedContainersLst = shareUtils.getSharedContainers(user.getId());
                                 for(SharedContainers sharedContainers: sharedContainersLst){
-                                    // List<Container> containersToAdd = new ArrayList<>();
                                     List<Container> containersByContainerIds = containerUtils.getContainersByContainerIds(sharedContainers.getContainerIds());
 
                                     // If the container's parent container is on the list, exclude it
@@ -383,11 +370,8 @@ public class FolderController {
                                             csc.setOperator(ToyboxConstants.SEARCH_CONDITION_EQUALS);
 
                                             containerSearchConditions.add(csc);
-
-                                            // containersToAdd.add(containerToAdd);
                                         }
                                     }
-                                    // containersByCurrentUser.addAll(containersToAdd);
                                 }
 
                                 containersByCurrentUser = containerUtils.getContainers(containerSearchConditions, sortField, sortType);
@@ -397,24 +381,7 @@ public class FolderController {
                                     assetsByCurrentUser = assetUtils.getAssets(assetSearchConditions, sortField, sortType);
                                 }
                                 containersByCurrentUser = containerUtils.getContainers(containerSearchConditions, sortField, sortType);
-                                // containersByCurrentUser = containersRepository.getNonDeletedContainersByParentContainerId(container.getId());
                             }
-
-//                            assetsByCurrentUser = allAssets.stream()
-//                                    .filter(asset -> asset.getIsLatestVersion().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES))
-//                                    .collect(Collectors.toList());
-
-
-
-                            // Sort containers
-                            // sortUtils.sortItems("asc", containersByCurrentUser, Comparator.comparing(Container::getName, Comparator.nullsLast(Comparator.naturalOrder())));
-                            // Sort assets
-//                            if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_import_date")){
-//                                sortUtils.sortItems(sortType, assetsByCurrentUser, Comparator.comparing(Asset::getImportDate, Comparator.nullsLast(Comparator.naturalOrder())));
-//                            }
-//                            else if(StringUtils.isNotBlank(sortColumn) && sortColumn.equalsIgnoreCase("asset_name")){
-//                                sortUtils.sortItems(sortType, assetsByCurrentUser, Comparator.comparing(Asset::getName, Comparator.nullsLast(Comparator.naturalOrder())));
-//                            }
 
                             for(Asset userAsset: assetsByCurrentUser){
                                 if(!authenticationUtils.isAdminUser(authentication)){
@@ -483,15 +450,6 @@ public class FolderController {
                                     userContainer.setCanEdit(ToyboxConstants.LOOKUP_YES);
                                 }
                             }
-
-//                            // Filter assets
-//                            if(!searchRequestFacetList.isEmpty()){
-//                                assetsByCurrentUser = assetsByCurrentUser.stream().filter(asset -> facetUtils.hasFacetValue(asset, searchRequestFacetList)).collect(Collectors.toList());
-//                            }
-//                            // Filter containers
-//                            if(!searchRequestFacetList.isEmpty()){
-//                                containersByCurrentUser = containersByCurrentUser.stream().filter(userContainer -> facetUtils.hasFacetValue(userContainer, searchRequestFacetList)).collect(Collectors.toList());
-//                            }
 
                             // Set facets
                             List<Facet> assetFacets = facetUtils.getFacets(assetsByCurrentUser);
