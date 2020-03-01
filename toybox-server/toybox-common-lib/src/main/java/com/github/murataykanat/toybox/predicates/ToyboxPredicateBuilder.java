@@ -4,15 +4,9 @@ import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.models.search.PredicateResult;
 import com.github.murataykanat.toybox.schema.search.SearchCondition;
 import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.QueryMetadata;
-import com.querydsl.core.types.Expression;
-import com.querydsl.core.types.ExpressionUtils;
-import com.querydsl.core.types.SubQueryExpression;
-import com.querydsl.core.types.Visitor;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
