@@ -350,6 +350,7 @@ public class FolderController {
 
                                         if(addContainer){
                                             SearchCondition csc = new SearchCondition();
+                                            // TODO: Find a way to make the search query work on shared folders
                                             csc.setBooleanOperator(ToyboxConstants.SEARCH_OPERATOR_OR_IN);
                                             csc.setDataType(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING);
                                             csc.setField("id");
