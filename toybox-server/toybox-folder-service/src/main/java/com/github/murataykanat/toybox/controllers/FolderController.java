@@ -273,18 +273,9 @@ public class FolderController {
                             asc1.setOperator(ToyboxConstants.SEARCH_CONDITION_EQUALS);
                             assetSearchConditions.add(asc1);
 
-                            boolean firstAsset = true;
-
                             for(String assetId : containerAssetIdsByContainerId){
                                 SearchCondition asc = new SearchCondition();
-                                if(firstAsset){
-                                    asc.setBooleanOperator(ToyboxConstants.SEARCH_OPERATOR_AND);
-                                    firstAsset = false;
-                                }
-                                else{
-                                    asc.setBooleanOperator(ToyboxConstants.SEARCH_OPERATOR_OR);
-                                }
-
+                                asc.setBooleanOperator("AND_IN");
                                 asc.setDataType(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING);
                                 asc.setField("id");
                                 asc.setKeyword(assetId);
@@ -319,13 +310,7 @@ public class FolderController {
                                                 Container assetContainer = containerUtils.getContainer(containerAsset.getContainerId());
                                                 if(assetContainer.getSystem().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
                                                     SearchCondition asc = new SearchCondition();
-                                                    if(firstAsset){
-                                                        asc.setBooleanOperator(ToyboxConstants.SEARCH_OPERATOR_AND);
-                                                        firstAsset = false;
-                                                    }
-                                                    else{
-                                                        asc.setBooleanOperator(ToyboxConstants.SEARCH_OPERATOR_OR);
-                                                    }
+                                                    asc.setBooleanOperator("AND_IN");
                                                     asc.setDataType(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING);
                                                     asc.setField("id");
                                                     asc.setKeyword(assetId);
@@ -363,7 +348,7 @@ public class FolderController {
 
                                         if(addContainer){
                                             SearchCondition csc = new SearchCondition();
-                                            csc.setBooleanOperator(ToyboxConstants.SEARCH_OPERATOR_OR);
+                                            csc.setBooleanOperator(ToyboxConstants.SEARCH_OPERATOR_OR_IN);
                                             csc.setDataType(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING);
                                             csc.setField("id");
                                             csc.setKeyword(containerToAdd.getId());
