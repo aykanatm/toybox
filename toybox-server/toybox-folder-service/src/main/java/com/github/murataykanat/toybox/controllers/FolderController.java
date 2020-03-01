@@ -275,6 +275,7 @@ public class FolderController {
 
                             for(String assetId : containerAssetIdsByContainerId){
                                 SearchCondition asc = new SearchCondition();
+                                // TODO: Change this to ToyboxConstants.SEARCH_OPERATOR_AND_IN and find out why it is not working correctly
                                 asc.setBooleanOperator("AND_IN");
                                 asc.setDataType(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING);
                                 asc.setField("id");
@@ -310,6 +311,7 @@ public class FolderController {
                                                 Container assetContainer = containerUtils.getContainer(containerAsset.getContainerId());
                                                 if(assetContainer.getSystem().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
                                                     SearchCondition asc = new SearchCondition();
+                                                    // TODO: Change this to ToyboxConstants.SEARCH_OPERATOR_AND_IN and find out why it is not working correctly
                                                     asc.setBooleanOperator("AND_IN");
                                                     asc.setDataType(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING);
                                                     asc.setField("id");
