@@ -35,7 +35,9 @@ public class ToyboxPredicateBuilder<T> {
                     return predicateResult;
                 }).collect(Collectors.toList());
 
-        List<PredicateResult> inPredicates = new ArrayList<>();
+        List<PredicateResult> orInPredicates = new ArrayList<>();
+        List<PredicateResult> andInPredicates = new ArrayList<>();
+
         BooleanExpression result = Expressions.asBoolean(true).isTrue();
         for (PredicateResult predicateResult : predicateResults) {
             if(predicateResult.getOperator().equalsIgnoreCase(ToyboxConstants.SEARCH_OPERATOR_AND)){
@@ -44,21 +46,33 @@ public class ToyboxPredicateBuilder<T> {
             else if(predicateResult.getOperator().equalsIgnoreCase(ToyboxConstants.SEARCH_OPERATOR_OR)){
                 result = result.or(predicateResult.getBooleanExpression());
             }
-            else if(predicateResult.getOperator().equalsIgnoreCase(ToyboxConstants.SEARCH_OPERATOR_IN)){
-                inPredicates.add(predicateResult);
+            else if(predicateResult.getOperator().equalsIgnoreCase(ToyboxConstants.SEARCH_OPERATOR_OR_IN)){
+                orInPredicates.add(predicateResult);
+            }
+            else if(predicateResult.getOperator().equalsIgnoreCase(ToyboxConstants.SEARCH_OPERATOR_AND_IN)){
+                andInPredicates.add(predicateResult);
             }
             else{
                 throw new IllegalArgumentException("Boolean operator '" + predicateResult.getOperator() + "' is not recognized!");
             }
         }
 
-        if(!inPredicates.isEmpty()){
+        if(!andInPredicates.isEmpty()){
             BooleanBuilder booleanBuilder = new BooleanBuilder();
-            for(PredicateResult inPredicate: inPredicates){
+            for(PredicateResult inPredicate: andInPredicates){
                 booleanBuilder.or(inPredicate.getBooleanExpression());
             }
 
             result = result.and(booleanBuilder);
+        }
+
+        if(!orInPredicates.isEmpty()){
+            BooleanBuilder booleanBuilder = new BooleanBuilder();
+            for(PredicateResult inPredicate: orInPredicates){
+                booleanBuilder.or(inPredicate.getBooleanExpression());
+            }
+
+            result = result.or(booleanBuilder);
         }
 
         return result;

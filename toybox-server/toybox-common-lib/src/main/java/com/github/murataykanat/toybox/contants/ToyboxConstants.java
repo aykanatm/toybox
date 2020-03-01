@@ -83,7 +83,8 @@ public final class ToyboxConstants {
 
     public static final String SEARCH_OPERATOR_AND = "AND";
     public static final String SEARCH_OPERATOR_OR = "OR";
-    public static final String SEARCH_OPERATOR_IN = "IN";
+    public static final String SEARCH_OPERATOR_OR_IN = "OR_IN";
+    public static final String SEARCH_OPERATOR_AND_IN = "AND_IN";
 
     public static final String SEARCH_CONDITION_EQUALS = "EQUALS";
     public static final String SEARCH_CONDITION_CONTAINS = "CONTAINS";
