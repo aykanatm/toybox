@@ -326,14 +326,28 @@ public class FolderController {
                                         }
 
                                         if(addContainer){
-                                            // TODO: Find a way to apply the keyword to shared folders
-                                            containerSearchConditions.add(new SearchCondition("id", ToyboxConstants.SEARCH_CONDITION_EQUALS, containerToAdd.getId(),
-                                                    ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_OR_IN));
+                                            String keyword = containerSearchConditions.stream()
+                                                    .filter(csc -> csc.getField().equalsIgnoreCase("name"))
+                                                    .map(SearchCondition::getKeyword).findFirst()
+                                                    .orElse(null);
+                                            if(StringUtils.isNotBlank(keyword)){
+                                                containerSearchConditions.add(
+                                                        new SearchCondition("id", ToyboxConstants.SEARCH_CONDITION_EQUALS, containerToAdd.getId(),
+                                                                ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_OR_IN,
+                                                                new SearchCondition("name", ToyboxConstants.SEARCH_CONDITION_CONTAINS, keyword,
+                                                                        ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND)));
+                                            }
+                                            else{
+                                                containerSearchConditions.add(
+                                                        new SearchCondition("id", ToyboxConstants.SEARCH_CONDITION_EQUALS, containerToAdd.getId(),
+                                                                ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_OR_IN));
+                                            }
                                         }
                                     }
                                 }
                             }
                             else{
+                                // TODO: When the user is in shared folder, they can't search
                                 if(!containerAssetIdsByContainerId.isEmpty()){
                                     assetsByCurrentUser = assetUtils.getAssets(assetSearchConditions, sortField, sortType);
                                 }
