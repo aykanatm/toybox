@@ -3,9 +3,7 @@ package com.github.murataykanat.toybox.predicates;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.models.search.PredicateResult;
 import com.github.murataykanat.toybox.schema.search.SearchCondition;
-import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.core.types.dsl.Expressions;
 
 import java.util.ArrayList;
 import java.util.List;
