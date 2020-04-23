@@ -15,6 +15,8 @@ public class SearchCondition implements Serializable {
     private String dataType;
     @JsonProperty("booleanOperator")
     private String booleanOperator;
+    @JsonProperty("innerFilter")
+    private SearchCondition innerFilter;
 
     public SearchCondition(){}
 
@@ -24,6 +26,15 @@ public class SearchCondition implements Serializable {
         this.keyword = keyword;
         this.dataType = dataType;
         this.booleanOperator = booleanOperator;
+    }
+
+    public SearchCondition(String field, String operator, String keyword, String dataType, String booleanOperator, SearchCondition innerFilter){
+        this.field = field;
+        this.operator = operator;
+        this.keyword = keyword;
+        this.dataType = dataType;
+        this.booleanOperator = booleanOperator;
+        this.innerFilter = innerFilter;
     }
 
     public String getKeyword() {
@@ -64,5 +75,13 @@ public class SearchCondition implements Serializable {
 
     public void setBooleanOperator(String booleanOperator) {
         this.booleanOperator = booleanOperator;
+    }
+
+    public SearchCondition getInnerFilter() {
+        return innerFilter;
+    }
+
+    public void setInnerFilter(SearchCondition innerFilter) {
+        this.innerFilter = innerFilter;
     }
 }

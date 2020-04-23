@@ -25,11 +25,21 @@ public class ToyboxPredicateBuilder<T> {
         }
 
         List<PredicateResult> predicateResults = searchConditions.stream()
-                .map(param -> {
-                    ToyboxPredicate<T> predicate = new ToyboxPredicate<>(param, typeParameterClass);
+                .map(searchCondition -> {
+                    ToyboxPredicate<T> predicate = new ToyboxPredicate<>(searchCondition, typeParameterClass);
                     PredicateResult predicateResult = new PredicateResult();
                     predicateResult.setBooleanExpression(predicate.getPredicate());
-                    predicateResult.setOperator(param.getBooleanOperator());
+                    predicateResult.setOperator(searchCondition.getBooleanOperator());
+
+                    if(searchCondition.getInnerFilter() != null){
+                        ToyboxPredicate<T> innerPredicate = new ToyboxPredicate<>(searchCondition.getInnerFilter(), typeParameterClass);
+                        PredicateResult innerPredicateResult = new PredicateResult();
+                        innerPredicateResult.setBooleanExpression(innerPredicate.getPredicate());
+                        innerPredicateResult.setOperator(searchCondition.getInnerFilter().getBooleanOperator());
+
+                        predicateResult.setInnerPredicateResult(innerPredicateResult);
+                    }
+
                     return predicateResult;
                 }).collect(Collectors.toList());
 
@@ -74,6 +84,10 @@ public class ToyboxPredicateBuilder<T> {
                 else{
                     inResult = inPredicate.getBooleanExpression();
                 }
+
+                if(inPredicate.getInnerPredicateResult() != null){
+                    inResult = inResult.and(inPredicate.getInnerPredicateResult().getBooleanExpression());
+                }
             }
 
             if(inResult != null){
@@ -89,6 +103,10 @@ public class ToyboxPredicateBuilder<T> {
                 }
                 else{
                     inResult = inPredicate.getBooleanExpression();
+                }
+
+                if(inPredicate.getInnerPredicateResult() != null){
+                    inResult = inResult.and(inPredicate.getInnerPredicateResult().getBooleanExpression());
                 }
             }
 

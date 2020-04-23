@@ -5,6 +5,7 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 public class PredicateResult {
     private BooleanExpression booleanExpression;
     private String operator;
+    private PredicateResult innerPredicateResult;
 
     public BooleanExpression getBooleanExpression() {
         return booleanExpression;
@@ -20,5 +21,13 @@ public class PredicateResult {
 
     public void setOperator(String operator) {
         this.operator = operator;
+    }
+
+    public PredicateResult getInnerPredicateResult() {
+        return innerPredicateResult;
+    }
+
+    public void setInnerPredicateResult(PredicateResult innerPredicateResult) {
+        this.innerPredicateResult = innerPredicateResult;
     }
 }
