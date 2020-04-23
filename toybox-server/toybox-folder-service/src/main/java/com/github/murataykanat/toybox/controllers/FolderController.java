@@ -250,7 +250,8 @@ public class FolderController {
 
                                     String dbFieldName = facetField.getFieldName();
                                     String fieldValue = searchRequestFacet.getFieldValue();
-                                    assetSearchConditions.add(new SearchCondition(dbFieldName, ToyboxConstants.SEARCH_CONDITION_EQUALS, fieldValue, facetField.getDataType(), ToyboxConstants.SEARCH_OPERATOR_AND));
+                                    assetSearchConditions.add(new SearchCondition(dbFieldName, ToyboxConstants.SEARCH_CONDITION_EQUALS,
+                                            fieldValue, facetField.getDataType(), ToyboxConstants.SEARCH_OPERATOR_AND));
                                 }
                                 catch (IllegalArgumentException e){
                                     _logger.debug(e.getLocalizedMessage() + ". Trying the next valid object...");
@@ -258,41 +259,24 @@ public class FolderController {
 
                                     String dbFieldName = facetField.getFieldName();
                                     String fieldValue = searchRequestFacet.getFieldValue();
-                                    containerSearchConditions.add(new SearchCondition(dbFieldName, ToyboxConstants.SEARCH_CONDITION_EQUALS, fieldValue, facetField.getDataType(), ToyboxConstants.SEARCH_OPERATOR_AND));
+                                    containerSearchConditions.add(new SearchCondition(dbFieldName, ToyboxConstants.SEARCH_CONDITION_EQUALS,
+                                            fieldValue, facetField.getDataType(), ToyboxConstants.SEARCH_OPERATOR_AND));
                                 }
                             }
 
                             List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(container.getId());
                             List<String> containerAssetIdsByContainerId = containerAssetsByContainerId.stream().map(ContainerAsset::getAssetId).collect(Collectors.toList());
 
-                            SearchCondition asc1 = new SearchCondition();
-                            asc1.setBooleanOperator(ToyboxConstants.SEARCH_OPERATOR_AND);
-                            asc1.setDataType(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING);
-                            asc1.setField("isLatestVersion");
-                            asc1.setKeyword(ToyboxConstants.LOOKUP_YES);
-                            asc1.setOperator(ToyboxConstants.SEARCH_CONDITION_EQUALS);
-                            assetSearchConditions.add(asc1);
+                            assetSearchConditions.add(new SearchCondition("isLatestVersion", ToyboxConstants.SEARCH_CONDITION_EQUALS, ToyboxConstants.LOOKUP_YES,
+                                    ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND));
 
                             for(String assetId : containerAssetIdsByContainerId){
-                                SearchCondition asc = new SearchCondition();
-                                // TODO: Change this to ToyboxConstants.SEARCH_OPERATOR_AND_IN and find out why it is not working correctly
-                                asc.setBooleanOperator("AND_IN");
-                                asc.setDataType(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING);
-                                asc.setField("id");
-                                asc.setKeyword(assetId);
-                                asc.setOperator(ToyboxConstants.SEARCH_CONDITION_EQUALS);
-
-                                assetSearchConditions.add(asc);
+                                assetSearchConditions.add(new SearchCondition("id", ToyboxConstants.SEARCH_CONDITION_EQUALS, assetId,
+                                        ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND_IN));
                             }
 
-                            SearchCondition csc1 = new SearchCondition();
-                            csc1.setBooleanOperator(ToyboxConstants.SEARCH_OPERATOR_AND);
-                            csc1.setDataType(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING);
-                            csc1.setField("parentId");
-                            csc1.setKeyword(container.getId());
-                            csc1.setOperator(ToyboxConstants.SEARCH_CONDITION_EQUALS);
-
-                            containerSearchConditions.add(csc1);
+                            containerSearchConditions.add(new SearchCondition("parentId", ToyboxConstants.SEARCH_CONDITION_EQUALS, container.getId(),
+                                    ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND));
 
                             List<Container> containersByCurrentUser;
                             List<Asset> assetsByCurrentUser = new ArrayList<>();
@@ -310,15 +294,8 @@ public class FolderController {
                                                 ContainerAsset containerAsset = containerAssetsByAssetId.get(0);
                                                 Container assetContainer = containerUtils.getContainer(containerAsset.getContainerId());
                                                 if(assetContainer.getSystem().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
-                                                    SearchCondition asc = new SearchCondition();
-                                                    // TODO: Change this to ToyboxConstants.SEARCH_OPERATOR_AND_IN and find out why it is not working correctly
-                                                    asc.setBooleanOperator("AND_IN");
-                                                    asc.setDataType(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING);
-                                                    asc.setField("id");
-                                                    asc.setKeyword(assetId);
-                                                    asc.setOperator(ToyboxConstants.SEARCH_CONDITION_EQUALS);
-
-                                                    assetSearchConditions.add(asc);
+                                                    assetSearchConditions.add(new SearchCondition("id", ToyboxConstants.SEARCH_CONDITION_EQUALS, assetId,
+                                                            ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND_IN));
                                                 }
                                             }
                                             else{
@@ -349,27 +326,20 @@ public class FolderController {
                                         }
 
                                         if(addContainer){
-                                            SearchCondition csc = new SearchCondition();
-                                            // TODO: Find a way to make the search query work on shared folders
-                                            csc.setBooleanOperator(ToyboxConstants.SEARCH_OPERATOR_OR_IN);
-                                            csc.setDataType(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING);
-                                            csc.setField("id");
-                                            csc.setKeyword(containerToAdd.getId());
-                                            csc.setOperator(ToyboxConstants.SEARCH_CONDITION_EQUALS);
-
-                                            containerSearchConditions.add(csc);
+                                            // TODO: Find a way to apply the keyword to shared folders
+                                            containerSearchConditions.add(new SearchCondition("id", ToyboxConstants.SEARCH_CONDITION_EQUALS, containerToAdd.getId(),
+                                                    ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_OR_IN));
                                         }
                                     }
                                 }
-
-                                containersByCurrentUser = containerUtils.getContainers(containerSearchConditions, sortField, sortType);
                             }
                             else{
                                 if(!containerAssetIdsByContainerId.isEmpty()){
                                     assetsByCurrentUser = assetUtils.getAssets(assetSearchConditions, sortField, sortType);
                                 }
-                                containersByCurrentUser = containerUtils.getContainers(containerSearchConditions, sortField, sortType);
                             }
+
+                            containersByCurrentUser = containerUtils.getContainers(containerSearchConditions, sortField, sortType);
 
                             for(Asset userAsset: assetsByCurrentUser){
                                 if(!authenticationUtils.isAdminUser(authentication)){
