@@ -38,13 +38,23 @@ public class ToyboxPredicateBuilder<T> {
         List<PredicateResult> orInPredicates = new ArrayList<>();
         List<PredicateResult> andInPredicates = new ArrayList<>();
 
-        BooleanExpression result = Expressions.asBoolean(true).isTrue();
+        BooleanExpression result = null;
         for (PredicateResult predicateResult : predicateResults) {
             if(predicateResult.getOperator().equalsIgnoreCase(ToyboxConstants.SEARCH_OPERATOR_AND)){
-                result = result.and(predicateResult.getBooleanExpression());
+                if(result != null){
+                    result = result.and(predicateResult.getBooleanExpression());
+                }
+                else{
+                    result = predicateResult.getBooleanExpression();
+                }
             }
             else if(predicateResult.getOperator().equalsIgnoreCase(ToyboxConstants.SEARCH_OPERATOR_OR)){
-                result = result.or(predicateResult.getBooleanExpression());
+                if(result != null){
+                    result = result.or(predicateResult.getBooleanExpression());
+                }
+                else{
+                    result = predicateResult.getBooleanExpression();
+                }
             }
             else if(predicateResult.getOperator().equalsIgnoreCase(ToyboxConstants.SEARCH_OPERATOR_OR_IN)){
                 orInPredicates.add(predicateResult);
@@ -58,21 +68,35 @@ public class ToyboxPredicateBuilder<T> {
         }
 
         if(!andInPredicates.isEmpty()){
-            BooleanBuilder booleanBuilder = new BooleanBuilder();
+            BooleanExpression inResult = null;
             for(PredicateResult inPredicate: andInPredicates){
-                booleanBuilder.or(inPredicate.getBooleanExpression());
+                if(inResult != null){
+                    inResult = inResult.or(inPredicate.getBooleanExpression());
+                }
+                else{
+                    inResult = inPredicate.getBooleanExpression();
+                }
             }
 
-            result = result.and(booleanBuilder);
+            if(inResult != null){
+                result = result.and(inResult);
+            }
         }
 
         if(!orInPredicates.isEmpty()){
-            BooleanBuilder booleanBuilder = new BooleanBuilder();
+            BooleanExpression inResult = null;
             for(PredicateResult inPredicate: orInPredicates){
-                booleanBuilder.or(inPredicate.getBooleanExpression());
+                if(inResult != null){
+                    inResult = inResult.or(inPredicate.getBooleanExpression());
+                }
+                else{
+                    inResult = inPredicate.getBooleanExpression();
+                }
             }
 
-            result = result.or(booleanBuilder);
+            if(inResult != null){
+                result = result.or(inResult);
+            }
         }
 
         return result;
