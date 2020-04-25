@@ -45,20 +45,14 @@ public class FolderController {
     @Autowired
     private FacetUtils facetUtils;
     @Autowired
-    private SortUtils sortUtils;
-    @Autowired
     private ShareUtils shareUtils;
     @Autowired
     private AssetUtils assetUtils;
 
     @Autowired
-    private ContainersRepository containersRepository;
-    @Autowired
     private ContainerAssetsRepository containerAssetsRepository;
     @Autowired
     private ContainerUsersRepository containerUsersRepository;
-    @Autowired
-    private AssetsRepository assetsRepository;
     @Autowired
     private AssetUserRepository assetUserRepository;
 
@@ -218,324 +212,7 @@ public class FolderController {
     public ResponseEntity<RetrieveContainerContentsResult> retrieveContainerContents(Authentication authentication, @PathVariable String containerId, @RequestBody AssetSearchRequest assetSearchRequest){
         RetrieveContainerContentsResult retrieveContainerContentsResult = new RetrieveContainerContentsResult();
         try{
-            if(authenticationUtils.isSessionValid(authentication)){
-                if(StringUtils.isNotBlank(containerId)){
-                    if(assetSearchRequest != null){
-                        Container container = containerUtils.getContainer(containerId);
-                        User user = authenticationUtils.getUser(authentication);
-                        if(user != null){
-                            String sortField = assetSearchRequest.getSortColumn();
-                            String sortType = assetSearchRequest.getSortType();
-
-                            int offset = assetSearchRequest.getOffset();
-                            int limit = assetSearchRequest.getLimit();
-
-                            List<SearchCondition> searchConditions = assetSearchRequest.getSearchConditions();
-                            if(searchConditions == null){
-                                searchConditions = new ArrayList<>();
-                            }
-
-                            List<SearchCondition> assetSearchConditions = new ArrayList<>(searchConditions);
-                            List<SearchCondition> containerSearchConditions = new ArrayList<>(searchConditions);
-
-                            List<SearchRequestFacet> searchRequestFacetList = assetSearchRequest.getAssetSearchRequestFacetList();
-
-                            for (SearchRequestFacet searchRequestFacet: searchRequestFacetList){
-                                String fieldName = searchRequestFacet.getFieldName();
-
-                                FacetField facetField;
-
-                                try{
-                                    facetField = facetUtils.getFacetField(fieldName, new Asset());
-
-                                    String dbFieldName = facetField.getFieldName();
-                                    String fieldValue = searchRequestFacet.getFieldValue();
-                                    assetSearchConditions.add(new SearchCondition(dbFieldName, ToyboxConstants.SEARCH_CONDITION_EQUALS,
-                                            fieldValue, facetField.getDataType(), ToyboxConstants.SEARCH_OPERATOR_AND));
-                                }
-                                catch (IllegalArgumentException e){
-                                    _logger.debug(e.getLocalizedMessage() + ". Trying the next valid object...");
-                                    facetField = facetUtils.getFacetField(fieldName, new Container());
-
-                                    String dbFieldName = facetField.getFieldName();
-                                    String fieldValue = searchRequestFacet.getFieldValue();
-                                    containerSearchConditions.add(new SearchCondition(dbFieldName, ToyboxConstants.SEARCH_CONDITION_EQUALS,
-                                            fieldValue, facetField.getDataType(), ToyboxConstants.SEARCH_OPERATOR_AND));
-                                }
-                            }
-
-                            List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(container.getId());
-                            List<String> containerAssetIdsByContainerId = containerAssetsByContainerId.stream().map(ContainerAsset::getAssetId).collect(Collectors.toList());
-
-                            assetSearchConditions.add(new SearchCondition("isLatestVersion", ToyboxConstants.SEARCH_CONDITION_EQUALS, ToyboxConstants.LOOKUP_YES,
-                                    ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND));
-
-                            for(String assetId : containerAssetIdsByContainerId){
-                                assetSearchConditions.add(new SearchCondition("id", ToyboxConstants.SEARCH_CONDITION_EQUALS, assetId,
-                                        ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND_IN));
-                            }
-
-                            containerSearchConditions.add(new SearchCondition("parentId", ToyboxConstants.SEARCH_CONDITION_EQUALS, container.getId(),
-                                    ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND));
-
-                            List<Container> containersByCurrentUser;
-                            List<Asset> assetsByCurrentUser = new ArrayList<>();
-
-                            boolean isUserMainContainer = (container.getCreatedByUsername().equalsIgnoreCase(toyboxSuperAdminUsername) && container.getName().equalsIgnoreCase(user.getUsername()));
-                            if(isUserMainContainer){
-                                // If we are in the main container add the assets which are shared by other users and in their main container
-                                List<SharedAssets> sharedAssetsLst = shareUtils.getSharedAssets(user.getId());
-                                for(SharedAssets sharedAssets: sharedAssetsLst){
-                                    List<String> assetIds = sharedAssets.getAssetIds();
-                                    for(String assetId: assetIds){
-                                        List<ContainerAsset> containerAssetsByAssetId = containerAssetsRepository.findContainerAssetsByAssetId(assetId);
-                                        if(!containerAssetsByAssetId.isEmpty()){
-                                            if(containerAssetsByAssetId.size() == 1){
-                                                ContainerAsset containerAsset = containerAssetsByAssetId.get(0);
-                                                Container assetContainer = containerUtils.getContainer(containerAsset.getContainerId());
-                                                if(assetContainer.getSystem().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
-                                                    assetSearchConditions.add(new SearchCondition("id", ToyboxConstants.SEARCH_CONDITION_EQUALS, assetId,
-                                                            ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND_IN));
-                                                }
-                                            }
-                                            else{
-                                                throw new IllegalArgumentException("Asset with ID '" + assetId + "' is in multiple containers!");
-                                            }
-                                        }
-                                        else{
-                                            throw new IllegalArgumentException("Asset with ID '" + assetId + "' is not in any container!");
-                                        }
-                                    }
-                                }
-
-                                assetsByCurrentUser = assetUtils.getAssets(assetSearchConditions, sortField, sortType);
-
-                                List<SharedContainers> sharedContainersLst = shareUtils.getSharedContainers(user.getId());
-                                for(SharedContainers sharedContainers: sharedContainersLst){
-                                    List<Container> containersByContainerIds = containerUtils.getContainersByContainerIds(sharedContainers.getContainerIds());
-
-                                    // If the container's parent container is on the list, exclude it
-                                    for(Container containerToAdd: containersByContainerIds){
-                                        boolean addContainer = true;
-
-                                        for(Container containerToCheck: containersByContainerIds){
-                                            if(containerToAdd.getParentId().equalsIgnoreCase(containerToCheck.getId())){
-                                                addContainer = false;
-                                                break;
-                                            }
-                                        }
-
-                                        if(addContainer){
-                                            String keyword = containerSearchConditions.stream()
-                                                    .filter(csc -> csc.getField().equalsIgnoreCase("name"))
-                                                    .map(SearchCondition::getKeyword).findFirst()
-                                                    .orElse(null);
-                                            if(StringUtils.isNotBlank(keyword)){
-                                                containerSearchConditions.add(
-                                                        new SearchCondition("id", ToyboxConstants.SEARCH_CONDITION_EQUALS, containerToAdd.getId(),
-                                                                ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_OR_IN,
-                                                                new SearchCondition("name", ToyboxConstants.SEARCH_CONDITION_CONTAINS, keyword,
-                                                                        ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND)));
-                                            }
-                                            else{
-                                                containerSearchConditions.add(
-                                                        new SearchCondition("id", ToyboxConstants.SEARCH_CONDITION_EQUALS, containerToAdd.getId(),
-                                                                ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_OR_IN));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            else{
-                                if(!containerAssetIdsByContainerId.isEmpty()){
-                                    assetsByCurrentUser = assetUtils.getAssets(assetSearchConditions, sortField, sortType);
-                                }
-                            }
-
-                            containersByCurrentUser = containerUtils.getContainers(containerSearchConditions, sortField, sortType);
-
-                            for(Asset userAsset: assetsByCurrentUser){
-                                if(!authenticationUtils.isAdminUser(authentication)){
-                                    boolean assetSharedWithUser = shareUtils.isAssetSharedWithUser(user.getId(), userAsset.getId());
-                                    if(assetSharedWithUser){
-                                        User sourceUser = shareUtils.getSourceUser(user.getId(), userAsset.getId(), true);
-                                        if(sourceUser != null){
-                                            userAsset.setCanShare(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_SHARE, user.getId(), userAsset.getId(), true) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
-                                            userAsset.setCanEdit(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_EDIT, user.getId(), userAsset.getId(), true) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
-                                            userAsset.setCanCopy(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_COPY, user.getId(), userAsset.getId(), true) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
-                                            userAsset.setCanDownload(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_DOWNLOAD, user.getId(), userAsset.getId(), true) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
-                                            userAsset.setShared(ToyboxConstants.LOOKUP_YES);
-                                            userAsset.setSharedByUsername(sourceUser.getUsername());
-                                        }
-                                        else{
-                                            throw new IllegalArgumentException("Source user is null!");
-                                        }
-                                    }
-                                    else{
-                                        userAsset.setShared(ToyboxConstants.LOOKUP_NO);
-
-                                        userAsset.setCanDownload(ToyboxConstants.LOOKUP_YES);
-                                        userAsset.setCanCopy(ToyboxConstants.LOOKUP_YES);
-                                        userAsset.setCanEdit(ToyboxConstants.LOOKUP_YES);
-                                        userAsset.setCanShare(ToyboxConstants.LOOKUP_YES);
-                                    }
-                                }
-                                else{
-                                    userAsset.setCanDownload(ToyboxConstants.LOOKUP_YES);
-                                    userAsset.setCanCopy(ToyboxConstants.LOOKUP_YES);
-                                    userAsset.setCanEdit(ToyboxConstants.LOOKUP_YES);
-                                    userAsset.setCanShare(ToyboxConstants.LOOKUP_YES);
-                                }
-                            }
-
-                            for(Container userContainer: containersByCurrentUser){
-                                if(!authenticationUtils.isAdminUser(authentication)){
-                                    boolean containerSharedWithUser = shareUtils.isContainerSharedWithUser(user.getId(), userContainer.getId());
-                                    if(containerSharedWithUser){
-                                        User sourceUser = shareUtils.getSourceUser(user.getId(), userContainer.getId(), false);
-                                        if(sourceUser != null){
-                                            userContainer.setCanShare(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_SHARE, user.getId(), userContainer.getId(), false) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
-                                            userContainer.setCanEdit(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_EDIT, user.getId(), userContainer.getId(), false) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
-                                            userContainer.setCanCopy(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_COPY, user.getId(), userContainer.getId(), false) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
-                                            userContainer.setCanDownload(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_DOWNLOAD, user.getId(), userContainer.getId(), false) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
-                                            userContainer.setShared(ToyboxConstants.LOOKUP_YES);
-                                            userContainer.setSharedByUsername(sourceUser.getUsername());
-                                        }
-                                        else{
-                                            throw new IllegalArgumentException("Source user is null!");
-                                        }
-                                    }
-                                    else{
-                                        userContainer.setShared(ToyboxConstants.LOOKUP_NO);
-
-                                        userContainer.setCanShare(ToyboxConstants.LOOKUP_YES);
-                                        userContainer.setCanDownload(ToyboxConstants.LOOKUP_YES);
-                                        userContainer.setCanCopy(ToyboxConstants.LOOKUP_YES);
-                                        userContainer.setCanEdit(ToyboxConstants.LOOKUP_YES);
-                                    }
-                                }
-                                else{
-                                    userContainer.setCanShare(ToyboxConstants.LOOKUP_YES);
-                                    userContainer.setCanDownload(ToyboxConstants.LOOKUP_YES);
-                                    userContainer.setCanCopy(ToyboxConstants.LOOKUP_YES);
-                                    userContainer.setCanEdit(ToyboxConstants.LOOKUP_YES);
-                                }
-                            }
-
-                            // Set facets
-                            List<Facet> assetFacets = facetUtils.getFacets(assetsByCurrentUser);
-                            List<Facet> containerFacets = facetUtils.getFacets(containersByCurrentUser);
-
-                            List<Facet> commonFacets = facetUtils.getCommonFacets(assetFacets, containerFacets);
-
-                            retrieveContainerContentsResult.setFacets(commonFacets);
-
-                            // Merge containers and assets
-                            List<ContainerItem> containerItems = new ArrayList<>(containersByCurrentUser);
-                            containerItems.addAll(assetsByCurrentUser);
-
-                            // Paginate results
-                            int totalRecords = containerItems.size();
-                            if(offset > totalRecords){
-                                offset = 0;
-                            }
-                            int endIndex = Math.min((offset + limit), totalRecords);
-
-                            List<ContainerItem> containerItemsOnPage = containerItems.subList(offset, endIndex);
-
-                            // Set subscription status
-                            List<ContainerUser> containerUsersByUserId = containerUsersRepository.findContainerUsersByUserId(user.getId());
-                            List<AssetUser> assetUsersByUserId = assetUserRepository.findAssetUsersByUserId(user.getId());
-
-                            for(ContainerItem containerItem: containerItemsOnPage){
-                                Class<? extends ContainerItem> containerItemClass = containerItem.getClass();
-
-                                if(containerItemClass.getName().equalsIgnoreCase("com.github.murataykanat.toybox.dbo.Container")){
-                                    Container containerOnPage = (Container) containerItem;
-
-                                    containerOnPage.setSubscribed(ToyboxConstants.LOOKUP_NO);
-                                    for(ContainerUser containerUser: containerUsersByUserId){
-                                        if(containerOnPage.getId().equalsIgnoreCase(containerUser.getContainerId())){
-                                            containerOnPage.setSubscribed(ToyboxConstants.LOOKUP_YES);
-                                            break;
-                                        }
-                                    }
-                                }
-                                else if(containerItemClass.getName().equalsIgnoreCase("com.github.murataykanat.toybox.dbo.Asset")){
-                                    Asset assetOnPage = (Asset) containerItem;
-
-                                    assetOnPage.setSubscribed(ToyboxConstants.LOOKUP_NO);
-                                    for(AssetUser assetUser: assetUsersByUserId){
-                                        if(assetOnPage.getId().equalsIgnoreCase(assetUser.getAssetId())){
-                                            assetOnPage.setSubscribed(ToyboxConstants.LOOKUP_YES);
-                                            break;
-                                        }
-                                    }
-
-                                    // Set parent container ID
-                                    List<ContainerAsset> containerAssetsByAssetId = containerAssetsRepository.findContainerAssetsByAssetId(assetOnPage.getId());
-                                    if(!containerAssetsByAssetId.isEmpty()){
-                                        if(containerAssetsByAssetId.size() == 1){
-                                            ContainerAsset containerAsset = containerAssetsByAssetId.get(0);
-                                            assetOnPage.setParentContainerId(containerAsset.getContainerId());
-                                        }
-                                        else{
-                                            throw new IllegalArgumentException("Asset is in multiple folders!");
-                                        }
-                                    }
-                                    else{
-                                        throw new IllegalArgumentException("Asset is not in any folder!");
-                                    }
-                                }
-                            }
-
-                            // Set breadcrumbs
-                            retrieveContainerContentsResult.setBreadcrumbs(containerUtils.generateContainerPath(container.getId()));
-
-                            // Set edit status
-                            if(shareUtils.isContainerSharedWithUser(user.getId(), containerId)){
-                                List<InternalShare> internalSharesWithTargetUser = shareUtils.getInternalSharesWithTargetUser(user.getId(), containerId, false);
-                                boolean canEdit = true;
-                                for(InternalShare internalShare: internalSharesWithTargetUser){
-                                    canEdit = canEdit && internalShare.getCanEdit().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES);
-                                }
-
-                                retrieveContainerContentsResult.setCanEdit(canEdit ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
-                            }
-                            else{
-                                retrieveContainerContentsResult.setCanEdit(ToyboxConstants.LOOKUP_YES);
-                            }
-
-                            // Finalize
-                            retrieveContainerContentsResult.setTotalRecords(totalRecords);
-                            retrieveContainerContentsResult.setContainerItems(containerItemsOnPage);
-                            retrieveContainerContentsResult.setMessage("Container contents retrieved successfully!");
-
-                            return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.OK);
-                        }
-                        else{
-                            throw new IllegalArgumentException("User is null!");
-                        }
-                    }
-                    else{
-                        String errorMessage = "Asset search request is null!";
-                        _logger.debug(errorMessage);
-
-                        retrieveContainerContentsResult.setMessage(errorMessage);
-
-                        return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.BAD_REQUEST);
-                    }
-                }
-                else{
-                    String errorMessage = "Container ID is blank!";
-                    _logger.debug(errorMessage);
-
-                    retrieveContainerContentsResult.setMessage(errorMessage);
-
-                    return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.BAD_REQUEST);
-                }
-            }
-            else{
+            if(!authenticationUtils.isSessionValid(authentication)){
                 String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
@@ -543,6 +220,332 @@ public class FolderController {
 
                 return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.UNAUTHORIZED);
             }
+
+            if(StringUtils.isBlank(containerId)){
+                String errorMessage = "Container ID is blank!";
+                _logger.debug(errorMessage);
+
+                retrieveContainerContentsResult.setMessage(errorMessage);
+
+                return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.BAD_REQUEST);
+            }
+
+            if(assetSearchRequest == null){
+                String errorMessage = "Asset search request is null!";
+                _logger.debug(errorMessage);
+
+                retrieveContainerContentsResult.setMessage(errorMessage);
+
+                return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.BAD_REQUEST);
+            }
+
+            User user = authenticationUtils.getUser(authentication);
+            if(user == null){
+                throw new IllegalArgumentException("User is null!");
+            }
+
+            String sortField = assetSearchRequest.getSortColumn();
+            String sortType = assetSearchRequest.getSortType();
+
+            int offset = assetSearchRequest.getOffset();
+            int limit = assetSearchRequest.getLimit();
+
+            List<SearchCondition> searchConditions = assetSearchRequest.getSearchConditions();
+            if(searchConditions == null){
+                searchConditions = new ArrayList<>();
+            }
+
+            List<SearchCondition> assetSearchConditions = new ArrayList<>(searchConditions);
+            List<SearchCondition> containerSearchConditions = new ArrayList<>(searchConditions);
+
+            List<SearchRequestFacet> searchRequestFacetList = assetSearchRequest.getAssetSearchRequestFacetList();
+
+            for (SearchRequestFacet searchRequestFacet: searchRequestFacetList){
+                String fieldName = searchRequestFacet.getFieldName();
+
+                FacetField facetField;
+
+                try{
+                    facetField = facetUtils.getFacetField(fieldName, new Asset());
+
+                    String dbFieldName = facetField.getFieldName();
+                    String fieldValue = searchRequestFacet.getFieldValue();
+                    assetSearchConditions.add(new SearchCondition(dbFieldName, ToyboxConstants.SEARCH_CONDITION_EQUALS,
+                            fieldValue, facetField.getDataType(), ToyboxConstants.SEARCH_OPERATOR_AND));
+                }
+                catch (IllegalArgumentException e){
+                    _logger.debug(e.getLocalizedMessage() + ". Trying the next valid object...");
+                    facetField = facetUtils.getFacetField(fieldName, new Container());
+
+                    String dbFieldName = facetField.getFieldName();
+                    String fieldValue = searchRequestFacet.getFieldValue();
+                    containerSearchConditions.add(new SearchCondition(dbFieldName, ToyboxConstants.SEARCH_CONDITION_EQUALS,
+                            fieldValue, facetField.getDataType(), ToyboxConstants.SEARCH_OPERATOR_AND));
+                }
+            }
+
+            if(containerId.equalsIgnoreCase("root") && !authenticationUtils.isAdminUser(authentication)){
+                containerId = user.getUsername();
+            }
+
+            List<Asset> assetsByCurrentUser = new ArrayList<>();
+            List<Container> containersByCurrentUser;
+            if(!containerId.equalsIgnoreCase("root")){
+                Container container = containerUtils.getContainer(containerId);
+
+                List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(container.getId());
+                List<String> containerAssetIdsByContainerId = containerAssetsByContainerId.stream().map(ContainerAsset::getAssetId).collect(Collectors.toList());
+
+                assetSearchConditions.add(new SearchCondition("isLatestVersion", ToyboxConstants.SEARCH_CONDITION_EQUALS, ToyboxConstants.LOOKUP_YES,
+                        ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND));
+
+                for(String assetId : containerAssetIdsByContainerId){
+                    assetSearchConditions.add(new SearchCondition("id", ToyboxConstants.SEARCH_CONDITION_EQUALS, assetId,
+                            ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND_IN));
+                }
+
+                containerSearchConditions.add(new SearchCondition("parentId", ToyboxConstants.SEARCH_CONDITION_EQUALS, container.getId(),
+                        ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND));
+
+                boolean isUserMainContainer = (container.getCreatedByUsername().equalsIgnoreCase(toyboxSuperAdminUsername) && container.getName().equalsIgnoreCase(user.getUsername()));
+                if(isUserMainContainer){
+                    // If we are in the main container add the assets which are shared by other users and in their main container
+                    List<SharedAssets> sharedAssetsLst = shareUtils.getSharedAssets(user.getId());
+                    for(SharedAssets sharedAssets: sharedAssetsLst){
+                        List<String> assetIds = sharedAssets.getAssetIds();
+                        for(String assetId: assetIds){
+                            List<ContainerAsset> containerAssetsByAssetId = containerAssetsRepository.findContainerAssetsByAssetId(assetId);
+                            if(!containerAssetsByAssetId.isEmpty()){
+                                if(containerAssetsByAssetId.size() == 1){
+                                    ContainerAsset containerAsset = containerAssetsByAssetId.get(0);
+                                    Container assetContainer = containerUtils.getContainer(containerAsset.getContainerId());
+                                    if(assetContainer.getSystem().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
+                                        assetSearchConditions.add(new SearchCondition("id", ToyboxConstants.SEARCH_CONDITION_EQUALS, assetId,
+                                                ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND_IN));
+                                    }
+                                }
+                                else{
+                                    throw new IllegalArgumentException("Asset with ID '" + assetId + "' is in multiple containers!");
+                                }
+                            }
+                            else{
+                                throw new IllegalArgumentException("Asset with ID '" + assetId + "' is not in any container!");
+                            }
+                        }
+                    }
+
+                    assetsByCurrentUser = assetUtils.getAssets(assetSearchConditions, sortField, sortType);
+
+                    List<SharedContainers> sharedContainersLst = shareUtils.getSharedContainers(user.getId());
+                    for(SharedContainers sharedContainers: sharedContainersLst){
+                        List<Container> containersByContainerIds = containerUtils.getContainersByContainerIds(sharedContainers.getContainerIds());
+
+                        // If the container's parent container is on the list, exclude it
+                        for(Container containerToAdd: containersByContainerIds){
+                            boolean addContainer = true;
+
+                            for(Container containerToCheck: containersByContainerIds){
+                                if(containerToAdd.getParentId().equalsIgnoreCase(containerToCheck.getId())){
+                                    addContainer = false;
+                                    break;
+                                }
+                            }
+
+                            if(addContainer){
+                                String keyword = containerSearchConditions.stream()
+                                        .filter(csc -> csc.getField().equalsIgnoreCase("name"))
+                                        .map(SearchCondition::getKeyword).findFirst()
+                                        .orElse(null);
+                                if(StringUtils.isNotBlank(keyword)){
+                                    containerSearchConditions.add(
+                                            new SearchCondition("id", ToyboxConstants.SEARCH_CONDITION_EQUALS, containerToAdd.getId(),
+                                                    ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_OR_IN,
+                                                    new SearchCondition("name", ToyboxConstants.SEARCH_CONDITION_CONTAINS, keyword,
+                                                            ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND)));
+                                }
+                                else{
+                                    containerSearchConditions.add(
+                                            new SearchCondition("id", ToyboxConstants.SEARCH_CONDITION_EQUALS, containerToAdd.getId(),
+                                                    ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_OR_IN));
+                                }
+                            }
+                        }
+                    }
+                }
+                else{
+                    if(!containerAssetIdsByContainerId.isEmpty()){
+                        assetsByCurrentUser = assetUtils.getAssets(assetSearchConditions, sortField, sortType);
+                    }
+                }
+
+                for(Asset userAsset: assetsByCurrentUser){
+                    if(!authenticationUtils.isAdminUser(authentication)){
+                        boolean assetSharedWithUser = shareUtils.isAssetSharedWithUser(user.getId(), userAsset.getId());
+                        if(assetSharedWithUser){
+                            User sourceUser = shareUtils.getSourceUser(user.getId(), userAsset.getId(), true);
+                            if(sourceUser != null){
+                                userAsset.setCanShare(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_SHARE, user.getId(), userAsset.getId(), true) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
+                                userAsset.setCanEdit(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_EDIT, user.getId(), userAsset.getId(), true) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
+                                userAsset.setCanCopy(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_COPY, user.getId(), userAsset.getId(), true) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
+                                userAsset.setCanDownload(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_DOWNLOAD, user.getId(), userAsset.getId(), true) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
+                                userAsset.setShared(ToyboxConstants.LOOKUP_YES);
+                                userAsset.setSharedByUsername(sourceUser.getUsername());
+                            }
+                            else{
+                                throw new IllegalArgumentException("Source user is null!");
+                            }
+                        }
+                        else{
+                            userAsset.setShared(ToyboxConstants.LOOKUP_NO);
+
+                            userAsset.setCanDownload(ToyboxConstants.LOOKUP_YES);
+                            userAsset.setCanCopy(ToyboxConstants.LOOKUP_YES);
+                            userAsset.setCanEdit(ToyboxConstants.LOOKUP_YES);
+                            userAsset.setCanShare(ToyboxConstants.LOOKUP_YES);
+                        }
+                    }
+                    else{
+                        userAsset.setCanDownload(ToyboxConstants.LOOKUP_YES);
+                        userAsset.setCanCopy(ToyboxConstants.LOOKUP_YES);
+                        userAsset.setCanEdit(ToyboxConstants.LOOKUP_YES);
+                        userAsset.setCanShare(ToyboxConstants.LOOKUP_YES);
+                    }
+                }
+
+                // Set breadcrumbs
+                retrieveContainerContentsResult.setBreadcrumbs(containerUtils.generateContainerPath(container.getId()));
+            }
+            else{
+                containerSearchConditions.add(new SearchCondition("parentId", ToyboxConstants.SEARCH_CONDITION_IS_NULL, null,
+                        ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND));
+
+                // Set breadcrumbs
+                retrieveContainerContentsResult.setBreadcrumbs(containerUtils.generateContainerPath(null));
+            }
+
+            containersByCurrentUser = containerUtils.getContainers(containerSearchConditions, sortField, sortType);
+
+            for(Container userContainer: containersByCurrentUser){
+                if(!authenticationUtils.isAdminUser(authentication)){
+                    boolean containerSharedWithUser = shareUtils.isContainerSharedWithUser(user.getId(), userContainer.getId());
+                    if(containerSharedWithUser){
+                        User sourceUser = shareUtils.getSourceUser(user.getId(), userContainer.getId(), false);
+                        if(sourceUser != null){
+                            userContainer.setCanShare(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_SHARE, user.getId(), userContainer.getId(), false) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
+                            userContainer.setCanEdit(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_EDIT, user.getId(), userContainer.getId(), false) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
+                            userContainer.setCanCopy(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_COPY, user.getId(), userContainer.getId(), false) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
+                            userContainer.setCanDownload(shareUtils.hasPermission(ToyboxConstants.SHARE_PERMISSION_DOWNLOAD, user.getId(), userContainer.getId(), false) ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
+                            userContainer.setShared(ToyboxConstants.LOOKUP_YES);
+                            userContainer.setSharedByUsername(sourceUser.getUsername());
+                        }
+                        else{
+                            throw new IllegalArgumentException("Source user is null!");
+                        }
+                    }
+                    else{
+                        userContainer.setShared(ToyboxConstants.LOOKUP_NO);
+
+                        userContainer.setCanShare(ToyboxConstants.LOOKUP_YES);
+                        userContainer.setCanDownload(ToyboxConstants.LOOKUP_YES);
+                        userContainer.setCanCopy(ToyboxConstants.LOOKUP_YES);
+                        userContainer.setCanEdit(ToyboxConstants.LOOKUP_YES);
+                    }
+                }
+                else{
+                    userContainer.setCanShare(ToyboxConstants.LOOKUP_YES);
+                    userContainer.setCanDownload(ToyboxConstants.LOOKUP_YES);
+                    userContainer.setCanCopy(ToyboxConstants.LOOKUP_YES);
+                    userContainer.setCanEdit(ToyboxConstants.LOOKUP_YES);
+                }
+            }
+
+            // Set facets
+            List<Facet> assetFacets = facetUtils.getFacets(assetsByCurrentUser);
+            List<Facet> containerFacets = facetUtils.getFacets(containersByCurrentUser);
+
+            List<Facet> commonFacets = facetUtils.getCommonFacets(assetFacets, containerFacets);
+
+            retrieveContainerContentsResult.setFacets(commonFacets);
+
+            // Merge containers and assets
+            List<ContainerItem> containerItems = new ArrayList<>(containersByCurrentUser);
+            containerItems.addAll(assetsByCurrentUser);
+
+            // Paginate results
+            int totalRecords = containerItems.size();
+            if(offset > totalRecords){
+                offset = 0;
+            }
+            int endIndex = Math.min((offset + limit), totalRecords);
+
+            List<ContainerItem> containerItemsOnPage = containerItems.subList(offset, endIndex);
+
+            // Set subscription status
+            List<ContainerUser> containerUsersByUserId = containerUsersRepository.findContainerUsersByUserId(user.getId());
+            List<AssetUser> assetUsersByUserId = assetUserRepository.findAssetUsersByUserId(user.getId());
+
+            for(ContainerItem containerItem: containerItemsOnPage){
+                Class<? extends ContainerItem> containerItemClass = containerItem.getClass();
+
+                if(containerItemClass.getName().equalsIgnoreCase("com.github.murataykanat.toybox.dbo.Container")){
+                    Container containerOnPage = (Container) containerItem;
+
+                    containerOnPage.setSubscribed(ToyboxConstants.LOOKUP_NO);
+                    for(ContainerUser containerUser: containerUsersByUserId){
+                        if(containerOnPage.getId().equalsIgnoreCase(containerUser.getContainerId())){
+                            containerOnPage.setSubscribed(ToyboxConstants.LOOKUP_YES);
+                            break;
+                        }
+                    }
+                }
+                else if(containerItemClass.getName().equalsIgnoreCase("com.github.murataykanat.toybox.dbo.Asset")){
+                    Asset assetOnPage = (Asset) containerItem;
+
+                    assetOnPage.setSubscribed(ToyboxConstants.LOOKUP_NO);
+                    for(AssetUser assetUser: assetUsersByUserId){
+                        if(assetOnPage.getId().equalsIgnoreCase(assetUser.getAssetId())){
+                            assetOnPage.setSubscribed(ToyboxConstants.LOOKUP_YES);
+                            break;
+                        }
+                    }
+
+                    // Set parent container ID
+                    List<ContainerAsset> containerAssetsByAssetId = containerAssetsRepository.findContainerAssetsByAssetId(assetOnPage.getId());
+                    if(!containerAssetsByAssetId.isEmpty()){
+                        if(containerAssetsByAssetId.size() == 1){
+                            ContainerAsset containerAsset = containerAssetsByAssetId.get(0);
+                            assetOnPage.setParentContainerId(containerAsset.getContainerId());
+                        }
+                        else{
+                            throw new IllegalArgumentException("Asset is in multiple folders!");
+                        }
+                    }
+                    else{
+                        throw new IllegalArgumentException("Asset is not in any folder!");
+                    }
+                }
+            }
+
+            // Set edit status
+            if(shareUtils.isContainerSharedWithUser(user.getId(), containerId)){
+                List<InternalShare> internalSharesWithTargetUser = shareUtils.getInternalSharesWithTargetUser(user.getId(), containerId, false);
+                boolean canEdit = true;
+                for(InternalShare internalShare: internalSharesWithTargetUser){
+                    canEdit = canEdit && internalShare.getCanEdit().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES);
+                }
+
+                retrieveContainerContentsResult.setCanEdit(canEdit ? ToyboxConstants.LOOKUP_YES : ToyboxConstants.LOOKUP_NO);
+            }
+            else{
+                retrieveContainerContentsResult.setCanEdit(ToyboxConstants.LOOKUP_YES);
+            }
+
+            // Finalize
+            retrieveContainerContentsResult.setTotalRecords(totalRecords);
+            retrieveContainerContentsResult.setContainerItems(containerItemsOnPage);
+            retrieveContainerContentsResult.setMessage("Container contents retrieved successfully!");
+
+            return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.OK);
         }
         catch (Exception e){
             String errorMessage = "An error occurred while retrieving items inside the container with ID '" + containerId + "'. " + e.getLocalizedMessage();
@@ -626,147 +629,6 @@ public class FolderController {
             genericResponse.setMessage(errorMessage);
 
             return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @LogEntryExitExecutionTime
-    @RequestMapping(value = "/containers/search", method = RequestMethod.POST)
-    public ResponseEntity<RetrieveContainersResults> retrieveContainers(Authentication authentication, @RequestBody ContainerSearchRequest containerSearchRequest){
-        RetrieveContainersResults retrieveContainersResults = new RetrieveContainersResults();
-        try {
-            if(authenticationUtils.isSessionValid(authentication)){
-                if(containerSearchRequest != null){
-                    User user = authenticationUtils.getUser(authentication);
-                    if(user != null){
-                        int startIndex = containerSearchRequest.getOffset();
-                        int limit = containerSearchRequest.getLimit();
-
-                        List<Container> containersByCurrentUser;
-
-                        if(containerSearchRequest.getRetrieveTopLevelContainers() != null && containerSearchRequest.getRetrieveTopLevelContainers().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
-                            if(authenticationUtils.isAdminUser(authentication)){
-                                _logger.debug("Retrieving the top level containers [Admin User]...");
-                                containersByCurrentUser = containersRepository.getTopLevelNonDeletedContainers();
-                            }
-                            else{
-                                String errorMessage = "The user '" + user.getUsername() + "' does not have permissions to retrieve the top level containers!";
-                                _logger.error(errorMessage);
-
-                                retrieveContainersResults.setMessage(errorMessage);
-
-                                return new ResponseEntity<>(retrieveContainersResults, HttpStatus.UNAUTHORIZED);
-                            }
-                        }
-                        else{
-                            if(authenticationUtils.isAdminUser(authentication)){
-                                containersByCurrentUser = containersRepository.getAllNonDeletedContainers();
-                            }
-                            else{
-                                containersByCurrentUser = containersRepository.getUserFolders(user.getUsername());
-                            }
-
-                            Container filterByContainer = containerSearchRequest.getContainer();
-                            boolean filterById = StringUtils.isNotBlank(filterByContainer.getId());
-                            boolean filterByParentId = StringUtils.isNotBlank(filterByContainer.getParentId());
-                            boolean filterByName = StringUtils.isNotBlank(filterByContainer.getName());
-                            boolean filterByCreatedByUsername = StringUtils.isNotBlank(filterByContainer.getCreatedByUsername());
-                            boolean filterByCreationDate = filterByContainer.getImportDate() != null;
-                            boolean filterByDeleted = StringUtils.isNotBlank(filterByContainer.getDeleted());
-                            boolean filterByIsSystem = StringUtils.isNotBlank(filterByContainer.getSystem());
-
-                            containersByCurrentUser = containersByCurrentUser.stream()
-                                    .filter(container ->
-                                    (!filterById || container.getId().contains(filterByContainer.getId()))
-                                    && (!filterByParentId || container.getParentId().contains(filterByContainer.getParentId()))
-                                    && (!filterByName || container.getName().contains(filterByContainer.getName()))
-                                    && (!filterByCreatedByUsername || container.getCreatedByUsername().contains(filterByContainer.getCreatedByUsername()))
-                                    && (!filterByCreationDate || container.getImportDate().equals(filterByContainer.getImportDate()))
-                                    && (!filterByDeleted || container.getDeleted().equalsIgnoreCase(filterByContainer.getDeleted()))
-                                    && (!filterByIsSystem || container.getSystem().equalsIgnoreCase(filterByContainer.getSystem()))
-                                    ).collect(Collectors.toList());
-                        }
-
-                        if(!containersByCurrentUser.isEmpty()){
-                            sortUtils.sortItems("des", containersByCurrentUser, Comparator.comparing(Container::getName, Comparator.nullsLast(Comparator.naturalOrder())));
-
-                            int totalRecords = containersByCurrentUser.size();
-
-                            int endIndex;
-                            if(limit != -1){
-                                 endIndex = Math.min((startIndex + limit), totalRecords);
-                            }
-                            else{
-                                endIndex = totalRecords;
-                            }
-
-
-                            List<Container> containersOnPage = containersByCurrentUser.subList(startIndex, endIndex);
-
-                            List<ContainerUser> containerUsersByUserId = containerUsersRepository.findContainerUsersByUserId(user.getId());
-
-                            if(!containerUsersByUserId.isEmpty()){
-                                for(Container containerOnPage: containersOnPage){
-                                    for(ContainerUser containerUser: containerUsersByUserId){
-                                        if(containerOnPage.getId().equalsIgnoreCase(containerUser.getContainerId())){
-                                            containerOnPage.setSubscribed(ToyboxConstants.LOOKUP_YES);
-                                            break;
-                                        }
-                                        containerOnPage.setSubscribed(ToyboxConstants.LOOKUP_NO);
-                                    }
-                                }
-                            }
-                            else{
-                                for(Container containerOnPage: containersOnPage){
-                                    containerOnPage.setSubscribed(ToyboxConstants.LOOKUP_NO);
-                                }
-                            }
-
-                            retrieveContainersResults.setBreadcrumbs(containerUtils.generateContainerPath(null));
-
-                            retrieveContainersResults.setTotalRecords(totalRecords);
-                            retrieveContainersResults.setContainers(containersOnPage);
-
-                            retrieveContainersResults.setMessage("Folders retrieved successfully!");
-                            return new ResponseEntity<>(retrieveContainersResults, HttpStatus.OK);
-                        }
-                        else{
-                            String message = "There are no containers to return.";
-                            _logger.debug(message);
-
-                            retrieveContainersResults.setMessage(message);
-
-                            return new ResponseEntity<>(retrieveContainersResults, HttpStatus.OK);
-                        }
-                    }
-                    else{
-                        throw new IllegalArgumentException("User is null!");
-                    }
-                }
-                else{
-                    String errorMessage = "Container search request is null!";
-                    _logger.debug(errorMessage);
-
-                    retrieveContainersResults.setMessage(errorMessage);
-
-                    return new ResponseEntity<>(retrieveContainersResults, HttpStatus.BAD_REQUEST);
-                }
-            }
-            else{
-                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
-                _logger.error(errorMessage);
-
-                retrieveContainersResults.setMessage(errorMessage);
-
-                return new ResponseEntity<>(retrieveContainersResults, HttpStatus.UNAUTHORIZED);
-            }
-        }
-        catch (Exception e){
-            String errorMessage = "An error occurred while retrieving containers. " + e.getLocalizedMessage();
-            _logger.error(errorMessage, e);
-
-            retrieveContainersResults.setMessage(errorMessage);
-
-            return new ResponseEntity<>(retrieveContainersResults, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

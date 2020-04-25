@@ -95,12 +95,7 @@ const folders = new Vue({
         });
 
         setTimeout(() => {
-            if(this.user.isAdmin){
-                this.getTopLevelFolders(this.offset, this.limit);
-            }
-            else{
-                this.getItems(this.currentFolderId, this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList)
-            }
+            this.getItems(this.currentFolderId, this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList);
         }, 500);
     },
     watch:{
@@ -167,93 +162,22 @@ const folders = new Vue({
     },
     methods:{
         refresh:function(){
-            if(this.currentFolderId === undefined || this.currentFolderId === '' || this.currentFolderId === 'null' || this.currentFolderId === null){
-                this.getTopLevelFolders(this.offset, this.limit);
-            }
-            else{
-                this.getItems(this.currentFolderId, this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList)
-            }
-        },
-        getTopLevelFolders:function(offset, limit){
-            this.isLoading = true;
-            this.getService("toybox-folder-loadbalancer")
-            .then(response => {
-                if(response){
-                    var searchRequest = {};
-                    searchRequest.limit = limit;
-                    searchRequest.offset = offset;
-                    searchRequest.retrieveTopLevelContainers = 'Y';
-
-                    return axios.post(response.data.value + "/containers/search", searchRequest)
-                        .catch(error => {
-                            this.isLoading = false;
-                            var errorMessage;
-
-                            if(error.response){
-                                errorMessage = error.response.data.message
-                                if(error.response.status == 401){
-                                    window.location = '/logout';
-                                }
-                            }
-                            else{
-                                errorMessage = error.message;
-                            }
-
-                            console.error(errorMessage);
-                            this.$root.$emit('message-sent', 'Error', errorMessage);
-                        });
-                }
-                else{
-                    this.isLoading = false;
-                    this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
-                }
-            })
-            .then(response => {
-                console.log(response);
-                if(response){
-                    this.isLoading = false;
-                    this.items = response.data.containers;
-                    this.canEditCurrentContainer = response.data.canEdit === 'Y';
-                    this.updateBreadcrumbs(response.data.breadcrumbs);
-
-                    if(this.items == null || this.items.length == 0){
-                        this.displayMessage('Information','You do not have any folders.');
-                        this.totalRecords = 0;
-                        this.totalPages = 0;
-                        this.currentPage = 0;
-                    }
-                    else{
-                        this.totalRecords = response.data.totalRecords;
-                        this.totalPages = Math.ceil(this.totalRecords / this.limit);
-                        this.currentPage = Math.ceil((offset / limit) + 1);
-                    }
-
-                    this.currentFolderId = response.data.containerId;
-
-                    this.updateButtons();
-                    this.updatePagination(this.currentPage, this.totalPages, offset, limit, this.totalRecords);
-                }
-                else{
-                    this.isLoading = false;
-                    this.$root.$emit('message-sent', 'Error', "There was no response from the folder loadbalancer!");
-                }
-            });
+            this.getItems(this.currentFolderId, this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList);
         },
         openFolder:function(folder){
             this.currentFolderId = folder.id;
             this.searchRequestFacetList = [];
 
-            if(this.currentFolderId === undefined || this.currentFolderId === '' || this.currentFolderId === 'null' || this.currentFolderId === null){
-                this.getTopLevelFolders(this.offset, this.limit);
-            }
-            else{
-                this.getItems(this.currentFolderId, this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList)
-            }
+            this.getItems(this.currentFolderId, this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList);
         },
         getItems:function(containerId, offset, limit, sortType, sortColumn, searchRequestFacetList){
             this.isLoading = true;
-            if(containerId){
-                this.getService("toybox-folder-loadbalancer")
+
+            if(containerId === undefined || containerId === '' || containerId === null){
+                containerId = 'root';
+            }
+
+            this.getService("toybox-folder-loadbalancer")
                 .then(response => {
                     if(response){
                         var searchRequest = {
@@ -340,153 +264,6 @@ const folders = new Vue({
                         this.$root.$emit('message-sent', 'Error', "There was no response from the folder loadbalancer!");
                     }
                 });
-            }
-            else{
-                this.getService("toybox-folder-loadbalancer")
-                    .then(response => {
-                        if(response){
-                            var container ={
-                                '@class': 'com.github.murataykanat.toybox.dbo.Container',
-                                'name': this.user.username,
-                                'isSystem': 'Y'
-                            }
-
-                            var searchRequest = {
-                                'limit': limit,
-                                'offset': offset,
-                                'container': container
-                            }
-
-                            var containerServiceUrl = response.data.value
-
-                            axios.post(containerServiceUrl + "/containers/search", searchRequest)
-                            .then(response => {
-                                if(response){
-                                    var containers = response.data.containers;
-                                    if(containers.length > 0){
-                                        if(containers.length == 1){
-                                            var userContainer = containers[0];
-                                            var searchRequest = {
-                                                limit: limit,
-                                                offset: offset,
-                                                sortType: sortType,
-                                                sortColumn: sortColumn,
-                                                assetSearchRequestFacetList: searchRequestFacetList,
-                                                searchConditions:[
-                                                    {
-                                                        keyword: 'N',
-                                                        field:'deleted',
-                                                        operator: 'EQUALS',
-                                                        dataType: 'STRING',
-                                                        booleanOperator: 'AND'
-                                                    }
-                                                ]
-                                            };
-
-                                            if(this.searchQuery !== undefined && this.searchQuery !== ''){
-                                                var searchQuerySearchCondition = {
-                                                    keyword: this.searchQuery,
-                                                    field:'name',
-                                                    operator: 'CONTAINS',
-                                                    dataType: 'STRING',
-                                                    booleanOperator: 'AND'
-                                                }
-
-                                                searchRequest.searchConditions.push(searchQuerySearchCondition)
-                                            }
-
-
-                                            axios.post(containerServiceUrl + '/containers/' + userContainer.id + '/search', searchRequest)
-                                                .then(response => {
-                                                    console.log(response);
-                                                    if(response){
-                                                        this.isLoading = false;
-                                                        this.items = response.data.containerItems;
-                                                        this.facets = response.data.facets;
-                                                        this.canEditCurrentContainer = response.data.canEdit === 'Y';
-                                                        this.updateBreadcrumbs(response.data.breadcrumbs);
-
-                                                        if(this.items == null || this.items.length == 0){
-                                                            this.displayMessage('Information','You do not have any files or folders.');
-                                                            this.totalRecords = 0;
-                                                            this.totalPages = 0;
-                                                            this.currentPage = 0;
-                                                        }
-                                                        else{
-                                                            this.totalRecords = response.data.totalRecords;
-                                                            this.totalPages = Math.ceil(this.totalRecords / this.limit);
-                                                            this.currentPage = Math.ceil((offset / limit) + 1);
-                                                        }
-
-                                                        this.currentFolderId = userContainer.id;
-
-                                                        this.updateButtons();
-                                                        this.updatePagination(this.currentPage, this.totalPages, offset, limit, this.totalRecords);
-                                                    }
-                                                    else{
-                                                        this.isLoading = false;
-                                                        this.$root.$emit('message-sent', 'Error', "There was no response from the container loadbalancer!");
-                                                    }
-                                                })
-                                                .catch(error => {
-                                                    this.isLoading = false;
-                                                    var errorMessage;
-
-                                                    if(error.response){
-                                                        errorMessage = error.response.data.message
-                                                        if(error.response.status == 401){
-                                                            window.location = '/logout';
-                                                        }
-                                                    }
-                                                    else{
-                                                        errorMessage = error.message;
-                                                    }
-
-                                                    console.error(errorMessage);
-                                                    this.$root.$emit('message-sent', 'Error', errorMessage);
-                                                });
-                                        }
-                                        else{
-                                            this.isLoading = false;
-                                            var errorMessage = 'There are multiple root folders for user "' + user.username + '"';
-                                            this.$root.$emit('message-sent', 'Error', errorMessage);
-                                        }
-                                    }
-                                    else{
-                                        this.isLoading = false;
-                                        var errorMessage = 'There is no root folder for user "' + user.username + '"';
-                                        this.$root.$emit('message-sent', 'Error', errorMessage);
-                                    }
-                                }
-                                else{
-                                    this.isLoading = false;
-                                    this.$root.$emit('message-sent', 'Error', "There was no response from the folder loadbalancer!");
-                                }
-                            })
-                            .catch(error => {
-                                this.isLoading = false;
-                                var errorMessage;
-
-                                if(error.response){
-                                    errorMessage = error.response.data.message
-                                    if(error.response.status == 401){
-                                        window.location = '/logout';
-                                    }
-                                }
-                                else{
-                                    errorMessage = error.message;
-                                }
-
-                                console.error(errorMessage);
-                                this.$root.$emit('message-sent', 'Error', errorMessage);
-                            });
-                        }
-                        else{
-                            this.isLoading = false;
-                            this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
-                        }
-                    });
-            }
         },
         onItemSelectionChanged:function(item){
             if(item.isSelected){
