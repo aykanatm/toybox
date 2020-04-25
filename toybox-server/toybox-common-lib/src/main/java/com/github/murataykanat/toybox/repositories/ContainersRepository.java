@@ -27,12 +27,6 @@ public interface ContainersRepository extends JpaRepository<Container, String>, 
     @Query(value = "SELECT container_id, parent_container_id, container_name, container_created_by_username, container_creation_date, deleted, is_system FROM containers WHERE deleted='N' AND parent_container_id IS NULL", nativeQuery = true)
     List<Container> getTopLevelNonDeletedContainers();
 
-    @Query(value = "SELECT container_id, parent_container_id, container_name, container_created_by_username, container_creation_date, deleted, is_system FROM containers WHERE deleted='N' AND container_created_by_username=?1 AND parent_container_id=?2", nativeQuery = true)
-    List<Container> getNonDeletedContainersByUsernameAndParentContainerId(String username, String parentContainerId);
-
-    @Query(value = "SELECT container_id, parent_container_id, container_name, container_created_by_username, container_creation_date, deleted, is_system FROM containers WHERE deleted='N'", nativeQuery = true)
-    List<Container> getAllNonDeletedContainers();
-
     @Query(value = "SELECT container_id, parent_container_id, container_name, container_created_by_username, container_creation_date, deleted, is_system FROM containers WHERE deleted='N' AND parent_container_id=?1", nativeQuery = true)
     List<Container> getNonDeletedContainersByParentContainerId(String parentContainerId);
 
@@ -50,11 +44,6 @@ public interface ContainersRepository extends JpaRepository<Container, String>, 
 
     @Query(value = "SELECT container_id, parent_container_id, container_name, container_created_by_username, container_creation_date, deleted, is_system FROM containers WHERE container_id IN :containerIds", nativeQuery = true)
     List<Container> getContainersByContainerIds(@Param("containerIds") List<String> containerIds);
-
-    @Transactional
-    @Modifying
-    @Query(value = "UPDATE containers SET container_name=?1 WHERE container_id=?2", nativeQuery = true)
-    int updateContainerName(String containerName, String containerId);
 
     @Transactional
     @Modifying
