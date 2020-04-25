@@ -103,6 +103,10 @@ public class ToyboxPredicate<T> {
         else if(ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING.equalsIgnoreCase(dataType)){
             StringPath path = entityPath.getString(field);
             switch (operator) {
+                case ToyboxConstants.SEARCH_CONDITION_IS_NULL:
+                    return path.isNull();
+                case ToyboxConstants.SEARCH_CONDITION_IS_NOT_NULL:
+                    return path.isNotNull();
                 case ToyboxConstants.SEARCH_CONDITION_EQUALS:
                     return path.equalsIgnoreCase(keyword);
                 case ToyboxConstants.SEARCH_CONDITION_CONTAINS:
