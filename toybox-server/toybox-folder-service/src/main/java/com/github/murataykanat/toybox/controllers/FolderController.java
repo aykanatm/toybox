@@ -347,7 +347,6 @@ public class FolderController {
                                 }
                             }
                             else{
-                                // TODO: When the user is in shared folder, they can't search
                                 if(!containerAssetIdsByContainerId.isEmpty()){
                                     assetsByCurrentUser = assetUtils.getAssets(assetSearchConditions, sortField, sortType);
                                 }
