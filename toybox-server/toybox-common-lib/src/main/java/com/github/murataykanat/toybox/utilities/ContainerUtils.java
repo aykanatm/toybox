@@ -104,22 +104,6 @@ public class ContainerUtils {
         }
     }
 
-    @LogEntryExitExecutionTime
-    public Container getUserContainer(String username) {
-        List<Container> systemContainersByName = containersRepository.getSystemContainersByName(username);
-        if(!systemContainersByName.isEmpty()){
-            if(systemContainersByName.size() == 1){
-                return systemContainersByName.get(0);
-            }
-            else{
-                throw new IllegalArgumentException("There are multiple system containers for the user '" + username + "'!");
-            }
-        }
-        else{
-            throw new IllegalArgumentException("There is no user container for the user '" + username + "'!");
-        }
-    }
-
     public List<Container> getContainersByContainerIds(List<String> containerIds){
         if(!containerIds.isEmpty()){
             return containersRepository.getContainersByContainerIds(containerIds);
