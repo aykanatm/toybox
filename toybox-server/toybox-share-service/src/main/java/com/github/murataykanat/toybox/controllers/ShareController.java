@@ -3,10 +3,12 @@ package com.github.murataykanat.toybox.controllers;
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.*;
+import com.github.murataykanat.toybox.models.search.FacetField;
 import com.github.murataykanat.toybox.repositories.*;
 import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
+import com.github.murataykanat.toybox.schema.search.SearchCondition;
 import com.github.murataykanat.toybox.schema.selection.SelectionContext;
 import com.github.murataykanat.toybox.schema.share.*;
 import com.github.murataykanat.toybox.utilities.*;
@@ -32,7 +34,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @RefreshScope
 @RestController
@@ -482,39 +483,36 @@ public class ShareController {
                 if(shareSearchRequest != null){
                     User user = authenticationUtils.getUser(authentication);
                     if(user != null){
-                        List<ShareItem> shareItems = new ArrayList<>();
-
                         String sortColumn = shareSearchRequest.getSortColumn();
                         String sortType = shareSearchRequest.getSortType();
                         int offset = shareSearchRequest.getOffset();
                         int limit = shareSearchRequest.getLimit();
+
+                        List<SearchCondition> searchConditions = shareSearchRequest.getSearchConditions();
+                        if(searchConditions == null){
+                            searchConditions = new ArrayList<>();
+                        }
+
                         List<SearchRequestFacet> searchRequestFacetList = shareSearchRequest.getSearchRequestFacetList();
+                        for (SearchRequestFacet searchRequestFacet: searchRequestFacetList){
+                            String fieldName = searchRequestFacet.getFieldName();
+                            FacetField facetField = facetUtils.getFacetField(fieldName, new Asset());
+
+                            String dbFieldName = facetField.getFieldName();
+                            String fieldValue = searchRequestFacet.getFieldValue();
+                            searchConditions.add(new SearchCondition(dbFieldName, ToyboxConstants.SEARCH_CONDITION_EQUALS, fieldValue, facetField.getDataType(),
+                                    ToyboxConstants.SEARCH_OPERATOR_AND));
+                        }
 
                         if(authenticationUtils.isAdminUser(authentication)){
-                            List<InternalShare> internalSharesWithSourceUser = shareUtils.getAllInternalShares();
-                            shareItems.addAll(internalSharesWithSourceUser);
-
-                            List<ExternalShare> externalSharesWithSourceUser = shareUtils.getAllExternalShares();
-                            shareItems.addAll(externalSharesWithSourceUser);
-                        }
-                        else{
-                            List<InternalShare> internalSharesWithSourceUser = shareUtils.getInternalSharesWithSourceUser(user);
-                            shareItems.addAll(internalSharesWithSourceUser);
-
-                            List<ExternalShare> externalSharesWithSourceUser = shareUtils.getExternalSharesWithSourceUser(user);
-                            shareItems.addAll(externalSharesWithSourceUser);
+                            searchConditions.add(new SearchCondition("username", ToyboxConstants.SEARCH_CONDITION_EQUALS, user.getUsername(),
+                                    ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND));
                         }
 
-
-                        if(searchRequestFacetList != null && !searchRequestFacetList.isEmpty()){
-                            shareItems = shareItems.stream().filter(shareItem -> facetUtils.hasFacetValue(shareItem, searchRequestFacetList)).collect(Collectors.toList());
-                        }
+                        List<ShareItem> shareItems = new ArrayList<>(shareUtils.getAllShares(searchConditions, sortColumn, sortType));
 
                         List<Facet> facets = facetUtils.getFacets(shareItems);
                         retrieveSharesResponse.setFacets(facets);
-
-                        sortUtils.sortItems(sortType, shareItems, Comparator.comparing(ShareItem::getCreationDate, Comparator.nullsLast(Comparator.naturalOrder())));
-
 
                         int totalRecords = shareItems.size();
                         if(offset > totalRecords){

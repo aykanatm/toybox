@@ -5,14 +5,19 @@ import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.dbo.*;
 import com.github.murataykanat.toybox.models.share.SharedAssets;
 import com.github.murataykanat.toybox.models.share.SharedContainers;
+import com.github.murataykanat.toybox.predicates.ToyboxPredicateBuilder;
+import com.github.murataykanat.toybox.predicates.ToyboxStringPath;
 import com.github.murataykanat.toybox.repositories.*;
 import com.github.murataykanat.toybox.schema.job.JobResponse;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
+import com.github.murataykanat.toybox.schema.search.SearchCondition;
 import com.github.murataykanat.toybox.schema.selection.SelectionContext;
 import com.github.murataykanat.toybox.schema.share.ExternalShareRequest;
 import com.github.murataykanat.toybox.schema.share.ExternalShareResponse;
 import com.github.murataykanat.toybox.schema.share.InternalShareRequest;
 import com.github.murataykanat.toybox.schema.share.UpdateShareRequest;
+import com.google.common.collect.Lists;
+import com.querydsl.core.types.OrderSpecifier;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.logging.Log;
@@ -623,23 +628,96 @@ public class ShareUtils {
     }
 
     @LogEntryExitExecutionTime
-    public List<ExternalShare> getAllExternalShares(){
-        return externalSharesRepository.getAllExternalShares();
+    public List<ShareItem> getAllShares(List<SearchCondition> searchConditions, String sortField, String sortType){
+        List<ExternalShare> externalShares = getExternalShares(searchConditions, sortField, sortType);
+        List<InternalShare> internalShares = getInternalShares(searchConditions, sortField, sortType);
+
+        List<ShareItem> shareItems = new ArrayList<>(externalShares);
+        shareItems.addAll(internalShares);
+
+        Comparator<ShareItem> comparing = Comparator.comparing(ShareItem::getCreationDate, Comparator.nullsLast(Comparator.naturalOrder()));
+        if(ToyboxConstants.SORT_TYPE_DESCENDING.equalsIgnoreCase(sortType)){
+            shareItems.sort(comparing.reversed());
+        }
+        else if(ToyboxConstants.SORT_TYPE_ASCENDING.equalsIgnoreCase(sortType)){
+            shareItems.sort(comparing);
+        }
+        else{
+            shareItems.sort(comparing.reversed());
+        }
+
+        return shareItems;
+    }
+    @LogEntryExitExecutionTime
+    @SuppressWarnings("unchecked")
+    private List<ExternalShare> getExternalShares(List<SearchCondition> searchConditions, String sortField, String sortType){
+        OrderSpecifier<?> order;
+        ToyboxPredicateBuilder<ExternalShare> builder = new ToyboxPredicateBuilder().with(searchConditions, ExternalShare.class);
+
+        if(ToyboxConstants.SORT_TYPE_ASCENDING.equalsIgnoreCase(sortType)){
+            if("creationDate".equalsIgnoreCase(sortField)){
+                order = QExternalShare.externalShare.creationDate.asc();
+            }
+            else if("expirationDate".equalsIgnoreCase(sortField)){
+                order = QExternalShare.externalShare.expirationDate.asc();
+            }
+            else{
+                order = new ToyboxStringPath(QExternalShare.externalShare, sortField).asc();
+            }
+        }
+        else if(ToyboxConstants.SORT_TYPE_DESCENDING.equalsIgnoreCase(sortType)){
+            if("creationDate".equalsIgnoreCase(sortField)){
+                order = QExternalShare.externalShare.creationDate.desc();
+            }
+            else if("expirationDate".equalsIgnoreCase(sortField)){
+                order = QExternalShare.externalShare.expirationDate.desc();
+            }
+            else{
+                order = new ToyboxStringPath(QExternalShare.externalShare, sortField).desc();
+            }
+        }
+        else{
+            throw new IllegalArgumentException("Sort type '" + sortType + "' is invalid!");
+        }
+
+        Iterable<ExternalShare> iterableAssets = externalSharesRepository.findAll(builder.build(), order);
+        return Lists.newArrayList(iterableAssets);
     }
 
     @LogEntryExitExecutionTime
-    public List<InternalShare> getAllInternalShares(){
-        return internalSharesRepository.getAllInternalShares();
-    }
+    @SuppressWarnings("unchecked")
+    private List<InternalShare> getInternalShares(List<SearchCondition> searchConditions, String sortField, String sortType){
+        OrderSpecifier<?> order;
+        ToyboxPredicateBuilder<InternalShare> builder = new ToyboxPredicateBuilder().with(searchConditions, InternalShare.class);
 
-    @LogEntryExitExecutionTime
-    public List<ExternalShare> getExternalSharesWithSourceUser(User user){
-        return externalSharesRepository.getExternalSharesByUsername(user.getUsername());
-    }
+        if(ToyboxConstants.SORT_TYPE_ASCENDING.equalsIgnoreCase(sortType)){
+            if("creationDate".equalsIgnoreCase(sortField)){
+                order = QInternalShare.internalShare.creationDate.asc();
+            }
+            else if("expirationDate".equalsIgnoreCase(sortField)){
+                order = QInternalShare.internalShare.expirationDate.asc();
+            }
+            else{
+                order = new ToyboxStringPath(QExternalShare.externalShare, sortField).asc();
+            }
+        }
+        else if(ToyboxConstants.SORT_TYPE_DESCENDING.equalsIgnoreCase(sortType)){
+            if("creationDate".equalsIgnoreCase(sortField)){
+                order = QInternalShare.internalShare.creationDate.desc();
+            }
+            else if("expirationDate".equalsIgnoreCase(sortField)){
+                order = QInternalShare.internalShare.expirationDate.desc();
+            }
+            else{
+                order = new ToyboxStringPath(QExternalShare.externalShare, sortField).desc();
+            }
+        }
+        else{
+            throw new IllegalArgumentException("Sort type '" + sortType + "' is invalid!");
+        }
 
-    @LogEntryExitExecutionTime
-    public List<InternalShare> getInternalSharesWithSourceUser(User user){
-        return internalSharesRepository.getInternalSharesByUsername(user.getUsername());
+        Iterable<InternalShare> iterableAssets = internalSharesRepository.findAll(builder.build(), order);
+        return Lists.newArrayList(iterableAssets);
     }
 
     @LogEntryExitExecutionTime

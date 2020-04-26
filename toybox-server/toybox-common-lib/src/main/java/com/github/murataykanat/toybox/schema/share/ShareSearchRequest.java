@@ -2,6 +2,7 @@ package com.github.murataykanat.toybox.schema.share;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
+import com.github.murataykanat.toybox.schema.search.SearchCondition;
 
 import java.io.Serializable;
 import java.util.List;
@@ -17,6 +18,8 @@ public class ShareSearchRequest implements Serializable {
     private String sortColumn;
     @JsonProperty("assetSearchRequestFacetList")
     private List<SearchRequestFacet> searchRequestFacetList;
+    @JsonProperty("searchConditions")
+    private List<SearchCondition> searchConditions;
 
     public int getLimit() {
         return limit;
@@ -56,5 +59,13 @@ public class ShareSearchRequest implements Serializable {
 
     public void setSearchRequestFacetList(List<SearchRequestFacet> searchRequestFacetList) {
         this.searchRequestFacetList = searchRequestFacetList;
+    }
+
+    public List<SearchCondition> getSearchConditions() {
+        return searchConditions;
+    }
+
+    public void setSearchConditions(List<SearchCondition> searchConditions) {
+        this.searchConditions = searchConditions;
     }
 }

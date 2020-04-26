@@ -7,8 +7,8 @@ const shares = new Vue({
         isLoading: true,
         isDeleting: false,
         shares:[],
-        defaultSortType: 'des',
-        defaultSortColumn: 'creation_date',
+        defaultSortType: 'DESC',
+        defaultSortColumn: 'creationDate',
     },
     computed:{
 
