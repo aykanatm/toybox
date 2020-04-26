@@ -47,8 +47,6 @@ public class ShareController {
     @Autowired
     private ShareUtils shareUtils;
     @Autowired
-    private SortUtils sortUtils;
-    @Autowired
     private FacetUtils facetUtils;
 
     @Autowired
