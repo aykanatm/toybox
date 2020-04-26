@@ -51,8 +51,6 @@ public class ImportJobConfig {
     @Autowired
     private AssetUtils assetUtils;
     @Autowired
-    private ContainerUtils containerUtils;
-    @Autowired
     private SortUtils sortUtils;
     @Autowired
     private ShareUtils shareUtils;
@@ -142,9 +140,8 @@ public class ImportJobConfig {
                         String containerId = (String) jobParameters.get(ToyboxConstants.JOB_PARAM_CONTAINER_ID);
 
                         if(StringUtils.isNotBlank(username)){
-                            if(StringUtils.isBlank(containerId)){
-                                Container userContainer = containerUtils.getUserContainer(username);
-                                containerId = userContainer.getId();
+                            if(StringUtils.isBlank(containerId) || containerId.equalsIgnoreCase("root")){
+                                containerId = username;
                             }
 
                             for(Map.Entry<String, Object> jobParameter: jobParameters.entrySet()){

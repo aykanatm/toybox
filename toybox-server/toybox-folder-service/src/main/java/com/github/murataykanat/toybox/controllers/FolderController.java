@@ -70,50 +70,51 @@ public class FolderController {
                     if(StringUtils.isNotBlank(createContainerRequest.getContainerName())){
                         User user = authenticationUtils.getUser(authentication);
                         if(user != null){
-                            boolean canCreateFolder;
+                            boolean canCreateFolder = false;
                             boolean canSendNotification = false;
+                            String containerName = createContainerRequest.getContainerName();
+                            String parentContainerId = createContainerRequest.getParentContainerId();
                             Container parentContainer = null;
 
                             String errorMessage = "";
-                            if(StringUtils.isBlank(createContainerRequest.getParentContainerId())){
+                            if(StringUtils.isBlank(parentContainerId) || parentContainerId.equalsIgnoreCase("root")){
                                 if(authenticationUtils.isAdminUser(authentication)){
-                                    Container duplicateTopLevelContainer = containerUtils.findDuplicateTopLevelContainer(createContainerRequest.getContainerName());
+                                    Container duplicateTopLevelContainer = containerUtils.findDuplicateTopLevelContainer(containerName);
                                     if(duplicateTopLevelContainer == null){
                                         canCreateFolder = true;
                                     }
                                     else{
                                         canCreateFolder = false;
-                                        errorMessage = "The root folder already has a folder named '" + createContainerRequest.getContainerName() + "'.";
+                                        errorMessage = "The root folder already has a folder named '" + containerName + "'.";
                                     }
-
                                 }
                                 else{
-                                    canCreateFolder = false;
-                                    errorMessage = "You are not allowed to create a folder under the root folder.";
+                                    canCreateFolder = true;
+                                    parentContainerId = user.getUsername();
                                 }
                             }
                             else{
                                 boolean canEdit = true;
 
-                                if(shareUtils.isContainerSharedWithUser(user.getId(), createContainerRequest.getParentContainerId())){
-                                    List<InternalShare> internalSharesWithTargetUser = shareUtils.getInternalSharesWithTargetUser(user.getId(), createContainerRequest.getParentContainerId(), false);
+                                if(shareUtils.isContainerSharedWithUser(user.getId(), parentContainerId)){
+                                    List<InternalShare> internalSharesWithTargetUser = shareUtils.getInternalSharesWithTargetUser(user.getId(), parentContainerId, false);
 
                                     for(InternalShare internalShare: internalSharesWithTargetUser){
                                         canEdit = canEdit && internalShare.getCanEdit().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES);
                                     }
                                 }
 
-                                parentContainer = containerUtils.getContainer(createContainerRequest.getParentContainerId());
+                                parentContainer = containerUtils.getContainer(parentContainerId);
 
                                 if(canEdit){
-                                    Container duplicateContainer = containerUtils.findDuplicateContainer(createContainerRequest.getParentContainerId(), createContainerRequest.getContainerName());
+                                    Container duplicateContainer = containerUtils.findDuplicateContainer(parentContainerId, containerName);
                                     if(duplicateContainer == null){
                                         canCreateFolder = true;
                                         canSendNotification = true;
                                     }
                                     else{
                                         canCreateFolder = false;
-                                        errorMessage = "The folder '" + parentContainer.getName() + "' already has a folder named '" + createContainerRequest.getContainerName() + "'.";
+                                        errorMessage = "The folder '" + parentContainer.getName() + "' already has a folder named '" + containerName + "'.";
                                     }
                                 }
                                 else{
@@ -124,8 +125,8 @@ public class FolderController {
 
                             if(canCreateFolder){
                                 Container container = new Container();
-                                container.setName(createContainerRequest.getContainerName());
-                                container.setParentId(createContainerRequest.getParentContainerId());
+                                container.setName(containerName);
+                                container.setParentId(parentContainerId);
                                 container.setCreatedByUsername(authentication.getName());
                                 container.setImportDate(Calendar.getInstance().getTime());
                                 container.setDeleted(ToyboxConstants.LOOKUP_NO);
