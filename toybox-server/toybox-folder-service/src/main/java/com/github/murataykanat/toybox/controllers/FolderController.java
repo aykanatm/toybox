@@ -245,6 +245,18 @@ public class FolderController {
                 throw new IllegalArgumentException("User is null!");
             }
 
+            if(!containerId.equalsIgnoreCase("root")){
+                Container container = containerUtils.getContainer(containerId);
+                if(container.getSystem().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES) && !user.getUsername().equalsIgnoreCase(containerId)){
+                    String errorMessage = "You do not have permission to access the folder '" + container.getName() + "'!";
+                    _logger.error(errorMessage);
+
+                    retrieveContainerContentsResult.setMessage(errorMessage);
+
+                    return new ResponseEntity<>(retrieveContainerContentsResult, HttpStatus.FORBIDDEN);
+                }
+            }
+            
             String sortField = assetSearchRequest.getSortColumn();
             String sortType = assetSearchRequest.getSortType();
 
@@ -293,7 +305,6 @@ public class FolderController {
             List<Container> containersByCurrentUser;
             if(!containerId.equalsIgnoreCase("root")){
                 Container container = containerUtils.getContainer(containerId);
-
                 List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(container.getId());
                 List<String> containerAssetIdsByContainerId = containerAssetsByContainerId.stream().map(ContainerAsset::getAssetId).collect(Collectors.toList());
 
