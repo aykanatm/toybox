@@ -425,14 +425,14 @@ public class FolderController {
                 }
 
                 // Set breadcrumbs
-                retrieveContainerContentsResult.setBreadcrumbs(containerUtils.generateContainerPath(container.getId()));
+                retrieveContainerContentsResult.setBreadcrumbs(containerUtils.generateContainerPath(container.getId(), user.getUsername()));
             }
             else{
                 containerSearchConditions.add(new SearchCondition("parentId", ToyboxConstants.SEARCH_CONDITION_IS_NULL, null,
                         ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND));
 
                 // Set breadcrumbs
-                retrieveContainerContentsResult.setBreadcrumbs(containerUtils.generateContainerPath(null));
+                retrieveContainerContentsResult.setBreadcrumbs(containerUtils.generateContainerPath(null, user.getUsername()));
             }
 
             containersByCurrentUser = containerUtils.getContainers(containerSearchConditions, sortField, sortType);

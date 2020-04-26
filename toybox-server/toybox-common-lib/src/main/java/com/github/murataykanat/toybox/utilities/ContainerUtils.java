@@ -543,7 +543,7 @@ public class ContainerUtils {
     }
 
     @LogEntryExitExecutionTime
-    public List<Breadcrumb> generateContainerPath(String containerId) throws Exception {
+    public List<Breadcrumb> generateContainerPath(String containerId, String username) {
         List<Breadcrumb> breadcrumbs = new ArrayList<>();
         Container container;
         Breadcrumb breadcrumb = new Breadcrumb();
@@ -557,26 +557,28 @@ public class ContainerUtils {
             while (StringUtils.isNotBlank(container.getParentId())){
                 container = getContainer(container.getParentId());
 
-                breadcrumb = new Breadcrumb();
-                breadcrumb.setContainerId(container.getId());
-                breadcrumb.setContainerName(container.getName());
+                if(container.getSystem().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES) && !containerId.equalsIgnoreCase(username)){
+                    breadcrumb = new Breadcrumb();
+                    breadcrumb.setContainerId(username);
+                    breadcrumb.setContainerName(username);
 
-                breadcrumbs.add(breadcrumb);
+                    breadcrumbs.add(breadcrumb);
+                }
+                else{
+                    breadcrumb = new Breadcrumb();
+                    breadcrumb.setContainerId(container.getId());
+                    breadcrumb.setContainerName(container.getName());
+
+                    breadcrumbs.add(breadcrumb);
+                }
             }
-
-            breadcrumb = new Breadcrumb();
-            breadcrumb.setContainerId(null);
-            breadcrumb.setContainerName("Root");
-
-            breadcrumbs.add(breadcrumb);
         }
-        else{
-            breadcrumb = new Breadcrumb();
-            breadcrumb.setContainerId(null);
-            breadcrumb.setContainerName("Root");
 
-            breadcrumbs.add(breadcrumb);
-        }
+        breadcrumb = new Breadcrumb();
+        breadcrumb.setContainerId(null);
+        breadcrumb.setContainerName("Root");
+
+        breadcrumbs.add(breadcrumb);
 
         return breadcrumbs;
     }
