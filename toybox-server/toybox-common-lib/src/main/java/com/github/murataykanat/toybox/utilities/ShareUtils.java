@@ -53,6 +53,8 @@ public class ShareUtils {
     private ContainerUtils containerUtils;
     @Autowired
     private AssetUtils assetUtils;
+    @Autowired
+    private SortUtils sortUtils;
 
     @Autowired
     private UsersRepository usersRepository;
@@ -635,18 +637,9 @@ public class ShareUtils {
         List<ShareItem> shareItems = new ArrayList<>(externalShares);
         shareItems.addAll(internalShares);
 
-        Comparator<ShareItem> comparing = Comparator.comparing(ShareItem::getCreationDate, Comparator.nullsLast(Comparator.naturalOrder()));
-        if(ToyboxConstants.SORT_TYPE_DESCENDING.equalsIgnoreCase(sortType)){
-            shareItems.sort(comparing.reversed());
-        }
-        else if(ToyboxConstants.SORT_TYPE_ASCENDING.equalsIgnoreCase(sortType)){
-            shareItems.sort(comparing);
-        }
-        else{
-            shareItems.sort(comparing.reversed());
-        }
+        List<ShareItem> result = sortUtils.sortItems(sortType, shareItems, Comparator.comparing(ShareItem::getCreationDate, Comparator.nullsLast(Comparator.naturalOrder())));
 
-        return shareItems;
+        return result;
     }
     @LogEntryExitExecutionTime
     @SuppressWarnings("unchecked")
