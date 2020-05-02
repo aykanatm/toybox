@@ -492,14 +492,29 @@ public class ShareController {
                         }
 
                         List<SearchRequestFacet> searchRequestFacetList = shareSearchRequest.getSearchRequestFacetList();
+
                         for (SearchRequestFacet searchRequestFacet: searchRequestFacetList){
                             String fieldName = searchRequestFacet.getFieldName();
-                            FacetField facetField = facetUtils.getFacetField(fieldName, new Asset());
 
-                            String dbFieldName = facetField.getFieldName();
-                            String fieldValue = searchRequestFacet.getFieldValue();
-                            searchConditions.add(new SearchCondition(dbFieldName, ToyboxConstants.SEARCH_CONDITION_EQUALS, fieldValue, facetField.getDataType(),
-                                    ToyboxConstants.SEARCH_OPERATOR_AND));
+                            FacetField facetField;
+
+                            try{
+                                facetField = facetUtils.getFacetField(fieldName, new ExternalShare());
+
+                                String dbFieldName = facetField.getFieldName();
+                                String fieldValue = searchRequestFacet.getFieldValue();
+                                searchConditions.add(new SearchCondition(dbFieldName, ToyboxConstants.SEARCH_CONDITION_EQUALS,
+                                        fieldValue, facetField.getDataType(), ToyboxConstants.SEARCH_OPERATOR_AND));
+                            }
+                            catch (IllegalArgumentException e){
+                                _logger.debug(e.getLocalizedMessage() + ". Trying the next valid object...");
+                                facetField = facetUtils.getFacetField(fieldName, new InternalShare());
+
+                                String dbFieldName = facetField.getFieldName();
+                                String fieldValue = searchRequestFacet.getFieldValue();
+                                searchConditions.add(new SearchCondition(dbFieldName, ToyboxConstants.SEARCH_CONDITION_EQUALS,
+                                        fieldValue, facetField.getDataType(), ToyboxConstants.SEARCH_OPERATOR_AND));
+                            }
                         }
 
                         if(authenticationUtils.isAdminUser(authentication)){
