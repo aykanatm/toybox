@@ -637,9 +637,7 @@ public class ShareUtils {
         List<ShareItem> shareItems = new ArrayList<>(externalShares);
         shareItems.addAll(internalShares);
 
-        List<ShareItem> result = sortUtils.sortItems(sortType, shareItems, Comparator.comparing(ShareItem::getCreationDate, Comparator.nullsLast(Comparator.naturalOrder())));
-
-        return result;
+        return sortUtils.sortItems(sortType, shareItems, Comparator.comparing(ShareItem::getCreationDate, Comparator.nullsLast(Comparator.naturalOrder())));
     }
     @LogEntryExitExecutionTime
     @SuppressWarnings("unchecked")
