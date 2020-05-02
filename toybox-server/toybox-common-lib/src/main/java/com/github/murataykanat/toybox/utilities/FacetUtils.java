@@ -60,19 +60,24 @@ public class FacetUtils {
     public <T> List<Facet>  getFacets (List<T> objects) throws IllegalAccessException {
         List<Facet> facets = new ArrayList<>();
         if(!objects.isEmpty()){
-            List<Field> declaredFields;
-
             HashSet<String> uniqueClasses = objects.stream().map(o -> o.getClass().getName()).collect(Collectors.toCollection(HashSet::new));
-            if(uniqueClasses.size() > 1){
-                List<Field> allFields = objects.stream()
-                        .map(o -> o.getClass().getDeclaredFields())
-                        .flatMap(Arrays::stream)
-                        .collect(Collectors.toList());
+            List<T> uniqueObjects = new ArrayList<>();
+            for(String uniqueClass: uniqueClasses){
+                uniqueObjects.add(objects.stream().filter(o -> o.getClass().getName().equalsIgnoreCase(uniqueClass)).findAny().get());
+            }
+
+            List<Field> allFields = uniqueObjects.stream()
+                    .map(o -> o.getClass().getDeclaredFields())
+                    .flatMap(Arrays::stream)
+                    .collect(Collectors.toList());
+
+            List<Field> declaredFields;
+            if(uniqueObjects.size() > 1){
                 Set<Field> duplicateFields = findDuplicates(allFields, Field::getName);
                 declaredFields = new ArrayList<>(duplicateFields);
             }
             else{
-                declaredFields = Arrays.asList(objects.get(0).getClass().getDeclaredFields());
+                declaredFields = allFields;
             }
 
             for(Field field: declaredFields){
