@@ -71,9 +71,6 @@ public class ShareUtils {
     @Autowired
     private ExternalSharesRepository externalSharesRepository;
 
-    @Value("${exportStagingPath}")
-    private String exportStagingPath;
-
     @LogEntryExitExecutionTime
     public ExternalShareResponse createExternalShare(User user, ExternalShareRequest externalShareRequest, SelectionContext selectionContext, HttpSession session) throws Exception {
         ExternalShareResponse externalShareResponse = new ExternalShareResponse();
@@ -883,23 +880,7 @@ public class ShareUtils {
     }
 
     @LogEntryExitExecutionTime
-    public void deleteExternalShare(String id) throws IOException {
-        ExternalShare externalShare = getExternalShare(id);
-        long jobId = externalShare.getJobId();
-        String jobFolderPath = exportStagingPath + File.separator + jobId;
-        File jobFolder = new File(jobFolderPath);
-        if(jobFolder.exists()){
-            if(jobFolder.isDirectory()){
-                FileUtils.deleteDirectory(jobFolder);
-            }
-            else{
-                throw new FileNotFoundException("The path '" + jobFolderPath + "' is not a valid folder path!");
-            }
-        }
-        else{
-            throw new FileNotFoundException("The path '" + jobFolderPath + "' is not found!");
-        }
-
+    public void deleteExternalShare(String id) {
         externalSharesRepository.deleteExternalShareById(id);
     }
 
