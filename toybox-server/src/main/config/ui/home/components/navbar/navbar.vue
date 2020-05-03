@@ -44,7 +44,7 @@
                     </div>
                     <div v-else class="ui feed toybox-notification-feed">
                         <div class="navbar-mark-all-notifications-as-read-button">
-                            <span v-on:click="markAllNotificationAsRead">
+                            <span v-on:click.stop="markAllNotificationAsRead">
                                 <i class="bell slash icon"></i> Mark all as read
                             </span>
                         </div>
