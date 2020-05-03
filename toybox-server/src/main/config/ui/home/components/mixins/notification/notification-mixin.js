@@ -1,22 +1,56 @@
 var notificationMixin = {
     data:function(){
         return{
-            notifications:[]
+            isLoading: false,
+            // Sorting
+            sortType: 'DESC',
+            sortColumn: 'date',
+            notifications:[],
+            searchQuery:'',
+            // Overrides
+            limit: 8
         }
     },
     methods:{
-        getNotifications:function(fromUsername, content, notificationDate, isRead, offset, limit, searchRequestFacetList, fromNavbar){
+        getNotifications:function(offset, limit, sortType, sortColumn, searchRequestFacetList, fromNavbar){
+            if(!fromNavbar){
+                this.isLoading = true;
+            }
             this.getService("toybox-notification-loadbalancer")
             .then(response => {
                 if(response){
                     var searchRequest = {
-                        'fromUsername': fromUsername,
-                        'content': content,
-                        'notificationDate': notificationDate,
-                        'isRead': isRead,
-                        'searchRequestFacetList': searchRequestFacetList,
-                        'limit' : limit,
-                        'offset' : offset
+                        limit: limit,
+                        offset: offset,
+                        sortType: sortType,
+                        sortColumn: sortColumn,
+                        searchRequestFacetList: searchRequestFacetList,
+                        searchConditions:[]
+                    };
+
+                    if(fromNavbar){
+                        var searchQuerySearchCondition = {
+                            keyword: 'N',
+                            field:'isRead',
+                            operator: 'EQUALS',
+                            dataType: 'STRING',
+                            booleanOperator: 'AND'
+                        }
+
+                        searchRequest.searchConditions.push(searchQuerySearchCondition)
+                    }
+                    else{
+                        if(this.searchQuery !== undefined && this.searchQuery !== ''){
+                            var searchQuerySearchCondition = {
+                                keyword: this.searchQuery,
+                                field:'notification',
+                                operator: 'CONTAINS',
+                                dataType: 'STRING',
+                                booleanOperator: 'AND'
+                            }
+
+                            searchRequest.searchConditions.push(searchQuerySearchCondition)
+                        }
                     }
 
                     return axios.post(response.data.value + "/notifications/search", searchRequest)
@@ -73,8 +107,11 @@ var notificationMixin = {
                             else{
                                 this.$root.$emit('message-sent', 'Error', "There was no response from the notification loadbalancer!");
                             }
+
+                            this.isLoading = false;
                         })
                         .catch(error => {
+                            this.isLoading = false;
                             var errorMessage;
 
                             if(error.response){
@@ -96,22 +133,21 @@ var notificationMixin = {
                 }
             })
             .catch(error => {
+                this.isLoading = false;
                 var errorMessage;
 
-                if(error.response.status == 401){
-                    window.location = '/logout';
+                if(error.response){
+                    errorMessage = error.response.data.message
+                    if(error.response.status == 401){
+                        window.location = '/logout';
+                    }
                 }
                 else{
-                    if(error.response){
-                        errorMessage = error.response.data.message
-                    }
-                    else{
-                        errorMessage = error.message;
-                    }
-
-                    console.error(errorMessage);
-                    this.$root.$emit('message-sent', 'Error', errorMessage);
+                    errorMessage = error.message;
                 }
+
+                console.error(errorMessage);
+                this.$root.$emit('message-sent', 'Error', errorMessage);
             });
         },
         markAllNotificationAsRead:function(event){
@@ -132,7 +168,7 @@ var notificationMixin = {
                                 this.$root.$emit('message-sent', 'Success', response.data.message);
 
                                 if($(event.target.parentElement).attr('class') === 'navbar-mark-all-notifications-as-read-button'){
-                                    this.$root.$emit('notifications-updated', null, '*', new Date(), 'N', 0, 100, this.searchRequestFacetList, true);
+                                    this.$root.$emit('notifications-updated', 0, 100, this.sortType, this.sortColumn, this.searchRequestFacetList, true);
                                 }
                                 else{
                                     this.$root.$emit('refresh-notifications');

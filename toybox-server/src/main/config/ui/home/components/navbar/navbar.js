@@ -18,7 +18,7 @@ module.exports = {
         }
     },
     mounted:function(){
-        this.getNotifications(null, '*', new Date(), 'N', 0, 100, this.searchRequestFacetList, true);
+        this.getNotifications(0, 100, this.sortType, this.sortColumn, this.searchRequestFacetList, true);
         this.$root.$on('notifications-updated', this.getNotifications);
         this.$root.$on('clear-search-query', this.clearSearchQuery);
     },

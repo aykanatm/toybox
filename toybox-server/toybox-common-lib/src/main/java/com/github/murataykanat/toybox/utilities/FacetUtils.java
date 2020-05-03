@@ -7,8 +7,6 @@ import com.github.murataykanat.toybox.models.annotations.FacetDataType;
 import com.github.murataykanat.toybox.models.annotations.FacetDefaultLookup;
 import com.github.murataykanat.toybox.models.search.FacetField;
 import com.github.murataykanat.toybox.schema.common.Facet;
-import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
-import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang.reflect.FieldUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -184,138 +182,12 @@ public class FacetUtils {
         return facets;
     }
 
+    @LogEntryExitExecutionTime
     private <U, T> Set<T> findDuplicates(Collection<T> collection, Function<? super T,? extends U> keyExtractor) {
         Map<U, T> uniques = new HashMap<>(); // maps unique keys to corresponding values
         return collection.stream()
                 .filter(e -> uniques.put(keyExtractor.apply(e), e) != null)
                 .collect(Collectors.toSet());
-    }
-
-    @LogEntryExitExecutionTime
-    public <T> boolean hasFacetValue(T obj, List<SearchRequestFacet> searchRequestFacetList){
-        boolean result = true;
-
-        try{
-            for(SearchRequestFacet searchRequestFacet: searchRequestFacetList){
-                boolean hasFacet = false;
-                for(Field field: obj.getClass().getDeclaredFields()){
-                    if(field.isAnnotationPresent(FacetColumnName.class)){
-                        String facetFieldName = field.getAnnotation(FacetColumnName.class).value();
-                        if(searchRequestFacet.getFieldName().equalsIgnoreCase(facetFieldName)){
-                            if(field.isAnnotationPresent(FacetDataType.class) && field.getAnnotation(FacetDataType.class).value().equalsIgnoreCase("Date")){
-                                if(field.isAnnotationPresent(FacetDefaultLookup.class)){
-                                    String fieldValue = searchRequestFacet.getFieldValue();
-
-                                    Calendar cal = Calendar.getInstance();
-                                    cal.set(Calendar.HOUR_OF_DAY, 0);
-                                    cal.set(Calendar.MINUTE, 0);
-                                    cal.set(Calendar.SECOND, 0);
-                                    Date today = cal.getTime();
-
-                                    cal = Calendar.getInstance();
-                                    cal.set(Calendar.HOUR_OF_DAY, 0);
-                                    cal.set(Calendar.MINUTE, 0);
-                                    cal.set(Calendar.SECOND, 0);
-                                    cal.add(Calendar.DAY_OF_MONTH, 1);
-                                    Date tomorrow = cal.getTime();
-
-                                    cal = Calendar.getInstance();
-                                    cal.set(Calendar.HOUR_OF_DAY, 0);
-                                    cal.set(Calendar.MINUTE, 0);
-                                    cal.set(Calendar.SECOND, 0);
-                                    cal.add(Calendar.DAY_OF_MONTH, -7);
-                                    Date sevenDaysAgo = cal.getTime();
-
-                                    cal = Calendar.getInstance();
-                                    cal.set(Calendar.HOUR_OF_DAY, 0);
-                                    cal.set(Calendar.MINUTE, 0);
-                                    cal.set(Calendar.SECOND, 0);
-                                    cal.add(Calendar.DAY_OF_MONTH, 7);
-                                    Date sevenDaysLater = cal.getTime();
-
-                                    cal = Calendar.getInstance();
-                                    cal.set(Calendar.HOUR_OF_DAY, 0);
-                                    cal.set(Calendar.MINUTE, 0);
-                                    cal.set(Calendar.SECOND, 0);
-                                    cal.add(Calendar.DAY_OF_MONTH, -30);
-                                    Date thirtyDaysAgo = cal.getTime();
-
-                                    cal = Calendar.getInstance();
-                                    cal.set(Calendar.HOUR_OF_DAY, 0);
-                                    cal.set(Calendar.MINUTE, 0);
-                                    cal.set(Calendar.SECOND, 0);
-                                    cal.add(Calendar.DAY_OF_MONTH, 30);
-                                    Date thirtyDaysLater = cal.getTime();
-
-                                    Date value = (Date) PropertyUtils.getProperty(obj, field.getName());
-
-                                    if(fieldValue.equalsIgnoreCase("Next 30+ days")){
-                                        if(value.after(thirtyDaysLater)){
-                                            hasFacet = true;
-                                            break;
-                                        }
-                                    }
-                                    else if(fieldValue.equalsIgnoreCase("Next 30 days")){
-                                        if(value.after(today) && value.before(thirtyDaysLater)){
-                                            hasFacet = true;
-                                            break;
-                                        }
-                                    }
-                                    else if(fieldValue.equalsIgnoreCase("Next 7 days")){
-                                        if(value.after(today) && value.before(sevenDaysLater)){
-                                            hasFacet = true;
-                                            break;
-                                        }
-                                    }
-                                    else if(fieldValue.equalsIgnoreCase("Today")){
-                                        if((value.after(today) || value.equals(today)) && value.before(tomorrow)){
-                                            hasFacet = true;
-                                            break;
-                                        }
-                                    }
-                                    else if(fieldValue.equalsIgnoreCase("Past 7 days")){
-                                        if(value.after(sevenDaysAgo) && value.before(tomorrow)){
-                                            hasFacet = true;
-                                            break;
-                                        }
-                                    }
-                                    else if(fieldValue.equalsIgnoreCase("Past 30 days")){
-                                        if(value.after(thirtyDaysAgo) && value.before(tomorrow)){
-                                            hasFacet = true;
-                                            break;
-                                        }
-                                    }
-                                    else if(fieldValue.equalsIgnoreCase("Past 30+ days")){
-                                        if(value.before(thirtyDaysAgo)){
-                                            hasFacet = true;
-                                            break;
-                                        }
-                                    }
-                                    else{
-                                        throw new IllegalArgumentException("Lookup value " + fieldValue + " is not recognized.");
-                                    }
-                                }
-                            }
-                            else{
-
-                                if(searchRequestFacet.getFieldValue().equalsIgnoreCase((String) FieldUtils.readField(obj, field.getName(), true))){
-                                    hasFacet = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                result = result && hasFacet;
-            }
-        }
-        catch (Exception e){
-            String errorMessage = "An error occurred while determining if the job has the facet value. " + e.getLocalizedMessage();
-            _logger.error(errorMessage, e);
-        }
-
-        return result;
     }
 
     @LogEntryExitExecutionTime

@@ -14,7 +14,10 @@ module.exports = {
         return  {
           componentName: 'Notification',
           avatarUrl: '',
-          avatarLoadedSuccessfully: true
+          avatarLoadedSuccessfully: true,
+          // Sorting
+          sortType: 'DESC',
+          sortColumn: 'date',
         }
     },
     mounted: function(){
@@ -99,7 +102,7 @@ module.exports = {
                                     }
 
                                     if(isNavbar){
-                                        this.$root.$emit('notifications-updated', null, '*', new Date(), 'N', 0, 100, this.searchRequestFacetList, isNavbar);
+                                        this.$root.$emit('notifications-updated', 0, 100, this.sortType, this.sortColumn, this.searchRequestFacetList, isNavbar);
                                     }
                                     else{
                                         this.$root.$emit('refresh-notifications');

@@ -2,19 +2,21 @@ package com.github.murataykanat.toybox.controllers;
 
 import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
+import com.github.murataykanat.toybox.dbo.Asset;
+import com.github.murataykanat.toybox.models.search.FacetField;
 import com.github.murataykanat.toybox.repositories.*;
 import com.github.murataykanat.toybox.schema.common.Facet;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.dbo.Notification;
 import com.github.murataykanat.toybox.schema.common.SearchRequestFacet;
-import com.github.murataykanat.toybox.schema.notification.SearchNotificationsRequest;
-import com.github.murataykanat.toybox.schema.notification.SearchNotificationsResponse;
+import com.github.murataykanat.toybox.schema.notification.NotificationSearchRequest;
+import com.github.murataykanat.toybox.schema.notification.NotificationSearchResponse;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
-import com.github.murataykanat.toybox.schema.notification.UpdateNotificationsRequest;
+import com.github.murataykanat.toybox.schema.notification.NotificationUpdateRequest;
+import com.github.murataykanat.toybox.schema.search.SearchCondition;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import com.github.murataykanat.toybox.utilities.FacetUtils;
-import com.github.murataykanat.toybox.utilities.SortUtils;
-import org.apache.commons.lang.StringUtils;
+import com.github.murataykanat.toybox.utilities.NotificationUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -29,10 +31,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 public class NotificationController {
@@ -43,7 +43,7 @@ public class NotificationController {
     @Autowired
     private FacetUtils facetUtils;
     @Autowired
-    private SortUtils sortUtils;
+    private NotificationUtils notificationUtils;
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
@@ -124,108 +124,109 @@ public class NotificationController {
 
     @LogEntryExitExecutionTime
     @RequestMapping(value = "/notifications/search", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<SearchNotificationsResponse> searchNotifications(Authentication authentication, @RequestBody SearchNotificationsRequest searchNotificationsRequest){
-        SearchNotificationsResponse searchNotificationsResponse = new SearchNotificationsResponse();
+    public ResponseEntity<NotificationSearchResponse> searchNotifications(Authentication authentication, @RequestBody NotificationSearchRequest notificationSearchRequest){
+        NotificationSearchResponse notificationSearchResponse = new NotificationSearchResponse();
 
         try{
             if(authenticationUtils.isSessionValid(authentication)){
-                if(searchNotificationsRequest != null){
-                    int offset = searchNotificationsRequest.getOffset();
-                    int limit = searchNotificationsRequest.getLimit();
-                    List<SearchRequestFacet> searchRequestFacetList = searchNotificationsRequest.getSearchRequestFacetList();
+                if(notificationSearchRequest != null){
+                    String sortField = notificationSearchRequest.getSortColumn();
+                    String sortType = notificationSearchRequest.getSortType();
+                    int offset = notificationSearchRequest.getOffset();
+                    int limit = notificationSearchRequest.getLimit();
 
-                    List<Notification> notificationsByUsername = notificationsRepository.getNotificationsByUsername(authentication.getName());
+                    List<SearchCondition> searchConditions = notificationSearchRequest.getSearchConditions();
+                    if(searchConditions == null){
+                        searchConditions = new ArrayList<>();
+                    }
 
-                    if(!notificationsByUsername.isEmpty()){
-                        List<Notification> notifications = new ArrayList<>();
-                        for(Notification notification: notificationsByUsername){
-                            boolean fromUsernameMatch = searchNotificationsRequest.getFrom() == null || (StringUtils.isBlank(searchNotificationsRequest.getFrom()) ? true : notification.getFrom().equalsIgnoreCase(searchNotificationsRequest.getFrom()));
-                            boolean contentMatch = searchNotificationsRequest.getContent().equalsIgnoreCase("*") ? true : notification.getNotification().contains(searchNotificationsRequest.getContent());
-                            boolean dateMatch = searchNotificationsRequest.getDate() == null ? true : notification.getDate().before(searchNotificationsRequest.getDate());
-                            boolean isReadMatch = StringUtils.isBlank(searchNotificationsRequest.getIsRead()) ? true : notification.getIsRead().equalsIgnoreCase(searchNotificationsRequest.getIsRead());
+                    List<SearchRequestFacet> searchRequestFacetList = notificationSearchRequest.getSearchRequestFacetList();
 
-                            if(fromUsernameMatch && contentMatch && dateMatch && isReadMatch){
-                                notifications.add(notification);
-                            }
+                    if(searchRequestFacetList != null){
+                        for (SearchRequestFacet searchRequestFacet: searchRequestFacetList){
+                            String fieldName = searchRequestFacet.getFieldName();
+                            FacetField facetField = facetUtils.getFacetField(fieldName, new Notification());
+
+                            String dbFieldName = facetField.getFieldName();
+                            String fieldValue = searchRequestFacet.getFieldValue();
+                            searchConditions.add(new SearchCondition(dbFieldName, ToyboxConstants.SEARCH_CONDITION_EQUALS, fieldValue,
+                                    facetField.getDataType(), ToyboxConstants.SEARCH_OPERATOR_AND));
                         }
+                    }
 
-                        List<Notification> facetedNotifications;
-                        if(searchRequestFacetList != null && !searchRequestFacetList.isEmpty()){
-                            facetedNotifications = notifications.stream().filter(notification -> facetUtils.hasFacetValue(notification, searchRequestFacetList)).collect(Collectors.toList());
-                        }
-                        else{
-                            facetedNotifications = notifications;
-                        }
+                    searchConditions.add(new SearchCondition("username", ToyboxConstants.SEARCH_CONDITION_EQUALS, authentication.getName(),
+                            ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND));
 
-                        List<Facet> facets = facetUtils.getFacets(facetedNotifications);
 
-                        searchNotificationsResponse.setFacets(facets);
+                    List<Notification> notifications = notificationUtils.getNotifications(searchConditions, sortField, sortType);
 
-                        sortUtils.sortItems("des", facetedNotifications, Comparator.comparing(Notification::getDate, Comparator.nullsLast(Comparator.naturalOrder())));
+                    if(!notifications.isEmpty()){
+                        List<Facet> facets = facetUtils.getFacets(notifications);
 
-                        int totalRecords = facetedNotifications.size();
-                        int startIndex = offset;
-                        int endIndex = (offset + limit) < totalRecords ? (offset + limit) : totalRecords;
+                        notificationSearchResponse.setFacets(facets);
 
-                        List<Notification> notificationsOnPage = facetedNotifications.subList(startIndex, endIndex);
+                        int totalRecords = notifications.size();
+                        int endIndex = Math.min((offset + limit), totalRecords);
 
-                        searchNotificationsResponse.setTotalRecords(totalRecords);
-                        searchNotificationsResponse.setNotifications(notificationsOnPage);
-                        searchNotificationsResponse.setMessage("Notifications were retrieved successfully!");
+                        List<Notification> notificationsOnPage = notifications.subList(offset, endIndex);
 
-                        return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.OK);
+                        notificationSearchResponse.setTotalRecords(totalRecords);
+                        notificationSearchResponse.setNotifications(notificationsOnPage);
+                        notificationSearchResponse.setMessage("Notifications were retrieved successfully!");
+
+                        return new ResponseEntity<>(notificationSearchResponse, HttpStatus.OK);
                     }
                     else{
                         String message = "There is no notifications to return.";
                         _logger.debug(message);
 
-                        searchNotificationsResponse.setMessage(message);
+                        notificationSearchResponse.setMessage(message);
 
-                        return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.NO_CONTENT);
+                        return new ResponseEntity<>(notificationSearchResponse, HttpStatus.NO_CONTENT);
                     }
                 }
                 else{
                     String errorMessage = "Search notifications request is null!";
                     _logger.error(errorMessage);
 
-                    searchNotificationsResponse.setMessage(errorMessage);
+                    notificationSearchResponse.setMessage(errorMessage);
 
-                    return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.BAD_REQUEST);
+                    return new ResponseEntity<>(notificationSearchResponse, HttpStatus.BAD_REQUEST);
                 }
             }
             else{
                 String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
-                searchNotificationsResponse.setMessage(errorMessage);
+                notificationSearchResponse.setMessage(errorMessage);
 
-                return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.UNAUTHORIZED);
+                return new ResponseEntity<>(notificationSearchResponse, HttpStatus.UNAUTHORIZED);
             }
         }
         catch (Exception e){
             String errorMessage = "An error occurred while searching for notifications. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
-            searchNotificationsResponse.setMessage(errorMessage);
+            notificationSearchResponse.setMessage(errorMessage);
 
-            return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(notificationSearchResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @LogEntryExitExecutionTime
     @RequestMapping(value = "/notifications", method = RequestMethod.PATCH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<GenericResponse> updateNotifications(Authentication authentication, @RequestBody UpdateNotificationsRequest updateNotificationsRequest){
+    public ResponseEntity<GenericResponse> updateNotifications(Authentication authentication, @RequestBody NotificationUpdateRequest notificationUpdateRequest){
         GenericResponse genericResponse = new GenericResponse();
 
         try{
             if(authenticationUtils.isSessionValid(authentication)){
-                if(updateNotificationsRequest != null){
-                    if(!updateNotificationsRequest.getNotificationIds().isEmpty()){
-                        if(updateNotificationsRequest.getNotificationIds().get(0) == 0){
-                            notificationsRepository.updateAllNotifications(updateNotificationsRequest.getIsRead());
+                if(notificationUpdateRequest != null){
+                    if(!notificationUpdateRequest.getNotificationIds().isEmpty()){
+                        if(notificationUpdateRequest.getNotificationIds().get(0) == 0){
+                            notificationsRepository.updateAllNotifications(notificationUpdateRequest.getIsRead());
                         }
                         else{
-                            notificationsRepository.updateNotifications(updateNotificationsRequest.getIsRead(), updateNotificationsRequest.getNotificationIds());
+                            notificationsRepository.updateNotifications(notificationUpdateRequest.getIsRead(), notificationUpdateRequest.getNotificationIds());
                         }
 
                         genericResponse.setMessage("Notifications were updated successfully!");

@@ -1,21 +1,28 @@
 package com.github.murataykanat.toybox.repositories;
 
 import com.github.murataykanat.toybox.dbo.Notification;
+import com.github.murataykanat.toybox.dbo.QNotification;
+import com.querydsl.core.types.dsl.StringExpression;
+import com.querydsl.core.types.dsl.StringPath;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.querydsl.QueryDslPredicateExecutor;
+import org.springframework.data.querydsl.binding.QuerydslBinderCustomizer;
+import org.springframework.data.querydsl.binding.QuerydslBindings;
+import org.springframework.data.querydsl.binding.SingleValueBinding;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
 
-public interface NotificationsRepository extends JpaRepository<Notification, Integer> {
-    @Query(value = "SELECT id, username, from_username, notification, notification_date, is_read FROM notifications", nativeQuery = true)
-    List<Notification> getNotifications();
-
-    @Query(value = "SELECT id, username, from_username, notification, notification_date, is_read FROM notifications WHERE username=?1", nativeQuery = true)
-    List<Notification> getNotificationsByUsername(String username);
+public interface NotificationsRepository extends JpaRepository<Notification, Integer>, QueryDslPredicateExecutor<Notification>, QuerydslBinderCustomizer<QNotification> {
+    @Override
+    default public void customize(QuerydslBindings bindings, QNotification root) {
+        bindings.bind(String.class)
+                .first((SingleValueBinding<StringPath, String>) StringExpression::containsIgnoreCase);
+    }
 
     @Transactional
     @Modifying

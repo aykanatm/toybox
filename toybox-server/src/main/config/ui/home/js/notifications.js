@@ -2,15 +2,7 @@ const files = new Vue({
     el: '#toybox-notifications',
     mixins:[paginationMixin, messageMixin, facetMixin, userMixin, serviceMixin, notificationMixin],
     data:{
-        view: 'notifications',
-        notifications:[],
-        fromUsername: null,
-        content: '*',
-        notificationDate: new Date(),
-        isRead: null,
-        isLoading: false,
-        // Overrides
-        limit: 8
+        view: 'notifications'
     },
     mounted:function(){
         var csrfHeader = $("meta[name='_csrf_header']").attr("content");
@@ -45,17 +37,22 @@ const files = new Vue({
                 this.searchRequestFacetList.splice(index, 1);
             }
 
-            this.getNotifications(this.fromUsername, this.content, this.notificationDate, this.isRead, this.offset, this.limit, this.searchRequestFacetList);
+            this.getNotifications(this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList, false);
         });
 
         this.$root.$on('message-sent', this.displayMessage);
         this.$root.$on('refresh-notifications', this.refreshNotifications);
+        this.$root.$on('perform-contextual-search', searchQuery => {
+            this.searchQuery = searchQuery;
 
-        this.getNotifications(this.fromUsername, this.content, this.notificationDate, this.isRead, this.offset, this.limit, this.searchRequestFacetList);
+            this.getNotifications(this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList, false);
+        });
+
+        this.getNotifications(this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList, false);
     },
     methods:{
         refreshNotifications:function(){
-            this.getNotifications(this.fromUsername, this.content, this.notificationDate, this.isRead, this.offset, this.limit, this.searchRequestFacetList);
+            this.getNotifications(this.offset, this.limit, this.sortType, this.sortColumn, this.searchRequestFacetList, false);
         }
     },
     components:{
