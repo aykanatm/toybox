@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;
 import java.util.List;
 
-public class UpdateNotificationsRequest implements Serializable {
+public class NotificationUpdateRequest implements Serializable {
     @JsonProperty("notificationIds")
     private List<Integer> notificationIds;
 

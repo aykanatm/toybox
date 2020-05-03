@@ -4,10 +4,10 @@ import com.github.murataykanat.toybox.annotations.LogEntryExitExecutionTime;
 import com.github.murataykanat.toybox.contants.ToyboxConstants;
 import com.github.murataykanat.toybox.ribbon.RibbonRetryHttpRequestFactory;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
-import com.github.murataykanat.toybox.schema.notification.SearchNotificationsRequest;
-import com.github.murataykanat.toybox.schema.notification.SearchNotificationsResponse;
+import com.github.murataykanat.toybox.schema.notification.NotificationSearchRequest;
+import com.github.murataykanat.toybox.schema.notification.NotificationSearchResponse;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
-import com.github.murataykanat.toybox.schema.notification.UpdateNotificationsRequest;
+import com.github.murataykanat.toybox.schema.notification.NotificationUpdateRequest;
 import com.github.murataykanat.toybox.utilities.AuthenticationUtils;
 import com.github.murataykanat.toybox.utilities.LoadbalancerUtils;
 import com.google.gson.Gson;
@@ -132,17 +132,17 @@ public class NotificationLoadbalancerController {
     @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "searchNotificationsErrorFallback")
     @RequestMapping(value = "/notifications/search", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<SearchNotificationsResponse> searchNotifications(Authentication authentication, HttpSession session, @RequestBody SearchNotificationsRequest searchNotificationsRequest){
-        SearchNotificationsResponse searchNotificationsResponse = new SearchNotificationsResponse();
+    public ResponseEntity<NotificationSearchResponse> searchNotifications(Authentication authentication, HttpSession session, @RequestBody NotificationSearchRequest notificationSearchRequest){
+        NotificationSearchResponse notificationSearchResponse = new NotificationSearchResponse();
 
         try{
             if(authenticationUtils.isSessionValid(authentication)){
-                if(searchNotificationsRequest != null){
+                if(notificationSearchRequest != null){
                     HttpHeaders headers = authenticationUtils.getHeaders(session);
                     String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.NOTIFICATION_SERVICE_NAME);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        return restTemplate.exchange(prefix + ToyboxConstants.NOTIFICATION_SERVICE_NAME + "/notifications/search", HttpMethod.POST, new HttpEntity<>(searchNotificationsRequest, headers), SearchNotificationsResponse.class);
+                        return restTemplate.exchange(prefix + ToyboxConstants.NOTIFICATION_SERVICE_NAME + "/notifications/search", HttpMethod.POST, new HttpEntity<>(notificationSearchRequest, headers), NotificationSearchResponse.class);
                     }
                     else{
                         throw new IllegalArgumentException("Service ID prefix is null!");
@@ -150,40 +150,40 @@ public class NotificationLoadbalancerController {
                 }
                 else{
                     String errorMessage = "Search notifications request parameter is null.";
-                    searchNotificationsResponse.setMessage(errorMessage);
+                    notificationSearchResponse.setMessage(errorMessage);
 
-                    return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.BAD_REQUEST);
+                    return new ResponseEntity<>(notificationSearchResponse, HttpStatus.BAD_REQUEST);
                 }
             }
             else{
                 String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
                 _logger.error(errorMessage);
 
-                searchNotificationsResponse.setMessage(errorMessage);
+                notificationSearchResponse.setMessage(errorMessage);
 
-                return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.UNAUTHORIZED);
+                return new ResponseEntity<>(notificationSearchResponse, HttpStatus.UNAUTHORIZED);
             }
         }
         catch (HttpStatusCodeException httpEx){
             JsonObject responseJson = new Gson().fromJson(httpEx.getResponseBodyAsString(), JsonObject.class);
-            searchNotificationsResponse.setMessage(responseJson.get("message").getAsString());
-            return new ResponseEntity<>(searchNotificationsResponse, httpEx.getStatusCode());
+            notificationSearchResponse.setMessage(responseJson.get("message").getAsString());
+            return new ResponseEntity<>(notificationSearchResponse, httpEx.getStatusCode());
         }
         catch (Exception e){
             String errorMessage = "An error occurred while searching notifications. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
-            searchNotificationsResponse.setMessage(errorMessage);
+            notificationSearchResponse.setMessage(errorMessage);
 
-            return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(notificationSearchResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @LogEntryExitExecutionTime
-    public ResponseEntity<SearchNotificationsResponse> searchNotificationsErrorFallback(Authentication authentication, HttpSession session, SearchNotificationsRequest searchNotificationsRequest, Throwable e){
-        SearchNotificationsResponse searchNotificationsResponse = new SearchNotificationsResponse();
+    public ResponseEntity<NotificationSearchResponse> searchNotificationsErrorFallback(Authentication authentication, HttpSession session, NotificationSearchRequest notificationSearchRequest, Throwable e){
+        NotificationSearchResponse notificationSearchResponse = new NotificationSearchResponse();
 
-        if(searchNotificationsRequest != null){
+        if(notificationSearchRequest != null){
             String errorMessage;
             if(e.getLocalizedMessage() != null){
                 errorMessage = "Unable to search notifications. " + e.getLocalizedMessage();
@@ -193,32 +193,32 @@ public class NotificationLoadbalancerController {
             }
 
             _logger.error(errorMessage, e);
-            searchNotificationsResponse.setMessage(errorMessage);
+            notificationSearchResponse.setMessage(errorMessage);
 
-            return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(notificationSearchResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         else{
             String errorMessage = "Search notifications request parameter is null.";
-            searchNotificationsResponse.setMessage(errorMessage);
+            notificationSearchResponse.setMessage(errorMessage);
 
-            return new ResponseEntity<>(searchNotificationsResponse, HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(notificationSearchResponse, HttpStatus.BAD_REQUEST);
         }
     }
 
     @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "updateNotificationsErrorFallback")
     @RequestMapping(value = "/notifications", method = RequestMethod.PATCH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<GenericResponse> updateNotifications(Authentication authentication, HttpSession session, @RequestBody UpdateNotificationsRequest updateNotificationsRequest){
+    public ResponseEntity<GenericResponse> updateNotifications(Authentication authentication, HttpSession session, @RequestBody NotificationUpdateRequest notificationUpdateRequest){
         GenericResponse genericResponse = new GenericResponse();
 
         try{
             if(authenticationUtils.isSessionValid(authentication)){
-                if(updateNotificationsRequest != null){
+                if(notificationUpdateRequest != null){
                     HttpHeaders headers = authenticationUtils.getHeaders(session);
                     String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.NOTIFICATION_SERVICE_NAME);
 
                     if(StringUtils.isNotBlank(prefix)){
-                        return restTemplate.exchange(prefix + ToyboxConstants.NOTIFICATION_SERVICE_NAME + "/notifications", HttpMethod.PATCH, new HttpEntity<>(updateNotificationsRequest, headers), GenericResponse.class);
+                        return restTemplate.exchange(prefix + ToyboxConstants.NOTIFICATION_SERVICE_NAME + "/notifications", HttpMethod.PATCH, new HttpEntity<>(notificationUpdateRequest, headers), GenericResponse.class);
                     }
                     else{
                         throw new IllegalArgumentException("Service ID prefix is null!");
@@ -256,9 +256,9 @@ public class NotificationLoadbalancerController {
     }
 
     @LogEntryExitExecutionTime
-    public ResponseEntity<GenericResponse> updateNotificationsErrorFallback(Authentication authentication, HttpSession session, UpdateNotificationsRequest updateNotificationsRequest, Throwable e){
+    public ResponseEntity<GenericResponse> updateNotificationsErrorFallback(Authentication authentication, HttpSession session, NotificationUpdateRequest notificationUpdateRequest, Throwable e){
         GenericResponse genericResponse = new GenericResponse();
-        if(updateNotificationsRequest != null){
+        if(notificationUpdateRequest != null){
             String errorMessage;
             if(e.getLocalizedMessage() != null){
                 errorMessage = "Unable to update notifications. " + e.getLocalizedMessage();

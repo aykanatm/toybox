@@ -7,7 +7,7 @@ import com.github.murataykanat.toybox.schema.common.Facet;
 import java.io.Serializable;
 import java.util.List;
 
-public class SearchNotificationsResponse implements Serializable {
+public class NotificationSearchResponse implements Serializable {
     @JsonProperty("notifications")
     private List<Notification> notifications;
     @JsonProperty("totalRecords")
