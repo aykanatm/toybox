@@ -36,6 +36,8 @@ public class NotificationUtils {
     @Autowired
     private NotificationsRepository notificationsRepository;
 
+    @LogEntryExitExecutionTime
+    @SuppressWarnings("unchecked")
     public List<Notification> getNotifications(List<SearchCondition> searchConditions, String sortField, String sortType){
         OrderSpecifier<?> order;
         ToyboxPredicateBuilder<Notification> builder = new ToyboxPredicateBuilder().with(searchConditions, Notification.class);
