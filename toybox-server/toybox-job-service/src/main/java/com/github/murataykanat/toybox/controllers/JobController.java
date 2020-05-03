@@ -49,8 +49,6 @@ public class JobController {
     @Autowired
     private AuthenticationUtils authenticationUtils;
     @Autowired
-    private SortUtils sortUtils;
-    @Autowired
     private FacetUtils facetUtils;
     @Autowired
     private JobUtils jobUtils;
