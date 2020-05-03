@@ -78,20 +78,8 @@ public class FolderController {
 
                             String errorMessage = "";
                             if(StringUtils.isBlank(parentContainerId) || parentContainerId.equalsIgnoreCase("root")){
-                                if(authenticationUtils.isAdminUser(authentication)){
-                                    Container duplicateTopLevelContainer = containerUtils.findDuplicateTopLevelContainer(containerName);
-                                    if(duplicateTopLevelContainer == null){
-                                        canCreateFolder = true;
-                                    }
-                                    else{
-                                        canCreateFolder = false;
-                                        errorMessage = "The root folder already has a folder named '" + containerName + "'.";
-                                    }
-                                }
-                                else{
-                                    canCreateFolder = true;
-                                    parentContainerId = user.getUsername();
-                                }
+                                canCreateFolder = true;
+                                parentContainerId = user.getUsername();
                             }
                             else{
                                 boolean canEdit = true;
