@@ -59,7 +59,8 @@ public class NotificationUtils {
             }
         }
         else{
-            throw new IllegalArgumentException("Sort type '" + sortType + "' is invalid!");
+            _logger.warn("Sort type '" + sortType + "' is invalid, falling back to default.");
+            order = new ToyboxStringPath(QNotification.notification1, sortField).desc();
         }
 
         Iterable<Notification> iterableNotifications = notificationsRepository.findAll(builder.build(), order);

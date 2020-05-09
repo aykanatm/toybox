@@ -81,7 +81,8 @@ public class ContainerUtils {
             }
         }
         else{
-            throw new IllegalArgumentException("Sort type '" + sortType + "' is invalid!");
+            _logger.warn("Sort type '" + sortType + "' is invalid, falling back to default.");
+            order = new ToyboxStringPath(QAsset.asset, sortField).desc();
         }
 
         Iterable<Container> iterableContainers = containersRepository.findAll(builder.build(), order);

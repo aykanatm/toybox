@@ -64,7 +64,7 @@ public class AssetUtils {
 
     @LogEntryExitExecutionTime
     @SuppressWarnings("unchecked")
-    public List<Asset> getAssets(List<SearchCondition> searchConditions, String sortField, String sortType) throws NoSuchFieldException {
+    public List<Asset> getAssets(List<SearchCondition> searchConditions, String sortField, String sortType) {
         OrderSpecifier<?> order;
         ToyboxPredicateBuilder<Asset> builder = new ToyboxPredicateBuilder().with(searchConditions, Asset.class);
 
@@ -85,7 +85,8 @@ public class AssetUtils {
             }
         }
         else{
-            throw new IllegalArgumentException("Sort type '" + sortType + "' is invalid!");
+            _logger.warn("Sort type '" + sortType + "' is invalid, falling back to default.");
+            order = QAsset.asset.importDate.desc();
         }
 
         Iterable<Asset> iterableAssets = assetsRepository.findAll(builder.build(), order);

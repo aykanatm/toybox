@@ -63,7 +63,8 @@ public class JobUtils {
             }
         }
         else{
-            throw new IllegalArgumentException("Sort type '" + sortType + "' is invalid!");
+            _logger.warn("Sort type '" + sortType + "' is invalid, falling back to default.");
+            order = QToyboxJob.toyboxJob.startTime.desc();
         }
 
         Iterable<ToyboxJob> iterableJobs = jobsRepository.findAll(builder.build(), order);
