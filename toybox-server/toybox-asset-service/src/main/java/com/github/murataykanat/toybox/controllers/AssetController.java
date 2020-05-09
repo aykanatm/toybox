@@ -62,12 +62,6 @@ public class AssetController {
     @Autowired
     private AssetUserRepository assetUserRepository;
 
-    @Value("${exportStagingPath}")
-    private String exportStagingPath;
-
-    @Value("${importStagingPath}")
-    private String importStagingPath;
-
     @LogEntryExitExecutionTime
     @RequestMapping(value = "/assets/upload", method = RequestMethod.POST)
     public ResponseEntity<GenericResponse> uploadAssets(Authentication authentication, HttpSession session, @RequestBody UploadFileLst uploadFileLst) {
