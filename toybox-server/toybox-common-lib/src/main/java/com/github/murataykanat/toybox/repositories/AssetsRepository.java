@@ -76,9 +76,4 @@ public interface AssetsRepository extends JpaRepository<Asset, String>, QueryDsl
                     @Param("asset_thumbnail_path") String thumbnailPath, @Param("asset_type") String mimeType, @Param("asset_import_date") Date importDate,
                     @Param("deleted") String deleted, @Param("checksum") String checksum, @Param("is_latest_version") String isLatestVersion,
                     @Param("original_asset_id") String originalAssetId, @Param("version") int version, @Param("file_size") String fileSize);
-
-    @Transactional
-    @Modifying
-    @Query(value = "UPDATE assets SET deleted=:deleted WHERE asset_id IN :assetIds", nativeQuery = true)
-    int deleteAssetById(@Param("deleted") String deleted, @Param("assetIds") List<String> assetIds);
 }
