@@ -15,7 +15,8 @@ module.exports = {
         canDownload: String,
         canCopy: String,
         canEdit: String,
-        canShare: String
+        canShare: String,
+        deleted: String
     },
     data: function() {
         return  {
@@ -265,6 +266,46 @@ module.exports = {
             }
             var selectedAssets= [asset];
             this.deleteItems(selectedAssets);
+            this.contextMenuOpen = false;
+        },
+        assetRestore:function(){
+            console.log('Restoring asset with ID "' + this.id + '"');
+            var asset = {
+                id: this.id,
+                name: this.name,
+                type: this.type,
+                originalAssetId: this.originalAssetId,
+                '@class': 'com.github.murataykanat.toybox.dbo.Asset',
+                parentContainerId: this.parentContainerId,
+                shared: this.shared,
+                sharedByUsername: this.sharedByUsername,
+                canDownload: this.canDownload,
+                canCopy: this.canCopy,
+                canEdit: this.canEdit,
+                canShare: this.canShare
+            }
+            var selectedAssets= [asset];
+            this.restoreItems(selectedAssets);
+            this.contextMenuOpen = false;
+        },
+        assetPurge:function(){
+            console.log('Purging asset with ID "' + this.id + '"');
+            var asset = {
+                id: this.id,
+                name: this.name,
+                type: this.type,
+                originalAssetId: this.originalAssetId,
+                '@class': 'com.github.murataykanat.toybox.dbo.Asset',
+                parentContainerId: this.parentContainerId,
+                shared: this.shared,
+                sharedByUsername: this.sharedByUsername,
+                canDownload: this.canDownload,
+                canCopy: this.canCopy,
+                canEdit: this.canEdit,
+                canShare: this.canShare
+            }
+            var selectedAssets= [asset];
+            this.purgeItems(selectedAssets);
             this.contextMenuOpen = false;
         },
         assetShowVersionHistory:function(){

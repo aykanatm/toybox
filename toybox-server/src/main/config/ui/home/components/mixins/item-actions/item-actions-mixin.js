@@ -143,7 +143,7 @@ var itemActionsMixin = {
                 else{
                     this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
                 }
-            })
+            });
         },
         downloadItems(selectedItems){
             this.isDownloading = true;
@@ -211,6 +211,100 @@ var itemActionsMixin = {
         copyItems(selectedItems){
             var selectionContext = this.generateSelectionContext(selectedItems);
             this.$root.$emit('open-copy-move-asset-modal-window', selectionContext, false, true);
+        },
+        restoreItems(selectedItems){
+            var selectionContext = this.generateSelectionContext(selectedItems);
+
+            this.getService("toybox-common-object-loadbalancer")
+            .then(response =>{
+                if(response){
+                    return axios.post(response.data.value + '/common-objects/restore', selectionContext)
+                        .then(response => {
+                            if(response){
+                                console.log(response);
+                                this.$root.$emit('message-sent', 'Success', response.data.message);
+                                this.$root.$emit('refresh-assets');
+                                this.$root.$emit('refresh-items');
+                            }
+                            else{
+                                this.$root.$emit('message-sent', 'Error', "There was no response from the common object loadbalancer!");
+                            }
+                        })
+                        .catch(error => {
+                            var errorMessage;
+
+                            if(error.response){
+                                errorMessage = error.response.data.message
+                                if(error.response.status == 401){
+                                    window.location = '/logout';
+                                }
+                                else if(error.response.status == 403){
+                                    this.$root.$emit('message-sent', 'Warning', errorMessage);
+                                }
+                                else{
+                                    console.error(errorMessage);
+                                    this.$root.$emit('message-sent', 'Error', errorMessage);
+                                }
+                            }
+                            else{
+                                errorMessage = error.message;
+
+                                console.error(errorMessage);
+                                this.$root.$emit('message-sent', 'Error', errorMessage);
+                            }
+                        });
+                }
+                else{
+                    this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
+                }
+            });
+        },
+        purgeItems(selectedItems){
+            var selectionContext = this.generateSelectionContext(selectedItems);
+
+            this.getService("toybox-common-object-loadbalancer")
+            .then(response =>{
+                if(response){
+                    return axios.post(response.data.value + '/common-objects/purge', selectionContext)
+                        .then(response => {
+                            if(response){
+                                console.log(response);
+                                this.$root.$emit('message-sent', 'Success', response.data.message);
+                                this.$root.$emit('refresh-assets');
+                                this.$root.$emit('refresh-items');
+                            }
+                            else{
+                                this.$root.$emit('message-sent', 'Error', "There was no response from the common object loadbalancer!");
+                            }
+                        })
+                        .catch(error => {
+                            var errorMessage;
+
+                            if(error.response){
+                                errorMessage = error.response.data.message
+                                if(error.response.status == 401){
+                                    window.location = '/logout';
+                                }
+                                else if(error.response.status == 403){
+                                    this.$root.$emit('message-sent', 'Warning', errorMessage);
+                                }
+                                else{
+                                    console.error(errorMessage);
+                                    this.$root.$emit('message-sent', 'Error', errorMessage);
+                                }
+                            }
+                            else{
+                                errorMessage = error.message;
+
+                                console.error(errorMessage);
+                                this.$root.$emit('message-sent', 'Error', errorMessage);
+                            }
+                        });
+                }
+                else{
+                    this.$root.$emit('message-sent', 'Error', "There was no response from the service endpoint!");
+                }
+            });
         },
         renameItem(id, name, isAsset){
             var serviceName;

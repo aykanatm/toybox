@@ -16,6 +16,9 @@ public class HomeController {
     @GetMapping("/toybox/folders")
     public String loadFolders(){ return "folders_view"; }
 
+    @GetMapping("/toybox/recyclebin")
+    public String loadRecycleBin(){ return "recycle_bin_view"; }
+
     @GetMapping("/toybox/jobs")
     public String loadJobs(){ return "jobs_view"; }
 

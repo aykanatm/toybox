@@ -11,7 +11,8 @@ module.exports = {
         canDownload: String,
         canCopy: String,
         canEdit: String,
-        canShare: String
+        canShare: String,
+        deleted: String
     },
     data: function() {
         return  {
@@ -192,6 +193,44 @@ module.exports = {
             }
             var selectedFolders = [folder];
             this.deleteItems(selectedFolders);
+            this.contextMenuOpen = false;
+        },
+        folderRestore:function(){
+            var folder = {
+                id: this.id,
+                name: this.name,
+                type: this.type,
+                originalAssetId: this.originalAssetId,
+                '@class': 'com.github.murataykanat.toybox.dbo.Container',
+                parentContainerId: this.parentContainerId,
+                shared: this.shared,
+                sharedByUsername: this.sharedByUsername,
+                canDownload: this.canDownload,
+                canCopy: this.canCopy,
+                canEdit: this.canEdit,
+                canShare: this.canShare
+            }
+            var selectedFolders = [folder];
+            this.restoreItems(selectedFolders);
+            this.contextMenuOpen = false;
+        },
+        folderPurge:function(){
+            var folder = {
+                id: this.id,
+                name: this.name,
+                type: this.type,
+                originalAssetId: this.originalAssetId,
+                '@class': 'com.github.murataykanat.toybox.dbo.Container',
+                parentContainerId: this.parentContainerId,
+                shared: this.shared,
+                sharedByUsername: this.sharedByUsername,
+                canDownload: this.canDownload,
+                canCopy: this.canCopy,
+                canEdit: this.canEdit,
+                canShare: this.canShare
+            }
+            var selectedFolders = [folder];
+            this.purgeItems(selectedFolders);
             this.contextMenuOpen = false;
         }
     }

@@ -22,6 +22,10 @@
             <i class="cogs icon"></i>
             <span>Jobs</span>
         </a>
+        <a class="item toybox-navbar-item" id="toybox-folders-menu" href="/toybox/recyclebin">
+            <i class="recycle icon"></i>
+            <span>Recycle Bin</span>
+        </a>
 
         <div class="ui icon right menu">
             <div class="ui transparent icon input toybox-search-box">

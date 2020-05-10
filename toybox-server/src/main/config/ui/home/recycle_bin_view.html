@@ -9,8 +9,6 @@
         <meta th:name="_csrf_header" th:content="${_csrf.headerName}"/>
         <!-- -->
         <link rel="stylesheet" type="text/css" href="../thirdparty/semantic/semantic.min.css"/>
-        <link rel="stylesheet" href="../thirdparty/fontello/css/fontello.css"/>
-        <link rel="stylesheet" type="text/css" href="../thirdparty/fancytree/skin-bootstrap/ui.fancytree.min.css"/>
         <link rel="stylesheet" type="text/css" href="../css/toybox.css"/>
 
         <script type="text/javascript" src="../thirdparty/jquery/jquery-3.3.1.min.js"></script>
@@ -19,13 +17,11 @@
         <script type="text/javascript" src="../thirdparty/vue/vue.js"></script>
         <!-- <script type="text/javascript" src="../thirdparty/vue/vue.min.js"></script> -->
         <script src="../thirdparty/imagesloaded.pkgd.min.js"></script>
-        <script src="../thirdparty/FileSaver.min.js"></script>
         <script src="../thirdparty/moment.min.js"></script>
-        <script type="text/javascript" src="../thirdparty/fancytree/jquery.fancytree-all-deps.min.js"></script>
         <script type="text/javascript" src="../js/httpVueLoader.js"></script>
     </head>
     <body>
-        <div style="height: calc(100% - 68px); width: 100%;" id="toybox-folders">
+        <div style="height: calc(100% - 68px); width: 100%;" id="toybox-recyclebin">
             <navbar v-bind:user="user"/>
             <div class="toybox-background">
                 <div id="toybox-folders-container" class="ui grid toybox-folder-container">
@@ -48,32 +44,11 @@
                         <div class="ui grid gallery-top-menu">
                             <div class="ui basic buttons">
                                 <!-- Top menu buttons -->
-                                <button class="ui button" v-on:click.stop="createNewFolder" v-bind:disabled="!canCreateFolder">
-                                    <i class="folder icon"></i> New Folder
+                                <button class="ui button" v-on:click.stop="createNewFolder">
+                                    <i class="trash restore icon"></i> Restore
                                 </button>
-                                <button class="ui button" v-on:click.stop="uploadNewFile" v-bind:disabled="!canUploadFile">
-                                    <i class="cloud upload icon"></i> New File
-                                </button>
-                                <button class="ui button" v-on:click.stop="itemsShare" v-bind:disabled="!canShare">
-                                    <i class="share alternate icon"></i> Share
-                                </button>
-                                <button class="ui button" v-on:click.stop="itemsDownload" v-bind:disabled="!canDownload">
-                                    <i class="download icon"></i> Download
-                                </button>
-                                <button class="ui button" v-on:click.stop="itemsCopy" v-bind:disabled="!canCopy">
-                                    <i class="copy icon"></i> Copy
-                                </button>
-                                <button class="ui button" v-on:click.stop="itemsMove" v-bind:disabled="!canMove">
-                                    <i class="external alternate icon"></i> Move
-                                </button>
-                                <button class="ui button" v-on:click.stop="itemsSubscribe" v-bind:disabled="!canSubscribe">
-                                    <i class="eye icon"></i> Subscribe
-                                </button>
-                                <button class="ui button" v-on:click.stop="itemsUnsubscribe" v-bind:disabled="!canUnsubscribe">
-                                    <i class="eye slash icon"></i> Unsubscribe
-                                </button>
-                                <button class="ui button" v-on:click.stop="itemsDelete" v-bind:disabled="!canDelete">
-                                    <i class="trash icon"></i> Delete
+                                <button class="ui button" v-on:click.stop="itemsDelete">
+                                    <i class="dumpster icon"></i> Purge
                                 </button>
                             </div>
                             <div class="ui right floated small basic icon buttons">
@@ -93,9 +68,6 @@
                         <div class="ui four doubling stackable cards">
                             <div class="ui active dimmer" v-if="isLoading">
                                 <div class="ui massive text loader">Loading</div>
-                            </div>
-                            <div class="ui active dimmer" v-if="isDownloading">
-                                <div class="ui massive text loader">Preparing the selected items for download. Your download will start once they are ready...</div>
                             </div>
                             <component v-bind:is="item['@class'] === 'com.github.murataykanat.toybox.dbo.Asset' ? 'asset' : 'folder'"
                                         v-for="item in items"
@@ -123,12 +95,6 @@
                     </div>
                 </div>
             </div>
-            <create-container-modal-window></create-container-modal-window>
-            <asset-preview-modal-window v-bind:rendition-url="renditionUrl"></asset-preview-modal-window>
-            <asset-rename-modal-window></asset-rename-modal-window>
-            <asset-version-history-modal-window></asset-version-history-modal-window>
-            <copy-move-asset-modal-window></copy-move-asset-modal-window>
-            <share-modal-window></share-modal-window>
         </div>
     </body>
     <script src="../components/mixins/user/user-mixin.js"></script>
@@ -140,5 +106,5 @@
     <script src="../components/mixins/item-actions/item-actions-mixin.js"></script>
     <script src="../components/mixins/asset-actions/asset-actions-mixin.js"></script>
     <script src="../js/utilities.js"></script>
-    <script src="../js/folders.js"></script>
+    <script src="../js/recyclebin.js"></script>
 </html>

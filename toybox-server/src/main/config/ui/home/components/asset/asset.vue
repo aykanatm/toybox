@@ -46,41 +46,49 @@
         <div class="content" style="overflow: hidden; height: 40px; text-overflow: ellipsis;">
             <span style="white-space: nowrap;">{{ name }}</span>
             <div v-show="contextMenuOpen" class="ui vertical menu toybox-asset-context-menu">
-                <a class="item" v-on:click.stop="assetShare" v-show="canShare === 'Y'">
+                <a class="item" v-on:click.stop="assetShare" v-show="canShare === 'Y' && deleted === 'N'">
                     <i class="share alternate icon"></i>
                     Share
                 </a>
-                <a class="item" v-on:click.stop="assetDownload" v-show="canDownload === 'Y'">
+                <a class="item" v-on:click.stop="assetDownload" v-show="canDownload === 'Y' && deleted === 'N'">
                     <i class="download icon"></i>
                     Download
                 </a>
-                <a class="item" v-on:click.stop="assetRename" v-show="canEdit === 'Y'">
+                <a class="item" v-on:click.stop="assetRename" v-show="canEdit === 'Y' && deleted === 'N'">
                     <i class="i cursor icon"></i>
                     Rename
                 </a>
-                <a class="item" v-on:click.stop="assetCopy" v-show="canCopy === 'Y'">
+                <a class="item" v-on:click.stop="assetCopy" v-show="canCopy === 'Y' && deleted === 'N'">
                     <i class="copy icon"></i>
                     Copy
                 </a>
-                <a class="item" v-on:click.stop="assetMove" v-show="!(shared === 'Y')">
+                <a class="item" v-on:click.stop="assetMove" v-show="!(shared === 'Y') && deleted === 'N'">
                     <i class="external alternate icon"></i>
                     Move
                 </a>
-                <a class="item" v-on:click.stop="assetSubscribe" v-show="!(subscribed === 'Y')">
+                <a class="item" v-on:click.stop="assetSubscribe" v-show="!(subscribed === 'Y') && deleted === 'N'">
                     <i class="eye icon"></i>
                     Subscribe
                 </a>
-                <a class="item" v-on:click.stop="assetUnsubscribe" v-show="subscribed === 'Y'">
+                <a class="item" v-on:click.stop="assetUnsubscribe" v-show="subscribed === 'Y' && deleted === 'N'">
                     <i class="eye slash icon"></i>
                     Unsubscribe
                 </a>
-                <a class="item" v-on:click.stop="assetShowVersionHistory" v-show="canEdit === 'Y'">
+                <a class="item" v-on:click.stop="assetShowVersionHistory" v-show="canEdit === 'Y' && deleted === 'N'">
                     <i class="list alternate outline icon"></i>
                     Show Version History
                 </a>
-                <a class="item" v-on:click.stop="assetDelete" v-show="!(shared === 'Y')">
+                <a class="item" v-on:click.stop="assetDelete" v-show="!(shared === 'Y') && deleted === 'N'">
                     <i class="trash alternate outline icon"></i>
                     Delete
+                </a>
+                <a class="item" v-on:click.stop="assetRestore" v-show="deleted === 'Y'">
+                    <i class="trash restore icon"></i>
+                    Restore
+                </a>
+                <a class="item" v-on:click.stop="assetPurge" v-show="deleted === 'Y'">
+                    <i class="dumpster icon"></i>
+                    Purge
                 </a>
             </div>
         </div>
