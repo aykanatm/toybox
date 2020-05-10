@@ -389,6 +389,15 @@ public class ContainerUtils {
     }
 
     @LogEntryExitExecutionTime
+    public void deleteContainers(List<Container> containers, User user, HttpSession session) throws Exception {
+        UpdateContainerRequest updateContainerRequest = new UpdateContainerRequest();
+        updateContainerRequest.setDeleted(ToyboxConstants.LOOKUP_YES);
+        for(Container container: containers){
+            updateContainer(updateContainerRequest, container.getId(), user, session);
+        }
+    }
+
+    @LogEntryExitExecutionTime
     public Container updateContainer(UpdateContainerRequest updateContainerRequest, String containerId, User user, HttpSession session) throws Exception {
         Container container = getContainer(containerId);
         String oldContainerName = container.getName();

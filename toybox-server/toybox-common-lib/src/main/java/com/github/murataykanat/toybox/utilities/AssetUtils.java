@@ -386,6 +386,15 @@ public class AssetUtils {
     }
 
     @LogEntryExitExecutionTime
+    public void deleteAssets(List<Asset> assets, User user, HttpSession session) throws Exception {
+        UpdateAssetRequest updateAssetRequest = new UpdateAssetRequest();
+        updateAssetRequest.setDeleted(ToyboxConstants.LOOKUP_YES);
+        for(Asset asset: assets){
+            updateAsset(updateAssetRequest, asset.getId(), user, session);
+        }
+    }
+
+    @LogEntryExitExecutionTime
     public boolean subscribeToAsset(String assetId, User user){
         Asset asset = getAsset(assetId);
 

@@ -8,6 +8,7 @@ import com.github.murataykanat.toybox.schema.asset.CopyAssetRequest;
 import com.github.murataykanat.toybox.schema.asset.MoveAssetRequest;
 import com.github.murataykanat.toybox.schema.common.GenericResponse;
 import com.github.murataykanat.toybox.schema.notification.SendNotificationRequest;
+import com.github.murataykanat.toybox.schema.search.SearchCondition;
 import com.github.murataykanat.toybox.schema.selection.SelectionContext;
 import com.github.murataykanat.toybox.utilities.*;
 import org.apache.commons.io.IOUtils;
@@ -64,9 +65,6 @@ public class CommonObjectController {
     private ContainersRepository containersRepository;
     @Autowired
     private ContainerAssetsRepository containerAssetsRepository;
-
-    @Value("${exportStagingPath}")
-    private String exportStagingPath;
 
     @Value("${importStagingPath}")
     private String importStagingPath;
@@ -247,28 +245,40 @@ public class CommonObjectController {
                 if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
                     User user = authenticationUtils.getUser(authentication);
                     if(user != null){
-                        if(!(selectionContext.getSelectedAssets().isEmpty() && selectionContext.getSelectedContainers().isEmpty())){
-                            boolean hasSharedAssets = selectionContext.getSelectedAssets().stream().anyMatch(asset -> asset.getShared().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES));
-                            boolean hasSharedContainers = selectionContext.getSelectedContainers().stream().anyMatch(container -> container.getShared().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES));
-                            if(!hasSharedAssets && !hasSharedContainers){
-                                // We filter out the selected shared assets
-                                List<Asset> nonSharedSelectedAssets = selectionContext.getSelectedAssets().stream().filter(asset -> !shareUtils.isAssetSharedWithUser(user.getId(), asset.getId())).collect(Collectors.toList());
-                                List<Container> nonSharedSelectedContainers = selectionContext.getSelectedContainers().stream().filter(container -> !shareUtils.isContainerSharedWithUser(user.getId(), container.getId())).collect(Collectors.toList());
+                        List<Asset> selectedAssets = selectionContext.getSelectedAssets();
+                        List<Container> selectedContainers = selectionContext.getSelectedContainers();
 
+                        if(!(selectedAssets.isEmpty() && selectedContainers.isEmpty())){
+                            boolean hasSharedAssets = selectionContext.getSelectedAssets().stream()
+                                    .anyMatch(asset -> asset.getShared().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES));
+                            boolean hasSharedContainers = selectionContext.getSelectedContainers().stream()
+                                    .anyMatch(container -> container.getShared().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES));
+                            if(!hasSharedAssets && !hasSharedContainers){
                                 // We are adding a refreshed list of assets to the list of assets which will be deleted
                                 List<Asset> selectedAssetsAndContainerAssets = new ArrayList<>();
-                                if(!nonSharedSelectedAssets.isEmpty()){
-                                    selectedAssetsAndContainerAssets.addAll(assetsRepository.getAssetsByAssetIds(nonSharedSelectedAssets.stream().map(Asset::getId).collect(Collectors.toList())));
+                                if(!selectedAssets.isEmpty()){
+                                    List<SearchCondition> searchConditions = new ArrayList<>();
+                                    selectedAssets.forEach(asset -> {
+                                        searchConditions.add(new SearchCondition("id", ToyboxConstants.SEARCH_CONDITION_EQUALS, asset.getId(),
+                                                ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND_IN));
+                                    });
+
+                                    selectedAssetsAndContainerAssets.addAll(assetUtils.getAssets(searchConditions, null, null));
                                 }
 
                                 // We are adding the non-shared last version of the assets inside the containers that was selected as deleted to the list of assets which will be deleted.
-                                for(Container selectedContainer: nonSharedSelectedContainers){
+                                for(Container selectedContainer: selectedContainers){
                                     List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(selectedContainer.getId());
                                     if(!containerAssetsByContainerId.isEmpty()){
                                         List<String> containerAssetIds = containerAssetsByContainerId.stream().map(ContainerAsset::getAssetId).collect(Collectors.toList());
-                                        List<String> nonSharedContainerAssetIds = containerAssetIds.stream().filter(assetId -> !shareUtils.isAssetSharedWithUser(user.getId(), assetId)).collect(Collectors.toList());
-                                        List<Asset> assetsByAssetIds = assetsRepository.getNonDeletedLastVersionAssetsByAssetIds(nonSharedContainerAssetIds);
-                                        selectedAssetsAndContainerAssets.addAll(assetsByAssetIds);
+
+                                        List<SearchCondition> searchConditions = new ArrayList<>();
+                                        containerAssetIds.forEach(assetId -> {
+                                            searchConditions.add(new SearchCondition("id", ToyboxConstants.SEARCH_CONDITION_EQUALS, assetId,
+                                                    ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND_IN));
+                                        });
+
+                                        selectedAssetsAndContainerAssets.addAll(assetUtils.getAssets(searchConditions, null, null));
                                     }
                                 }
 
@@ -277,14 +287,21 @@ public class CommonObjectController {
                                 // We find all the non-deleted versions of the assets if the selected asset is the latest version and add them to a list
                                 for(Asset selectedAsset: selectedAssetsAndContainerAssets){
                                     if(selectedAsset.getIsLatestVersion().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
-                                        List<Asset> assetsByOriginalAssetId = assetsRepository.getNonDeletedAssetsByOriginalAssetId(selectedAsset.getOriginalAssetId());
-                                        assetsAndVersions.addAll(assetsByOriginalAssetId);
+                                        List<SearchCondition> searchConditions = new ArrayList<>();
+
+                                        searchConditions.add(new SearchCondition("deleted", ToyboxConstants.SEARCH_CONDITION_EQUALS, ToyboxConstants.LOOKUP_YES,
+                                                ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND_IN));
+                                        searchConditions.add(new SearchCondition("originalAssetId", ToyboxConstants.SEARCH_CONDITION_EQUALS, selectedAsset.getOriginalAssetId(),
+                                                ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND_IN));
+
+                                        assetsAndVersions.addAll(assetUtils.getAssets(searchConditions, null, null));
                                     }
                                 }
 
                                 if(!assetsAndVersions.isEmpty()){
                                     // We set all the assets as deleted
-                                    assetsRepository.deleteAssetById(ToyboxConstants.LOOKUP_YES,assetsAndVersions.stream().map(Asset::getId).collect(Collectors.toList()));
+                                    assetUtils.deleteAssets(assetsAndVersions, user, session);
+
                                     // We send delete notification for the selected assets
                                     for(Asset asset: selectedAssetsAndContainerAssets){
                                         // Send notification for subscribers
@@ -309,11 +326,12 @@ public class CommonObjectController {
                                     }
                                 }
 
-                                if(!nonSharedSelectedContainers.isEmpty()){
+                                if(!selectedContainers.isEmpty()){
                                     // We set all the non-shared containers as deleted
-                                    containersRepository.deleteContainersById(ToyboxConstants.LOOKUP_YES, nonSharedSelectedContainers.stream().map(Container::getId).collect(Collectors.toList()));
+                                    containerUtils.deleteContainers(selectedContainers, user, session);
+
                                     // We send delete notification for the selected containers
-                                    for(Container selectedContainer: nonSharedSelectedContainers){
+                                    for(Container selectedContainer: selectedContainers){
                                         // Send notification for subscribers
                                         List<User> subscribers = containerUtils.getSubscribers(selectedContainer.getId());
                                         for(User subscriber: subscribers){
@@ -327,7 +345,7 @@ public class CommonObjectController {
                                     }
 
                                     // We un-subscribe users from the deleted containers and remove the containers and their assets from shares
-                                    for(Container selectedContainer: nonSharedSelectedContainers){
+                                    for(Container selectedContainer: selectedContainers){
                                         containerUtils.unsubscribeUsersFromContainer(selectedContainer.getId());
 
                                         List<InternalShare> internalSharesContainingItem = shareUtils.getInternalSharesContainingItem(selectedContainer.getId(), false);
@@ -338,7 +356,7 @@ public class CommonObjectController {
                                 }
 
                                 int numberOfDeletedAssets = selectedAssetsAndContainerAssets.size();
-                                int numberOfDeletedContainers = nonSharedSelectedContainers.size();
+                                int numberOfDeletedContainers = selectedContainers.size();
 
                                 String failureMessage = "You do not have the permission to delete the selected assets and/or folders.";
                                 String message = generateProcessingResponse(numberOfDeletedAssets, numberOfDeletedContainers, " deleted successfully.", failureMessage);
