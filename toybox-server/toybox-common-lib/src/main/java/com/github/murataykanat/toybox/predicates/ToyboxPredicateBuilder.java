@@ -91,7 +91,12 @@ public class ToyboxPredicateBuilder<T> {
             }
 
             if(inResult != null){
-                result = result.and(inResult);
+                if(result != null){
+                    result = result.and(inResult);
+                }
+                else{
+                    result = inResult;
+                }
             }
         }
 
@@ -111,7 +116,12 @@ public class ToyboxPredicateBuilder<T> {
             }
 
             if(inResult != null){
-                result = result.or(inResult);
+                if(result != null){
+                    result = result.or(inResult);
+                }
+                else{
+                    result = inResult;
+                }
             }
         }
 
