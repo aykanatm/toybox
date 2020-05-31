@@ -11,6 +11,7 @@ import com.github.murataykanat.toybox.schema.notification.SendNotificationReques
 import com.github.murataykanat.toybox.schema.search.SearchCondition;
 import com.github.murataykanat.toybox.schema.selection.SelectionContext;
 import com.github.murataykanat.toybox.utilities.*;
+import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -30,6 +31,7 @@ import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -237,6 +239,125 @@ public class CommonObjectController {
     }
 
     @LogEntryExitExecutionTime
+    @RequestMapping(value = "/common-objects/restore", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<GenericResponse> restoreObjects(Authentication authentication, HttpSession session, @RequestBody SelectionContext selectionContext){
+        GenericResponse genericResponse = new GenericResponse();
+        try{
+            if(!authenticationUtils.isSessionValid(authentication)){
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+            }
+
+            if(selectionContext == null || !selectionUtils.isSelectionContextValid(selectionContext)){
+                String errorMessage = "Selection context is not valid!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+            }
+
+            User user = authenticationUtils.getUser(authentication);
+            if(user == null){
+                throw new IllegalArgumentException("User is null!");
+            }
+
+            List<Asset> selectedAssets = selectionContext.getSelectedAssets();
+            List<Container> selectedContainers = selectionContext.getSelectedContainers();
+
+            if(selectedAssets.isEmpty() && selectedContainers.isEmpty()){
+                String errorMessage = "No assets or folders are selected!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+            }
+
+            // We are adding a refreshed list of assets to the list of assets which will be restored
+            // because some field are not present in the JSON that comes from the UI
+            List<Asset> selectedAssetsAndContainerAssets = new ArrayList<>();
+            if(!selectedAssets.isEmpty()){
+                List<SearchCondition> searchConditions = new ArrayList<>();
+                selectedAssets.forEach(asset -> {
+                    searchConditions.add(new SearchCondition("id", ToyboxConstants.SEARCH_CONDITION_EQUALS, asset.getId(),
+                            ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND_IN));
+                });
+
+                selectedAssetsAndContainerAssets.addAll(assetUtils.getAssets(searchConditions, null, null));
+            }
+
+            // We are adding the non-shared last version of the assets inside the containers that was selected
+            // as deleted to the list of assets which will be restored
+            for(Container selectedContainer: selectedContainers){
+                List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(selectedContainer.getId());
+                if(!containerAssetsByContainerId.isEmpty()){
+                    List<String> containerAssetIds = containerAssetsByContainerId.stream().map(ContainerAsset::getAssetId).collect(Collectors.toList());
+
+                    List<SearchCondition> searchConditions = new ArrayList<>();
+                    containerAssetIds.forEach(assetId -> {
+                        searchConditions.add(new SearchCondition("id", ToyboxConstants.SEARCH_CONDITION_EQUALS, assetId,
+                                ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND_IN));
+                    });
+
+                    selectedAssetsAndContainerAssets.addAll(assetUtils.getAssets(searchConditions, null, null));
+                }
+            }
+
+            // We create another list for the final asset list
+            List<Asset> assetsAndVersions = new ArrayList<>(selectedAssetsAndContainerAssets);
+            // We find all the versions of the assets if the selected asset is the latest version and add them to a list
+            for(Asset selectedAsset: selectedAssetsAndContainerAssets){
+                if(selectedAsset.getIsLatestVersion().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
+                    List<SearchCondition> searchConditions = new ArrayList<>();
+
+                    searchConditions.add(new SearchCondition("originalAssetId", ToyboxConstants.SEARCH_CONDITION_EQUALS, selectedAsset.getOriginalAssetId(),
+                            ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND_IN));
+
+                    assetsAndVersions.addAll(assetUtils.getAssets(searchConditions, null, null));
+                }
+            }
+
+            if(!assetsAndVersions.isEmpty()){
+                // We set all the assets as deleted
+                assetsAndVersions = new ArrayList<>(new HashSet<>(assetsAndVersions));
+                assetUtils.restoreAssets(assetsAndVersions, selectedContainers, user, session);
+            }
+
+            if(!selectedContainers.isEmpty()){
+                // We set all the non-shared containers as deleted
+                containerUtils.restoreContainers(selectedContainers, user, session);
+            }
+
+            int numberOfRestoredAssets = selectedAssetsAndContainerAssets.size();
+            int numberOfRestoredContainers = selectedContainers.size();
+
+            String failureMessage = "You do not have the permission to restore the selected assets and/or folders.";
+            String message = generateProcessingResponse(numberOfRestoredAssets, numberOfRestoredContainers, " deleted successfully.", failureMessage);
+
+            genericResponse.setMessage(message);
+
+            if(message.equalsIgnoreCase(failureMessage)){
+                return new ResponseEntity<>(genericResponse, HttpStatus.FORBIDDEN);
+            }
+
+            return new ResponseEntity<>(genericResponse, HttpStatus.OK);
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while restoring objects. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @LogEntryExitExecutionTime
     @RequestMapping(value = "/common-objects/delete", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> deleteObjects(Authentication authentication, HttpSession session, @RequestBody SelectionContext selectionContext){
         GenericResponse genericResponse = new GenericResponse();
@@ -255,6 +376,7 @@ public class CommonObjectController {
                                     .anyMatch(container -> container.getShared().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES));
                             if(!hasSharedAssets && !hasSharedContainers){
                                 // We are adding a refreshed list of assets to the list of assets which will be deleted
+                                // because some field are not present in the JSON that comes from the UI
                                 List<Asset> selectedAssetsAndContainerAssets = new ArrayList<>();
                                 if(!selectedAssets.isEmpty()){
                                     List<SearchCondition> searchConditions = new ArrayList<>();
@@ -284,13 +406,11 @@ public class CommonObjectController {
 
                                 // We create another list for the final asset list
                                 List<Asset> assetsAndVersions = new ArrayList<>(selectedAssetsAndContainerAssets);
-                                // We find all the non-deleted versions of the assets if the selected asset is the latest version and add them to a list
+                                // We find all the versions of the assets if the selected asset is the latest version and add them to a list
                                 for(Asset selectedAsset: selectedAssetsAndContainerAssets){
                                     if(selectedAsset.getIsLatestVersion().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES)){
                                         List<SearchCondition> searchConditions = new ArrayList<>();
 
-                                        searchConditions.add(new SearchCondition("deleted", ToyboxConstants.SEARCH_CONDITION_EQUALS, ToyboxConstants.LOOKUP_YES,
-                                                ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND_IN));
                                         searchConditions.add(new SearchCondition("originalAssetId", ToyboxConstants.SEARCH_CONDITION_EQUALS, selectedAsset.getOriginalAssetId(),
                                                 ToyboxConstants.SEARCH_CONDITION_DATA_TYPE_STRING, ToyboxConstants.SEARCH_OPERATOR_AND_IN));
 
@@ -366,9 +486,8 @@ public class CommonObjectController {
                                 if(message.equalsIgnoreCase(failureMessage)){
                                     return new ResponseEntity<>(genericResponse, HttpStatus.FORBIDDEN);
                                 }
-                                else{
-                                    return new ResponseEntity<>(genericResponse, HttpStatus.OK);
-                                }
+
+                                return new ResponseEntity<>(genericResponse, HttpStatus.OK);
                             }
                             else{
                                 String errorMessage = "You do not have the permission to delete one of the selected items!";
@@ -411,7 +530,7 @@ public class CommonObjectController {
             }
         }
         catch (Exception e){
-            String errorMessage = "An error occurred while deleting assets. " + e.getLocalizedMessage();
+            String errorMessage = "An error occurred while deleting objects. " + e.getLocalizedMessage();
             _logger.error(errorMessage, e);
 
             genericResponse.setMessage(errorMessage);

@@ -395,6 +395,26 @@ public class AssetUtils {
     }
 
     @LogEntryExitExecutionTime
+    public void restoreAssets(List<Asset> assets, List<Container> containersToBeRestored, User user, HttpSession session) throws Exception {
+        UpdateAssetRequest updateAssetRequest = new UpdateAssetRequest();
+
+        for(Asset asset: assets){
+            ContainerAsset containerAsset = containerAssetsRepository.findContainerAssetsByAssetId(asset.getId())
+                    .stream()
+                    .findFirst().orElse(null);
+            if(containerAsset != null){
+                if(containersToBeRestored.stream().noneMatch(container -> container.getId().equalsIgnoreCase(containerAsset.getContainerId()))){
+                    containerAssetsRepository.deatchAsset(containerAsset.getContainerId(), asset.getId());
+                    containerAssetsRepository.attachAsset(user.getUsername(), asset.getId());
+                }
+            }
+
+            updateAssetRequest.setDeleted(ToyboxConstants.LOOKUP_NO);
+            updateAsset(updateAssetRequest, asset.getId(), user, session);
+        }
+    }
+
+    @LogEntryExitExecutionTime
     public boolean subscribeToAsset(String assetId, User user){
         Asset asset = getAsset(assetId);
 
