@@ -488,9 +488,9 @@ public class CommonObjectController {
 
                         if(!(selectedAssets.isEmpty() && selectedContainers.isEmpty())){
                             boolean hasSharedAssets = selectionContext.getSelectedAssets().stream()
-                                    .anyMatch(asset -> asset.getShared().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES));
+                                    .anyMatch(asset -> ToyboxConstants.LOOKUP_YES.equalsIgnoreCase(asset.getShared()));
                             boolean hasSharedContainers = selectionContext.getSelectedContainers().stream()
-                                    .anyMatch(container -> container.getShared().equalsIgnoreCase(ToyboxConstants.LOOKUP_YES));
+                                    .anyMatch(container -> ToyboxConstants.LOOKUP_YES.equalsIgnoreCase(container.getShared()));
                             if(!hasSharedAssets && !hasSharedContainers){
                                 // We are adding a refreshed list of assets to the list of assets which will be deleted
                                 // because some field are not present in the JSON that comes from the UI
