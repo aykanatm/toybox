@@ -334,7 +334,9 @@ public class FolderController {
                         }
                     }
 
-                    assetsByCurrentUser = assetUtils.getAssets(assetSearchConditions, sortField, sortType);
+                    if(!containerAssetIdsByContainerId.isEmpty()){
+                        assetsByCurrentUser = assetUtils.getAssets(assetSearchConditions, sortField, sortType);
+                    }
 
                     List<SharedContainers> sharedContainersLst = shareUtils.getSharedContainers(user.getId());
                     for(SharedContainers sharedContainers: sharedContainersLst){
