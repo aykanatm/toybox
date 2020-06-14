@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpSession;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -404,6 +405,19 @@ public class ContainerUtils {
         for(Container container: containers){
             updateContainer(updateContainerRequest, container.getId(), user, session);
         }
+    }
+
+    @LogEntryExitExecutionTime
+    public void purgeContainers(List<Container> containers) throws IOException {
+        List<Asset> assetsToBePurged = new ArrayList<>();
+        for(Container container: containers){
+            List<ContainerAsset> containerAssetsByContainerId = containerAssetsRepository.findContainerAssetsByContainerId(container.getId());
+            for(ContainerAsset containerAsset: containerAssetsByContainerId){
+                assetsToBePurged.add(assetUtils.getAsset(containerAsset.getAssetId()));
+            }
+        }
+        assetUtils.purgeAssets(assetsToBePurged);
+        containersRepository.delete(containers);
     }
 
     @LogEntryExitExecutionTime

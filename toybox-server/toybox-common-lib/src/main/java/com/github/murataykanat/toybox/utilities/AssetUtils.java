@@ -20,6 +20,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -61,6 +62,9 @@ public class AssetUtils {
     private ContainersRepository containersRepository;
     @Autowired
     private ContainerAssetsRepository containerAssetsRepository;
+
+    @Value("${assetRepositoryPath}")
+    private String assetRepositoryPath;
 
     @LogEntryExitExecutionTime
     @SuppressWarnings("unchecked")
@@ -411,6 +415,30 @@ public class AssetUtils {
 
             updateAssetRequest.setDeleted(ToyboxConstants.LOOKUP_NO);
             updateAsset(updateAssetRequest, asset.getId(), user, session);
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    public void purgeAssets(List<Asset> assets) throws IOException {
+        List<String> assetIds = assets.stream().map(asset -> new String(asset.getId())).collect(Collectors.toList());
+        if(!assetIds.isEmpty()){
+            containerAssetsRepository.deatchAssets(assetIds);
+        }
+
+        assetsRepository.delete(assets);
+
+        for(Asset asset: assets){
+            String assetFolderPath = assetRepositoryPath + File.separator + asset.getId();
+            File assetFolder = new File(assetFolderPath);
+            if(!assetFolder.exists()){
+                throw new FileNotFoundException("Folder path '" + assetFolderPath + "' is not valid!");
+            }
+
+            if(!assetFolder.isDirectory()){
+                throw new IOException("Folder path '" + assetFolderPath + "' is not a folder!");
+            }
+
+            FileUtils.deleteDirectory(assetFolder);
         }
     }
 

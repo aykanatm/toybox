@@ -287,6 +287,83 @@ public class CommonObjectLoadbalancerController {
     }
 
     @LogEntryExitExecutionTime
+    @HystrixCommand(fallbackMethod = "purgeObjectsErrorFallback")
+    @RequestMapping(value = "/common-objects/purge", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<GenericResponse> purgeObjects(Authentication authentication, HttpSession session, @RequestBody SelectionContext selectionContext){
+        GenericResponse genericResponse = new GenericResponse();
+        try{
+            if(authenticationUtils.isSessionValid(authentication)){
+                if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
+                    HttpHeaders headers = authenticationUtils.getHeaders(session);
+                    String prefix = loadbalancerUtils.getPrefix(ToyboxConstants.COMMON_OBJECT_SERVICE_NAME);
+
+                    if(StringUtils.isNotBlank(prefix)){
+                        return restTemplate.exchange(prefix + ToyboxConstants.COMMON_OBJECT_SERVICE_NAME + "/common-objects/purge", HttpMethod.POST, new HttpEntity<>(selectionContext, headers), GenericResponse.class);
+                    }
+                    else{
+                        throw new IllegalArgumentException("Service ID prefix is null!");
+                    }
+                }
+                else{
+                    String errorMessage = "Selection context is not valid!";
+
+                    _logger.error(errorMessage);
+
+                    genericResponse.setMessage(errorMessage);
+
+                    return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+                }
+            }
+            else{
+                String errorMessage = "Session for the username '" + authentication.getName() + "' is not valid!";
+                _logger.error(errorMessage);
+
+                genericResponse.setMessage(errorMessage);
+
+                return new ResponseEntity<>(genericResponse, HttpStatus.UNAUTHORIZED);
+            }
+        }
+        catch (Exception e){
+            String errorMessage = "An error occurred while purging objects. " + e.getLocalizedMessage();
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @LogEntryExitExecutionTime
+    public ResponseEntity<GenericResponse> purgeObjectsErrorFallback(Authentication authentication, HttpSession session, SelectionContext selectionContext, Throwable e){
+        GenericResponse genericResponse = new GenericResponse();
+
+        if(selectionContext != null && selectionUtils.isSelectionContextValid(selectionContext)){
+            String errorMessage;
+            if(e.getLocalizedMessage() != null){
+                errorMessage = "Unable to purge selected objects. " + e.getLocalizedMessage();
+            }
+            else{
+                errorMessage = "Unable to get response from the common object service.";
+            }
+
+            _logger.error(errorMessage, e);
+
+            genericResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(genericResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        else{
+            String errorMessage = "Selection context is not valid!";
+
+            _logger.error(errorMessage);
+
+            genericResponse.setMessage(errorMessage);
+
+            return new ResponseEntity<>(genericResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @LogEntryExitExecutionTime
     @HystrixCommand(fallbackMethod = "subscribeToObjectsErrorFallback")
     @RequestMapping(value = "/common-objects/subscribe", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> subscribeToObjects(HttpSession session, Authentication authentication, @RequestBody SelectionContext selectionContext){

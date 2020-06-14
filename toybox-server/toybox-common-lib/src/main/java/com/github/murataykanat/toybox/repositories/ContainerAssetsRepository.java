@@ -25,6 +25,11 @@ public interface ContainerAssetsRepository extends JpaRepository<ContainerAsset,
     @Query(value = "DELETE FROM container_asset WHERE container_id=?1 AND asset_id=?2", nativeQuery = true)
     int deatchAsset(String containerId, String assetId);
 
+    @Transactional
+    @Modifying
+    @Query(value = "DELETE FROM container_asset WHERE asset_id IN :assetIds", nativeQuery = true)
+    int deatchAssets(@Param("assetIds")List<String> assetIds);
+
     @Query(value = "SELECT container_id, asset_id FROM container_asset WHERE asset_id=?1", nativeQuery = true)
     List<ContainerAsset> findContainerAssetsByAssetId(String assetId);
 
